@@ -31,6 +31,7 @@ import { never } from 'zod';
 import { Deferred } from '@/server/gcode-processor/Deferred';
 import { RingBuffer } from 'ring-buffer-ts';
 import { of } from 'rxjs';
+import { fillNoisySinewave } from 'scichart';
 
 export class Bookmark {
 	constructor(
@@ -209,7 +210,9 @@ export interface BookmarkingWriterFileHandle {
 
 export class BookmarkingWriter extends Writable {
 	constructor(
-		private readonly fd: number, //BookmarkingWriterFileHandle,
+		//private readonly fd: number, //BookmarkingWriterFileHandle,
+		private readonly fh: BookmarkingWriterFileHandle,
+		public readonly newline: string = '\n',
 		public readonly encoding: BufferEncoding = 'utf8',
 	) {
 		super({ objectMode: true });
@@ -217,34 +220,21 @@ export class BookmarkingWriter extends Writable {
 
 	#bytesWritten: number = 0;
 
-	// https://github.com/nodejs/node/issues/31387
+	// async pattern in _write: https://github.com/nodejs/node/issues/31387
 
-	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+	async _write(chunk: any, notused_encoding: BufferEncoding, callback: (error?: Error | null) => void) {
 		try {
 			if (chunk === null) {
 				return callback();
 			} else if (chunk instanceof BookmarkedLine) {
-				/*
-				this.fh.write(chunk.line, null, this.encoding).then(
-					(result) => {
-						chunk.bookmark.value = new Bookmark(this.#bytesWritten, result.bytesWritten);
-						this.#bytesWritten += result.bytesWritten;
-						return callback();
-					},
-					(reason) => callback(new Error(reason)),
-				);
-				*/
+				let { bytesWritten } = await this.fh.write(chunk.line + this.newline, null, this.encoding);
+				chunk.bookmark.value = new Bookmark(this.#bytesWritten, bytesWritten);
+				this.#bytesWritten += bytesWritten;
+				return callback();
 			} else if (typeof chunk === 'string') {
-				//console.log('.');
-				//return callback();
-				fssync.write(this.fd, chunk, (err, bytesWritten) => {
-					if (err) {
-						return callback(err);
-					}
-					this.#bytesWritten += bytesWritten;
-					return callback();
-				});
-				return;
+				let { bytesWritten } = await this.fh.write(chunk + this.newline, null, this.encoding);
+				this.#bytesWritten += bytesWritten;
+				return callback();
 			} else {
 				return callback(new Error('Unexpected type!'));
 			}

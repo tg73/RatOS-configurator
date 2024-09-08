@@ -20,7 +20,7 @@ describe('gcode-processor', (async) => {
 				console.log(line);
 				return line;
 			}),
-			new BookmarkingWriter(fh.fd),
+			new BookmarkingWriter(fh),
 		);
 	});
 });
