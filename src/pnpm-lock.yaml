@@ -293,6 +293,9 @@ importers:
       refractor:
         specifier: 3.6.0
         version: 3.6.0
+      ring-buffer-ts:
+        specifier: ^1.2.0
+        version: 1.2.0
       rxjs:
         specifier: ^7.8.1
         version: 7.8.1
@@ -4580,6 +4583,9 @@ packages:
   rimraf@3.0.2:
     resolution: {integrity: sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==}
     hasBin: true
+
+  ring-buffer-ts@1.2.0:
+    resolution: {integrity: sha512-dkGqA7YHZgXp1dWwcNIsmt+4EgHK1RmY9sp7eqHLLfTkhYhQQ4agAwqgED7hJakELMaXkBgZ5568vqaI3/wV6Q==}
 
   rollup@4.9.2:
     resolution: {integrity: sha512-66RB8OtFKUTozmVEh3qyNfH+b+z2RXBVloqO2KCC/pjFaGaHtxP9fVfOQKPSGXg2mElmjmxjW/fZ7iKrEpMH5Q==}
@@ -9780,6 +9786,8 @@ snapshots:
   rimraf@3.0.2:
     dependencies:
       glob: 7.2.3
+
+  ring-buffer-ts@1.2.0: {}
 
   rollup@4.9.2:
     optionalDependencies:
