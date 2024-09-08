@@ -120,7 +120,7 @@ export class SlidingWindowLineProcessor extends Transform {
 
 		while (this.#position < limit) {
 			++this.#position;
-			let result = this.callback(this.#buf.get(this.#position)!, this.#getNearbyLine);
+			let result = this.callback(this.#buf.get(this.#position)!, (offset) => this.#getNearbyLine(offset));
 			if (result !== null) {
 				if (!this.push(result)) {
 					this.once('resume', () => {
@@ -163,7 +163,7 @@ export class SlidingWindowLineProcessor extends Transform {
 		}
 
 		this.#buf.add(chunk);
-		let result = this.callback(this.#buf.get(this.#position)!, this.#getNearbyLine);
+		let result = this.callback(this.#buf.get(this.#position)!, (offset) => this.#getNearbyLine(offset));
 
 		if (result !== null) {
 			if (!this.push(result)) {
@@ -210,7 +210,6 @@ export interface BookmarkingWriterFileHandle {
 
 export class BookmarkingWriter extends Writable {
 	constructor(
-		//private readonly fd: number, //BookmarkingWriterFileHandle,
 		private readonly fh: BookmarkingWriterFileHandle,
 		public readonly newline: string = '\n',
 		public readonly encoding: BufferEncoding = 'utf8',
@@ -265,9 +264,9 @@ export async function replaceBookmarkedGcodeLine(
 			`The line cannot be replaced in-place. The replacement requires ${buf.length + 1} bytes, but only ${bookmark.byteLength} bytes are available.`,
 		);
 	}
-	buf = Buffer.from(line.padEnd(buf.length - bookmark.byteLength - 1) + '\n');
+	buf = Buffer.from(line.padEnd(line.length + bookmark.byteLength - buf.length - 1) + '\n');
 	if (buf.length != bookmark.byteLength) {
 		throw new Error('Unexpected length mismatch!');
 	}
-	await fh.write(buf, bookmark.byteOffset);
+	await fh.write(buf, undefined, undefined, bookmark.byteOffset);
 }
