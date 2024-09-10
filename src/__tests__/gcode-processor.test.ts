@@ -1,54 +1,88 @@
 /* eslint-disable no-console */
-import { createReadStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { describe, expect, test, bench } from 'vitest';
+import { describe, test } from 'vitest';
 import split from 'split2';
-import { stdout } from 'process';
 import { pipeline } from 'node:stream/promises';
+var devnull = require('dev-null');
+
 import {
-	BookmarkedLine,
 	BookmarkingWriter,
 	SlidingWindowLineProcessor,
 	replaceBookmarkedGcodeLine,
+	BufferItemStringifier,
 } from '@/server/gcode-processor/StreamingLineProcessor';
+import { Writable } from 'node:stream';
+
+class MyDevNull extends Writable {
+	//constructor(opts?: WritableOptions);
+	public callcount: number = 0;
+
+	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+		++this.callcount;
+		callback();
+	}
+}
 
 describe('gcode-processor', (async) => {
-	test('foo99', async () => {
-		console.log('In foo99');
-		const name = path.join(__dirname, 'fixtures', 'v-core-200.json');
-		let fh = await fs.open('/home/tom/temp/test.out', 'w');
-		try {
-			let counter = 0;
-			let bm: BookmarkedLine | undefined;
-			await pipeline(
-				createReadStream(name),
-				split({ maxLength: 4096 }),
-				new SlidingWindowLineProcessor((line, getNearbyLine) => {
-					++counter;
-					if (counter == 2) {
-						console.log(line + ' <<< BOOKMARKING!');
-						bm = new BookmarkedLine(line);
-						return bm;
-					} else {
-						console.log(line);
-						return line;
-					}
-				}),
-				new BookmarkingWriter(fh),
-			);
-			if (bm) {
-				try {
-					console.log(`${bm.bookmark.value.byteLength} bytes at offset ${bm.bookmark.value.byteOffset}`);
-					await replaceBookmarkedGcodeLine(fh, bm.bookmark.value, 'hello!');
-				} catch (err) {
-					if (err instanceof Error) {
-						console.log(err.message);
-					}
-				}
-			}
-		} finally {
-			await fh.close();
-		}
+	test('test-pipeline-split-window-stringifier-writestream', { timeout: 5000 }, async () => {
+		// About 29mb large file.
+		const name = '/home/tom/temp/big_private_test.gcode';
+		let inThumbnail = false;
+		let dn = new MyDevNull({ objectMode: true });
+		let ws = createWriteStream(name + '.out');
+		let sif = new BufferItemStringifier();
+		// sif.on('pause', () => {
+		// 	//console.log('sif.pause, uncorking ws');
+		// 	ws.uncork();
+		// });
+		
+		// ws.on('drain', () => {			
+		// 	//console.log('ws.drain, NOT corking ws');
+		// 	ws.cork();
+		// });
+		
+		
+		ws.on('drain', () => console.log('ws.drain'));
+		ws.on('ready', () => console.log('ws.drain'));
+
+		
+		//sif.on('ready', () => console.log('sif.ready'));
+		sif.on('error', () => console.log('sif.error'));
+		//sif.on('finish', () => console.log('sif.finish'));
+		//sif.on('open', () => console.log('sif.open'));
+		//sif.on('pipe', () => console.log('sif.pipe'));
+		//sif.on('unpipe', () => console.log('sif.unpipe'));
+		//sif.on('drain', () => console.log('sif.drain'));
+		//sif.on('error', () => console.log('sif.error'));
+		//sif.on('readable', () => console.log('sif.readable'));
+		//sif.on('resume', () => console.log('sif.resume'));
+
+		// ws.cork();
+		await pipeline(
+			createReadStream(name),
+			split(),
+			
+			// new SlidingWindowLineProcessor((ctx) => {
+			// 	if (inThumbnail) {
+			// 		if (ctx.line?.startsWith('; thumbnail end')) {
+			// 			inThumbnail = false;
+			// 		}
+			// 	} else if (ctx.line?.startsWith('; thumbnail begin')) {
+			// 		inThumbnail = true;
+			// 	}
+
+			// 	if (inThumbnail) {
+			// 		ctx.line = null;
+			// 	}
+			// }),
+			
+			sif,
+			
+			ws, //new MyDevNull({objectMode:true}), //ws,
+		);
+		console.log(dn.callcount);
 	});
 });
+
