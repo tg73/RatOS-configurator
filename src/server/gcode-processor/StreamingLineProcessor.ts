@@ -492,16 +492,55 @@ export class BookmarkingWriter extends Writable implements BookmarkCollection {
 					let { bytesWritten } = await this.fh.write(chunk.line + this.newline, null, this.encoding);
 					this.#bytesWritten += bytesWritten;
 				}
-				if (this.#bytesWritten % 100000 < 50) {
-					// eslint-disable-next-line no-console
-					console.log(`${this.#bytesWritten}`);
-				}
+				// if (this.#bytesWritten % 100000 < 50) {
+				// 	console.log(`${this.#bytesWritten}`);
+				// }
 			} else if (chunk) {
 				return callback(new Error('Unexpected type!'));
 			}
 			return callback();
 		} catch (err) {
 			return callback(err instanceof Error ? err : new Error('Unknown error.'));
+		}
+	}
+
+	public getBookmark(key: BookmarkKey): Bookmark | undefined {
+		return this.#bookmarks.get(key);
+	}
+
+	public getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]> {
+		return this.#bookmarks.entries();
+	}
+}
+
+export class BookmarkingTransform extends BackPressureTransform implements BookmarkCollection {
+	constructor(
+		private readonly beforeClose?: (bookmarks: BookmarkCollection) => void,
+		public readonly newline: string = '\n',
+		public readonly encoding: BufferEncoding = 'utf8',
+	) {
+		super({ objectMode: true });
+		this.on('close', async () => {
+			beforeClose?.(this);
+		});
+	}
+
+	#bookmarks: Map<BookmarkKey, Bookmark> = new Map<BookmarkKey, Bookmark>();
+	#bytesWritten: number = 0;
+
+	protected *transformChunk(chunk: any, encoding: BufferEncoding): IterableIterator<any> {
+		if (chunk instanceof BufferItem && chunk.line) {
+			let buffer = Buffer.from(chunk.line + this.newline, this.encoding);				
+			if (chunk.bookmarkKey) {
+				this.#bookmarks.set(chunk.bookmarkKey, new Bookmark(chunk.line, this.#bytesWritten, buffer.byteLength));
+			}
+			this.#bytesWritten += buffer.byteLength;
+			yield buffer;
+			// if (this.#bytesWritten % 100000 < 50) {
+			// 	console.log(`${this.#bytesWritten}`);
+			// }
+		} else if (chunk) {
+			throw new Error('Unexpected type!');
 		}
 	}
 

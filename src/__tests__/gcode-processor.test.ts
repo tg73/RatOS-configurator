@@ -12,6 +12,7 @@ import {
 	SlidingWindowLineProcessor,
 	replaceBookmarkedGcodeLine,
 	BufferItemStringifier,
+	BookmarkingTransform,
 } from '@/server/gcode-processor/StreamingLineProcessor';
 import { Writable } from 'node:stream';
 
@@ -31,40 +32,14 @@ describe('gcode-processor', (async) => {
 		const name = '/home/tom/temp/big_private_test.gcode';
 		let inThumbnail = false;
 		let dn = new MyDevNull({ objectMode: true });
-		let ws = createWriteStream(name + '.out');
-		let sif = new BufferItemStringifier();
-		// sif.on('pause', () => {
-		// 	//console.log('sif.pause, uncorking ws');
-		// 	ws.uncork();
-		// });
-		
-		// ws.on('drain', () => {			
-		// 	//console.log('ws.drain, NOT corking ws');
-		// 	ws.cork();
-		// });
-		
-		
-		//ws.on('drain', () => console.log('ws.drain'));
-		//ws.on('ready', () => console.log('ws.drain'));
+		let fh = await fs.open(name + '.out', 'w');
 
-		
-		//sif.on('ready', () => console.log('sif.ready'));
-		//sif.on('error', () => console.log('sif.error'));
-		//sif.on('finish', () => console.log('sif.finish'));
-		//sif.on('open', () => console.log('sif.open'));
-		//sif.on('pipe', () => console.log('sif.pipe'));
-		//sif.on('unpipe', () => console.log('sif.unpipe'));
-		//sif.on('drain', () => console.log('sif.drain'));
-		//sif.on('error', () => console.log('sif.error'));
-		//sif.on('readable', () => console.log('sif.readable'));
-		//sif.on('resume', () => console.log('sif.resume'));
-
-		// ws.cork();
 		await pipeline(
 			createReadStream(name),
 			split(),
-			
+
 			new SlidingWindowLineProcessor((ctx) => {
+				// Demo: strip thumbnails
 				if (inThumbnail) {
 					if (ctx.line?.startsWith('; thumbnail end')) {
 						inThumbnail = false;
@@ -75,14 +50,27 @@ describe('gcode-processor', (async) => {
 
 				if (inThumbnail) {
 					ctx.line = null;
+				} else {
+					// Demo: Locate the START_PRINT line
+					if (ctx.line?.startsWith('START_PRINT ')) {
+						// Bookmark it, and pad with extra space for retrospective modification.
+						ctx.bookmarkKey = 'START_PRINT';
+						ctx.line = ctx.line.padEnd(256);
+
+						// And while we're here, modify the preceding line.
+						let lineBefore = ctx.getLine(-1);
+						lineBefore.line += ' <<< Modified while processing the START_PRINT line';
+					}
 				}
 			}),
-			
-			sif,
-			
-			ws, //new MyDevNull({objectMode:true}), //ws,
+
+			new BookmarkingTransform(async (bookmarks) => {
+				// Demo: retrospectively modify the START_PRINT line.
+				let bm = bookmarks.getBookmark('START_PRINT');
+				await replaceBookmarkedGcodeLine(fh, bm!, 'BlahBlahBlah! ' + bm?.originalLine.trim());
+			}),
+
+			createWriteStream('|notused|', { fd: fh.fd }),
 		);
-		console.log(dn.callcount);
 	});
 });
-
