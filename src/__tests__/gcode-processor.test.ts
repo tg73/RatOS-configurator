@@ -44,12 +44,12 @@ describe('gcode-processor', (async) => {
 		// });
 		
 		
-		ws.on('drain', () => console.log('ws.drain'));
-		ws.on('ready', () => console.log('ws.drain'));
+		//ws.on('drain', () => console.log('ws.drain'));
+		//ws.on('ready', () => console.log('ws.drain'));
 
 		
 		//sif.on('ready', () => console.log('sif.ready'));
-		sif.on('error', () => console.log('sif.error'));
+		//sif.on('error', () => console.log('sif.error'));
 		//sif.on('finish', () => console.log('sif.finish'));
 		//sif.on('open', () => console.log('sif.open'));
 		//sif.on('pipe', () => console.log('sif.pipe'));
@@ -64,19 +64,19 @@ describe('gcode-processor', (async) => {
 			createReadStream(name),
 			split(),
 			
-			// new SlidingWindowLineProcessor((ctx) => {
-			// 	if (inThumbnail) {
-			// 		if (ctx.line?.startsWith('; thumbnail end')) {
-			// 			inThumbnail = false;
-			// 		}
-			// 	} else if (ctx.line?.startsWith('; thumbnail begin')) {
-			// 		inThumbnail = true;
-			// 	}
+			new SlidingWindowLineProcessor((ctx) => {
+				if (inThumbnail) {
+					if (ctx.line?.startsWith('; thumbnail end')) {
+						inThumbnail = false;
+					}
+				} else if (ctx.line?.startsWith('; thumbnail begin')) {
+					inThumbnail = true;
+				}
 
-			// 	if (inThumbnail) {
-			// 		ctx.line = null;
-			// 	}
-			// }),
+				if (inThumbnail) {
+					ctx.line = null;
+				}
+			}),
 			
 			sif,
 			

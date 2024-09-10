@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /* eslint-disable prettier/prettier */
 /**
  * @file StreamingLineProcessor.ts
@@ -22,6 +21,105 @@
 import { ThumbsDown } from 'lucide-react';
 import { Transform, TransformCallback, TransformOptions, Writable } from 'node:stream';
 import { RingBuffer } from 'ring-buffer-ts';
+
+// Inspired by https://stackoverflow.com/a/43811543
+export abstract class BackPressureTransform extends Transform {
+	constructor(opts?: TransformOptions){
+		super(opts);
+	}
+	
+	protected abstract transformChunk(chunk: any, encoding: BufferEncoding): IterableIterator<any>;
+
+	#continueTransform: (() => void) | null = null;
+	#transforming = false;
+	#dbgTransformCallCount = 0;
+
+	_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+		if ( this.#continueTransform !== null){
+			//console.log(`${++this.#dbgTransformCallCount}: _transform !!! RE-ENTRANT !!!`);
+			return callback(new Error('re-entrant call to _transform'));
+		}
+
+		// if ( ++this.#dbgTransformCallCount % 100 == 0 || this.#dbgTransformCallCount > 600 ) {
+		// 	console.log(`${this.#dbgTransformCallCount}: _transform`);
+		// }
+		
+		this.#transforming = true;
+
+		let iter = this.transformChunk(chunk,encoding);
+		let current = iter.next();
+
+		if (current.done) {
+			// Nothing to push
+			callback();
+		} else{
+			this.#continueTransform = () => {
+				// if ( this.#dbgTransformCallCount > 600 )
+				// 	console.log(`${this.#dbgTransformCallCount}: running`);
+				try {				
+					while ( !current.done ) {
+						let next = iter.next();
+						// if ( this.#dbgTransformCallCount > 600 )
+						// 	console.log(`${this.#dbgTransformCallCount}: ${next.done?'push last':'push'}`);
+						if ( !this.push(current.value) && !next.done) {
+							// TODO: Why does the original check for two false returns?
+							// Also, the original while loop looks like it could overflow lines[] due to doing nextLine++ in one iteration...
+
+							current = next;
+							// if ( this.#dbgTransformCallCount > 600 )
+							// 	console.log(`${this.#dbgTransformCallCount}: suspending`);
+							return;
+						}
+						current = next;
+					}
+
+					// if ( this.#dbgTransformCallCount > 600 )
+					// 	console.log(`${this.#dbgTransformCallCount}: finished`);
+					this.#continueTransform = null;		
+					return callback();
+				} catch ( err ) {
+					if ( err instanceof Error ){
+						return callback(err);
+					} else {
+						return callback(new Error('Unknown error (see data)'), err);
+					}				
+				}
+			}
+
+			this.#continueTransform();
+		}
+		this.#transforming = false;
+
+		// if ( this.#dbgTransformCallCount == 638 && false ){
+		// 	this.on('data', () => console.log('               sif.pause'));
+		// 	this.on('pause', () => console.log('               sif.pause'));
+		// 	this.on('drain', () => console.log('               sif.drain'));
+		// 	this.on('readable', () => console.log('               sif.readable'));
+		// 	this.on('resume', () => console.log('               sif.resume'));
+		// 	this.on('drain', () => console.log('               sif.drain'));
+		// }
+	}
+
+	_read(size: number): void {
+		if ( this.#transforming) {
+			// if ( this.#dbgTransformCallCount > 0 )
+			// 	console.log(`${this.#dbgTransformCallCount} read, transforming=true`);
+		}
+		if (!this.#transforming && this.#continueTransform !== null) {
+			// if ( this.#dbgTransformCallCount > 600 )
+			// 	console.log(`${this.#dbgTransformCallCount} read, resuming`);
+			this.#continueTransform();
+		} else {
+			// if ( this.#dbgTransformCallCount > 600 )
+			// 	console.log(`${this.#dbgTransformCallCount} read, super`);
+			// if ( this.#dbgTransformCallCount == 657)
+			// {
+			// 	console.log("xx");
+			// }
+			super._read(size);
+		}
+	}
+}
 
 export class Bookmark {
 	constructor(
@@ -116,7 +214,7 @@ class BufferItem {
  * `ProcessLineCallback` can access by offset any other line in the current window and modify it. Lines are only
  * pushed to the output of the transform just prior to being removed from the ring buffer when a new item is added.
  */
-export class SlidingWindowLineProcessor extends Transform {
+export class SlidingWindowLineProcessor extends BackPressureTransform {
 	constructor(
 		private callback: ProcessLineCallback,
 		public readonly maxLinesAhead = 10,
@@ -159,7 +257,57 @@ export class SlidingWindowLineProcessor extends Transform {
 
 	#getLineContextClosure = (offset: number) => this.#getLineContext(offset);
 
-	_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+	protected *transformChunk(chunk: any, encoding: BufferEncoding): IterableIterator<any> {
+		if (typeof chunk !== 'string') {
+			throw new Error('chunk must be a string');
+		}
+
+		if (!this.#buf.isFull()) {
+			// Not fully primed yet.
+			this.#buf.add(new BufferItem(chunk));
+
+			if (!this.#buf.isFull()) {
+				return;
+			}
+		}
+
+		if (this.#position == -1) {
+			// Priming of the ring buffer has just completed. Process all lines up to position `maxLinesBehind`.
+			while (this.#position < this.maxLinesBehind) {
+				++this.#position;
+				this.callback(this.#getLineContext(0)!);
+			}
+			return;
+		}
+
+		if (this.#position != this.maxLinesBehind) {
+			throw new Error('Unexpected state!');
+		}
+
+		// TODO: push the item that will get displaced from the ring buffer, then displace it. This
+		// allows lines to be changed and bookmark keys set via offset up until the BufferItem must
+		// leave the window.
+
+		const itemToPush = this.#buf.get(0)!;
+		let pushResult = true;
+
+		if (itemToPush.line) {
+			//pushResult = this.push(itemToPush);
+			yield itemToPush;
+		}
+
+		this.#buf.add(new BufferItem(chunk));
+		this.callback(this.#getLineContext(0)!);
+
+		// if (pushResult) {
+		// 	return callback();
+		// } else {
+		// 	this.once('resume', () => callback());
+		// 	return;
+		// }		
+	}
+
+	xxx_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
 		if (typeof chunk !== 'string') {
 			callback(new Error('chunk must be a string'));
 		}
@@ -241,105 +389,6 @@ export class SlidingWindowLineProcessor extends Transform {
 	}
 }
 
-// Inspired by https://stackoverflow.com/a/43811543
-export abstract class BackPressureTransform extends Transform {
-	constructor(opts?: TransformOptions){
-		super(opts);
-	}
-	
-	protected abstract transformChunk(chunk: any, encoding: BufferEncoding): IterableIterator<any>;
-
-	#continueTransform: (() => void) | null = null;
-	#transforming = false;
-	#dbgTransformCallCount = 0;
-
-	_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-		if ( this.#continueTransform !== null){
-			console.log(`${++this.#dbgTransformCallCount}: _transform !!! RE-ENTRANT !!!`);
-			return callback(new Error('re-entrant call to _transform'));
-		}
-
-		if ( ++this.#dbgTransformCallCount % 100 == 0 || this.#dbgTransformCallCount > 600 ) {
-			console.log(`${this.#dbgTransformCallCount}: _transform`);
-		}
-		
-		this.#transforming = true;
-
-		let iter = this.transformChunk(chunk,encoding);
-		let current = iter.next();
-
-		if (current.done) {
-			// Nothing to push
-			callback();
-		} else{
-			this.#continueTransform = () => {
-				if ( this.#dbgTransformCallCount > 600 )
-					console.log(`${this.#dbgTransformCallCount}: running`);
-				try {				
-					while ( !current.done ) {
-						let next = iter.next();
-						if ( this.#dbgTransformCallCount > 600 )
-							console.log(`${this.#dbgTransformCallCount}: ${next.done?'push last':'push'}`);
-						if ( !this.push(current.value) && !next.done) {
-							// TODO: Why does the original check for two false returns?
-							// Also, the original while loop looks like it could overflow lines[] due to doing nextLine++ in one iteration...
-
-							current = next;
-							if ( this.#dbgTransformCallCount > 600 )
-								console.log(`${this.#dbgTransformCallCount}: suspending`);
-							return;
-						}
-						current = next;
-					}
-
-					if ( this.#dbgTransformCallCount > 600 )
-						console.log(`${this.#dbgTransformCallCount}: finished`);
-					this.#continueTransform = null;		
-					return callback();
-				} catch ( err ) {
-					if ( err instanceof Error ){
-						return callback(err);
-					} else {
-						return callback(new Error('Unknown error (see data)'), err);
-					}				
-				}
-			}
-
-			this.#continueTransform();
-		}
-		this.#transforming = false;
-
-		if ( this.#dbgTransformCallCount == 638 && false ){
-			this.on('data', () => console.log('               sif.pause'));
-			this.on('pause', () => console.log('               sif.pause'));
-			this.on('drain', () => console.log('               sif.drain'));
-			this.on('readable', () => console.log('               sif.readable'));
-			this.on('resume', () => console.log('               sif.resume'));
-			this.on('drain', () => console.log('               sif.drain'));
-		}
-	}
-
-	_read(size: number): void {
-		if ( this.#transforming) {
-			if ( this.#dbgTransformCallCount > 0 )
-				console.log(`${this.#dbgTransformCallCount} read, transforming=true`);
-		}
-		if (!this.#transforming && this.#continueTransform !== null) {
-			if ( this.#dbgTransformCallCount > 600 )
-				console.log(`${this.#dbgTransformCallCount} read, resuming`);
-			this.#continueTransform();
-		} else {
-			if ( this.#dbgTransformCallCount > 600 )
-				console.log(`${this.#dbgTransformCallCount} read, super`);
-			if ( this.#dbgTransformCallCount == 657)
-			{
-				console.log("xx");
-			}
-			super._read(size);
-		}
-	}
-}
-
 export class BufferItemStringifier extends BackPressureTransform {
 	constructor() {
 		super({ objectMode: true });
@@ -347,9 +396,9 @@ export class BufferItemStringifier extends BackPressureTransform {
 
     protected *transformChunk(chunk: any, encoding: BufferEncoding): IterableIterator<any> {
 		if (chunk instanceof BufferItem && chunk.line) {
-			yield chunk.line;
+			yield chunk.line + '\n';
 		} else if (typeof chunk === 'string') {
-			yield chunk;
+			yield chunk +'\n';
 		}
 	}
 	/*
