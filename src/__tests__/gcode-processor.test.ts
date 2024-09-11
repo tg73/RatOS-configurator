@@ -1,18 +1,13 @@
-/* eslint-disable no-console */
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { describe, test } from 'vitest';
 import split from 'split2';
 import { pipeline } from 'node:stream/promises';
-var devnull = require('dev-null');
-
 import {
 	SlidingWindowLineProcessor,
 	replaceBookmarkedGcodeLine,
-	BufferItemStringifier,
-	BookmarkingTransform,
-} from '@/server/gcode-processor/StreamingLineProcessor';
+} from '@/server/gcode-processor/SlidingWindowLineProcessor';
+import { BookmarkingBufferEncoder } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Writable } from 'node:stream';
 
 class MyDevNull extends Writable {
@@ -26,9 +21,11 @@ class MyDevNull extends Writable {
 }
 
 describe('gcode-processor', (async) => {
-	test('test-pipeline-split-window-stringifier-writestream', { timeout: 5000 }, async () => {
+	test('test-pipeline-split-window-stringifier-writestream', { timeout: 60000 }, async () => {
 		// About 29mb file.
-		const name = '/home/tom/temp/big_private_test.gcode';
+		//const name = '/home/tom/temp/big_private_test.gcode';
+		// 767mb file:
+		const name = '/home/tom/temp/massive.gcode';
 		let inThumbnail = false;
 		let fh = await fs.open(name + '.out', 'w');
 
@@ -62,14 +59,14 @@ describe('gcode-processor', (async) => {
 				}
 			}),
 
-			new BookmarkingTransform(async (bookmarks) => {
+			new BookmarkingBufferEncoder(async (bookmarks) => {
 				// This function is executed just before the transform is closed when the pipline is finishing.
 				// Demo: retrospectively modify the START_PRINT line.
 				let bm = bookmarks.getBookmark('sp');
 				await replaceBookmarkedGcodeLine(fh, bm, 'BlahBlahBlah! ' + bm?.originalLine.trim());
 			}),
 
-			createWriteStream('|notused|', { fd: fh.fd }),
+			createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024 }),
 		);
 	});
 });
