@@ -458,60 +458,61 @@ export interface BookmarkingWriterFileHandle {
 }
 
 export interface BookmarkCollection {
-	getBookmark(key: BookmarkKey): Bookmark | undefined;
+	getBookmark(key: BookmarkKey): Bookmark;
+	getBookmarkOrUndefined(key: BookmarkKey): Bookmark | undefined;
 	getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]>;
 }
 
-export class BookmarkingWriter extends Writable implements BookmarkCollection {
-	constructor(
-		private readonly fh: BookmarkingWriterFileHandle,
-		private readonly beforeClose?: (fh: BookmarkingWriterFileHandle, bookmarks: BookmarkCollection) => void,
-		public readonly newline: string = '\n',
-		public readonly encoding: BufferEncoding = 'utf8',
-	) {
-		super({ objectMode: true });
-		this.on('close', async () => {
-			beforeClose?.(fh, this);
-			await fh.close();
-		});
-	}
+// export class BookmarkingWriter extends Writable implements BookmarkCollection {
+// 	constructor(
+// 		private readonly fh: BookmarkingWriterFileHandle,
+// 		private readonly beforeClose?: (fh: BookmarkingWriterFileHandle, bookmarks: BookmarkCollection) => void,
+// 		public readonly newline: string = '\n',
+// 		public readonly encoding: BufferEncoding = 'utf8',
+// 	) {
+// 		super({ objectMode: true });
+// 		this.on('close', async () => {
+// 			beforeClose?.(fh, this);
+// 			await fh.close();
+// 		});
+// 	}
 
-	#bookmarks: Map<BookmarkKey, Bookmark> = new Map<BookmarkKey, Bookmark>();
-	#bytesWritten: number = 0;
+// 	#bookmarks: Map<BookmarkKey, Bookmark> = new Map<BookmarkKey, Bookmark>();
+// 	#bytesWritten: number = 0;
 
-	// async pattern in _write: https://github.com/nodejs/node/issues/31387
+// 	// async pattern in _write: https://github.com/nodejs/node/issues/31387
 
-	async _write(chunk: any, notused_encoding: BufferEncoding, callback: (error?: Error | null) => void) {
-		try {
-			if (chunk instanceof BufferItem && chunk.line) {
-				if (chunk.bookmarkKey) {
-					let { bytesWritten } = await this.fh.write(chunk.line + this.newline, null, this.encoding);
-					this.#bookmarks.set(chunk.bookmarkKey, new Bookmark(chunk.line, this.#bytesWritten, bytesWritten));
-					this.#bytesWritten += bytesWritten;
-				} else {
-					let { bytesWritten } = await this.fh.write(chunk.line + this.newline, null, this.encoding);
-					this.#bytesWritten += bytesWritten;
-				}
-				// if (this.#bytesWritten % 100000 < 50) {
-				// 	console.log(`${this.#bytesWritten}`);
-				// }
-			} else if (chunk) {
-				return callback(new Error('Unexpected type!'));
-			}
-			return callback();
-		} catch (err) {
-			return callback(err instanceof Error ? err : new Error('Unknown error.'));
-		}
-	}
+// 	async _write(chunk: any, notused_encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+// 		try {
+// 			if (chunk instanceof BufferItem && chunk.line) {
+// 				if (chunk.bookmarkKey) {
+// 					let { bytesWritten } = await this.fh.write(chunk.line + this.newline, null, this.encoding);
+// 					this.#bookmarks.set(chunk.bookmarkKey, new Bookmark(chunk.line, this.#bytesWritten, bytesWritten));
+// 					this.#bytesWritten += bytesWritten;
+// 				} else {
+// 					let { bytesWritten } = await this.fh.write(chunk.line + this.newline, null, this.encoding);
+// 					this.#bytesWritten += bytesWritten;
+// 				}
+// 				// if (this.#bytesWritten % 100000 < 50) {
+// 				// 	console.log(`${this.#bytesWritten}`);
+// 				// }
+// 			} else if (chunk) {
+// 				return callback(new Error('Unexpected type!'));
+// 			}
+// 			return callback();
+// 		} catch (err) {
+// 			return callback(err instanceof Error ? err : new Error('Unknown error.'));
+// 		}
+// 	}
 
-	public getBookmark(key: BookmarkKey): Bookmark | undefined {
-		return this.#bookmarks.get(key);
-	}
+// 	public getBookmark(key: BookmarkKey): Bookmark | undefined {
+// 		return this.#bookmarks.get(key);
+// 	}
 
-	public getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]> {
-		return this.#bookmarks.entries();
-	}
-}
+// 	public getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]> {
+// 		return this.#bookmarks.entries();
+// 	}	
+// }
 
 export class BookmarkingTransform extends BackPressureTransform implements BookmarkCollection {
 	constructor(
@@ -544,10 +545,18 @@ export class BookmarkingTransform extends BackPressureTransform implements Bookm
 		}
 	}
 
-	public getBookmark(key: BookmarkKey): Bookmark | undefined {
-		return this.#bookmarks.get(key);
+	public getBookmark(key: BookmarkKey): Bookmark {
+		let b = this.#bookmarks.get(key);
+		if (b) {
+			return b;
+		}
+		
+		throw new RangeError("The specified bookmark key was not found.");
 	}
 
+	getBookmarkOrUndefined(key: BookmarkKey): Bookmark | undefined {
+		return this.#bookmarks.get(key);
+	}
 	public getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]> {
 		return this.#bookmarks.entries();
 	}

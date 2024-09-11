@@ -8,7 +8,6 @@ import { pipeline } from 'node:stream/promises';
 var devnull = require('dev-null');
 
 import {
-	BookmarkingWriter,
 	SlidingWindowLineProcessor,
 	replaceBookmarkedGcodeLine,
 	BufferItemStringifier,
@@ -28,10 +27,9 @@ class MyDevNull extends Writable {
 
 describe('gcode-processor', (async) => {
 	test('test-pipeline-split-window-stringifier-writestream', { timeout: 5000 }, async () => {
-		// About 29mb large file.
+		// About 29mb file.
 		const name = '/home/tom/temp/big_private_test.gcode';
 		let inThumbnail = false;
-		let dn = new MyDevNull({ objectMode: true });
 		let fh = await fs.open(name + '.out', 'w');
 
 		await pipeline(
@@ -54,7 +52,7 @@ describe('gcode-processor', (async) => {
 					// Demo: Locate the START_PRINT line
 					if (ctx.line?.startsWith('START_PRINT ')) {
 						// Bookmark it, and pad with extra space for retrospective modification.
-						ctx.bookmarkKey = 'START_PRINT';
+						ctx.bookmarkKey = 'sp';
 						ctx.line = ctx.line.padEnd(256);
 
 						// And while we're here, modify the preceding line.
@@ -65,9 +63,10 @@ describe('gcode-processor', (async) => {
 			}),
 
 			new BookmarkingTransform(async (bookmarks) => {
+				// This function is executed just before the transform is closed when the pipline is finishing.
 				// Demo: retrospectively modify the START_PRINT line.
-				let bm = bookmarks.getBookmark('START_PRINT');
-				await replaceBookmarkedGcodeLine(fh, bm!, 'BlahBlahBlah! ' + bm?.originalLine.trim());
+				let bm = bookmarks.getBookmark('sp');
+				await replaceBookmarkedGcodeLine(fh, bm, 'BlahBlahBlah! ' + bm?.originalLine.trim());
 			}),
 
 			createWriteStream('|notused|', { fd: fh.fd }),
