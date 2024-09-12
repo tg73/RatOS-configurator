@@ -1,0 +1,47 @@
+Prefixes:
+	*|none: execute many times (*) or once then remove (no *)
+	~:only when enable_post_processing is true
+
+[n] - footnote
+
+get slicer info
+get start print line
+	~ [SS/OS] get extruder_temps (`_ON_LAYER_CHANGE LAYER=2`) [1]
+	~* [OS] translate `SET_VELOCITY_LIMIT` to `M204 S`
+	~* count `Tn` (tool change), also elide first `Tn`.
+	~* also look for `Tn`, build up used_tools array (in order of tool use).
+	`G0|G1` find start x/y position. [2]
+	~* `G0|G1` track min/max x position
+	~* `Tn` again "toolshift processing". [3]
+
+~ find `wipe_tower_acceleration` in serialized config at end of file
+
+~ add START_PRINT args based on all the preceding analysis.
+
+[1] bookmarks _ON_LAYER_CHANGE LAYER=2 line, and also does an extra regex on START_PRINT line to get EXTRUDER_OTHER_LAYER_TEMP
+
+[2] When enable_post_processing, coords are added to START_PRINT, else `self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=" + str(first_x))`
+
+[3] :
+
+tower_line is checked for 3 states: -1 : uninitialized, 0 : no purge tower detected, != 0 : purge tower detected.
+
+
+There are multiple subtasks of toolshift processing for a given line:
+1. First time around only, search back up to 20 lines for `; CP TOOLCHANGE START` and store the actual line number in tower_line. If not found, tower_line = 0, which means "there's no tower".
+2. If no tower, search back for z-hop before toolchange, set zhop (distance) and zhop_line.
+3. Search up to 20 forward for `Tn`, but afaik this will never loop as the first iteration will always match. Set toolchange_line to current line.
+4. Find retraction line
+5. Find move after toolchange, note x, y and line.
+6. If no tower, find zdrop after toolchange, note move_z (distance) and zdrop_line (line number).
+7. Find extrusion after move, note extrusion_line.
+
+zhop example orca 2col benchy search _ON_LAYER_CHANGE LAYER=183
+
+Then the toolshift mods:
+1. redact zhop_line if set. If OS, also [OS] redact the first G1 Z* line within 5 lines ahead.
+2. redact zdrop_line
+3. Add extra params to Tn line, depends on MMU or not.
+4. redact move after toolchange line
+5. redact retraction_line and extrusion_line if both were found.
+

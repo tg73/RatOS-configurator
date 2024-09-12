@@ -44,7 +44,7 @@
 			"type": "node-terminal",
 			"request": "launch",
 			"cwd": "${workspaceFolder}/src",
-			"command": "pnpm test -- gcode --silent=false"
+			"command": "pnpm test -- ast --silent=false"
 		},
 	]
 }

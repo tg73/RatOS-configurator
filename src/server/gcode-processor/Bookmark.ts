@@ -25,7 +25,7 @@ export class Bookmark {
 export type BookmarkKey = string | symbol;
 
 export class BookmarkableLine {
-	constructor(public line: string | null) {}
+	constructor(public line: string) {}
 
 	public bookmarkKey: BookmarkKey | undefined;
 }

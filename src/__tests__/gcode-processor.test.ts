@@ -23,9 +23,9 @@ class MyDevNull extends Writable {
 describe('gcode-processor', (async) => {
 	test('test-pipeline-split-window-stringifier-writestream', { timeout: 60000 }, async () => {
 		// About 29mb file.
-		//const name = '/home/tom/temp/big_private_test.gcode';
+		const name = '/home/tom/temp/big_private_test.gcode';
 		// 767mb file:
-		const name = '/home/tom/temp/massive.gcode';
+		//const name = '/home/tom/temp/massive.gcode';
 		let inThumbnail = false;
 		let fh = await fs.open(name + '.out', 'w');
 
@@ -36,18 +36,18 @@ describe('gcode-processor', (async) => {
 			new SlidingWindowLineProcessor((ctx) => {
 				// Demo: strip thumbnails
 				if (inThumbnail) {
-					if (ctx.line?.startsWith('; thumbnail end')) {
+					if (ctx.line.startsWith('; thumbnail end')) {
 						inThumbnail = false;
 					}
-				} else if (ctx.line?.startsWith('; thumbnail begin')) {
+				} else if (ctx.line.startsWith('; thumbnail begin')) {
 					inThumbnail = true;
 				}
 
 				if (inThumbnail) {
-					ctx.line = null;
+					ctx.emit = false;
 				} else {
 					// Demo: Locate the START_PRINT line
-					if (ctx.line?.startsWith('START_PRINT ')) {
+					if (ctx.line.startsWith('START_PRINT ')) {
 						// Bookmark it, and pad with extra space for retrospective modification.
 						ctx.bookmarkKey = 'sp';
 						ctx.line = ctx.line.padEnd(256);

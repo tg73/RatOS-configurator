@@ -44,7 +44,7 @@ export class BookmarkingBufferEncoder extends Transform implements BookmarkColle
 	#bytesWritten: number = 0;
 
 	_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-		if (chunk instanceof BookmarkableLine && chunk.line) {
+		if (chunk instanceof BookmarkableLine) {
 			let buffer = Buffer.from(chunk.line + this.newline, this.encoding);
 			if (chunk.bookmarkKey) {
 				this.#bookmarks.set(chunk.bookmarkKey, new Bookmark(chunk.line, this.#bytesWritten, buffer.byteLength));

@@ -20,21 +20,33 @@ import { Transform, TransformCallback, Writable } from 'node:stream';
 import { RingBuffer } from 'ring-buffer-ts';
 import { Bookmark, BookmarkableLine, BookmarkKey } from '@/server/gcode-processor/Bookmark';
 
+export class ProcessorLine extends BookmarkableLine {
+	emit: boolean = true;
+}
+
 export class ProcessLineContext {
-	constructor(item: BookmarkableLine, getLineContextOrUndefined: (offset: number) => ProcessLineContext | undefined) {
+	constructor(item: ProcessorLine, getLineContextOrUndefined: (offset: number) => ProcessLineContext | undefined) {
 		this.#item = item;
 		this.#getLineOrUndefined = getLineContextOrUndefined;
 	}
 
 	#getLineOrUndefined: (offset: number) => ProcessLineContext | undefined;
-	#item: BookmarkableLine;
+	#item: ProcessorLine;
 
-	public get line(): string | null {
+	public get line(): string {
 		return this.#item.line;
 	}
 
-	public set line(value: string | null) {
+	public set line(value: string) {
 		this.#item.line = value;
+	}
+
+	public get emit(): boolean {
+		return this.#item.emit;
+	}
+
+	public set emit(value: boolean) {
+		this.#item.emit = value;
 	}
 
 	public get bookmarkKey(): BookmarkKey | undefined {
@@ -89,7 +101,7 @@ export class SlidingWindowLineProcessor extends Transform {
 	) {
 		super({ objectMode: true });
 
-		this.#buf = new RingBuffer<BookmarkableLine>(maxLinesBehind + maxLinesAhead + 1);
+		this.#buf = new RingBuffer<ProcessorLine>(maxLinesBehind + maxLinesAhead + 1);
 	}
 
 	/**
@@ -100,7 +112,7 @@ export class SlidingWindowLineProcessor extends Transform {
 	 */
 	#position = -1;
 
-	#buf: RingBuffer<BookmarkableLine>;
+	#buf: RingBuffer<ProcessorLine>;
 
 	#getLineContext(offset: number): ProcessLineContext | undefined {
 		let p = this.#position + offset;
@@ -119,7 +131,7 @@ export class SlidingWindowLineProcessor extends Transform {
 
 		if (!this.#buf.isFull()) {
 			// Not fully primed yet.
-			this.#buf.add(new BookmarkableLine(chunk));
+			this.#buf.add(new ProcessorLine(chunk));
 
 			if (!this.#buf.isFull()) {
 				return callback();
@@ -141,10 +153,10 @@ export class SlidingWindowLineProcessor extends Transform {
 
 		const itemToPush = this.#buf.get(0)!;
 
-		this.#buf.add(new BookmarkableLine(chunk));
+		this.#buf.add(new ProcessorLine(chunk));
 		this.callback(this.#getLineContext(0)!);
 
-		if (itemToPush.line) {
+		if (itemToPush.emit) {
 			this.push(itemToPush);
 		}
 
@@ -164,7 +176,10 @@ export class SlidingWindowLineProcessor extends Transform {
 
 		// Push all items:
 		for (let index = 0; index < this.#buf.getBufferLength(); ++index) {
-			this.push(this.#buf.get(index));
+			const itemToPush = this.#buf.get(index)!;
+			if (itemToPush.emit) {
+				this.push(itemToPush);
+			}
 		}
 		callback();
 	}
