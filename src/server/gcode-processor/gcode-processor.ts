@@ -1,8 +1,10 @@
+import { exec } from 'child_process';
 import { ActionResult, executeActionSequence } from '@/server/gcode-processor/ActionSequence';
 import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Bookmark, BookmarkKey } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext } from '@/server/gcode-processor/SlidingWindowLineProcessor';
-import semver from 'semver';
+import semver, { SemVer } from 'semver';
+import { promisify } from 'node:util';
 
 // TODO: Review pad lengths.
 
@@ -84,6 +86,14 @@ enum GCodeFlavour {
 	RatOS = 1 << 3,
 
 	Any = 0xffff,
+}
+
+async function getCurrentCodeVersion(): Promise<SemVer> {
+	throw new Error('TODO: get correct version');
+	const v = (await promisify(exec)('git describe --tags --always', {
+		cwd: process.env.RATOS_CONFIGURATION_PATH,
+	}).then(({ stdout }) => stdout.trim())) as GitVersion;
+	return new SemVer(v);
 }
 
 class GCodeInfo {
@@ -450,28 +460,61 @@ const processToolchange: Action = (c, s) => {
 			}
 		}
 
-		// NOT PORTING z-hop before toolchange
-		// -
-		let zhop = 0;
-		let zhopLineOffset = 0;
+		// NOT PORTING z-hop before toolchange (line ~356)
+		//  1) it looks like PS and OS no longer zhop around a tool change.
+		//  2) SS does still zhop, but will not emit '; custom gcode: end_filament_gcode' by default
+		//     and the instructions don't say to set this, so current output from SS will not be
+		//     detected anyhow.
 
-		if (
-			!s.hasPurgeTower &&
-			(s.gcodeInfo.flavour & (GCodeFlavour.PrusaSlicer | GCodeFlavour.SuperSlicer | GCodeFlavour.OrcaSlicer)) > 0
-		) {
+		// NOT PORTING `# toolchange line` section (line ~379)
+		// - This looks for `Tn` from the current line up to 19 lines ahead, but will always match
+		//   on the current line because all this code is inside a line is inside an
+		//  `if current line is 'Tn'` check. So `toolchange_line` will always be equal to the current line.
+
+		// toolchange retraction
+		let retractionLine: ProcessLineContext | undefined = undefined;
+
+		if (!s.hasPurgeTower) {
 			switch (s.gcodeInfo.flavour) {
 				case GCodeFlavour.PrusaSlicer:
-				case GCodeFlavour.SuperSlicer: {
+				case GCodeFlavour.SuperSlicer:
 					for (let i = 1; i <= 20; ++i) {
-						let backI = c.getLine(-i);
-						if (backI.line.startsWith('; custom gcode: end_filament_gcode')) {
-							let backI1 = c.getLine(-i - 1);
-							let match = `^G1 `;
+						const offsetLine = c.getLine(i);
+						if (offsetLine.line.startsWith('G1 E-')) {
+							retractionLine = offsetLine;
+							break;
 						}
 					}
-				}
-
+					break;
 				case GCodeFlavour.OrcaSlicer:
+					for (let i = 1; i <= 20; ++i) {
+						const offsetLine = c.getLine(-i);
+						if (offsetLine.line.startsWith('G1 E-')) {
+							retractionLine = offsetLine;
+							break;
+						}
+					}
+					break;
+			}
+		}
+
+		// move after toolchange
+		let moveAfterToolchange: [x: string, y: string, line: ProcessLineContext] | undefined = undefined;
+		for (let i = 1; i <= 20; ++i) {
+			const offsetLine = c.getLine(i);
+			const match = rxParseCommonCommands.exec(offsetLine.line);
+			if (match) {
+				const x = match.groups?.X;
+				const y = match.groups?.Y;
+				if (x && y) {
+					if (match.groups?.E) {
+						throw new Error('Unexpected print move after toolchange.');
+					}
+					moveAfterToolchange = [x, y, offsetLine];
+					break;
+				} else if (x || y) {
+					throw new Error('Unexpected move after toolchange with missing X or Y.');
+				}
 			}
 		}
 	}
@@ -543,14 +586,15 @@ class RatOSGcodeProcessor {
 		// via State.kInspectionOnly: most processing code will behave the same regardless, but this
 		// flag can be used to skip some expensive mutation that won't end up being used anyhow.
 		///^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
-		if (this.#state.firstLine){
-			let now = new Date();
+		if (this.#state.firstLine) {
+			const currentCodeVersion = await getCurrentCodeVersion();
+			const now = new Date();
 			await replaceLine(
 				bookmarks.getBookmark(this.#state.firstLine.bookmark),
-				this.#state.firstLine.line + `\n; processed by RatOS ${} on ${now.toDateString()} at ${now.toTimeString()}`
-			)
+				this.#state.firstLine.line +
+					`\n; processed by RatOS ${currentCodeVersion.toString()} on ${now.toDateString()} at ${now.toTimeString()}`,
+			);
 		}
-		
 	}
 
 	/**
