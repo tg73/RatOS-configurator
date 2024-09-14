@@ -73,3 +73,57 @@ export class BookmarkingBufferEncoder extends Transform implements BookmarkColle
 		return this.#bookmarks.entries();
 	}
 }
+
+/**
+ * `BookmarkingWriterDestination` contains the methods of `FileHandle` required by `BookmarkingWriter` and
+ * `replaceBookmarkedGcodeLine`. This allows other implementations to be used, for example for testing without
+ * using disk writes.
+ */
+export interface WritableFileHandleLike {
+	write(
+		data: string,
+		position?: number | null,
+		encoding?: BufferEncoding | null,
+	): Promise<{
+		bytesWritten: number;
+		buffer: string;
+	}>;
+
+	write<TBuffer extends Uint8Array>(
+		buffer: TBuffer,
+		offset?: number | null,
+		length?: number | null,
+		position?: number | null,
+	): Promise<{
+		bytesWritten: number;
+		buffer: TBuffer;
+	}>;
+}
+
+/**
+ * Replaces a bookmarked line in a file. GCode-compatible padding is added as required to match the size of the line being
+ * replaced. The file must be UTF8 encoded.
+ * @param fh
+ * @param bookmark
+ * @param replacementLine
+ * @param encoding
+ */
+export async function replaceBookmarkedGcodeLine(
+	fh: WritableFileHandleLike,
+	bookmark: Bookmark,
+	replacementLine: string,
+): Promise<void> {
+	let line = replacementLine.trimEnd();
+	let buf = Buffer.from(line);
+	if (buf.length + 1 > bookmark.byteLength) {
+		// Too long, allowing for terminating \n.
+		throw new RangeError(
+			`The line cannot be replaced in-place. The replacement requires ${buf.length + 1} bytes, but only ${bookmark.byteLength} bytes are available.`,
+		);
+	}
+	buf = Buffer.from(line.padEnd(line.length + bookmark.byteLength - buf.length - 1) + '\n');
+	if (buf.length != bookmark.byteLength) {
+		throw new Error('Unexpected length mismatch!');
+	}
+	await fh.write(buf, undefined, undefined, bookmark.byteOffset);
+}

@@ -1,8 +1,8 @@
 import { ActionResult, executeActionSequence } from '@/server/gcode-processor/ActionSequence';
 import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEncoder';
-import { BookmarkKey } from '@/server/gcode-processor/Bookmark';
+import { Bookmark, BookmarkKey } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext } from '@/server/gcode-processor/SlidingWindowLineProcessor';
-import { number } from '@recoiljs/refine';
+import semver from 'semver';
 
 // TODO: Review pad lengths.
 
@@ -87,14 +87,68 @@ enum GCodeFlavour {
 }
 
 class GCodeInfo {
-	static parseHeader(header: string): GCodeInfo | Error {
-		throw new Error('to do');
+	/**
+	 * Parses header (top of file) comments.
+	 * @param header One or more newline-separated lines from the start of a gcode file. Normally, at least the first 2 lines should be provided.
+	 */
+	static tryParseHeader(header: string): GCodeInfo | null {
+		let match =
+			/^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
+				header,
+			);
+
+		if (match) {
+			let flavour = GCodeFlavour.Unknown;
+			let ratosDialectVersion: string | undefined = undefined;
+
+			switch (match.groups?.GENERATOR?.toLowerCase()) {
+				case 'prusaslicer':
+					flavour = GCodeFlavour.PrusaSlicer;
+					break;
+				case 'orcaslicer':
+					flavour = GCodeFlavour.OrcaSlicer;
+					break;
+				case 'superslicer':
+					flavour = GCodeFlavour.SuperSlicer;
+					break;
+				default:
+					if (match.groups?.RATOS_DIALECT_VERSION) {
+						flavour = GCodeFlavour.RatOS;
+						ratosDialectVersion = match.groups?.RATOS_DIALECT_VERSION;
+					}
+					break;
+			}
+
+			let processedByRatosMatch = /^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
+				header,
+			);
+
+			return new GCodeInfo(
+				match[0],
+				match.groups?.GENERATOR!,
+				match.groups?.VERSION!,
+				flavour,
+				new Date(match.groups?.DATE + ' ' + match.groups?.TIME),
+				ratosDialectVersion,
+				processedByRatosMatch?.groups?.VERSION,
+				processedByRatosMatch
+					? new Date(processedByRatosMatch.groups?.DATE + ' ' + processedByRatosMatch.groups?.TIME)
+					: undefined,
+			);
+		}
+
+		return null;
 	}
 
 	constructor(
+		public readonly originalText: string,
+		public readonly generator: string,
+		public readonly generatorVersion: string,
 		public readonly flavour: GCodeFlavour,
-		public readonly version: string,
-		public readonly timestamp: string,
+		public readonly generatorTimestamp: Date,
+		public readonly ratosDialectVersion?: string,
+		public readonly processedByRatOSVersion?: string,
+		public readonly processedByRatOSTimestamp?: Date,
 	) {}
 }
 
@@ -164,6 +218,7 @@ class State {
 	// Stream-scope fields:
 
 	public currentLineNumber: number = -1;
+	public firstLine?: BookmarkedLine;
 	public startPrintLine?: BookmarkedLine;
 	public onLayerChange2Bookmark?: symbol;
 	public extruderTemps?: string[];
@@ -221,17 +276,54 @@ type Action =
 // TODO: Compatibility check
 // TODO: Already processed check
 const getGcodeInfo: Action = (c, s) => {
-	let parsed = GCodeInfo.parseHeader(c.line);
+	let parsed = GCodeInfo.tryParseHeader(
+		c.line + '\n' + c.getLineOrUndefined(1)?.line + '\n' + c.getLineOrUndefined(2)?.line,
+	);
 
-	if (parsed instanceof Error) {
-		parsed = GCodeInfo.parseHeader(c.getLineOrUndefined(1)?.line ?? '');
-	}
-
-	if (parsed instanceof Error) {
-		throw new Error('Valid slicer identification not found');
+	if (!parsed) {
+		throw new Error('Valid supported slicer identification was not found.');
 	} else {
 		s.gcodeInfo = parsed;
+		switch (parsed.flavour) {
+			case GCodeFlavour.Unknown:
+				throw new Error(
+					`Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
+				);
+			case GCodeFlavour.PrusaSlicer:
+				if (semver.neq('2.8.0', parsed.generatorVersion)) {
+					throw new Error(
+						`Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+					);
+				}
+				break;
+			case GCodeFlavour.OrcaSlicer:
+				if (semver.neq('2.1.1', parsed.generatorVersion)) {
+					throw new Error(
+						`Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+					);
+				}
+				break;
+			case GCodeFlavour.SuperSlicer:
+				if (semver.neq('2.5.59.13', parsed.generatorVersion)) {
+					throw new Error(
+						`Only version 2.5.59.13 of SuperSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+					);
+				}
+				break;
+			case GCodeFlavour.RatOS:
+				if (semver.neq('0.1', parsed.generatorVersion)) {
+					throw new Error(
+						`Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported`,
+					);
+				}
+				break;
+			default:
+				throw new Error('Internal error: not expected 0x1'); // should never happen
+		}
 	}
+	c.line = c.line.padEnd(c.line.length + 100);
+	c.bookmarkKey = Symbol('first line');
+	s.firstLine = new BookmarkedLine(c.line, c.bookmarkKey);
 	return ActionResult.RemoveAndStop;
 };
 
@@ -358,7 +450,8 @@ const processToolchange: Action = (c, s) => {
 			}
 		}
 
-		// z-hop before toolchange
+		// NOT PORTING z-hop before toolchange
+		// -
 		let zhop = 0;
 		let zhopLineOffset = 0;
 
@@ -366,9 +459,19 @@ const processToolchange: Action = (c, s) => {
 			!s.hasPurgeTower &&
 			(s.gcodeInfo.flavour & (GCodeFlavour.PrusaSlicer | GCodeFlavour.SuperSlicer | GCodeFlavour.OrcaSlicer)) > 0
 		) {
-			for (let i = 1; i <= 20; ++i) {
-				let line = c.getLine(-i);
-				
+			switch (s.gcodeInfo.flavour) {
+				case GCodeFlavour.PrusaSlicer:
+				case GCodeFlavour.SuperSlicer: {
+					for (let i = 1; i <= 20; ++i) {
+						let backI = c.getLine(-i);
+						if (backI.line.startsWith('; custom gcode: end_filament_gcode')) {
+							let backI1 = c.getLine(-i - 1);
+							let match = `^G1 `;
+						}
+					}
+				}
+
+				case GCodeFlavour.OrcaSlicer:
 			}
 		}
 	}
@@ -431,11 +534,23 @@ class RatOSGcodeProcessor {
 	 * TODO
 	 * @param bookmarks
 	 */
-	processBookmarks(bookmarks: BookmarkCollection) {
+	async processBookmarks(
+		bookmarks: BookmarkCollection,
+		replaceLine: (bookmark: Bookmark, line: string) => Promise<void>,
+	) {
 		// TODO: apply boookmarks. If a file is only being inspected, BookmarkingBufferEncoder won't
 		// be in the pipeline, and it would be pointless to call this method. This is also expressed
 		// via State.kInspectionOnly: most processing code will behave the same regardless, but this
 		// flag can be used to skip some expensive mutation that won't end up being used anyhow.
+		///^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
+		if (this.#state.firstLine){
+			let now = new Date();
+			await replaceLine(
+				bookmarks.getBookmark(this.#state.firstLine.bookmark),
+				this.#state.firstLine.line + `\n; processed by RatOS ${} on ${now.toDateString()} at ${now.toTimeString()}`
+			)
+		}
+		
 	}
 
 	/**
