@@ -16,20 +16,31 @@
 
 import { Transform, TransformCallback } from 'node:stream';
 import { Bookmark, BookmarkKey, BookmarkableLine } from '@/server/gcode-processor/Bookmark';
+import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/GCodeProcessorError';
+
+export class BookmarkingBufferError extends GCodeProcessorError {}
 
 export interface BookmarkCollection {
+	/** Get the bookmark for the given key, or throw if not found. */
 	getBookmark(key: BookmarkKey): Bookmark;
+
+	/** Get the bookmark for the given key, or `undefined` if not found. */
 	getBookmarkOrUndefined(key: BookmarkKey): Bookmark | undefined;
+
+	/** Get the collection of bookmarks. */
 	getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]>;
 }
 
 /**
  * Consumes {@link BookmarkableLine} objects, encoding lines to {@link Buffer} to track actual
  * encoded byte length, tracks any requested bookmarks, and passes on the encoded
- * buffers. Intended to be piplined immediately after {@link SlidingWindowLineProcessor}.
+ * buffers. Intended to be pipelined immediately after {@link SlidingWindowLineProcessor}.
  */
 export class BookmarkingBufferEncoder extends Transform implements BookmarkCollection {
 	constructor(
+		/** A function to be invoked before the transform stream is closed. Typically used to
+		 * apply bookmarks.
+		 */
 		private readonly beforeClose?: (bookmarks: BookmarkCollection) => void,
 		public readonly newline: string = '\n',
 		public readonly encoding: BufferEncoding = 'utf8',
@@ -53,11 +64,15 @@ export class BookmarkingBufferEncoder extends Transform implements BookmarkColle
 			this.push(buffer);
 			callback();
 		} else if (chunk) {
-			callback(new Error('Unexpected type!'));
+			callback(
+				new BookmarkingBufferError(
+					'Received a chunk of an unexpected type. Chunks must be instanceof BookmarkableLine.',
+				),
+			);
 		}
 	}
 
-	public getBookmark(key: BookmarkKey): Bookmark {
+	getBookmark(key: BookmarkKey): Bookmark {
 		let b = this.#bookmarks.get(key);
 		if (b) {
 			return b;
@@ -69,7 +84,8 @@ export class BookmarkingBufferEncoder extends Transform implements BookmarkColle
 	getBookmarkOrUndefined(key: BookmarkKey): Bookmark | undefined {
 		return this.#bookmarks.get(key);
 	}
-	public getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]> {
+
+	getBookmarks(): IterableIterator<[BookmarkKey, Bookmark]> {
 		return this.#bookmarks.entries();
 	}
 }
@@ -123,7 +139,8 @@ export async function replaceBookmarkedGcodeLine(
 	}
 	buf = Buffer.from(line.padEnd(line.length + bookmark.byteLength - buf.length - 1) + '\n');
 	if (buf.length != bookmark.byteLength) {
-		throw new Error('Unexpected length mismatch!');
+		// Should never happen, sanity check.
+		throw new InternalError('Unexpected buffer length mismatch!');
 	}
 	await fh.write(buf, undefined, undefined, bookmark.byteOffset);
 }

@@ -1,6 +1,6 @@
 /**
- * @file helpers.ts
- * @description Common helper functions
+ * @file errors.ts
+ * @description Common error classes for the G-code processor.
  *
  * @author Tom Glastonbury <t@tg73.net>
  * @license MIT
@@ -14,14 +14,7 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { SemVer } from 'semver';
-import { promisify } from 'node:util';
-import { exec } from 'child_process';
+export class GCodeProcessorError extends Error {}
 
-/** Gets the RatOS-configurator git repo version. */
-export async function getConfiguratorVersion(): Promise<SemVer> {
-	const v = (await promisify(exec)('git describe --tags --always', {
-		cwd: process.env.RATOS_SCRIPT_DIR,
-	}).then(({ stdout }) => stdout.trim())) as GitVersion;
-	return new SemVer(v);
-}
+/** Indicates an error with the logic of the G-code processor, such as an unexpected state. */
+export class InternalError extends GCodeProcessorError {}

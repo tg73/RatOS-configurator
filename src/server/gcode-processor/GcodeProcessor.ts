@@ -1,8 +1,24 @@
+/**
+ * @file GCodeProcessor.ts
+ * @description The RatOS gcode post-processor.
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 import { ActionResult, executeActionSequence } from '@/server/gcode-processor/ActionSequence';
 import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext } from '@/server/gcode-processor/SlidingWindowLineProcessor';
-import { InternalError } from '@/server/gcode-processor/GCodeProcessorError';
+import { InternalError } from '@/server/gcode-processor/errors';
 import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { State } from '@/server/gcode-processor/State';
 import { Action } from '@/server/gcode-processor/Actions';
@@ -13,15 +29,14 @@ function isActionFunction(x: unknown): x is (c: ProcessLineContext, s: State) =>
 	return true;
 }
 
-export class RatOSGcodeProcessor {
+export class GcodeProcessor {
 	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean) {
 		this.#state = new State(printerHasIdex, printerHasRmmuHub, inspectionOnly);
 	}
 
 	#state: State;
-	/**
-	 * NB: The order of actions is significant.
-	 */
+
+	// NB: The order of actions is significant.
 	#actions: Action[] = [
 		act.getGcodeInfo,
 		act.getStartPrint, // NB: sequence won't execute past here until start line is found.

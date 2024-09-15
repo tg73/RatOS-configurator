@@ -1,8 +1,23 @@
+/**
+ * @file State.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { InternalError } from '@/server/gcode-processor/GCodeProcessorError';
+import { InternalError } from '@/server/gcode-processor/errors';
 import { BookmarkKey } from '@/server/gcode-processor/Bookmark';
 
-// Logically atomic.
 export class BookmarkedLine {
 	constructor(
 		public readonly line: string,
@@ -11,6 +26,7 @@ export class BookmarkedLine {
 }
 
 /**
+ * @description The state shared between actions in the action sequence for RatOS G-code post processing.
  * Property naming convention:
  *  'k' prefix: external configuration. Always readonly.
  *  '_' prefix: iteration-scope state that gets reset for each line
