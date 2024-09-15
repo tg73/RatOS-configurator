@@ -1,3 +1,20 @@
+/**
+ * @file ActionSequence.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** The result of executing an action in an action sequence. */
 export enum ActionResult {
 	/**
 	 * Continue processing subsequent actions in the sequence.
@@ -17,6 +34,7 @@ export enum ActionResult {
 	RemoveAndStop,
 }
 
+/** Execute an action sequence. */
 export function executeActionSequence<TAction>(actions: TAction[], invoke: (action: TAction) => ActionResult) {
 	let idx = 0;
 	while (idx < actions.length) {
@@ -36,6 +54,7 @@ export function executeActionSequence<TAction>(actions: TAction[], invoke: (acti
 	}
 }
 
+/** Execute an action sequence asynchronously. */
 export async function executeActionSequenceAsync<TAction>(
 	actions: TAction[],
 	invoke: (action: TAction) => Promise<ActionResult>,

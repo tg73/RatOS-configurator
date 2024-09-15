@@ -1,0 +1,83 @@
+import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
+
+export enum GCodeFlavour {
+	Unknown = 0,
+	PrusaSlicer = 1 << 0,
+	OrcaSlicer = 1 << 1,
+	SuperSlicer = 1 << 2,
+	RatOS = 1 << 3,
+
+	Any = 0xffff,
+}
+
+export class GCodeInfo {
+	/**
+	 * Parses header (top of file) comments.
+	 * @param header One or more newline-separated lines from the start of a gcode file. Normally, at least the first three lines should be provided.
+	 */
+	static tryParseHeader(header: string): GCodeInfo | null {
+		let match =
+			/^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
+				header,
+			);
+
+		if (match) {
+			let flavour = GCodeFlavour.Unknown;
+			let ratosDialectVersion: string | undefined = undefined;
+
+			switch (match.groups?.GENERATOR?.toLowerCase()) {
+				case 'prusaslicer':
+					flavour = GCodeFlavour.PrusaSlicer;
+					break;
+				case 'orcaslicer':
+					flavour = GCodeFlavour.OrcaSlicer;
+					break;
+				case 'superslicer':
+					flavour = GCodeFlavour.SuperSlicer;
+					break;
+				default:
+					if (match.groups?.RATOS_DIALECT_VERSION) {
+						flavour = GCodeFlavour.RatOS;
+						ratosDialectVersion = match.groups?.RATOS_DIALECT_VERSION;
+					}
+					break;
+			}
+
+			let processedByRatosMatch = /^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
+				header,
+			);
+
+			return new GCodeInfo(
+				match[0],
+				match.groups?.GENERATOR!,
+				match.groups?.VERSION!,
+				flavour,
+				new Date(match.groups?.DATE + ' ' + match.groups?.TIME),
+				ratosDialectVersion,
+				processedByRatosMatch?.groups?.VERSION,
+				processedByRatosMatch
+					? new Date(processedByRatosMatch.groups?.DATE + ' ' + processedByRatosMatch.groups?.TIME)
+					: undefined,
+			);
+		}
+
+		return null;
+	}
+
+	static async getProcessedByRatosHeader(): Promise<string> {
+		const currentCodeVersion = await getConfiguratorVersion();
+		const now = new Date();
+		return `; processed by RatOS ${currentCodeVersion.toString()} on ${now.toDateString()} at ${now.toTimeString()}`;
+	}
+
+	constructor(
+		public readonly originalText: string,
+		public readonly generator: string,
+		public readonly generatorVersion: string,
+		public readonly flavour: GCodeFlavour,
+		public readonly generatorTimestamp: Date,
+		public readonly ratosDialectVersion?: string,
+		public readonly processedByRatOSVersion?: string,
+		public readonly processedByRatOSTimestamp?: Date,
+	) {}
+}

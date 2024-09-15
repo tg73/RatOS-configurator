@@ -33,27 +33,36 @@ export class ProcessLineContext {
 	#getLineOrUndefined: (offset: number) => ProcessLineContext | undefined;
 	#item: ProcessorLine;
 
-	public get line(): string {
+	get line(): string {
 		return this.#item.line;
 	}
 
-	public set line(value: string) {
+	set line(value: string) {
 		this.#item.line = value;
 	}
 
-	public get emit(): boolean {
+	/** Prepend a prefix to the line. */
+	prepend(prefix?: string) {
+		if (prefix) {
+			this.#item.line = prefix + this.#item.line;
+		}
+	}
+
+	/** Should this line be emitted to output? */
+	get emit(): boolean {
 		return this.#item.emit;
 	}
 
-	public set emit(value: boolean) {
+	/** Should this line be emitted to output? */
+	set emit(value: boolean) {
 		this.#item.emit = value;
 	}
 
-	public get bookmarkKey(): BookmarkKey | undefined {
+	get bookmarkKey(): BookmarkKey | undefined {
 		return this.#item.bookmarkKey;
 	}
 
-	public set bookmarkKey(key: BookmarkKey) {
+	set bookmarkKey(key: BookmarkKey) {
 		if (this.#item.bookmarkKey === undefined) {
 			this.#item.bookmarkKey = key;
 		} else {
@@ -61,7 +70,7 @@ export class ProcessLineContext {
 		}
 	}
 
-	public getLine(offset: number): ProcessLineContext {
+	getLine(offset: number): ProcessLineContext {
 		if (offset == 0) {
 			return this;
 		}
@@ -72,11 +81,35 @@ export class ProcessLineContext {
 		throw new RangeError('The specified offset is outside the available window.');
 	}
 
-	public getLineOrUndefined(offset: number): ProcessLineContext | undefined {
+	getLineOrUndefined(offset: number): ProcessLineContext | undefined {
 		if (offset == 0) {
 			return this;
 		}
 		return this.#getLineOrUndefined(offset);
+	}
+
+	*scanForward(maxOffset?: number) {
+		let offset = 1;
+		while (!maxOffset || offset <= maxOffset) {
+			const offsetLine = this.#getLineOrUndefined(offset);
+			if (!offsetLine) {
+				return;
+			}
+			yield offsetLine;
+			++offset;
+		}
+	}
+
+	*scanBack(maxOffset?: number) {
+		let offset = 1;
+		while (!maxOffset || offset <= maxOffset) {
+			const offsetLine = this.#getLineOrUndefined(-offset);
+			if (!offsetLine) {
+				return;
+			}
+			yield offsetLine;
+			++offset;
+		}
 	}
 }
 

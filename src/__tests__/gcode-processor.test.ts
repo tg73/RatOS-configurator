@@ -3,11 +3,11 @@ import fs from 'node:fs/promises';
 import { describe, test } from 'vitest';
 import split from 'split2';
 import { pipeline } from 'node:stream/promises';
+import { SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import {
-	SlidingWindowLineProcessor,
+	BookmarkingBufferEncoder,
 	replaceBookmarkedGcodeLine,
-} from '@/server/gcode-processor/SlidingWindowLineProcessor';
-import { BookmarkingBufferEncoder } from '@/server/gcode-processor/BookmarkingBufferEncoder';
+} from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Writable } from 'node:stream';
 
 class MyDevNull extends Writable {

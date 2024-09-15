@@ -14,6 +14,7 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/** Identifies a byte range that is associated with a line of text. */
 export class Bookmark {
 	constructor(
 		public readonly originalLine: string,
@@ -22,8 +23,14 @@ export class Bookmark {
 	) {}
 }
 
+/** The key type for bookmarks. */
 export type BookmarkKey = string | symbol;
 
+/**
+ * Instances of {@link BookmarkableLine} are consumed by {@link BookmarkingBufferEncoder}. When
+ * {@link bookmarkKey} is defined, {@link BookmarkingBufferEncoder} will note the byte location
+ * of the written line in the output stream, allowing for later in-place replacement.
+ */
 export class BookmarkableLine {
 	constructor(public line: string) {}
 
