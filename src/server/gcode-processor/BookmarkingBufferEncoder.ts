@@ -16,7 +16,7 @@
 
 import { Transform, TransformCallback } from 'node:stream';
 import { Bookmark, BookmarkKey, BookmarkableLine } from '@/server/gcode-processor/Bookmark';
-import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/GCodeProcessorError';
+import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
 
 export class BookmarkingBufferError extends GCodeProcessorError {}
 

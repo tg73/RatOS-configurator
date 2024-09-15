@@ -18,7 +18,7 @@
 import { ActionResult } from '@/server/gcode-processor/ActionSequence';
 import { ProcessLineContext } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import semver from 'semver';
-import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/GCodeProcessorError';
+import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
 import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
 
