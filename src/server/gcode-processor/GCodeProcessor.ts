@@ -27,6 +27,7 @@ import * as act from '@/server/gcode-processor/Actions';
 import semver, { SemVer } from 'semver';
 
 // Reminder: this is a typeguard.
+/** Hmph. This does not always seem to work, currently unused. */
 function isActionFunction(x: unknown): x is (c: ProcessLineContext, s: State) => ActionResult | void {
 	return true;
 }
@@ -70,14 +71,15 @@ export class GCodeProcessor {
 		ctx: ProcessLineContext,
 		state: State,
 	): ActionResult | [result: ActionResult, replaceWith: Action] {
-		if (isActionFunction(action)) {
+		if (!Array.isArray(action)) {
 			// It's a plain action, no filter.
 			let result = action(ctx, state);
 			return result === undefined ? ActionResult.Continue : result;
 		} else {
 			if (state.gcodeInfoOrUndefined === undefined) {
-				// We can't do anything with a flavour-filtered action until the flavour is known.
-				return ActionResult.Continue;
+				// Allowing flavour-filtered actions to execute before the flavour is known is considered a
+				// design error. An preceding action should return ActionResult.Stop or throw.
+				throw new InternalError('Attemted to invoke flavour-filtered action before the flavour is known.');
 			} else {
 				const keep = this.satisfiesFilter(state.gcodeInfoOrUndefined, action[0]);
 				if (keep) {
