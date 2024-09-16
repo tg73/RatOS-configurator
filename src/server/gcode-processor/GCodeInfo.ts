@@ -69,7 +69,6 @@ export class GCodeInfo {
 			);
 
 			return new GCodeInfo(
-				match[0],
 				match.groups?.GENERATOR!,
 				match.groups?.VERSION!,
 				flavour,
@@ -88,11 +87,10 @@ export class GCodeInfo {
 	static async getProcessedByRatosHeader(): Promise<string> {
 		const currentCodeVersion = await getConfiguratorVersion();
 		const now = new Date();
-		return `; processed by RatOS ${currentCodeVersion.toString()} on ${now.toDateString()} at ${now.toTimeString()}`;
+		return `; processed by RatOS ${currentCodeVersion.toString()} on ${now.toISOString().replace('T', ' at ')}`;
 	}
 
 	constructor(
-		public readonly originalText: string,
 		public readonly generator: string,
 		public readonly generatorVersion: string,
 		public readonly flavour: GCodeFlavour,
