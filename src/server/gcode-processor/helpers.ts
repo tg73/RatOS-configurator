@@ -25,3 +25,8 @@ export async function getConfiguratorVersion(): Promise<SemVer> {
 	}).then(({ stdout }) => stdout.trim())) as GitVersion;
 	return new SemVer(v);
 }
+
+export function exactlyOneBitSet(integer: number) {
+	// https://graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2
+	return integer != 0 && (integer & (integer - 1)) == 0;
+}

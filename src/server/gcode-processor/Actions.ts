@@ -48,11 +48,20 @@ const rxParseCommonCommands =
 	/^(?:T(?<T>\d+))|(?:(?<G>G0|G1)(?=\s)(?=.*(\sX(?<X>[\d.]+))|)(?=.*(\sY(?<Y>[\d.]+))|)(?=.*(\sZ(?<Z>[\d.]+))|)(?=.*(\sE(?<E>[\d.]+))|)(?=.*(\sF(?<F>[\d.]+))|))/i;
 
 /**
+ * Either:
+ * * {@link GCodeFlavour} - one or more G-code flavours to which the aciton applies (or'd together), regardless of generator or dialect version.
+ * * `[flavour: `{@link GCodeFlavour}`, semVerRange: string]` - a (single) G-code flavour and the generator or dialect version range to which
+ *   the action applies. If `flavour` is {@link GCodeFlavour.RatOS}, then then {@link GCodeInfo.ratosDialectVersion} is compared, otherwise
+ *   {@link GCodeInfo.generatorVersion} is compared.
+ */
+export type ActionFilter = GCodeFlavour | [flavour: GCodeFlavour, semVerRange: string];
+
+/**
  * For the function return value `ActionResult | void`, `void` is equivalent to `ActionResult.Continue`.
  */
 export type Action =
 	| ((c: ProcessLineContext, s: State) => ActionResult | void)
-	| [relevantGcodeFlavours: GCodeFlavour, (c: ProcessLineContext, s: State) => ActionResult | void];
+	| [include: ActionFilter | ActionFilter[], (c: ProcessLineContext, s: State) => ActionResult | void];
 
 export class AlreadyProcessedError extends GCodeProcessorError {
 	constructor(public readonly gcodeInfo: GCodeInfo) {
@@ -81,6 +90,16 @@ export class GCodeError extends GCodeProcessorError {
 export function newGCodeError(message: string, ctx: ProcessLineContext, state: State) {
 	return new GCodeError(message, ctx.line, state.currentLineNumber);
 }
+
+export const test1: Action = [GCodeFlavour.OrcaSlicer, (c, s) => {}];
+export const test2: Action = [[GCodeFlavour.OrcaSlicer, '1.0.0'], (c, s) => {}];
+export const test3: Action = [
+	[
+		[GCodeFlavour.OrcaSlicer, '1.0.0'],
+		[GCodeFlavour.PrusaSlicer, '>2.8'],
+	],
+	(c, s) => {},
+];
 
 // TODO: Let's handle header parsing as an explicit action, and only construct the state object
 // once it's known. Also we can immediately remove any actions which express flavour relevance.

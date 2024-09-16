@@ -35,10 +35,21 @@ export enum ActionResult {
 }
 
 /** Execute an action sequence. */
-export function executeActionSequence<TAction>(actions: TAction[], invoke: (action: TAction) => ActionResult) {
+export function executeActionSequence<TAction>(
+	actions: TAction[],
+	invoke: (action: TAction) => ActionResult | [result: ActionResult, replaceWith: TAction],
+) {
 	let idx = 0;
 	while (idx < actions.length) {
-		switch (invoke(actions[idx])) {
+		const ret = invoke(actions[idx]);
+		let result: ActionResult;
+		if (Array.isArray(ret)) {
+			result = ret[0];
+			actions[idx] = ret[1];
+		} else {
+			result = ret;
+		}
+		switch (result) {
 			case ActionResult.Continue:
 				++idx;
 				break;
@@ -57,11 +68,19 @@ export function executeActionSequence<TAction>(actions: TAction[], invoke: (acti
 /** Execute an action sequence asynchronously. */
 export async function executeActionSequenceAsync<TAction>(
 	actions: TAction[],
-	invoke: (action: TAction) => Promise<ActionResult>,
+	invoke: (action: TAction) => Promise<ActionResult | [result: ActionResult, replaceWith: TAction]>,
 ): Promise<void> {
 	let idx = 0;
 	while (idx < actions.length) {
-		switch (await invoke(actions[idx])) {
+		const ret = await invoke(actions[idx]);
+		let result: ActionResult;
+		if (Array.isArray(ret)) {
+			result = ret[0];
+			actions[idx] = ret[1];
+		} else {
+			result = ret;
+		}
+		switch (result) {
 			case ActionResult.Continue:
 				++idx;
 				break;

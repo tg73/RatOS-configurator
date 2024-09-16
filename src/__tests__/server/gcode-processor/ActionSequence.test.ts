@@ -21,7 +21,8 @@ import {
 	executeActionSequenceAsync,
 } from '@/server/gcode-processor/ActionSequence';
 
-type TestAction = [id: string, result: ActionResult];
+type TestActionResult = ActionResult | [ActionResult, TestAction];
+type TestAction = [id: string, result: TestActionResult];
 
 describe('ActionSequence', async () => {
 	test('continue', () => {
@@ -32,7 +33,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = (act: [id: string, result: ActionResult]) => {
+		const invoke = (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
@@ -49,7 +50,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = (act: [id: string, result: ActionResult]) => {
+		const invoke = (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
@@ -66,7 +67,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = (act: [id: string, result: ActionResult]) => {
+		const invoke = (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
@@ -86,7 +87,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = (act: [id: string, result: ActionResult]) => {
+		const invoke = (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
@@ -96,6 +97,44 @@ describe('ActionSequence', async () => {
 			['A', ActionResult.Continue],
 			['C', ActionResult.Continue],
 		]);
+	});
+
+	test('replace and continue', () => {
+		let log: string[] = [];
+		const fixture: TestAction[] = [
+			['A', ActionResult.Continue],
+			['B', [ActionResult.Continue, ['X', ActionResult.Continue]]],
+			['C', ActionResult.Continue],
+		];
+		const actions = fixture.concat();
+		const invoke = (act: [id: string, result: TestActionResult]) => {
+			log.push(act[0]);
+			return act[1];
+		};
+		executeActionSequence(actions, invoke);
+		expect(log).toEqual(['A', 'B', 'C']);
+		expect(actions).toEqual([
+			['A', ActionResult.Continue],
+			['X', ActionResult.Continue],
+			['C', ActionResult.Continue],
+		]);
+	});
+
+	test('stop', () => {
+		let log: string[] = [];
+		const fixture: TestAction[] = [
+			['A', ActionResult.Continue],
+			['B', ActionResult.Stop],
+			['C', ActionResult.Continue],
+		];
+		const actions = fixture.concat();
+		const invoke = (act: [id: string, result: TestActionResult]) => {
+			log.push(act[0]);
+			return act[1];
+		};
+		executeActionSequence(actions, invoke);
+		expect(log).toEqual(['A', 'B']);
+		expect(actions).toEqual(fixture);
 	});
 
 	// -------------------------------------------
@@ -108,13 +147,34 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = async (act: [id: string, result: ActionResult]) => {
+		const invoke = async (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
 		await executeActionSequenceAsync(actions, invoke);
 		expect(log).toEqual(['A', 'B', 'C']);
 		expect(actions).toEqual(fixture);
+	});
+
+	test('replace and continue async', async () => {
+		let log: string[] = [];
+		const fixture: TestAction[] = [
+			['A', ActionResult.Continue],
+			['B', [ActionResult.Continue, ['X', ActionResult.Continue]]],
+			['C', ActionResult.Continue],
+		];
+		const actions = fixture.concat();
+		const invoke = async (act: [id: string, result: TestActionResult]) => {
+			log.push(act[0]);
+			return act[1];
+		};
+		await executeActionSequenceAsync(actions, invoke);
+		expect(log).toEqual(['A', 'B', 'C']);
+		expect(actions).toEqual([
+			['A', ActionResult.Continue],
+			['X', ActionResult.Continue],
+			['C', ActionResult.Continue],
+		]);
 	});
 
 	test('stop async', async () => {
@@ -125,7 +185,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = async (act: [id: string, result: ActionResult]) => {
+		const invoke = async (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
@@ -142,7 +202,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = async (act: [id: string, result: ActionResult]) => {
+		const invoke = async (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
@@ -162,7 +222,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.Continue],
 		];
 		const actions = fixture.concat();
-		const invoke = async (act: [id: string, result: ActionResult]) => {
+		const invoke = async (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};
@@ -184,7 +244,7 @@ describe('ActionSequence', async () => {
 			['C', ActionResult.RemoveAndContinue],
 		];
 		const actions = fixture.concat();
-		const invoke = (act: [id: string, result: ActionResult]) => {
+		const invoke = (act: [id: string, result: TestActionResult]) => {
 			log.push(act[0]);
 			return act[1];
 		};

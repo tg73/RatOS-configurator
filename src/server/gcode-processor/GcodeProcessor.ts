@@ -19,9 +19,10 @@ import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEn
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { InternalError } from '@/server/gcode-processor/errors';
-import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { State } from '@/server/gcode-processor/State';
-import { Action } from '@/server/gcode-processor/Actions';
+import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
+import { Action, ActionFilter } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
 
 // Reminder: this is a typeguard.
@@ -52,25 +53,60 @@ export class GcodeProcessor {
 		this.#state.resetIterationState();
 		++this.#state.currentLineNumber;
 
-		executeActionSequence(this.#actions, (action: Action) => {
-			if (isActionFunction(action)) {
-				let result = action(ctx, this.#state);
-				return result === undefined ? ActionResult.Continue : result;
+		executeActionSequence(this.#actions, (action: Action) => GcodeProcessor.invokeAction(action, ctx, this.#state));
+	}
+
+	// NB: Static for easier unit testing.
+	/**
+	 * Wraps action invocation with additional {@link GcodeProcessor}-specific convenience logic.
+	 *  * The action function can return `ActionResult | void`, where `void` is equivalent to
+	 *    {@link ActionResult.Continue}.
+	 *  * Some union alterates of the {@link Action} type allow common relevance filters to be
+	 *    expressed declaritively (currently by {@link GCodeFlavour}).
+	 * */
+	private static invokeAction(action: Action, ctx: ProcessLineContext, state: State): ActionResult {
+		if (isActionFunction(action)) {
+			// It's a plain action, no filter.
+			let result = action(ctx, state);
+			return result === undefined ? ActionResult.Continue : result;
+		} else {
+			if (state.gcodeInfoOrUndefined === undefined) {
+				// We can't do anything with a flavour-filtered action until the flavour is known.
+				return ActionResult.Continue;
 			} else {
-				if (this.#state.gcodeInfoOrUndefined === undefined) {
-					// We can't do anything with a flavour-filtered action until the flavour is known.
-					return ActionResult.Continue;
+				if (Array.isArray(action[0])) {
+					action[0].flat(Infinity);
+				}
+				if ((state.gcodeInfoOrUndefined.flavour & action[0]) > 0) {
+					let result = action[1](ctx, state);
+					return result === undefined ? ActionResult.Continue : result;
 				} else {
-					if ((this.#state.gcodeInfoOrUndefined.flavour & action[0]) > 0) {
-						let result = action[1](ctx, this.#state);
-						return result === undefined ? ActionResult.Continue : result;
-					} else {
-						// Flavour is not a match, remove.
-						return ActionResult.RemoveAndContinue;
-					}
+					// Flavour is not a match, remove.
+					return ActionResult.RemoveAndContinue;
 				}
 			}
-		});
+		}
+	}
+
+	private static stateSatisfiesFilter(state: State, include: ActionFilter | ActionFilter[]): boolean | undefined {
+		if (state.gcodeInfoOrUndefined === undefined) {
+			return undefined;
+		}
+
+		const flat = Array.isArray(include) ? include.flat(Infinity) : [include];
+
+		for (let i = 0; i < flat.length; ++i) {
+			const flavour = flat[i] as GCodeFlavour;
+			if (typeof flat[i + 1] === 'string') {
+				if (!exactlyOneBitSet(flavour)) {
+					throw new InternalError(
+						'An ActionFilter with semVerRange specified must specify exactly one GCodeFlavour to which the filter applies.',
+					);
+				}
+				const semVerRange = flat[i+1];
+				
+			}
+		}
 	}
 
 	/**
