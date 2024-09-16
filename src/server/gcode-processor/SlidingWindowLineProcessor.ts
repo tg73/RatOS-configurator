@@ -126,9 +126,8 @@ export type ProcessLineCallback = (context: ProcessLineContext) => void;
  * `ProcessLineCallback` can access by offset any other line in the current window and modify it. Lines are only
  * pushed to the output of the transform just prior to being removed from the ring buffer when a new item is added.
  */
-export class SlidingWindowLineProcessor extends Transform {
+export abstract class SlidingWindowLineProcessor extends Transform {
 	constructor(
-		private callback: ProcessLineCallback,
 		public readonly maxLinesAhead = 10,
 		public readonly maxLinesBehind = 10,
 	) {
@@ -136,6 +135,8 @@ export class SlidingWindowLineProcessor extends Transform {
 
 		this.#buf = new RingBuffer<ProcessorLine>(maxLinesBehind + maxLinesAhead + 1);
 	}
+
+	protected abstract _processLine(context: ProcessLineContext): void;
 
 	/**
 	 * The current position within `#buf`. When the window is primed and streaming
@@ -175,7 +176,7 @@ export class SlidingWindowLineProcessor extends Transform {
 			// Priming of the ring buffer has just completed. Process all lines up to position `maxLinesBehind`.
 			while (this.#position < this.maxLinesBehind) {
 				++this.#position;
-				this.callback(this.#getLineContext(0)!);
+				this._processLine(this.#getLineContext(0)!);
 			}
 			return callback();
 		}
@@ -187,7 +188,7 @@ export class SlidingWindowLineProcessor extends Transform {
 		const itemToPush = this.#buf.get(0)!;
 
 		this.#buf.add(new ProcessorLine(chunk));
-		this.callback(this.#getLineContext(0)!);
+		this._processLine(this.#getLineContext(0)!);
 
 		if (itemToPush.emit) {
 			this.push(itemToPush);
@@ -204,7 +205,7 @@ export class SlidingWindowLineProcessor extends Transform {
 		// Process all unprocessed items:
 		while (this.#position < this.#buf.getBufferLength() - 1) {
 			++this.#position;
-			this.callback(this.#getLineContext(0)!);
+			this._processLine(this.#getLineContext(0)!);
 		}
 
 		// Push all items:

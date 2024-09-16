@@ -17,7 +17,7 @@
 import { ActionResult, executeActionSequence } from '@/server/gcode-processor/ActionSequence';
 import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
-import { ProcessLineContext } from '@/server/gcode-processor/SlidingWindowLineProcessor';
+import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { InternalError } from '@/server/gcode-processor/errors';
 import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { State } from '@/server/gcode-processor/State';
@@ -32,8 +32,9 @@ function isActionFunction(x: unknown): x is (c: ProcessLineContext, s: State) =>
 	return true;
 }
 
-export class GCodeProcessor {
+export class GCodeProcessor extends SlidingWindowLineProcessor {
 	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean) {
+		super(20, 20);
 		this.#state = new State(printerHasIdex, printerHasRmmuHub, inspectionOnly);
 	}
 
@@ -51,7 +52,7 @@ export class GCodeProcessor {
 		act.processToolchange,
 	];
 
-	processLine(ctx: ProcessLineContext) {
+	_processLine(ctx: ProcessLineContext) {
 		this.#state.resetIterationState();
 		++this.#state.currentLineNumber;
 
