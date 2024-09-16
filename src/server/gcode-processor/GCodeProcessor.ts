@@ -24,13 +24,14 @@ import { State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
+import semver, { SemVer } from 'semver';
 
 // Reminder: this is a typeguard.
 function isActionFunction(x: unknown): x is (c: ProcessLineContext, s: State) => ActionResult | void {
 	return true;
 }
 
-export class GcodeProcessor {
+export class GCodeProcessor {
 	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean) {
 		this.#state = new State(printerHasIdex, printerHasRmmuHub, inspectionOnly);
 	}
@@ -53,18 +54,22 @@ export class GcodeProcessor {
 		this.#state.resetIterationState();
 		++this.#state.currentLineNumber;
 
-		executeActionSequence(this.#actions, (action: Action) => GcodeProcessor.invokeAction(action, ctx, this.#state));
+		executeActionSequence(this.#actions, (action: Action) => GCodeProcessor.invokeAction(action, ctx, this.#state));
 	}
 
 	// NB: Static for easier unit testing.
 	/**
-	 * Wraps action invocation with additional {@link GcodeProcessor}-specific convenience logic.
+	 * Wraps action invocation with additional {@link GCodeProcessor}-specific convenience logic.
 	 *  * The action function can return `ActionResult | void`, where `void` is equivalent to
 	 *    {@link ActionResult.Continue}.
 	 *  * Some union alterates of the {@link Action} type allow common relevance filters to be
 	 *    expressed declaritively (currently by {@link GCodeFlavour}).
 	 * */
-	private static invokeAction(action: Action, ctx: ProcessLineContext, state: State): ActionResult {
+	private static invokeAction(
+		action: Action,
+		ctx: ProcessLineContext,
+		state: State,
+	): ActionResult | [result: ActionResult, replaceWith: Action] {
 		if (isActionFunction(action)) {
 			// It's a plain action, no filter.
 			let result = action(ctx, state);
@@ -74,39 +79,58 @@ export class GcodeProcessor {
 				// We can't do anything with a flavour-filtered action until the flavour is known.
 				return ActionResult.Continue;
 			} else {
-				if (Array.isArray(action[0])) {
-					action[0].flat(Infinity);
-				}
-				if ((state.gcodeInfoOrUndefined.flavour & action[0]) > 0) {
-					let result = action[1](ctx, state);
-					return result === undefined ? ActionResult.Continue : result;
+				const keep = this.satisfiesFilter(state.gcodeInfoOrUndefined, action[0]);
+				if (keep) {
+					const result = action[1](ctx, state);
+					// We don't need to evaluate the ActionFilter(s) again (because gcodeInfo never changes),
+					// so replace the current filtered tuple form of Action with the the simple function form.
+					return [result === undefined ? ActionResult.Continue : result, action[1]];
 				} else {
-					// Flavour is not a match, remove.
+					// Filter is not a match, remove the action.
 					return ActionResult.RemoveAndContinue;
 				}
 			}
 		}
 	}
 
-	private static stateSatisfiesFilter(state: State, include: ActionFilter | ActionFilter[]): boolean | undefined {
-		if (state.gcodeInfoOrUndefined === undefined) {
-			return undefined;
-		}
-
+	private static satisfiesFilter(gcodeInfo: GCodeInfo, include: ActionFilter | ActionFilter[]): boolean {
+		// eslint-disable-next-line no-console
 		const flat = Array.isArray(include) ? include.flat(Infinity) : [include];
 
-		for (let i = 0; i < flat.length; ++i) {
+		// Evaluation is 'or' - any criteria matching is success.
+		let i = 0;
+		while (i < flat.length) {
 			const flavour = flat[i] as GCodeFlavour;
-			if (typeof flat[i + 1] === 'string') {
-				if (!exactlyOneBitSet(flavour)) {
-					throw new InternalError(
-						'An ActionFilter with semVerRange specified must specify exactly one GCodeFlavour to which the filter applies.',
-					);
-				}
-				const semVerRange = flat[i+1];
-				
+			if (flavour == GCodeFlavour.Unknown) {
+				throw new InternalError('GCodeFlavour.Unknown must not be used in action filters.');
 			}
+
+			if ((flavour & gcodeInfo.flavour) > 0) {
+				const semVerRange = flat[i + 1];
+
+				if (typeof semVerRange === 'string') {
+					if (!exactlyOneBitSet(flavour)) {
+						throw new InternalError(
+							'An ActionFilter with semVerRange specified must specify exactly one GCodeFlavour to which the filter applies.',
+						);
+					}
+					if (
+						semver.satisfies(
+							flavour == GCodeFlavour.RatOS ? gcodeInfo.ratosDialectVersion! : gcodeInfo.generatorVersion!,
+							semVerRange,
+						)
+					) {
+						return true;
+					}
+					++i;
+				} else {
+					// Simple flavour-only filter has matched.
+					return true;
+				}
+			}
+			++i;
 		}
+		return false;
 	}
 
 	/**

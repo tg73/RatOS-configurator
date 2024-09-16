@@ -18,3 +18,29 @@ export class GCodeProcessorError extends Error {}
 
 /** Indicates an error with the logic of the G-code processor, such as an unexpected state. */
 export class InternalError extends GCodeProcessorError {}
+
+declare class GCodeInfo {}
+
+export class AlreadyProcessedError extends GCodeProcessorError {
+	constructor(public readonly gcodeInfo: GCodeInfo) {
+		super('The file has already been processed by RatOS.');
+	}
+}
+
+export class SlicerIdentificationNotFound extends GCodeProcessorError {
+	constructor(message?: string) {
+		super(message ?? 'Valid slicer identification was not found.');
+	}
+}
+
+export class SlicerNotSupported extends GCodeProcessorError {}
+
+export class GCodeError extends GCodeProcessorError {
+	constructor(
+		message: string,
+		public readonly line?: string,
+		public readonly lineNumber?: number,
+	) {
+		super(message);
+	}
+}

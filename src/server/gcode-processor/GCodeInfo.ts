@@ -15,6 +15,8 @@
  */
 
 import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
+import semver, { SemVer } from 'semver';
+import { GCodeError } from '@/server/gcode-processor/errors';
 
 /** A known flavour of G-code. */
 export enum GCodeFlavour {
@@ -70,11 +72,14 @@ export class GCodeInfo {
 
 			return new GCodeInfo(
 				match.groups?.GENERATOR!,
-				match.groups?.VERSION!,
+				GCodeInfo.coerceSemVerOrThrow(match.groups?.VERSION!, 'The generator version is not a valid SemVer.')!,
 				flavour,
 				new Date(match.groups?.DATE + ' ' + match.groups?.TIME),
-				ratosDialectVersion,
-				processedByRatosMatch?.groups?.VERSION,
+				GCodeInfo.coerceSemVerOrThrow(ratosDialectVersion, 'The RatOS dialect version is not a valid SemVer.'),
+				GCodeInfo.coerceSemVerOrThrow(
+					processedByRatosMatch?.groups?.VERSION,
+					'The processed by RatOS version is not a valid SemVer.',
+				),
 				processedByRatosMatch
 					? new Date(processedByRatosMatch.groups?.DATE + ' ' + processedByRatosMatch.groups?.TIME)
 					: undefined,
@@ -82,6 +87,17 @@ export class GCodeInfo {
 		}
 
 		return null;
+	}
+
+	static coerceSemVerOrThrow(version: string | undefined, message: string): SemVer | undefined {
+		if (version === undefined) {
+			return undefined;
+		}
+		const sv = semver.coerce(version);
+		if (sv === null) {
+			throw new GCodeError(message);
+		}
+		return sv;
 	}
 
 	static async getProcessedByRatosHeader(): Promise<string> {
@@ -92,11 +108,11 @@ export class GCodeInfo {
 
 	constructor(
 		public readonly generator: string,
-		public readonly generatorVersion: string,
+		public readonly generatorVersion: SemVer,
 		public readonly flavour: GCodeFlavour,
 		public readonly generatorTimestamp: Date,
-		public readonly ratosDialectVersion?: string,
-		public readonly processedByRatOSVersion?: string,
+		public readonly ratosDialectVersion?: SemVer,
+		public readonly processedByRatOSVersion?: SemVer,
 		public readonly processedByRatOSTimestamp?: Date,
 	) {}
 }

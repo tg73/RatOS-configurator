@@ -14,8 +14,9 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { describe, test, expect, should } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import semver from 'semver';
 
 describe('GCodeInfo', async () => {
 	test('PrusaSlicer 2.8.0', () => {
@@ -26,7 +27,7 @@ describe('GCodeInfo', async () => {
 		expect(parsed!.flavour).toEqual(GCodeFlavour.PrusaSlicer);
 		expect(parsed!.generator).toEqual('PrusaSlicer');
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-06 08:32:07 UTC'));
-		expect(parsed!.generatorVersion).toEqual('2.8.0+win64');
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.8.0+win64'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
@@ -40,7 +41,7 @@ describe('GCodeInfo', async () => {
 		expect(parsed!.flavour).toEqual(GCodeFlavour.SuperSlicer);
 		expect(parsed!.generator).toEqual('SuperSlicer');
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-14 09:35:09 UTC'));
-		expect(parsed!.generatorVersion).toEqual('2.5.59.13');
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.59.13'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
@@ -58,7 +59,7 @@ describe('GCodeInfo', async () => {
 		expect(parsed!.flavour).toEqual(GCodeFlavour.OrcaSlicer);
 		expect(parsed!.generator).toEqual('OrcaSlicer');
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-12 14:57:24'));
-		expect(parsed!.generatorVersion).toEqual('2.1.1');
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.1.1'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
@@ -72,8 +73,8 @@ describe('GCodeInfo', async () => {
 		expect(parsed!.flavour).toEqual(GCodeFlavour.RatOS);
 		expect(parsed!.generator).toEqual('CustomGenerator');
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2025-01-01 08:32:07 UTC'));
-		expect(parsed!.generatorVersion).toEqual('0.1-alpha');
-		expect(parsed!.ratosDialectVersion).toEqual('0.1');
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('0.1-alpha'));
+		expect(parsed!.ratosDialectVersion).toEqual(semver.coerce('0.1'));
 		expect(parsed!.processedByRatOSVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
 	});
@@ -86,7 +87,7 @@ describe('GCodeInfo', async () => {
 		expect(parsed!.flavour).toEqual(GCodeFlavour.Unknown);
 		expect(parsed!.generator).toEqual('CustomGenerator');
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2025-01-01 08:32:07 UTC'));
-		expect(parsed!.generatorVersion).toEqual('0.1-alpha');
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('0.1-alpha'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
@@ -102,9 +103,9 @@ describe('GCodeInfo', async () => {
 		expect(parsed!.flavour).toEqual(GCodeFlavour.PrusaSlicer);
 		expect(parsed!.generator).toEqual('PrusaSlicer');
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-06 08:32:07 UTC'));
-		expect(parsed!.generatorVersion).toEqual('2.8.0+win64');
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.8.0+win64'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toEqual('2.0.2-518-g4ffef464');
+		expect(parsed!.processedByRatOSVersion).toEqual(semver.coerce('2.0.2-518-g4ffef464'));
 		expect(parsed!.processedByRatOSTimestamp).toEqual(new Date('2025-01-01 08:30:00Z'));
 	});
 

@@ -18,7 +18,13 @@
 import { ActionResult } from '@/server/gcode-processor/ActionSequence';
 import { ProcessLineContext } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import semver from 'semver';
-import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
+import {
+	InternalError,
+	GCodeError,
+	SlicerIdentificationNotFound,
+	AlreadyProcessedError,
+	SlicerNotSupported,
+} from '@/server/gcode-processor/errors';
 import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
 
@@ -58,34 +64,13 @@ export type ActionFilter = GCodeFlavour | [flavour: GCodeFlavour, semVerRange: s
 
 /**
  * For the function return value `ActionResult | void`, `void` is equivalent to `ActionResult.Continue`.
+ * The array form of the `include: ActionFilter | ActionFilter[]` parameter expresses a list of inclusion
+ * criteria which are or'd together: if any filter is a match, the action is included; if no filters match,
+ * the action is not included.
  */
 export type Action =
 	| ((c: ProcessLineContext, s: State) => ActionResult | void)
 	| [include: ActionFilter | ActionFilter[], (c: ProcessLineContext, s: State) => ActionResult | void];
-
-export class AlreadyProcessedError extends GCodeProcessorError {
-	constructor(public readonly gcodeInfo: GCodeInfo) {
-		super('The file has already been processed by RatOS.');
-	}
-}
-
-export class SlicerIdentificationNotFound extends GCodeProcessorError {
-	constructor(message?: string) {
-		super(message ?? 'Valid slicer identification was not found.');
-	}
-}
-
-export class SlicerNotSupported extends GCodeProcessorError {}
-
-export class GCodeError extends GCodeProcessorError {
-	constructor(
-		message: string,
-		public readonly line?: string,
-		public readonly lineNumber?: number,
-	) {
-		super(message);
-	}
-}
 
 export function newGCodeError(message: string, ctx: ProcessLineContext, state: State) {
 	return new GCodeError(message, ctx.line, state.currentLineNumber);
