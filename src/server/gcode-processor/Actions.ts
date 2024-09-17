@@ -193,7 +193,7 @@ export const fixOtherLayerTemperature: Action = [
 				for (let scan of c.scanForward(9)) {
 					if (scan.line.startsWith('M104 S')) {
 						s.extruderTempLines ??= [];
-						scan.line.padEnd(scan.line.length + REMOVED_BY_RATOS.length);
+						scan.line = scan.line.padEnd(scan.line.length + REMOVED_BY_RATOS.length);
 						scan.bookmarkKey = Symbol(`extruder temp @ ${scan.offset}`);
 						s.extruderTempLines.push(new BookmarkedLine(scan.line, scan.bookmarkKey));
 					}

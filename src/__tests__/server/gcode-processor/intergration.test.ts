@@ -26,18 +26,66 @@ import fs, { FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import split from 'split2';
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, chai } from 'vitest';
 
+chai.use(require('chai-string'));
+
+async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modernPath: string) {
+	let fhLegacy: FileHandle | undefined = undefined;
+	let fhModern: FileHandle | undefined = undefined;
+	try {
+		console.log(`Comparing legacy file ${legacyPath} to modern file ${modernPath}`);
+
+		fhLegacy = await fs.open(legacyPath);
+		fhModern = await fs.open(modernPath);
+
+		const iterLegacy = fhLegacy.readLines()[Symbol.asyncIterator]();
+		const iterModern = fhModern.readLines()[Symbol.asyncIterator]();
+
+		let legacy = await iterLegacy.next();
+		let modern = await iterModern.next();
+
+		expect(modern).toEqual(legacy);
+
+		// Skip '; processed by...' line in modern
+		modern = await iterModern.next();
+		expect(modern.value).to.startWith('; processed by RatOS');
+
+		let lineNumber = 2;
+
+		while (true) {
+			legacy = await iterLegacy.next();
+			modern = await iterModern.next();
+
+			++lineNumber;
+
+			if (modern.done) {
+				expect(legacy.value).to.startWith('; processed by RatOS');
+				break;
+			}
+
+			expect(legacy.done).toBeFalsy();
+			expect(modern.value.trimEnd()).to.equal(legacy.value.trimEnd(), `at line ${lineNumber}`);
+		}
+
+		console.log(`${lineNumber} lines compared ok.`);
+	} finally {
+		fhLegacy?.close();
+		fhModern?.close();
+	}
+}
+
+// path.format({ ...path.parse('/path/to/file.txt'), base: '', ext: '.md' })
 describe('legacy equivalence', { timeout: 1000000 }, async () => {
 	test('transform fixtures', async () => {
 		await Promise.all(
 			(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))
-				.slice(0, 1)
+				//.slice(0, 1)
 				.map(async (fixtureFile) => {
 					const outputDir = path.join(__dirname, 'fixtures', 'output');
 					fs.mkdir(outputDir, { recursive: true });
 					const outputPath = path.join(outputDir, fixtureFile);
-					console.log(`tranforming ${fixtureFile} to ${outputPath}`);
+					console.log(`transforming ${fixtureFile} to ${outputPath}`);
 					let fh: FileHandle | undefined = undefined;
 					try {
 						fh = await fs.open(outputPath, 'w');
@@ -56,6 +104,11 @@ describe('legacy equivalence', { timeout: 1000000 }, async () => {
 					} finally {
 						await fh?.close();
 					}
+
+					await legacyAndModernGcodeFilesAreEquivalent(
+						path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile),
+						outputPath,
+					);
 				}),
 		);
 	});
