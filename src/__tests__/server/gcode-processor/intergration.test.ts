@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * @file integration.test.ts
  * @description
@@ -13,3 +14,42 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
+import {
+	BookmarkingBufferEncoder,
+	replaceBookmarkedGcodeLine,
+} from '@/server/gcode-processor/BookmarkingBufferEncoder';
+import { GCodeProcessor } from '@/server/gcode-processor/GCodeProcessor';
+import { glob } from 'glob';
+import { createReadStream, createWriteStream } from 'node:fs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
+import split from 'split2';
+import { describe, test, expect } from 'vitest';
+
+describe('legacy equivalence', async () => {
+	test('transform fixtures', async () => {
+		(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') })).map(async (fixtureFile) => {
+			const outputDir = path.join(__dirname, 'fixtures', 'output');
+			fs.mkdir(outputDir);
+			const outputPath = path.join(outputDir, fixtureFile);
+			console.log(`tranforming ${fixtureFile} to ${outputPath}`);
+			let fh = await fs.open(outputPath, 'w');
+			const gcodeProcessor = new GCodeProcessor(true, false, false);
+			const encoder = new BookmarkingBufferEncoder((bmCol) =>
+				gcodeProcessor.processBookmarks(bmCol, (bm, line) => {
+					return replaceBookmarkedGcodeLine(fh, bm, line);
+				}),
+			);
+
+			await pipeline(
+				createReadStream(path.join(__dirname, 'fixtures', fixtureFile)),
+				split(),
+				gcodeProcessor,
+				encoder,
+				createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024 }),
+			);
+		});
+	});
+});
