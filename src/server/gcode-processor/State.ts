@@ -43,7 +43,8 @@ export class State {
 	public currentLineNumber: number = -1;
 	public firstLine?: BookmarkedLine;
 	public startPrintLine?: BookmarkedLine;
-	public onLayerChange2Bookmark?: symbol;
+	public onLayerChange2Line?: BookmarkedLine;
+	public extruderTempLines?: BookmarkedLine[];
 	public extruderTemps?: string[];
 	public toolChangeCount = 0;
 	public firstMoveX?: string;

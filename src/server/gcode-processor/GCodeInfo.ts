@@ -18,6 +18,9 @@ import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
 import semver, { SemVer } from 'semver';
 import { GCodeError } from '@/server/gcode-processor/errors';
 import date2 from 'date-and-time';
+import fs from 'fs/promises';
+const fsReader = require('fs-reader');
+import util from 'node:util';
 
 /** A known flavour of G-code. */
 export enum GCodeFlavour {
@@ -33,13 +36,31 @@ export enum GCodeFlavour {
 	Any = 0xffff,
 }
 
+const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
+
 /** Characteristics of a G-code file, typically determined from the header lines of the file. */
 export class GCodeInfo {
+	static readonly LEGACY_RATOS_VERSION = new SemVer('1.0.0-legacy');
 	/**
-	 * Parses header (top of file) comments.
+	 * Parses header information from the specified file. This method will also detect files already processed by the legacy Python-based post processor.
+	 * */
+	static async fromFile(path: string): Promise<GCodeInfo | null> {
+		const tail = await fsReaderGetLines(path, -3);
+		const isAlreadyLegacyProcessed = /^; processed by RatOS($|\s)/im.test(tail);
+
+		const header = await fsReaderGetLines(path, 3);
+		return GCodeInfo.#tryParseHeader(header, isAlreadyLegacyProcessed);
+	}
+
+	/**
+	 * Parses header (top of file) comments. This method will not detect files already processed by the legacy Python-based post processor.
 	 * @param header One or more newline-separated lines from the start of a gcode file. Normally, at least the first three lines should be provided.
 	 */
 	static tryParseHeader(header: string): GCodeInfo | null {
+		return GCodeInfo.#tryParseHeader(header);
+	}
+
+	static #tryParseHeader(header: string, isAlreadyLegacyProcessed: boolean = false): GCodeInfo | null {
 		let match =
 			/^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
 				header,
@@ -67,30 +88,40 @@ export class GCodeInfo {
 					break;
 			}
 
-			let processedByRatosMatch = /^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
-				header,
-			);
+			let processedByRatOSVersion: SemVer | undefined = undefined;
+			let processedByRatOSTimestamp: Date | undefined = undefined;
 
+			if (isAlreadyLegacyProcessed) {
+				processedByRatOSVersion = GCodeInfo.LEGACY_RATOS_VERSION;
+			} else {
+				let processedByRatosMatch =
+					/^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(header);
+
+				if (processedByRatosMatch) {
+					processedByRatOSVersion = GCodeInfo.#coerceSemVerOrThrow(
+						processedByRatosMatch?.groups?.VERSION,
+						'The processed by RatOS version is not a valid SemVer.',
+					);
+					processedByRatOSTimestamp = new Date(
+						processedByRatosMatch.groups?.DATE + ' ' + processedByRatosMatch.groups?.TIME,
+					);
+				}
+			}
 			return new GCodeInfo(
 				match.groups?.GENERATOR!,
-				GCodeInfo.coerceSemVerOrThrow(match.groups?.VERSION!, 'The generator version is not a valid SemVer.')!,
+				GCodeInfo.#coerceSemVerOrThrow(match.groups?.VERSION!, 'The generator version is not a valid SemVer.')!,
 				flavour,
 				new Date(match.groups?.DATE + ' ' + match.groups?.TIME),
-				GCodeInfo.coerceSemVerOrThrow(ratosDialectVersion, 'The RatOS dialect version is not a valid SemVer.'),
-				GCodeInfo.coerceSemVerOrThrow(
-					processedByRatosMatch?.groups?.VERSION,
-					'The processed by RatOS version is not a valid SemVer.',
-				),
-				processedByRatosMatch
-					? new Date(processedByRatosMatch.groups?.DATE + ' ' + processedByRatosMatch.groups?.TIME)
-					: undefined,
+				GCodeInfo.#coerceSemVerOrThrow(ratosDialectVersion, 'The RatOS dialect version is not a valid SemVer.'),
+				processedByRatOSVersion,
+				processedByRatOSTimestamp,
 			);
 		}
 
 		return null;
 	}
 
-	static coerceSemVerOrThrow(version: string | undefined, message: string): SemVer | undefined {
+	static #coerceSemVerOrThrow(version: string | undefined, message: string): SemVer | undefined {
 		if (version === undefined) {
 			return undefined;
 		}

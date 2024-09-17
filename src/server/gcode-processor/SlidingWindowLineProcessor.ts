@@ -39,6 +39,10 @@ export class ProcessLineContext {
 	#item: ProcessorLine;
 	#offset: number;
 
+	get offset(): number {
+		return this.#offset;
+	}
+
 	get line(): string {
 		return this.#item.line;
 	}

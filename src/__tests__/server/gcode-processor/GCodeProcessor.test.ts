@@ -30,7 +30,7 @@ type TestAction = [id: string, result: TestActionResult];
 describe('invokeAction', async () => {
 	const state = new State(false, false, false);
 	state.gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
-	const ctx = new ProcessLineContext(new ProcessorLine('; test'), (n) => undefined);
+	const ctx = new ProcessLineContext(new ProcessorLine('; test'), (n) => undefined, 0);
 	const stateWithoutGCodeInfo = new State(false, false, false);
 
 	test.each([

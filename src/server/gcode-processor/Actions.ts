@@ -39,8 +39,8 @@ SET_PRESSURE_ADVANCE ADVANCE=0.03; Override pressure advance value
 
 */
 
-const CHANGED_BY_RATOS = ' ; Changed by RatOS post processor: ';
-const REMOVED_BY_RATOS = '; Removed by RatOS post processor: ';
+export const CHANGED_BY_RATOS = ' ; Changed by RatOS post processor: ';
+export const REMOVED_BY_RATOS = '; Removed by RatOS post processor: ';
 
 /**
  * Matches `G0|G1|Tn` followed by args like `X1.2` for X, Y, Z, E and F in any order, each being optional.
@@ -184,10 +184,21 @@ export const getStartPrint: Action = (c, s) => {
 export const fixOtherLayerTemperature: Action = [
 	GCodeFlavour.OrcaSlicer | GCodeFlavour.SuperSlicer,
 	(c, s) => {
-		if (!s.onLayerChange2Bookmark) {
-			if (/^_ON_LAYER_CHANGE LAYER=2[$/s;]/.test(c.line)) {
-				c.line = c.line.padEnd(c.line.length + 100);
-				s.onLayerChange2Bookmark = c.bookmarkKey = Symbol('on_layer_change 2');
+		if (!s.onLayerChange2Line) {
+			if (/^_ON_LAYER_CHANGE LAYER=2($|[\s;])/i.test(c.line)) {
+				c.line = c.line.padEnd(c.line.length + 250);
+				c.bookmarkKey = Symbol('on_layer_change 2');
+				s.onLayerChange2Line = new BookmarkedLine(c.line, c.bookmarkKey);
+
+				for (let scan of c.scanForward(9)) {
+					if (scan.line.startsWith('M104 S')) {
+						s.extruderTempLines ??= [];
+						scan.line.padEnd(scan.line.length + REMOVED_BY_RATOS.length);
+						scan.bookmarkKey = Symbol(`extruder temp @ ${scan.offset}`);
+						s.extruderTempLines.push(new BookmarkedLine(scan.line, scan.bookmarkKey));
+					}
+				}
+
 				return ActionResult.RemoveAndStop;
 			}
 		}

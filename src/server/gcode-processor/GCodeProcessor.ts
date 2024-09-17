@@ -22,9 +22,9 @@ import { InternalError } from '@/server/gcode-processor/errors';
 import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
-import { Action, ActionFilter } from '@/server/gcode-processor/Actions';
+import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
-import semver, { SemVer } from 'semver';
+import semver from 'semver';
 
 /**
  * Force all output other than 'processed by ratos' headers to match the legacy python implementation
@@ -44,13 +44,13 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	#actions: Action[] = [
 		act.getGcodeInfo,
 		act.getStartPrint, // NB: sequence won't execute past here until start line is found.
-		act.fixOtherLayerTemperature,
-		act.fixOrcaSetAccelaration,
 		act.parseCommonCommands,
 		act.findFirstMoveXY,
 		act.findMinMaxX,
 		act.processToolchange,
 		act.stopIfCommonCommand, // NB: sequence won't execute past here if the current line matches a common command (Tn/G0/G1).
+		act.fixOtherLayerTemperature,
+		act.fixOrcaSetAccelaration,
 		act.captureConfigSection,
 	];
 
@@ -104,7 +104,6 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	}
 
 	private static satisfiesFilter(gcodeInfo: GCodeInfo, include: ActionFilter | ActionFilter[]): boolean {
-		// eslint-disable-next-line no-console
 		const flat = Array.isArray(include) ? include.flat(Infinity) : [include];
 
 		// Evaluation is 'or' - any criteria matching is success.
@@ -188,8 +187,28 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 					toAdd += ` WIPE_ACCEL=0`;
 				}
 			}
+
 			if (toAdd) {
 				await replaceLine(bookmarks.getBookmark(s.startPrintLine.bookmark), s.startPrintLine.line.trimEnd() + toAdd);
+			}
+
+			toAdd = '';
+
+			if (s.usedTools.length > 0 && s.extruderTemps && s.onLayerChange2Line) {
+				for (let tool of s.usedTools) {
+					toAdd += `\nM104 S${s.extruderTemps[Number(tool)]} T${tool}`;
+				}
+
+				await replaceLine(
+					bookmarks.getBookmark(s.onLayerChange2Line.bookmark),
+					s.onLayerChange2Line.line.trimEnd() + toAdd,
+				);
+
+				if (s.extruderTempLines) {
+					for (let bmLine of s.extruderTempLines) {
+						await replaceLine(bookmarks.getBookmark(bmLine.bookmark), REMOVED_BY_RATOS + bmLine.line.trimEnd());
+					}
+				}
 			}
 		}
 	}
