@@ -41,14 +41,10 @@ export class BookmarkingBufferEncoder extends Transform implements BookmarkColle
 		/** A function to be invoked before the transform stream is closed. Typically used to
 		 * apply bookmarks.
 		 */
-		private readonly beforeClose?: (bookmarks: BookmarkCollection) => void,
 		public readonly newline: string = '\n',
 		public readonly encoding: BufferEncoding = 'utf8',
 	) {
 		super({ objectMode: true });
-		this.on('close', async () => {
-			beforeClose?.(this);
-		});
 	}
 
 	#bookmarks: Map<BookmarkKey, Bookmark> = new Map<BookmarkKey, Bookmark>();

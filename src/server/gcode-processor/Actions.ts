@@ -69,22 +69,25 @@ export type ActionFilter = GCodeFlavour | [flavour: GCodeFlavour, semVerRange: s
  * the action is not included.
  */
 export type Action =
-	| ((c: ProcessLineContext, s: State) => ActionResult | void)
-	| [include: ActionFilter | ActionFilter[], (c: ProcessLineContext, s: State) => ActionResult | void];
+	| ((c: ProcessLineContext, s: State) => ActionResult | [result: ActionResult, replaceWith: Action] | void)
+	| [
+			include: ActionFilter | ActionFilter[],
+			(c: ProcessLineContext, s: State) => ActionResult | [result: ActionResult, replaceWith: Action] | void,
+	  ];
 
 export function newGCodeError(message: string, ctx: ProcessLineContext, state: State) {
 	return new GCodeError(message, ctx.line, state.currentLineNumber);
 }
 
-export const test1: Action = [GCodeFlavour.OrcaSlicer, (c, s) => {}];
-export const test2: Action = [[GCodeFlavour.OrcaSlicer, '1.0.0'], (c, s) => {}];
-export const test3: Action = [
-	[
-		[GCodeFlavour.OrcaSlicer, '1.0.0'],
-		[GCodeFlavour.PrusaSlicer, '>2.8'],
-	],
-	(c, s) => {},
-];
+// export const test1: Action = [GCodeFlavour.OrcaSlicer, (c, s) => {}];
+// export const test2: Action = [[GCodeFlavour.OrcaSlicer, '1.0.0'], (c, s) => {}];
+// export const test3: Action = [
+// 	[
+// 		[GCodeFlavour.OrcaSlicer, '1.0.0'],
+// 		[GCodeFlavour.PrusaSlicer, '>2.8'],
+// 	],
+// 	(c, s) => {},
+// ];
 
 // TODO: Let's handle header parsing as an explicit action, and only construct the state object
 // once it's known. Also we can immediately remove any actions which express flavour relevance.
@@ -124,9 +127,9 @@ export const getGcodeInfo: Action = (c, s) => {
 				}
 				break;
 			case GCodeFlavour.SuperSlicer:
-				if (semver.neq('2.5.59.13', parsed.generatorVersion)) {
+				if (semver.neq('2.5.59', parsed.generatorVersion)) {
 					throw new SlicerNotSupported(
-						`Only version 2.5.59.13 of SuperSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+						`Only version 2.5.59 of SuperSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
 						{ cause: parsed },
 					);
 				}
@@ -156,13 +159,13 @@ export const getStartPrint: Action = (c, s) => {
 		);
 	if (match) {
 		// Fix colour variable format and pad for later modification
-		c.line = c.line.replace('#', '').padEnd(c.line.length + 100);
+		c.line = c.line.replace('#', '').padEnd(c.line.length + 250);
 		c.bookmarkKey = Symbol('START_PRINT');
 		s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
 
 		let initialTool = match.groups?.INITIAL_TOOL;
 		if (initialTool) {
-			s.usedTools.push(Number(initialTool));
+			s.usedTools.push(initialTool);
 		}
 
 		let extruderOtherLayerTemp = match?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
@@ -212,7 +215,7 @@ export const findFirstMoveXY: Action = (c, s) => {
 		s.firstMoveX ??= s._cmd?.groups?.X;
 		s.firstMoveY ??= s._cmd?.groups?.Y;
 
-		if (!!s.firstMoveX && !!s.firstMoveY) {
+		if (s.firstMoveX && s.firstMoveY) {
 			// We don't need to do this check any more. G0/G1 are extremely frequent, so avoid any excess work.
 			return ActionResult.RemoveAndContinue;
 		}
@@ -230,7 +233,8 @@ export const findMinMaxX: Action = (c, s) => {
 			let n = Number(x);
 			if (n < s.minX) {
 				s.minX = n;
-			} else if (n > s.maxX) {
+			}
+			if (n > s.maxX) {
 				s.maxX = n;
 			}
 		}
@@ -243,6 +247,10 @@ export const processToolchange: Action = (c, s) => {
 		if (++s.toolChangeCount == 1) {
 			c.prepend(REMOVED_BY_RATOS); // Remove first toolchange
 			return;
+		}
+
+		if (!s.usedTools.includes(tool)) {
+			s.usedTools.push(tool);
 		}
 
 		// TOOLSHIFT PROCESSING
@@ -331,7 +339,7 @@ export const processToolchange: Action = (c, s) => {
 			switch (s.gcodeInfo.flavour) {
 				case GCodeFlavour.PrusaSlicer:
 				case GCodeFlavour.SuperSlicer:
-					for (let scan of c.scanForward(2)) {
+					for (let scan of (xyMoveAfterToolchange?.[2] ?? c).scanForward(2)) {
 						const match = rxParseCommonCommands.exec(scan.line);
 						if (match) {
 							const z = match.groups?.Z;
@@ -354,7 +362,7 @@ export const processToolchange: Action = (c, s) => {
 			// TODO: Brittle. Must scan beyond filament start gcode, which is of unknown length. Often at least contains
 			// SET_PRESSURE_ADVANCE. Maybe require stricter custom gcode format, eg must end with a line `;END filament gcode`.
 			// TODO: BUGGY IN PYTHON, produces incorrect gcode, bug reproduced here for initial regression testing.
-			for (let scan of c.scanForward(4)) {
+			for (let scan of xyMoveAfterToolchange[2].scanForward(4)) {
 				if (scan.line.startsWith('G1 E')) {
 					deretractLine = scan;
 					break;
@@ -372,8 +380,8 @@ export const processToolchange: Action = (c, s) => {
 			}
 
 			c.line = s.kPrinterHasRmmuHub
-				? `TOOL T=${tool} X=${xyMoveAfterToolchange[0]} X=${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange[0] : ''}`
-				: `T${tool} X${xyMoveAfterToolchange[0]} X${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange[0] : ''}`;
+				? `TOOL T=${tool} X=${xyMoveAfterToolchange[0]} Y=${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange[0] : ''}`
+				: `T${tool} X${xyMoveAfterToolchange[0]} Y${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange[0] : ''}`;
 
 			xyMoveAfterToolchange[2].prepend(REMOVED_BY_RATOS);
 
@@ -383,4 +391,59 @@ export const processToolchange: Action = (c, s) => {
 			}
 		}
 	}
+};
+
+/**
+ * Stops processing the action sequence for the current iteration if the current line
+ * matches a common command (Tn/G0/G1). All the following actions should never match a common
+ * command. This action helps short circuit action sequence evalution in a very common case.
+ */
+export const stopIfCommonCommand: Action = (c, s) => {
+	return s._cmd ? ActionResult.Stop : ActionResult.Continue;
+};
+
+export const captureConfigSection: Action = (c, s) => {
+	let startLine: string | undefined = undefined;
+	let endLine: string | undefined = undefined;
+	switch (s.gcodeInfo.flavour) {
+		case GCodeFlavour.PrusaSlicer:
+			startLine = '; prusaslicer_config = begin';
+			endLine = '; prusaslicer_config = end';
+			break;
+		case GCodeFlavour.OrcaSlicer:
+			startLine = '; CONFIG_BLOCK_START';
+			endLine = '; CONFIG_BLOCK_END';
+			break;
+		case GCodeFlavour.SuperSlicer:
+			startLine = '; SuperSlicer_config = begin';
+			endLine = '; SuperSlicer_config = end';
+			break;
+		default:
+			// Config section not supported
+			return ActionResult.RemoveAndContinue;
+	}
+
+	// Replace this action with the action to look for the flavour-specific start line:
+	return [
+		ActionResult.Continue,
+		(c, s) => {
+			if (c.line.startsWith(startLine)) {
+				s.configSection = new Map<string, string>();
+				// Replace this action with the action to capture the config section:
+				return [
+					ActionResult.Stop,
+					(c, s) => {
+						if (c.line.startsWith(endLine)) {
+							return ActionResult.RemoveAndContinue;
+						} else {
+							const match = /^; ([^\s]+)\s=\s(.+)/.exec(c.line);
+							if (match) {
+								s.configSection!.set(match[1], match[2]);
+							}
+						}
+					},
+				];
+			}
+		},
+	];
 };

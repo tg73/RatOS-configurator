@@ -25,13 +25,19 @@ export class ProcessorLine extends BookmarkableLine {
 }
 
 export class ProcessLineContext {
-	constructor(item: ProcessorLine, getLineContextOrUndefined: (offset: number) => ProcessLineContext | undefined) {
+	constructor(
+		item: ProcessorLine,
+		getLineContextOrUndefined: (offset: number) => ProcessLineContext | undefined,
+		offset: number,
+	) {
 		this.#item = item;
 		this.#getLineOrUndefined = getLineContextOrUndefined;
+		this.#offset = offset;
 	}
 
 	#getLineOrUndefined: (offset: number) => ProcessLineContext | undefined;
 	#item: ProcessorLine;
+	#offset: number;
 
 	get line(): string {
 		return this.#item.line;
@@ -74,7 +80,7 @@ export class ProcessLineContext {
 		if (offset == 0) {
 			return this;
 		}
-		let ctx = this.#getLineOrUndefined(offset);
+		let ctx = this.#getLineOrUndefined(this.#offset + offset);
 		if (ctx) {
 			return ctx;
 		}
@@ -85,13 +91,13 @@ export class ProcessLineContext {
 		if (offset == 0) {
 			return this;
 		}
-		return this.#getLineOrUndefined(offset);
+		return this.#getLineOrUndefined(this.#offset + offset);
 	}
 
 	*scanForward(maxOffset?: number) {
 		let offset = 1;
 		while (!maxOffset || offset <= maxOffset) {
-			const offsetLine = this.#getLineOrUndefined(offset);
+			const offsetLine = this.#getLineOrUndefined(this.#offset + offset);
 			if (!offsetLine) {
 				return;
 			}
@@ -103,7 +109,7 @@ export class ProcessLineContext {
 	*scanBack(maxOffset?: number) {
 		let offset = 1;
 		while (!maxOffset || offset <= maxOffset) {
-			const offsetLine = this.#getLineOrUndefined(-offset);
+			const offsetLine = this.#getLineOrUndefined(this.#offset - offset);
 			if (!offsetLine) {
 				return;
 			}
@@ -153,7 +159,7 @@ export abstract class SlidingWindowLineProcessor extends Transform {
 		if (p < 0 || p >= this.#buf.getBufferLength()) {
 			return undefined;
 		}
-		return new ProcessLineContext(this.#buf.get(p)!, this.#getLineContextClosure);
+		return new ProcessLineContext(this.#buf.get(p)!, this.#getLineContextClosure, offset);
 	}
 
 	#getLineContextClosure = (offset: number) => this.#getLineContext(offset);

@@ -17,6 +17,7 @@
 import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
 import semver, { SemVer } from 'semver';
 import { GCodeError } from '@/server/gcode-processor/errors';
+import date2 from 'date-and-time';
 
 /** A known flavour of G-code. */
 export enum GCodeFlavour {
@@ -103,7 +104,7 @@ export class GCodeInfo {
 	static async getProcessedByRatosHeader(): Promise<string> {
 		const currentCodeVersion = await getConfiguratorVersion();
 		const now = new Date();
-		return `; processed by RatOS ${currentCodeVersion.toString()} on ${now.toISOString().replace('T', ' at ')}`;
+		return `; processed by RatOS ${currentCodeVersion.toString()} on ${date2.format(now, 'YYYY-MM-DD [at] HH:mm:ss [UTC]', true)}`;
 	}
 
 	constructor(

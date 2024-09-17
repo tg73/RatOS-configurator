@@ -51,9 +51,10 @@ export class State {
 	public minX = Number.MAX_VALUE;
 	public maxX = Number.MIN_VALUE;
 	public hasPurgeTower?: boolean;
+	public configSection?: Map<string, string>;
 
 	/** Used tools, in order of first use. */
-	public usedTools: number[] = [];
+	public usedTools: string[] = [];
 
 	// Iteration-scope fields (reset at the start of each processLine iteration):
 	public _cmd?: RegExpExecArray | null;

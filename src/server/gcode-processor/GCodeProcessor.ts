@@ -26,11 +26,11 @@ import { Action, ActionFilter } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
 import semver, { SemVer } from 'semver';
 
-// Reminder: this is a typeguard.
-/** Hmph. This does not always seem to work, currently unused. */
-function isActionFunction(x: unknown): x is (c: ProcessLineContext, s: State) => ActionResult | void {
-	return true;
-}
+/**
+ * Force all output other than 'processed by ratos' headers to match the legacy python implementation
+ * Remove this ASAP after merging the rewrite.
+ * */
+const LEGACY_MODE = true;
 
 export class GCodeProcessor extends SlidingWindowLineProcessor {
 	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean) {
@@ -50,6 +50,8 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		act.findFirstMoveXY,
 		act.findMinMaxX,
 		act.processToolchange,
+		act.stopIfCommonCommand, // NB: sequence won't execute past here if the current line matches a common command (Tn/G0/G1).
+		act.captureConfigSection,
 	];
 
 	_processLine(ctx: ProcessLineContext) {
@@ -86,8 +88,13 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 				if (keep) {
 					const result = action[1](ctx, state);
 					// We don't need to evaluate the ActionFilter(s) again (because gcodeInfo never changes),
-					// so replace the current filtered tuple form of Action with the the simple function form.
-					return [result === undefined ? ActionResult.Continue : result, action[1]];
+					// so remove the filter by replacing the action, either with the simple function form, or
+					// with the replacement it provided.
+					if (Array.isArray(result)) {
+						return result;
+					} else {
+						return [result === undefined ? ActionResult.Continue : result, action[1]];
+					}
 				} else {
 					// Filter is not a match, remove the action.
 					return ActionResult.RemoveAndContinue;
@@ -144,15 +151,46 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		bookmarks: BookmarkCollection,
 		replaceLine: (bookmark: Bookmark, line: string) => Promise<void>,
 	) {
+		const s = this.#state;
 		// TODO: apply boookmarks. If a file is only being inspected, BookmarkingBufferEncoder won't
 		// be in the pipeline, and it would be pointless to call this method. This is also expressed
 		// via State.kInspectionOnly: most processing code will behave the same regardless, but this
 		// flag can be used to skip some expensive mutation that won't end up being used anyhow.
-		if (this.#state.firstLine) {
+		if (s.firstLine) {
 			await replaceLine(
-				bookmarks.getBookmark(this.#state.firstLine.bookmark),
-				this.#state.firstLine.line.trimEnd() + '\n' + (await GCodeInfo.getProcessedByRatosHeader()),
+				bookmarks.getBookmark(s.firstLine.bookmark),
+				s.firstLine.line.trimEnd() + '\n' + (await GCodeInfo.getProcessedByRatosHeader()),
 			);
+		}
+
+		if (s.startPrintLine) {
+			let toAdd = '';
+
+			if (s.toolChangeCount > 0) {
+				toAdd += ` TOTAL_TOOLSHIFTS=${s.toolChangeCount - 1}`;
+			}
+
+			if (s.firstMoveX && s.firstMoveY) {
+				toAdd += ` FIRST_X=${s.firstMoveX} FIRST_Y=${s.firstMoveY}`;
+			}
+
+			if (s.minX < Number.MAX_VALUE) {
+				toAdd += ` MIN_X=${s.minX} MAX_X=${s.maxX}`;
+			}
+
+			if (s.usedTools.length > 0) {
+				toAdd += ` USED_TOOLS=${s.usedTools.join()}`;
+
+				const wipeAccel = s.configSection?.get('wipe_tower_acceleration');
+				if (wipeAccel) {
+					toAdd += ` WIPE_ACCEL=${wipeAccel}`;
+				} else if (LEGACY_MODE) {
+					toAdd += ` WIPE_ACCEL=0`;
+				}
+			}
+			if (toAdd) {
+				await replaceLine(bookmarks.getBookmark(s.startPrintLine.bookmark), s.startPrintLine.line.trimEnd() + toAdd);
+			}
 		}
 	}
 
