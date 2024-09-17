@@ -176,6 +176,9 @@ importers:
       copy-files-from-to:
         specifier: ^3.9.1
         version: 3.9.1
+      date-and-time:
+        specifier: ^3.5.0
+        version: 3.5.0
       deep-equal:
         specifier: ^2.2.3
         version: 2.2.3
@@ -2641,6 +2644,9 @@ packages:
   data-urls@3.0.2:
     resolution: {integrity: sha512-Jy/tj3ldjZJo63sVAvg6LHt2mHvl4V6AgRAmNDtLdm7faqtsx+aJG42rsyCo9JCoRVKwPFzKlIPx3DIibwSIaQ==}
     engines: {node: '>=12'}
+
+  date-and-time@3.5.0:
+    resolution: {integrity: sha512-JU4y0CIzAU+Cy2GOToby243B54elP8JdPidj4xHJPO4rlResPXKujRJp/MJzFeMWIdTbQ/A0xgd6guipi1mYIw==}
 
   dateformat@4.6.3:
     resolution: {integrity: sha512-2P0p0pFGzHS5EMnhdxQi7aJN+iMheud0UhG4dlE1DLAlvL8JHjJJTX/CSm4JXwV0Ka5nGk3zC5mcb5bUQUxxMA==}
@@ -7646,6 +7652,8 @@ snapshots:
       abab: 2.0.6
       whatwg-mimetype: 3.0.0
       whatwg-url: 11.0.0
+
+  date-and-time@3.5.0: {}
 
   dateformat@4.6.3: {}
 

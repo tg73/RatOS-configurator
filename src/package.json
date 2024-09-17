@@ -79,6 +79,7 @@
 		"color-convert": "^2.0.1",
 		"commander": "^11.1.0",
 		"copy-files-from-to": "^3.9.1",
+		"date-and-time": "^3.5.0",
 		"deep-equal": "^2.2.3",
 		"dev-null": "^0.1.1",
 		"esbuild": "^0.20.0",
