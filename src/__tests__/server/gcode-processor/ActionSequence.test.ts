@@ -20,7 +20,7 @@ import {
 	ActionSequence,
 	executeActionSequence,
 	executeActionSequenceAsync,
-	SubSequence,
+	subSequence,
 } from '@/server/gcode-processor/ActionSequence';
 
 type TestActionResult = ActionResult | [ActionResult, TestAction];
@@ -31,7 +31,7 @@ describe('ActionSequence', async () => {
 		let log: string[] = [];
 		const fixture: ActionSequence<TestAction> = [
 			['A', ActionResult.Continue],
-			SubSequence(
+			subSequence(
 				['B', ActionResult.Continue],
 				[
 					['B1', ActionResult.Continue],
@@ -54,7 +54,7 @@ describe('ActionSequence', async () => {
 		let log: string[] = [];
 		const fixture: ActionSequence<TestAction> = [
 			['A', ActionResult.Continue],
-			SubSequence(
+			subSequence(
 				['B', ActionResult.SkipSubsequence],
 				[
 					['B1', ActionResult.Continue],
@@ -77,7 +77,7 @@ describe('ActionSequence', async () => {
 		let log: string[] = [];
 		const fixture: ActionSequence<TestAction> = [
 			['A', ActionResult.Continue],
-			SubSequence(
+			subSequence(
 				['B', ActionResult.Stop],
 				[
 					['B1', ActionResult.Continue],
@@ -100,7 +100,7 @@ describe('ActionSequence', async () => {
 		let log: string[] = [];
 		const fixture: ActionSequence<TestAction> = [
 			['A', ActionResult.Continue],
-			SubSequence(
+			subSequence(
 				['B', ActionResult.Stop | ActionResult.SkipSubsequence],
 				[
 					['B1', ActionResult.Continue],

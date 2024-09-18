@@ -54,7 +54,7 @@ export class ActionSubSequence<TAction> {
 	) {}
 }
 
-export function SubSequence<TAction>(entryAction: TAction, sequence: TAction[]) {
+export function subSequence<TAction>(entryAction: TAction, sequence: TAction[]) {
 	return new ActionSubSequence<TAction>(entryAction, sequence);
 }
 

@@ -18,7 +18,7 @@ import {
 	ActionResult,
 	ActionSequence,
 	executeActionSequence,
-	SubSequence,
+	subSequence,
 } from '@/server/gcode-processor/ActionSequence';
 import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
@@ -51,7 +51,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
 		act.getStartPrint,
 		// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
-		SubSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
+		subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
 		act.fixOtherLayerTemperature,
 		act.fixOrcaSetAccelaration,
 		act.captureConfigSection,
