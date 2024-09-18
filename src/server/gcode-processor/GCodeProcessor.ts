@@ -14,7 +14,12 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { ActionResult, executeActionSequence } from '@/server/gcode-processor/ActionSequence';
+import {
+	ActionResult,
+	ActionSequence,
+	executeActionSequence,
+	SubSequence,
+} from '@/server/gcode-processor/ActionSequence';
 import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
@@ -41,14 +46,12 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	#state: State;
 
 	// NB: The order of actions is significant.
-	#actions: Action[] = [
+	#actions: ActionSequence<Action> = [
 		act.getGcodeInfo,
-		act.getStartPrint, // NB: sequence won't execute past here until start line is found.
-		act.parseCommonCommands,
-		act.findFirstMoveXY,
-		act.findMinMaxX,
-		act.processToolchange,
-		act.stopIfCommonCommand, // NB: sequence won't execute past here if the current line matches a common command (Tn/G0/G1).
+		// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
+		act.getStartPrint,
+		// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
+		SubSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
 		act.fixOtherLayerTemperature,
 		act.fixOrcaSetAccelaration,
 		act.captureConfigSection,

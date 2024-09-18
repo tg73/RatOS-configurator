@@ -175,7 +175,17 @@ export const getStartPrint: Action = (c, s) => {
 
 		return ActionResult.RemoveAndStop;
 	}
-	// Stop at this point until we find START_LINE. If any actions need to inspect pre-START_LINE,
+
+	if (s.currentLineNumber > 5000) {
+		// Most likely the START_PRINT line is missing. If this is a huge file, failing fast will be
+		// a better UX.
+		// TODO: Make this behaviour configurable, eg add to opts on public API, State holds opts.
+		throw new GCodeError(
+			'The START_PRINT or RMMU_START_PRINT command has not been found within the first 5000 lines of the file. Please refer to the slicer configuration instructions.',
+		);
+	}
+
+	// Stop at this point in the action sequence until we find START_LINE. If any actions need to inspect pre-START_LINE,
 	// they must be ordered before this action. All actions ordered after this action can assume that
 	// the start print line has been found.
 	return ActionResult.Stop;
@@ -217,12 +227,19 @@ export const fixOrcaSetAccelaration: Action = [
 	},
 ];
 
-export const parseCommonCommands: Action = (c, s) => {
+/**
+ * A subsequence entry action that parses `Tn`, `G0` and `G1` commands. All handlers for these commands
+ * must be placed in this command's subsequence in the action sequence. If the current line is one
+ * of the common commands, the subsequence is executed, then the main sequence stops. If the current
+ * line is not one of the common commands, the subsequence is skipped, and the main sequence continues.
+ */
+export const whenCommonCommandDoThenStop: Action = (c, s) => {
 	s._cmd = rxParseCommonCommands.exec(c.line);
+	return s._cmd ? ActionResult.Stop : ActionResult.SkipSubsequence;
 };
 
 export const findFirstMoveXY: Action = (c, s) => {
-	if (s._cmd?.groups?.G) {
+	if (s._cmd!.groups?.G) {
 		s.firstMoveX ??= s._cmd?.groups?.X;
 		s.firstMoveY ??= s._cmd?.groups?.Y;
 
@@ -238,7 +255,7 @@ export const findFirstMoveXY: Action = (c, s) => {
 };
 
 export const findMinMaxX: Action = (c, s) => {
-	if (s._cmd?.groups?.G) {
+	if (s._cmd!.groups?.G) {
 		let x = s._cmd?.groups?.X;
 		if (x) {
 			let n = Number(x);
@@ -249,15 +266,23 @@ export const findMinMaxX: Action = (c, s) => {
 				s.maxX = n;
 			}
 		}
+
+		// Within the commom commands subgroup, this is the last action that handles to G lines. Subsequent
+		// actions will not match, don't bother trying.
+		// TODO: Discuss. Optimal, but only a marginal gain in exchange for brittleness of subsequence order.
+		return ActionResult.Stop;
 	}
 };
 
 export const processToolchange: Action = (c, s) => {
-	let tool = s._cmd?.groups?.T;
+	let tool = s._cmd!.groups?.T;
 	if (tool) {
 		if (++s.toolChangeCount == 1) {
-			c.prepend(REMOVED_BY_RATOS); // Remove first toolchange
-			return;
+			// Remove first toolchange
+			c.prepend(REMOVED_BY_RATOS);
+
+			// This is the only action that handles `Tn` lines.
+			return ActionResult.Stop;
 		}
 
 		if (!s.usedTools.includes(tool)) {
@@ -402,16 +427,10 @@ export const processToolchange: Action = (c, s) => {
 				deretractLine.prepend(REMOVED_BY_RATOS);
 			}
 		}
-	}
-};
 
-/**
- * Stops processing the action sequence for the current iteration if the current line
- * matches a common command (Tn/G0/G1). All the following actions should never match a common
- * command. This action helps short circuit action sequence evalution in a very common case.
- */
-export const stopIfCommonCommand: Action = (c, s) => {
-	return s._cmd ? ActionResult.Stop : ActionResult.Continue;
+		// This is the only action that handles `Tn` lines.
+		return ActionResult.Stop;
+	}
 };
 
 export const captureConfigSection: Action = (c, s) => {

@@ -17,14 +17,108 @@
 import { describe, test, expect } from 'vitest';
 import {
 	ActionResult,
+	ActionSequence,
 	executeActionSequence,
 	executeActionSequenceAsync,
+	SubSequence,
 } from '@/server/gcode-processor/ActionSequence';
 
 type TestActionResult = ActionResult | [ActionResult, TestAction];
 type TestAction = [id: string, result: TestActionResult];
 
 describe('ActionSequence', async () => {
+	test('subseq continue enter', () => {
+		let log: string[] = [];
+		const fixture: ActionSequence<TestAction> = [
+			['A', ActionResult.Continue],
+			SubSequence(
+				['B', ActionResult.Continue],
+				[
+					['B1', ActionResult.Continue],
+					['B2', ActionResult.Continue],
+				],
+			),
+			['C', ActionResult.Continue],
+		];
+		const actions = fixture.concat();
+		const invoke = (act: [id: string, result: TestActionResult]) => {
+			log.push(act[0]);
+			return act[1];
+		};
+		executeActionSequence(actions, invoke);
+		expect(log).toEqual(['A', 'B', 'B1', 'B2', 'C']);
+		expect(actions).toEqual(fixture);
+	});
+
+	test('subseq continue skip', () => {
+		let log: string[] = [];
+		const fixture: ActionSequence<TestAction> = [
+			['A', ActionResult.Continue],
+			SubSequence(
+				['B', ActionResult.SkipSubsequence],
+				[
+					['B1', ActionResult.Continue],
+					['B2', ActionResult.Continue],
+				],
+			),
+			['C', ActionResult.Continue],
+		];
+		const actions = fixture.concat();
+		const invoke = (act: [id: string, result: TestActionResult]) => {
+			log.push(act[0]);
+			return act[1];
+		};
+		executeActionSequence(actions, invoke);
+		expect(log).toEqual(['A', 'B', 'C']);
+		expect(actions).toEqual(fixture);
+	});
+
+	test('subseq stop enter', () => {
+		let log: string[] = [];
+		const fixture: ActionSequence<TestAction> = [
+			['A', ActionResult.Continue],
+			SubSequence(
+				['B', ActionResult.Stop],
+				[
+					['B1', ActionResult.Continue],
+					['B2', ActionResult.Continue],
+				],
+			),
+			['C', ActionResult.Continue],
+		];
+		const actions = fixture.concat();
+		const invoke = (act: [id: string, result: TestActionResult]) => {
+			log.push(act[0]);
+			return act[1];
+		};
+		executeActionSequence(actions, invoke);
+		expect(log).toEqual(['A', 'B', 'B1', 'B2']);
+		expect(actions).toEqual(fixture);
+	});
+
+	test('subseq stop skip', () => {
+		let log: string[] = [];
+		const fixture: ActionSequence<TestAction> = [
+			['A', ActionResult.Continue],
+			SubSequence(
+				['B', ActionResult.Stop | ActionResult.SkipSubsequence],
+				[
+					['B1', ActionResult.Continue],
+					['B2', ActionResult.Continue],
+				],
+			),
+			['C', ActionResult.Continue],
+		];
+		const actions = fixture.concat();
+		const invoke = (act: [id: string, result: TestActionResult]) => {
+			log.push(act[0]);
+			return act[1];
+		};
+		executeActionSequence(actions, invoke);
+		expect(log).toEqual(['A', 'B']);
+		expect(actions).toEqual(fixture);
+	});
+
 	test('continue', () => {
 		let log: string[] = [];
 		const fixture: TestAction[] = [

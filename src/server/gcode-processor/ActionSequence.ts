@@ -19,7 +19,7 @@ export enum ActionResult {
 	/**
 	 * Continue processing subsequent actions in the sequence.
 	 */
-	Continue,
+	Continue = 0,
 	/**
 	 * Remove the current action, then continue processing subsequent actions in the sequence.
 	 */
@@ -32,24 +32,70 @@ export enum ActionResult {
 	 * Remove the current action, and not process any subsequent actions in the sequence.
 	 */
 	RemoveAndStop,
+
+	/**
+	 * A flag that can be or'd with one of the non-flag values when an action is a subsequence entry
+	 * action (the first item in a subsequence tuple). {@link SkipSubsequence} indicates that the
+	 * the subsequence array should not be processed. If this flag is not set, the subsequence
+	 * will be processed regardless of the main {@link ActionResult} value.
+	 *
+	 * Note that {@link SkipSubsequence} on its own is equivalent to
+	 * {@link SkipSubsequence}` | `{@link Continue}, because {@link Continue} has value `0`.
+	 */
+	SkipSubsequence = 1 << 8,
 }
+
+const kActionResultNonFlagMask = (1 << 8) - 1;
+
+export class ActionSubSequence<TAction> {
+	constructor(
+		public readonly entryAction: TAction,
+		public readonly sequence: TAction[],
+	) {}
+}
+
+export function SubSequence<TAction>(entryAction: TAction, sequence: TAction[]) {
+	return new ActionSubSequence<TAction>(entryAction, sequence);
+}
+
+export type ActionSequence<TAction> = Array<TAction | ActionSubSequence<TAction>>;
 
 /** Execute an action sequence. */
 export function executeActionSequence<TAction>(
-	actions: TAction[],
+	actions: ActionSequence<TAction>,
 	invoke: (action: TAction) => ActionResult | [result: ActionResult, replaceWith: TAction],
 ) {
 	let idx = 0;
 	while (idx < actions.length) {
-		const ret = invoke(actions[idx]);
+		let item = actions[idx];
+
+		let action: TAction | undefined = undefined;
+		let subseq: TAction[] | undefined = undefined;
+		let ret: ActionResult | [result: ActionResult, replaceWith: TAction] | undefined = undefined;
+
+		if (item instanceof ActionSubSequence) {
+			action = item.entryAction;
+			subseq = item.sequence;
+		} else {
+			action = item;
+		}
+
+		ret = invoke(action);
+
 		let result: ActionResult;
+
 		if (Array.isArray(ret)) {
 			result = ret[0];
 			actions[idx] = ret[1];
 		} else {
 			result = ret;
 		}
-		switch (result) {
+
+		if (subseq && (result & ActionResult.SkipSubsequence) == 0) {
+			executeActionSequence(subseq, invoke);
+		}
+
+		switch (result & kActionResultNonFlagMask) {
 			case ActionResult.Continue:
 				++idx;
 				break;
