@@ -51,19 +51,14 @@ async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modern
 		const iterLegacy = fhLegacy.readLines()[Symbol.asyncIterator]();
 		const iterModern = fhModern.readLines()[Symbol.asyncIterator]();
 
-		let legacy = await iterLegacy.next();
-		let modern = await iterModern.next();
-
-		expect(modern).toEqual(legacy);
-
 		// Skip '; processed by...' line in modern
-		modern = await iterModern.next();
+		let modern = await iterModern.next();
 		expect(modern.value).to.startWith('; processed by RatOS');
 
 		let lineNumber = 2;
 
 		while (true) {
-			legacy = await iterLegacy.next();
+			let legacy = await iterLegacy.next();
 			modern = await iterModern.next();
 
 			++lineNumber;

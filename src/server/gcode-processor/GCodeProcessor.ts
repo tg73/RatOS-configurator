@@ -158,7 +158,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		if (s.firstLine) {
 			await replaceLine(
 				bookmarks.getBookmark(s.firstLine.bookmark),
-				s.firstLine.line.trimEnd() + '\n' + (await GCodeInfo.getProcessedByRatosHeader()),
+				(await GCodeInfo.getProcessedByRatosHeader()) + '\n' + s.firstLine.line.trimEnd(),
 			);
 		}
 

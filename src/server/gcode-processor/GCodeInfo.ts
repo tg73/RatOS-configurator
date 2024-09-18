@@ -48,7 +48,7 @@ export class GCodeInfo {
 		const tail = await fsReaderGetLines(path, -3);
 		const isAlreadyLegacyProcessed = /^; processed by RatOS($|\s)/im.test(tail);
 
-		const header = await fsReaderGetLines(path, 3);
+		const header = await fsReaderGetLines(path, 4);
 		return GCodeInfo.#tryParseHeader(header, isAlreadyLegacyProcessed);
 	}
 
