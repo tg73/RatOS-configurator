@@ -30,6 +30,15 @@ import { describe, test, expect, chai } from 'vitest';
 
 chai.use(require('chai-string'));
 
+// https://stackoverflow.com/a/43053803
+function cartesian(...a: any) {
+	return a.reduce((a: any, b: any) => a.flatMap((d: any) => b.map((e: any) => [d, e].flat())));
+}
+
+function replaceExtension(pathStr: string, extensionWithDot: string) {
+	return path.format({ ...path.parse(pathStr), base: '', ext: extensionWithDot });
+}
+
 async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modernPath: string) {
 	let fhLegacy: FileHandle | undefined = undefined;
 	let fhModern: FileHandle | undefined = undefined;
@@ -75,45 +84,51 @@ async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modern
 			expect(modern.value.trimEnd()).to.equal(legacyLine.trimEnd(), `at line ${lineNumber}`);
 		}
 
-		console.log(`${lineNumber} lines compared ok.`);
+		console.log(`  ${lineNumber} lines compared ok.`);
 	} finally {
 		fhLegacy?.close();
 		fhModern?.close();
 	}
 }
 
-// path.format({ ...path.parse('/path/to/file.txt'), base: '', ext: '.md' })
 describe('legacy equivalence', { timeout: 60000 }, async () => {
-	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
-		'transforming %s',
-		async (fixtureFile) => {
-			const outputDir = path.join(__dirname, 'fixtures', 'output');
-			fs.mkdir(outputDir, { recursive: true });
-			const outputPath = path.join(outputDir, fixtureFile);
-			console.log(`transforming ${fixtureFile} to ${outputPath}`);
-			let fh: FileHandle | undefined = undefined;
-			try {
-				fh = await fs.open(outputPath, 'w');
-				const gcodeProcessor = new GCodeProcessor(true, false, false);
-				const encoder = new BookmarkingBufferEncoder();
+	test.each(
+		cartesian(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }), [false, true]) as [
+			[string, boolean],
+		],
+	)('%s with rmmu_hub=%s', async (fixtureFile, printerHasRmmuHub) => {
+		const outputDir = path.join(__dirname, 'fixtures', 'output');
+		fs.mkdir(outputDir, { recursive: true });
+		let outputPath = path.join(outputDir, fixtureFile);
+		if (printerHasRmmuHub) {
+			outputPath = replaceExtension(outputPath, '.rmmu.gcode');
+		}
 
-				await pipeline(
-					createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
-					split(),
-					gcodeProcessor,
-					encoder,
-					createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
-				);
+		console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
+		let fh: FileHandle | undefined = undefined;
+		try {
+			fh = await fs.open(outputPath, 'w');
+			const gcodeProcessor = new GCodeProcessor(true, printerHasRmmuHub, false);
+			const encoder = new BookmarkingBufferEncoder();
 
-				await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
-			} finally {
-				await fh?.close();
-			}
-
-			await legacyAndModernGcodeFilesAreEquivalent(
-				path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile),
-				outputPath,
+			await pipeline(
+				createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
+				split(),
+				gcodeProcessor,
+				encoder,
+				createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
 			);
-		},
-	);
+
+			await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+		} finally {
+			await fh?.close();
+		}
+
+		let legacyPath = path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile);
+		if (printerHasRmmuHub) {
+			legacyPath = replaceExtension(legacyPath, '.rmmu.gcode');
+		}
+
+		await legacyAndModernGcodeFilesAreEquivalent(legacyPath, outputPath);
+	});
 });
