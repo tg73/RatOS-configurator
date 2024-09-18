@@ -77,39 +77,36 @@ async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modern
 
 // path.format({ ...path.parse('/path/to/file.txt'), base: '', ext: '.md' })
 describe('legacy equivalence', { timeout: 1000000 }, async () => {
-	test('transform fixtures', async () => {
-		await Promise.all(
-			(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))
-				//.slice(0, 1)
-				.map(async (fixtureFile) => {
-					const outputDir = path.join(__dirname, 'fixtures', 'output');
-					fs.mkdir(outputDir, { recursive: true });
-					const outputPath = path.join(outputDir, fixtureFile);
-					console.log(`transforming ${fixtureFile} to ${outputPath}`);
-					let fh: FileHandle | undefined = undefined;
-					try {
-						fh = await fs.open(outputPath, 'w');
-						const gcodeProcessor = new GCodeProcessor(true, false, false);
-						const encoder = new BookmarkingBufferEncoder();
+	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
+		'transforming %s',
+		async (fixtureFile) => {
+			const outputDir = path.join(__dirname, 'fixtures', 'output');
+			fs.mkdir(outputDir, { recursive: true });
+			const outputPath = path.join(outputDir, fixtureFile);
+			console.log(`transforming ${fixtureFile} to ${outputPath}`);
+			let fh: FileHandle | undefined = undefined;
+			try {
+				fh = await fs.open(outputPath, 'w');
+				const gcodeProcessor = new GCodeProcessor(true, false, false);
+				const encoder = new BookmarkingBufferEncoder();
 
-						await pipeline(
-							createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
-							split(),
-							gcodeProcessor,
-							encoder,
-							createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
-						);
+				await pipeline(
+					createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
+					split(),
+					gcodeProcessor,
+					encoder,
+					createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
+				);
 
-						await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
-					} finally {
-						await fh?.close();
-					}
+				await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+			} finally {
+				await fh?.close();
+			}
 
-					await legacyAndModernGcodeFilesAreEquivalent(
-						path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile),
-						outputPath,
-					);
-				}),
-		);
-	});
+			await legacyAndModernGcodeFilesAreEquivalent(
+				path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile),
+				outputPath,
+			);
+		},
+	);
 });
