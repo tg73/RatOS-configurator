@@ -350,6 +350,7 @@ export const processToolchange: Action = (c, s) => {
 			switch (s.gcodeInfo.flavour) {
 				case GCodeFlavour.PrusaSlicer:
 				case GCodeFlavour.SuperSlicer:
+				case GCodeFlavour.OrcaSlicer:
 					for (let scan of (xyMoveAfterToolchange?.[2] ?? c).scanForward(2)) {
 						const match = rxParseCommonCommands.exec(scan.line);
 						if (match) {

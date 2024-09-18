@@ -65,7 +65,14 @@ async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modern
 			}
 
 			expect(legacy.done).toBeFalsy();
-			expect(modern.value.trimEnd()).to.equal(legacy.value.trimEnd(), `at line ${lineNumber}`);
+
+			// Work around the double-commenting bug in legacy gcode.
+			const legacyLine = legacy.value.startsWith(
+				'; Removed by RatOS post processor: ; Removed by RatOS post processor: ',
+			)
+				? legacy.value.substring('; Removed by RatOS post processor: '.length)
+				: legacy.value;
+			expect(modern.value.trimEnd()).to.equal(legacyLine.trimEnd(), `at line ${lineNumber}`);
 		}
 
 		console.log(`${lineNumber} lines compared ok.`);
@@ -76,7 +83,7 @@ async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modern
 }
 
 // path.format({ ...path.parse('/path/to/file.txt'), base: '', ext: '.md' })
-describe('legacy equivalence', { timeout: 1000000 }, async () => {
+describe('legacy equivalence', { timeout: 60000 }, async () => {
 	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
 		'transforming %s',
 		async (fixtureFile) => {
