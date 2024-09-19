@@ -14,11 +14,10 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// TODO: Exception handling!
-
-import { Transform, TransformCallback, Writable } from 'node:stream';
+import { Transform, TransformCallback } from 'node:stream';
 import { RingBuffer } from 'ring-buffer-ts';
-import { Bookmark, BookmarkableLine, BookmarkKey } from '@/server/gcode-processor/Bookmark';
+import { BookmarkableLine, BookmarkKey } from '@/server/gcode-processor/Bookmark';
+import { InternalError } from '@/server/gcode-processor/errors';
 
 export class ProcessorLine extends BookmarkableLine {
 	emit: boolean = true;
@@ -170,7 +169,7 @@ export abstract class SlidingWindowLineProcessor extends Transform {
 
 	_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
 		if (typeof chunk !== 'string') {
-			throw new Error('chunk must be a string');
+			return callback(new InternalError('chunk must be a string'));
 		}
 
 		if (!this.#buf.isFull()) {
@@ -186,19 +185,35 @@ export abstract class SlidingWindowLineProcessor extends Transform {
 			// Priming of the ring buffer has just completed. Process all lines up to position `maxLinesBehind`.
 			while (this.#position < this.maxLinesBehind) {
 				++this.#position;
-				this._processLine(this.#getLineContext(0)!);
+				try {
+					this._processLine(this.#getLineContext(0)!);
+				} catch (err) {
+					if (err instanceof Error) {
+						return callback(err);
+					} else {
+						return callback(new Error('Unrecognized error, see cause.', { cause: err }));
+					}
+				}
 			}
 			return callback();
 		}
 
 		if (this.#position != this.maxLinesBehind) {
-			return callback(new Error('Unexpected state!'));
+			return callback(new InternalError('Unexpected state!'));
 		}
 
 		const itemToPush = this.#buf.get(0)!;
 
 		this.#buf.add(new ProcessorLine(chunk));
-		this._processLine(this.#getLineContext(0)!);
+		try {
+			this._processLine(this.#getLineContext(0)!);
+		} catch (err) {
+			if (err instanceof Error) {
+				return callback(err);
+			} else {
+				return callback(new Error('Unrecognized error, see cause.', { cause: err }));
+			}
+		}
 
 		if (itemToPush.emit) {
 			this.push(itemToPush);
@@ -215,7 +230,16 @@ export abstract class SlidingWindowLineProcessor extends Transform {
 		// Process all unprocessed items:
 		while (this.#position < this.#buf.getBufferLength() - 1) {
 			++this.#position;
-			this._processLine(this.#getLineContext(0)!);
+
+			try {
+				this._processLine(this.#getLineContext(0)!);
+			} catch (err) {
+				if (err instanceof Error) {
+					return callback(err);
+				} else {
+					return callback(new Error('Unrecognized error, see cause.', { cause: err }));
+				}
+			}
 		}
 
 		// Push all items:
