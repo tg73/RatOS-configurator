@@ -89,10 +89,6 @@ export function newGCodeError(message: string, ctx: ProcessLineContext, state: S
 // 	(c, s) => {},
 // ];
 
-// TODO: Let's handle header parsing as an explicit action, and only construct the state object
-// once it's known. Also we can immediately remove any actions which express flavour relevance.
-// TODO: Compatibility check
-// TODO: Already processed check
 export const getGcodeInfo: Action = (c, s) => {
 	let parsed = GCodeInfo.tryParseHeader(
 		c.line + '\n' + c.getLineOrUndefined(1)?.line + '\n' + c.getLineOrUndefined(2)?.line + '\n',
@@ -235,7 +231,7 @@ export const fixOrcaSetAccelaration: Action = [
  */
 export const whenCommonCommandDoThenStop: Action = (c, s) => {
 	s._cmd = rxParseCommonCommands.exec(c.line);
-	return s._cmd ? ActionResult.Stop : ActionResult.SkipSubsequence;
+	return s._cmd ? ActionResult.Stop : ActionResult.Continue | ActionResult.flagSkipSubSequence;
 };
 
 export const findFirstMoveXY: Action = (c, s) => {
@@ -465,7 +461,7 @@ export const captureConfigSection: Action = (c, s) => {
 					ActionResult.Stop,
 					(c, s) => {
 						if (c.line.startsWith(endLine)) {
-							return ActionResult.RemoveAndContinue;
+							return ActionResult.RemoveAndStop;
 						} else {
 							const match = /^; ([^\s]+)\s=\s(.+)/.exec(c.line);
 							if (match) {
