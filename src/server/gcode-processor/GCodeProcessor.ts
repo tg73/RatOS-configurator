@@ -69,7 +69,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	 * Wraps action invocation with additional {@link GCodeProcessor}-specific convenience logic.
 	 *  * The action function can return `ActionResult | void`, where `void` is equivalent to
 	 *    {@link ActionResult.Continue}.
-	 *  * Some union alterates of the {@link Action} type allow common relevance filters to be
+	 *  * Some union alternates of the {@link Action} type allow common relevance filters to be
 	 *    expressed declaritively (currently by {@link GCodeFlavour}).
 	 * */
 	private static invokeAction(
