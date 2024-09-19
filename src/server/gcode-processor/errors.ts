@@ -23,7 +23,7 @@ declare class GCodeInfo {}
 
 export class AlreadyProcessedError extends GCodeProcessorError {
 	constructor(public readonly gcodeInfo: GCodeInfo) {
-		super('The file has already been processed by RatOS.');
+		super('The file or stream has already been processed by RatOS.');
 	}
 }
 

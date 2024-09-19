@@ -37,6 +37,16 @@ import semver from 'semver';
  * */
 const LEGACY_MODE = true;
 
+/**
+ * Processes a stream of text lines read-forward-once, analysing and transforming on the fly.
+ *
+ * Analysis is performed using {@link ActionSequence}, which supports state-machine-like behaviour
+ * and action sequence short-circuiting.
+ *
+ * Where the output is streamed to a {@link BookmarkingBufferEncoder} and then to disk, changes to lines that
+ * require forward knowledge are speculatively padded with spaces, bookmarked, then retrospectively replaced
+ * by random access changes to the output file at the end of streaming.
+ **/
 export class GCodeProcessor extends SlidingWindowLineProcessor {
 	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean) {
 		super(20, 20);
@@ -109,7 +119,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	private static satisfiesFilter(gcodeInfo: GCodeInfo, include: ActionFilter | ActionFilter[]): boolean {
 		const flat = Array.isArray(include) ? include.flat(Infinity) : [include];
 
-		// Evaluation is 'or' - any criteria matching is success.
+		// Evaluation is 'or' - any criterion matching is success.
 		let i = 0;
 		while (i < flat.length) {
 			const flavour = flat[i] as GCodeFlavour;
@@ -146,8 +156,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	}
 
 	/**
-	 * TODO
-	 * @param bookmarks
+	 * Applies all the retrospective changes required after analysing the whole file/stream.
 	 */
 	async processBookmarks(
 		bookmarks: BookmarkCollection,
@@ -217,10 +226,10 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	}
 
 	/**
-	 * TODO
+	 * TODO, pending public API requirements, to be decided.
 	 */
 	getSidecarData(): Object {
-		// TODO: This can be called at the end of both inspection and mutation pipelines to emit sidecar
+		// TODO: This can be called at the end of both inspection and transformation pipelines to emit sidecar
 		// data. For inspection pipelines, this is the only way to emit the results of the analysis.
 		// For mutating pipelines, some data is also extracted for UI use, such as filament information
 		// or toolchange timings.

@@ -23,6 +23,21 @@ export class ProcessorLine extends BookmarkableLine {
 	emit: boolean = true;
 }
 
+/**
+ * A context class passed to {@link ProcessLineCallback} for each line as it is processed.
+ *
+ * Implementations of {@link ProcessLineCallback} can:
+ * - Inspect the line of text by getting {@link line}.
+ * - Change the line of text that will be output by setting {@link line}.
+ * - Stop the line from being output by setting {@link emit} to `false`.
+ * - Get a {@link ProcessLineContext} for a nearby line (within the sliding window) using
+ *   {@link getLine} or {@link getLineOrUndefined}.
+ * - Iterate backwards or forwards through the available lines in the sliding window
+ *   using {@link scanBack} and {@link scanForward} which yield {@link ProcessLineContext}
+ *   objects.
+ * - Change other lines within the available sliding window through the {@link ProcessLineContext}
+ *   objects obtained.
+ */
 export class ProcessLineContext {
 	constructor(
 		item: ProcessorLine,

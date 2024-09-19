@@ -14,6 +14,10 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * NOTE: Currently not used, retained as important knowledge.
+ */
+
 import { Transform, TransformCallback, TransformOptions } from 'node:stream';
 
 // Informed by https://stackoverflow.com/a/43811543

@@ -26,11 +26,11 @@ export class BookmarkedLine {
 }
 
 /**
- * @description The state shared between actions in the action sequence for RatOS G-code post processing.
+ * The state shared between actions in the action sequence for RatOS G-code post processing.
  * Property naming convention:
- *  'k' prefix: external configuration. Always readonly.
- *  '_' prefix: iteration-scope state that gets reset for each line
- *   no prefix: file-scope state that is maintained for the whole file
+ *  * `k` prefix: external configuration. Always readonly.
+ *  * `_` prefix: iteration-scope state that gets reset for each line
+ *  * no prefix: G-code file-scope state that is maintained for the whole file
  */
 export class State {
 	constructor(

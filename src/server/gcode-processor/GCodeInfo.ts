@@ -18,7 +18,6 @@ import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
 import semver, { SemVer } from 'semver';
 import { GCodeError } from '@/server/gcode-processor/errors';
 import date2 from 'date-and-time';
-import fs from 'fs/promises';
 const fsReader = require('fs-reader');
 import util from 'node:util';
 
@@ -40,6 +39,7 @@ const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: numbe
 
 /** Characteristics of a G-code file, typically determined from the header lines of the file. */
 export class GCodeInfo {
+	/** The placeholder version used to represent files transformed by the legacy ratos.py post processor. */
 	static readonly LEGACY_RATOS_VERSION = new SemVer('1.0.0-legacy');
 	/**
 	 * Parses header information from the specified file. This method will also detect files already processed by the legacy Python-based post processor.

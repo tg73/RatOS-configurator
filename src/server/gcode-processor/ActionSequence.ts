@@ -65,6 +65,9 @@ export enum ActionResult {
 
 const kActionResultNonFlagMask = (1 << 8) - 1;
 
+/**
+ * A sub-sequence of actions that can occur within an action sequence.
+ **/
 export class ActionSubSequence<TAction> {
 	constructor(
 		public entryAction: TAction,
@@ -72,10 +75,20 @@ export class ActionSubSequence<TAction> {
 	) {}
 }
 
+/**
+ * Convenience factory function for {@link ActionSubSequence}
+ *
+ * @param entryAction An action that determines if the contained sequence will be executed.
+ * @param sequence The sequence of actions gated by {@link entryAction}.
+ *
+ * @see {@link ActionResult.flagSkipSubSequence}
+ * @see {@link ActionResult.flagReplaceEntryAction}
+ * */
 export function subSequence<TAction>(entryAction: TAction, sequence: TAction[]) {
 	return new ActionSubSequence<TAction>(entryAction, sequence);
 }
 
+/** A sequence of actions and sub-sequences of actions. */
 export type ActionSequence<TAction> = Array<TAction | ActionSubSequence<TAction>>;
 
 /** Execute an action sequence. */

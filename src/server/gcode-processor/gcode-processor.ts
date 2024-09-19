@@ -14,6 +14,10 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * NOTE: Incomplete, API requirements to be determined.
+ */
+
 import { GCodeProcessor } from '@/server/gcode-processor/GCodeProcessor';
 import { Writable } from 'node:stream';
 
@@ -21,12 +25,4 @@ class NullSink extends Writable {
 	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
 		callback();
 	}
-}
-
-export function createGcodeProcessor(
-	printerHasIdex: boolean,
-	printerHasRmmuHub: boolean,
-	inspectionOnly: boolean = false,
-): GCodeProcessor {
-	return new GCodeProcessor(printerHasIdex, printerHasRmmuHub, inspectionOnly);
 }
