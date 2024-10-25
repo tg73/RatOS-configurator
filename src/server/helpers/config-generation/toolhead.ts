@@ -294,6 +294,14 @@ export class ToolheadGenerator<IsToolboard extends boolean> extends ToolheadHelp
 						(parameter.endsWith('_pin') || parameter === 'pin' || Object.values(this.toolboardPins).includes(value))
 					) {
 						result.push(`${parameter}: ${this.isToolboardPinInverted(value) ? '!' : ''}${this.getPinPrefix()}${value}`);
+					} else if (
+						typeof value === 'boolean' ||
+						value.toString().trim().toLowerCase() === 'true' ||
+						value.toString().trim().toLowerCase() === 'false'
+					) {
+						result.push(
+							`${parameter}: ${value === true || value.toString().trim().toLowerCase() === 'true' ? 'True' : 'False'}`,
+						);
 					} else {
 						result.push(`${parameter}: ${value}`);
 					}
