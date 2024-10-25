@@ -61,7 +61,8 @@
 			"comments": ["Use max_power: 0.5 for 12V, max_power: 1 for 24V (in printer.cfg)"],
 			"parameters": {
 				"max_power": 0.995,
-				"cycle_time": 0.0001
+				"cycle_time": 0.0001,
+				"hardware_pwm": true
 			}
 		},
 		"output_pin": {
