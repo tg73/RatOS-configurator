@@ -62,7 +62,7 @@
 			"parameters": {
 				"max_power": 0.995,
 				"cycle_time": 0.0001,
-				"shutdown_value": 0.0
+				"shutdown_speed": 0.0
 			}
 		},
 		"output_pin": {
