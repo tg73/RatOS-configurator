@@ -77,7 +77,7 @@ ${helper.renderSaveVariables({
 	zoffsetcontrolpoint: 0,
 })}
 
-[gcode_macro VAOC]
+[gcode_macro _VAOC]
 variable_expected_camera_x_position: ${config.size.x / 2 - 37.5}
 variable_expected_camera_y_position: ${config.size.y + 30.5}
 `;
