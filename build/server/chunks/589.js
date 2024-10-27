@@ -70,7 +70,7 @@ variable_home_y_first: True
 # Save variables
 ${r.renderSaveVariables({xcontrolpoint:e.size.x/2-37.5,ycontrolpoint:e.size.y+30.5,zcontrolpoint:10,zoffsetcontrolpoint:0})}
 
-[gcode_macro VAOC]
+[gcode_macro _VAOC]
 variable_expected_camera_x_position: ${e.size.x/2-37.5}
 variable_expected_camera_y_position: ${e.size.y+30.5}
 `,initialPrinterCfg=(e,r)=>`
