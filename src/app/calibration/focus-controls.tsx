@@ -27,7 +27,7 @@ type CameraSettingsProps = {
 
 export const FocusControls: React.FC<CameraSettingsProps> = (props) => {
 	const G = useGcodeCommand();
-	const live_position = usePrinterObjectSubscription((res) => {
+	const livePosition = usePrinterObjectSubscription((res) => {
 		return {
 			z: res.motion_report.live_position?.[2],
 		};
@@ -126,8 +126,8 @@ export const FocusControls: React.FC<CameraSettingsProps> = (props) => {
 						>
 							<span className="inline h-5 w-5 flex-shrink-0 font-sans text-base font-semibold leading-[18px]">Z</span>{' '}
 							<span className="inline">
-								{(live_position?.z ?? 0) >= 0 && '+'}
-								{live_position?.z?.toFixed(2) ?? '??'}
+								{(livePosition?.z ?? 0) >= 0 && '+'}
+								{livePosition?.z?.toFixed(2) ?? '??'}
 							</span>
 						</span>
 					</div>

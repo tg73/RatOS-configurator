@@ -43,7 +43,7 @@ export async function powerSpectralDensity(
 		throw new Error('Unknown scaling');
 	}
 
-	let scaling_factor: number = _scaling === 'none' ? 1 : 2;
+	let scalingFactor: number = _scaling === 'none' ? 1 : 2;
 	const win = tidy(() => tfSignal.hannWindow(fftSize));
 	let windowLossCompensationFactor = (await tidy(() => div(div(1.0, sum(pow(win, 2))), sampleRate)).array()) as number;
 
@@ -77,7 +77,7 @@ export async function powerSpectralDensity(
 			power *= windowLossCompensationFactor;
 			// Don't scale DC or Nyquist by 2
 			if (_scaling == 'psd' && i > 0 && nextFrequency < shaperDefaults.MAX_FREQ) {
-				power *= scaling_factor;
+				power *= scalingFactor;
 			}
 			if (power > maxPower) {
 				maxPower = power;
@@ -115,16 +115,16 @@ export const welch = async (PSDs: PSD[]): Promise<TypedArrayPSD> => {
 	// }
 
 	// Compute average PSD
-	let num_estimates = PSDs[0].estimates.length;
-	let avg = new Float64Array(num_estimates).fill(0);
+	let numEstimates = PSDs[0].estimates.length;
+	let avg = new Float64Array(numEstimates).fill(0);
 	for (let p = 0; p < PSDs.length; p++) {
-		for (let i = 0; i < num_estimates; i++) {
+		for (let i = 0; i < numEstimates; i++) {
 			avg[i] += PSDs[p].estimates[i];
 		}
 	}
 	let maxPower = 0;
 	let minPower = 0;
-	for (let i = 0; i < num_estimates; i++) {
+	for (let i = 0; i < numEstimates; i++) {
 		avg[i] = avg[i] / PSDs.length;
 		if (avg[i] > maxPower) {
 			maxPower = avg[i];
@@ -142,10 +142,10 @@ export const welch = async (PSDs: PSD[]): Promise<TypedArrayPSD> => {
 };
 
 export const sumPSDs = (PSDs: TypedArrayPSD[]): TypedArrayPSD => {
-	let num_estimates = PSDs[0].estimates.length;
-	let sum = new Float64Array(num_estimates).fill(0);
+	let numEstimates = PSDs[0].estimates.length;
+	let sum = new Float64Array(numEstimates).fill(0);
 	for (let p = 0; p < PSDs.length; p++) {
-		for (let i = 0; i < num_estimates; i++) {
+		for (let i = 0; i < numEstimates; i++) {
 			sum[i] += PSDs[p].estimates[i];
 		}
 	}

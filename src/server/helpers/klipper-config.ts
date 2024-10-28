@@ -717,9 +717,9 @@ export const constructKlipperConfigHelpers = async (
 						section.push(`${key}: ${pin}`);
 					});
 				} else {
-					let cs_pin = utils.getRailPinValue(rail.axis, '_uart_pin');
+					let csPin = utils.getRailPinValue(rail.axis, '_uart_pin');
 					try {
-						cs_pin = utils.getRailPinValue(rail.axis, '_cs_pin');
+						csPin = utils.getRailPinValue(rail.axis, '_cs_pin');
 					} catch {
 						// getLogger().error(
 						// 	{
@@ -731,7 +731,7 @@ export const constructKlipperConfigHelpers = async (
 						// 	'Failed to get cs_pin for axis.. falling back to uart_pin',
 						// );
 					}
-					section.push(`cs_pin: ${cs_pin}`);
+					section.push(`cs_pin: ${csPin}`);
 					if (utils.isExtruderToolheadAxis(rail.axis)) {
 						const toolboard = utils.getToolhead(rail.axis).getToolboard();
 						if (toolboard?.stepperSPI != null) {

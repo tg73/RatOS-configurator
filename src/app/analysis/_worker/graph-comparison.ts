@@ -114,13 +114,13 @@ export const pairPeaks = (
 	let i = 0;
 	while (unpairedPeaks1.length > 0 && unpairedPeaks2.length > 0 && i < unpairedPeaks1.length * unpairedPeaks2.length) {
 		i++;
-		let min_distance = threshold + 1;
+		let minDistance = threshold + 1;
 		let pair: [Peak, Peak] | null = null;
 		for (const p1 of unpairedPeaks1) {
 			for (const p2 of unpairedPeaks2) {
 				const distance = Math.abs(p1.freq - p2.freq);
-				if (distance < min_distance) {
-					min_distance = distance;
+				if (distance < minDistance) {
+					minDistance = distance;
 					pair = [p1, p2];
 				}
 			}
