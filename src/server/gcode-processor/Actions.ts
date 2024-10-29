@@ -27,7 +27,7 @@ import {
 } from '@/server/gcode-processor/errors';
 import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
-import { CommonGCodeCommand } from '@/server/gcode-processor/CommonGCodeCommand';
+import { parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
 
 // TODO: Review pad lengths.
 
@@ -80,7 +80,7 @@ export function newGCodeError(message: string, ctx: ProcessLineContext, state: S
 // ];
 
 export const getGcodeInfo: Action = (c, s) => {
-	let parsed = GCodeInfo.tryParseHeader(
+	const parsed = GCodeInfo.tryParseHeader(
 		c.line + '\n' + c.getLineOrUndefined(1)?.line + '\n' + c.getLineOrUndefined(2)?.line + '\n',
 	);
 	if (!parsed) {
@@ -139,7 +139,7 @@ export const getGcodeInfo: Action = (c, s) => {
 };
 
 export const getStartPrint: Action = (c, s) => {
-	let match =
+	const match =
 		/^(START_PRINT|RMMU_START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
 			c.line,
 		);
@@ -149,12 +149,12 @@ export const getStartPrint: Action = (c, s) => {
 		c.bookmarkKey = Symbol('START_PRINT');
 		s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
 
-		let initialTool = match.groups?.INITIAL_TOOL;
+		const initialTool = match.groups?.INITIAL_TOOL;
 		if (initialTool) {
 			s.usedTools.push(initialTool);
 		}
 
-		let extruderOtherLayerTemp = match?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
+		const extruderOtherLayerTemp = match?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
 		if (extruderOtherLayerTemp) {
 			s.extruderTemps = extruderOtherLayerTemp.split(',');
 		}
@@ -220,14 +220,14 @@ export const fixOrcaSetAccelaration: Action = [
  * line is not one of the common commands, the subsequence is skipped, and the main sequence continues.
  */
 export const whenCommonCommandDoThenStop: Action = (c, s) => {
-	s._cmd = CommonGCodeCommand.parseOptimisedForOrderXYEZF(c.line);
+	s._cmd = parseCommonGCodeCommandLine(c.line);
 	return s._cmd ? ActionResult.Stop : ActionResult.Continue | ActionResult.flagSkipSubSequence;
 };
 
 export const findFirstMoveXY: Action = (c, s) => {
-	if (s._cmd!.g) {
-		s.firstMoveX ??= s._cmd?.x;
-		s.firstMoveY ??= s._cmd?.y;
+	if (s._cmd!.letter === 'G') {
+		s.firstMoveX ??= s._cmd!.x;
+		s.firstMoveY ??= s._cmd!.y;
 
 		if (s.firstMoveX && s.firstMoveY) {
 			// We don't need to do this check any more. G0/G1 are extremely frequent, so avoid any excess work.
@@ -241,16 +241,25 @@ export const findFirstMoveXY: Action = (c, s) => {
 };
 
 export const findMinMaxX: Action = (c, s) => {
-	if (s._cmd!.g) {
-		let x = s._cmd?.x;
-		if (x) {
-			let n = Number(x);
-			if (n < s.minX) {
-				s.minX = n;
-			}
-			if (n > s.maxX) {
-				s.maxX = n;
-			}
+	// TODO: Support G2/G3 (arcs)
+	if (s._cmd!.letter === 'G') {
+		switch (s._cmd!.value) {
+			// Reminder: parseCommonGCodeCommandLine normalizes G0 to G1, we only need to check for '1'.
+			case '1':
+				const x = s._cmd!.x;
+				if (x) {
+					const n = Number(x);
+					if (n < s.minX) {
+						s.minX = n;
+					}
+					if (n > s.maxX) {
+						s.maxX = n;
+					}
+				}
+				break;
+			case '2':
+			case '3':
+				throw newGCodeError('G2/G3 commands (arcs) are not currently supported.', c, s);
 		}
 
 		// Within the commom commands subgroup, this is the last action that handles to G lines. Subsequent
@@ -261,8 +270,8 @@ export const findMinMaxX: Action = (c, s) => {
 };
 
 export const processToolchange: Action = (c, s) => {
-	let tool = s._cmd!.t;
-	if (tool) {
+	if (s._cmd!.letter === 'T') {
+		const tool = s._cmd!.value;
 		if (++s.toolChangeCount == 1) {
 			// Remove first toolchange
 			c.prepend(REMOVED_BY_RATOS);
@@ -329,7 +338,7 @@ export const processToolchange: Action = (c, s) => {
 		// XY move after toolchange:
 		let xyMoveAfterToolchange: [x: string, y: string, line: ProcessLineContext] | undefined = undefined;
 		for (let scan of c.scanForward(19)) {
-			const match = CommonGCodeCommand.parseOptimisedForOrderXYEZF(scan.line);
+			const match = parseCommonGCodeCommandLine(scan.line);
 			if (match) {
 				if (match.x && match.y) {
 					if (match.e) {
@@ -361,7 +370,7 @@ export const processToolchange: Action = (c, s) => {
 				case GCodeFlavour.SuperSlicer:
 				case GCodeFlavour.OrcaSlicer:
 					for (let scan of (xyMoveAfterToolchange?.[2] ?? c).scanForward(2)) {
-						const match = CommonGCodeCommand.parseOptimisedForOrderXYEZF(scan.line);
+						const match = parseCommonGCodeCommandLine(scan.line);
 						if (match) {
 							if (match.z) {
 								zMoveAfterToolchange = [match.z, scan];
