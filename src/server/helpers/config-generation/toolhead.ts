@@ -510,7 +510,7 @@ export class ToolheadGenerator<IsToolboard extends boolean> extends ToolheadHelp
 		return result.join('\n');
 	}
 	renderToolheadMacro() {
-		const endstopSafetyMargin = 5;
+		const endstopSafetyMargin = 2;
 		let parkX: number | null = null;
 		if (this.getMotionAxis() === PrinterAxis.x) {
 			parkX = -1 * this.printer.bedMargin.x[0] + endstopSafetyMargin;
