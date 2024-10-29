@@ -48,8 +48,8 @@ const LEGACY_MODE = true;
  * by random access changes to the output file at the end of streaming.
  **/
 export class GCodeProcessor extends SlidingWindowLineProcessor {
-	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean) {
-		super(20, 20);
+	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean, abortSignal?: AbortSignal) {
+		super(20, 20, abortSignal);
 		this.#state = new State(printerHasIdex, printerHasRmmuHub, inspectionOnly);
 	}
 

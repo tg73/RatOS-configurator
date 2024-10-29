@@ -38,9 +38,9 @@ class NullSink extends Writable {
 	}
 }
 
-async function processToNullWithoutBookmarkProcessing(gcodePath: string) {
-	const gcodeProcessor = new GCodeProcessor(true, false, false);
-	const encoder = new BookmarkingBufferEncoder();
+async function processToNullWithoutBookmarkProcessing(gcodePath: string, abortSignal?: AbortSignal) {
+	const gcodeProcessor = new GCodeProcessor(true, false, false, abortSignal);
+	const encoder = new BookmarkingBufferEncoder(undefined, undefined, abortSignal);
 	await pipeline(createReadStream(gcodePath), split(), gcodeProcessor, encoder, new NullSink());
 }
 
@@ -105,7 +105,16 @@ describe('other', async () => {
 		await expect(
 			async () =>
 				await processToNullWithoutBookmarkProcessing(path.join(__dirname, 'fixtures', 'other', 'has_arcs_ps.gcode')),
-		).rejects.toThrow(/.*arcs.*not.*supported.*/);
+		).rejects.toThrow(/arcs.*not.*supported/);
+	});
+
+	test('processing can be cancelled', async () => {
+		await expect(async () =>
+			processToNullWithoutBookmarkProcessing(
+				path.join(__dirname, 'fixtures', 'slicer_output', 'benchy2c_ps.gcode'),
+				AbortSignal.timeout(100),
+			),
+		).rejects.toThrow(/timeout/);
 	});
 });
 

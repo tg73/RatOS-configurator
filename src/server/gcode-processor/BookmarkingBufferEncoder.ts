@@ -36,21 +36,26 @@ export interface BookmarkCollection {
  * encoded byte length, tracks any requested bookmarks, and passes on the encoded
  * buffers. Intended to be pipelined immediately after {@link SlidingWindowLineProcessor}.
  */
-export class BookmarkingBufferEncoder extends Transform implements BookmarkCollection {
+export class BookmarkingBufferEncoder extends Transform implements BookmarkCollection {	
 	constructor(
-		/** A function to be invoked before the transform stream is closed. Typically used to
-		 * apply bookmarks.
-		 */
 		public readonly newline: string = '\n',
 		public readonly encoding: BufferEncoding = 'utf8',
+		abortSignal?: AbortSignal,
 	) {
 		super({ objectMode: true });
+		this.#abortSignal = abortSignal;
 	}
 
+	#abortSignal?: AbortSignal;
 	#bookmarks: Map<BookmarkKey, Bookmark> = new Map<BookmarkKey, Bookmark>();
 	#bytesWritten: number = 0;
 
 	_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+		if (this.#abortSignal?.aborted) {
+			callback(this.#abortSignal.reason);
+			return;
+		}
+
 		if (chunk instanceof BookmarkableLine) {
 			let buffer = Buffer.from(chunk.line + this.newline, this.encoding);
 			if (chunk.bookmarkKey) {
@@ -125,7 +130,7 @@ export async function replaceBookmarkedGcodeLine(
 	bookmark: Bookmark,
 	replacementLine: string,
 ): Promise<void> {
-	let line = replacementLine.trimEnd();
+	const line = replacementLine.trimEnd();
 	let buf = Buffer.from(line);
 	if (buf.length + 1 > bookmark.byteLength) {
 		// Too long, allowing for terminating \n.
