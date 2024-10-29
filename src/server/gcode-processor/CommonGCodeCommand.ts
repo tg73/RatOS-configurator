@@ -15,81 +15,91 @@
  */
 
 /**
- * Note: See gcode_match_benchmarks.bench.ts (under __tests___) for performance considerations. The
- * approach implemented here is around 2.6x faster than the initial naive implementation.
+ * PERFORMANCE NOTES
  *
- * Note: We avoid the `d` regex flag (which generates the indicies array) as this requires es2022 and
- * roughly doubles execution time (from benchmark tests). This is why we have the `probably` in
- * `probablyWrongOrderOptimization`.
+ * Various approaches were tried and benchmarked. The final outcome performs well without
+ * having a complex "hand-optimized" implementation. Always benchmark, as regex performance
+ * can often be counter-intuitive.
+ *
  */
 
-export const rxXYEZF =
-	/^(?:T(\d+))|(?:(G0|G1)(?=\s)(?:(?:\sX([+-]?[\d.]+))|(?=.*(?:\sX([+-]?[\d.]+)))|)(?:(?:\sY([+-]?[\d.]+))|(?=.*(?:\sY([+-]?[\d.]+)))|)(?:(?:\sE([+-]?[\d.]+))|(?=.*(?:\sE([+-]?[\d.]+)))|)(?:(?:\sZ([+-]?[\d.]+))|(?=.*(?:\sZ([+-]?[\d.]+)))|)(?=.*(?:\sF([\d.]+))|))/;
+export interface CommonGCodeCommand {
+	/** The command letter, such as 'G' or 'T'. Always normalized to upper case. */
+	readonly letter: string;
+	/** The command value, such as '1' for 'G1'. Note that G0 and G1 are normalized to value '1' for easier conditional handling. */
+	readonly value: string;
+	readonly x?: string;
+	readonly y?: string;
+	readonly e?: string;
+	readonly z?: string;
+	readonly f?: string;
+	readonly i?: string;
+	readonly j?: string;
+}
 
-export const rxZXYEF =
-	/^(?:T(\d+))|(?:(G0|G1)(?=\s)(?:(?:\sZ([+-]?[\d.]+))|(?=.*(?:\sZ([+-]?[\d.]+)))|)(?:(?:\sX([+-]?[\d.]+))|(?=.*(?:\sX([+-]?[\d.]+)))|)(?:(?:\sY([+-]?[\d.]+))|(?=.*(?:\sY([+-]?[\d.]+)))|)(?:(?:\sE([+-]?[\d.]+))|(?=.*(?:\sE([+-]?[\d.]+)))|)(?=.*(?:\sF([\d.]+))|))/;
+const rx_G01 =
+	/^\s*G\s*[01](?=\D)(?:(?:(?:\s*X\s*([+-]?[\d.]+))|(?=[^;]*?(?:X\s*([+-]?[\d.]+)))|)(?:(?:\s*Y\s*([+-]?[\d.]+))|(?=[^;]*?(?:Y\s*([+-]?[\d.]+)))|)(?:(?:\s*E\s*([+-]?[\d.]+))|(?=[^;]*?(?:E\s*([+-]?[\d.]+)))|)(?:(?:\s*Z\s*([+-]?[\d.]+))|(?=[^;]*?(?:Z\s*([+-]?[\d.]+)))|)(?:(?:\s*F\s*([+-]?[\d.]+))|(?=[^;]*?(?:F\s*([+-]?[\d.]+)))|))/i;
 
-export class CommonGCodeCommand {
-	/**
-	 * @param probablyWrongOrderOptimization If `true`, indicates that the other order optimization would likely have been ideal.
-	 */
-	constructor(
-		readonly probablyWrongOrderOptimization: boolean,
-		readonly t?: string,
-		readonly g?: string,
-		readonly x?: string,
-		readonly y?: string,
-		readonly e?: string,
-		readonly z?: string,
-		readonly f?: string,
-	) {}
+const rx_G23 =
+	/^\s*G\s*([23])(?=\D)(?:(?:(?:\s*X([+-]?[\d.]+))|(?=[^;]*?(?:X([+-]?[\d.]+)))|)(?:(?:\s*Y([+-]?[\d.]+))|(?=[^;]*?(?:Y([+-]?[\d.]+)))|)(?:(?:\s*I([+-]?[\d.]+))|(?=[^;]*?(?:I([+-]?[\d.]+)))|)(?:(?:\s*J([+-]?[\d.]+))|(?=[^;]*?(?:J([+-]?[\d.]+)))|)(?:(?:\s*E([+-]?[\d.]+))|(?=[^;]*?(?:E([+-]?[\d.]+)))|)(?:(?:\s*Z([+-]?[\d.]+))|(?=[^;]*?(?:Z([+-]?[\d.]+)))|)(?:(?:\s*F([+-]?[\d.]+))|(?=[^;]*?(?:F([+-]?[\d.]+)))|))/i;
 
-	/**
-	 * parse, optimised for the order most common in non-vase-mode prints.
-	 */
-	static parseOptimisedForOrderXYEZF(line: string): CommonGCodeCommand | null {
-		const m = rxXYEZF.exec(line);
-		if (m) {
-			return new CommonGCodeCommand(
-				// This condition is true at least for pattern ZXYE (F absent):
-				m[4] !== undefined && m[6] !== undefined && m[8] !== undefined && m[9] !== undefined && m[11] === undefined,
-				m[1],
-				m[2],
-				m[3] ?? m[4],
-				m[5] ?? m[6],
-				m[7] ?? m[8],
-				m[9] ?? m[10],
-				m[11],
-			);
-		} else {
-			return null;
-		}
+const rx_T = /^\s*T\s*(\d+)/i;
+
+/**
+ * Parses a single G-Code command line, parsing only commands and arguments known to be of interest during analysis.
+ * This method is not intended to handle multi-line text. Some flexibility in G-code format is supported,
+ * to cover typical hand-coded gcode that might occur in custom gcode blocks, but this is *not* a full-
+ * featured parser, and less common gcode features are not supported. This is a performance trade-off
+ * given that we expect to parse gcode from a proscribed set of slicers.
+ *
+ * Note: the set of parsed arguments is not exhaustive. There may be additional unparsed arguments. Bear
+ * this in mind if you need to mutate a line in-place.
+ */
+export function parseCommonGCodeCommandLine(line: string): CommonGCodeCommand | null {
+	// Various approaches were analysed for performance (see gcode_match_benchmarks.bench.ts). This approach
+	// has a simple implementation, decent performance and is more accommodating of format variations than
+	// some other approaches benchmarked.
+	// Note that the "obvious optimisation" of inspecting the first (and second) char codes of line and branching
+	// was less performant for the most common G0/G1 case.
+
+	rx_G01.lastIndex = 0;
+	let m = rx_G01.exec(line);
+	if (m) {
+		return {
+			letter: 'G',
+			value: '1',
+			x: m[1] ?? m[2],
+			y: m[3] ?? m[4],
+			e: m[5] ?? m[6],
+			z: m[7] ?? m[8],
+			f: m[9] ?? m[10],
+		};
 	}
 
-	/**
-	 * parse, optimised for the order most common in vase-mode prints (after the base layers).
-	 */
-	static parseOptimisedForOrderZXYEF(line: string): CommonGCodeCommand | null {
-		const m = rxZXYEF.exec(line);
-		if (m) {
-			return new CommonGCodeCommand(
-				// This condition is true at least for pattern XYE (Z and F absent):
-				m[3] === undefined &&
-					m[4] === undefined &&
-					m[5] !== undefined &&
-					m[7] !== undefined &&
-					m[9] !== undefined &&
-					m[11] === undefined,
-				m[1],
-				m[2],
-				m[5] ?? m[6],
-				m[7] ?? m[8],
-				m[9] ?? m[10],
-				m[3] ?? m[4],
-				m[11],
-			);
-		} else {
-			return null;
-		}
+	rx_G23.lastIndex = 0;
+	m = rx_G23.exec(line);
+	if (m) {
+		return {
+			letter: 'G',
+			value: m[1],
+			x: m[2] ?? m[3],
+			y: m[4] ?? m[5],
+			i: m[6] ?? m[7],
+			j: m[8] ?? m[9],
+			e: m[10] ?? m[11],
+			z: m[12] ?? m[13],
+			f: m[14] ?? m[15],
+		};
 	}
+
+	rx_T.lastIndex = 0;
+	m = rx_T.exec(line);
+	if (m) {
+		return {
+			letter: 'T',
+			value: m[1],
+		};
+	}
+
+	return null;
 }

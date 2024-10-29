@@ -16,82 +16,48 @@
 
 /* eslint-disable no-console */
 
+import { parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
 import { describe, bench } from 'vitest';
 
-const rxParseCommonCommands =
-	/^(?:T(?<T>\d+))|(?:(?<G>G0|G1)(?=\s)(?=.*(\sX(?<X>[\d.]+))|)(?=.*(\sY(?<Y>[\d.]+))|)(?=.*(\sZ(?<Z>[\d.]+))|)(?=.*(\sE(?<E>[\d.]+))|)(?=.*(\sF(?<F>[\d.]+))|))/i;
-
 /**
- * For each parameter, try to match it in the most common parameter order. This match will
- * move the match position forward, reducing the length of any subsequent matches. Fall back to
- * lookahead, which will tollerate any parameter order.
+ * RUNNING BENCHMARKS:
+ *   pnpm vitest bench
  *
- * The most common patterns (by my estimation, to be proved), are:
- * * G1 X1.23 Y1.23 E1.23
- * * G1 Z1.23 X1.23 Y1.23 E1.23 (vase mode)
- * * When F is present, it's typically last.
- * * E and Z rarely occur in the same line, except for vase mode.
+ * PERFORMANCE NOTES
+ *
+ * The biggest performance improvement came from avoiding named groups. Removing named groups roughly doubles
+ * performance. Optimizing for an expected order and falling back to lookahead is about 1.4x faster.
+ *
+ * The returned match array is sized for all possible capturing groups. Exec performance even for obviously
+ * quick-matching strings is made worse simply by adding more capturing groups (that are irrelevant for
+ * such a quick-matching string). This means, for example, that extending a regex to handle rarely-needed
+ * args, even if there is no direct impact on the parsing logic performance for common args, can
+ * have a net-negative performance impact.
  */
-const rxParseCommonCommandsOptimised =
-	/^(?:T(?<T>\d+))|(?:(?<G>G0|G1)(?=\s)(?:(\sX(?<X>[\d.]+))|(?=.*(\sX(?<X2>[\d.]+)))|)(?:(\sY(?<Y>[\d.]+))|(?=.*(\sY(?<Y2>[\d.]+)))|)(?:(\sE(?<E>[\d.]+))|(?=.*(\sE(?<E2>[\d.]+)))|)(?:(\sZ(?<Z>[\d.]+))|(?=.*(\sZ(?<Z2>[\d.]+)))|)(?=.*(\sF(?<F>[\d.]+))|))/i;
 
-const rxParseCommonCommandsOptimisedVaseMode =
-	/^(?:T(?<T>\d+))|(?:(?<G>G0|G1)(?=\s)(?:(\sZ(?<Z>[\d.]+))|(?=.*(\sZ(?<Z2>[\d.]+)))|)(?:(\sX(?<X>[\d.]+))|(?=.*(\sX(?<X2>[\d.]+)))|)(?:(\sY(?<Y>[\d.]+))|(?=.*(\sY(?<Y2>[\d.]+)))|)(?:(\sE(?<E>[\d.]+))|(?=.*(\sE(?<E2>[\d.]+)))|)(?=.*(\sF(?<F>[\d.]+))|))/i;
+describe.each([
+	{ name: 'empty', gcode: '' },
+	{ name: 'empty comment', gcode: ';' },
+	{ name: 'comment', gcode: '; blah this is a test' },
+	{ name: 'T5', gcode: 'T5' },
+	{ name: 'G1 XYE', gcode: 'G1 X234.55 Y257.654 E.01224' },
+	{ name: 'G1 ZXYE (vase mode)', gcode: 'G1 Z1.23 X234.55 Y257.654 E.01224' },
+	{ name: 'G2 XYIJE', gcode: 'G2 X150.054 Y133.306 I-.867 J16.671 E3.2407' },
+	{ name: 'G3 XYIJE', gcode: 'G3 X150.054 Y133.306 I-.867 J16.671 E3.2407' },
+])('$name', ({ name, gcode }) => {
+	/*
+	// https://github.com/cncjs/gcode-parser
+	// Flexible, likely correct, handles uncommon comment formats etc, but around 7x slower than other
+	// approaches tailored to the formatting we expect/support.
+	const parser = require('gcode-parser');
 
-const rxParseCommonCommandsOptimisedV2 =
-	/^(?:T(?<T>\d+))|(?:(?<G>G0|G1)(?=\s)(?:(\sX(?<X>[+-]?[\d.]+))|(?=.*(\sX(?<X2>[+-]?[\d.]+)))|)(?:(\sY(?<Y>[+-]?[\d.]+))|(?=.*(\sY(?<Y2>[+-]?[\d.]+)))|)(?:(\sE(?<E>[+-]?[\d.]+))|(?=.*(\sE(?<E2>[+-]?[\d.]+)))|)(?:(\sZ(?<Z>[+-]?[\d.]+))|(?=.*(\sZ(?<Z2>[+-]?[\d.]+)))|)(?=.*(\sF(?<F>[\d.]+))|))/i;
-
-const rxParseCommonCommandsOptimisedV2CaseSensitive =
-	/^(?:T(?<T>\d+))|(?:(?<G>G0|G1)(?=\s)(?:(\sX(?<X>[+-]?[\d.]+))|(?=.*(\sX(?<X2>[+-]?[\d.]+)))|)(?:(\sY(?<Y>[+-]?[\d.]+))|(?=.*(\sY(?<Y2>[+-]?[\d.]+)))|)(?:(\sE(?<E>[+-]?[\d.]+))|(?=.*(\sE(?<E2>[+-]?[\d.]+)))|)(?:(\sZ(?<Z>[+-]?[\d.]+))|(?=.*(\sZ(?<Z2>[+-]?[\d.]+)))|)(?=.*(\sF(?<F>[\d.]+))|))/;
-
-const rxParseCommonCommandsOptimisedV2CaseSensitiveNoNames =
-	/^(?:T(\d+))|(?:(G0|G1)(?=\s)(?:(?:\sX([+-]?[\d.]+))|(?=.*(?:\sX([+-]?[\d.]+)))|)(?:(?:\sY([+-]?[\d.]+))|(?=.*(?:\sY([+-]?[\d.]+)))|)(?:(?:\sE([+-]?[\d.]+))|(?=.*(?:\sE([+-]?[\d.]+)))|)(?:(?:\sZ([+-]?[\d.]+))|(?=.*(?:\sZ([+-]?[\d.]+)))|)(?=.*(?:\sF([\d.]+))|))/;
-
-// Adds /d flag, which adds the indices array to the result of exec. This requires es2022, and takes more that twice as long as without /d.
-// const rxParseCommonCommandsOptimisedV2CaseSensitiveNoNamesWithIndices =
-// 	/^(?:T(\d+))|(?:(G0|G1)(?=\s)(?:(?:\sX([+-]?[\d.]+))|(?=.*(?:\sX([+-]?[\d.]+)))|)(?:(?:\sY([+-]?[\d.]+))|(?=.*(?:\sY([+-]?[\d.]+)))|)(?:(?:\sE([+-]?[\d.]+))|(?=.*(?:\sE([+-]?[\d.]+)))|)(?:(?:\sZ([+-]?[\d.]+))|(?=.*(?:\sZ([+-]?[\d.]+)))|)(?=.*(?:\sF([\d.]+))|))/d;
-
-describe('G1 XYE', () => {
-	bench('rx naive', () => {
-		rxParseCommonCommands.exec('G1 X234.55 Y257.654 E.01224');
+	bench('gcode-parser', () => {
+		parser.parseLine(gcode);
 	});
 
-	bench('rx XYE-optimised', () => {
-		rxParseCommonCommandsOptimised.exec('G1 X234.55 Y257.654 E.01224');
-	});
+	*/
 
-	bench('rx ZXYE-optimised', () => {
-		rxParseCommonCommandsOptimisedVaseMode.exec('G1 X234.55 Y257.654 E.01224');
-	});
-
-	bench('rx XYE-optimised V2', () => {
-		rxParseCommonCommandsOptimisedV2.exec('G1 X234.55 Y257.654 E.01224');
-	});
-
-	bench('rx XYE-optimised V2-CS', () => {
-		rxParseCommonCommandsOptimisedV2CaseSensitive.exec('G1 X234.55 Y257.654 E.01224');
-	});
-
-	bench('rx XYE-optimised V2-CS-NN', () => {
-		rxParseCommonCommandsOptimisedV2CaseSensitiveNoNames.exec('G1 X234.55 Y257.654 E.01224');
-	});
-
-	// Adds /d flag, which adds the indices array to the result of exec. This requires es2022, and takes more that twice as long as without /d.
-	// bench('rx XYE-optimised V2-CS-NN-IX', () => {
-	// 	rxParseCommonCommandsOptimisedV2CaseSensitiveNoNamesWithIndices.exec('G1 X234.55 Y257.654 E.01224');
-	// });
-});
-
-describe('G1 ZXYE (vase mode)', () => {
-	bench('rx naive', () => {
-		rxParseCommonCommands.exec('G1 Z1.23 X234.55 Y257.654 E.01224');
-	});
-
-	bench('rx XYE-optimised', () => {
-		rxParseCommonCommandsOptimised.exec('G1 Z1.23 X234.55 Y257.654 E.01224');
-	});
-
-	bench('rx ZXYE-optimised', () => {
-		rxParseCommonCommandsOptimisedVaseMode.exec('G1 Z1.23 X234.55 Y257.654 E.01224');
+	bench('parseCommonGCodeCommandLine', () => {
+		parseCommonGCodeCommandLine(gcode);
 	});
 });
