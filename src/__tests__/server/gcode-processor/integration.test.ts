@@ -25,11 +25,24 @@ import { glob } from 'glob';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs, { FileHandle } from 'node:fs/promises';
 import path from 'node:path';
+import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import split from 'split2';
 import { describe, test, expect, chai } from 'vitest';
 
 chai.use(require('chai-string'));
+
+class NullSink extends Writable {
+	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+		callback();
+	}
+}
+
+async function processToNullWithoutBookmarkProcessing(gcodePath: string) {
+	const gcodeProcessor = new GCodeProcessor(true, false, false);
+	const encoder = new BookmarkingBufferEncoder();
+	await pipeline(createReadStream(gcodePath), split(), gcodeProcessor, encoder, new NullSink());
+}
 
 // https://stackoverflow.com/a/43053803
 function cartesian(...a: any) {
@@ -86,6 +99,15 @@ async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modern
 		fhModern?.close();
 	}
 }
+
+describe('other', async () => {
+	test('G2/G3 arcs are not supported', async () => {
+		await expect(
+			async () =>
+				await processToNullWithoutBookmarkProcessing(path.join(__dirname, 'fixtures', 'other', 'has_arcs_ps.gcode')),
+		).rejects.toThrow(/.*arcs.*not.*supported.*/);
+	});
+});
 
 describe('legacy equivalence', { timeout: 60000 }, async () => {
 	test.each(
