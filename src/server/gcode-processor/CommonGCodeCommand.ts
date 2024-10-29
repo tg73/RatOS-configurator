@@ -37,13 +37,13 @@ export interface CommonGCodeCommand {
 	readonly j?: string;
 }
 
-const rx_G01 =
+const rxG01 =
 	/^\s*G\s*[01](?=\D)(?:(?:(?:\s*X\s*([+-]?[\d.]+))|(?=[^;]*?(?:X\s*([+-]?[\d.]+)))|)(?:(?:\s*Y\s*([+-]?[\d.]+))|(?=[^;]*?(?:Y\s*([+-]?[\d.]+)))|)(?:(?:\s*E\s*([+-]?[\d.]+))|(?=[^;]*?(?:E\s*([+-]?[\d.]+)))|)(?:(?:\s*Z\s*([+-]?[\d.]+))|(?=[^;]*?(?:Z\s*([+-]?[\d.]+)))|)(?:(?:\s*F\s*([+-]?[\d.]+))|(?=[^;]*?(?:F\s*([+-]?[\d.]+)))|))/i;
 
-const rx_G23 =
+const rxG23 =
 	/^\s*G\s*([23])(?=\D)(?:(?:(?:\s*X([+-]?[\d.]+))|(?=[^;]*?(?:X([+-]?[\d.]+)))|)(?:(?:\s*Y([+-]?[\d.]+))|(?=[^;]*?(?:Y([+-]?[\d.]+)))|)(?:(?:\s*I([+-]?[\d.]+))|(?=[^;]*?(?:I([+-]?[\d.]+)))|)(?:(?:\s*J([+-]?[\d.]+))|(?=[^;]*?(?:J([+-]?[\d.]+)))|)(?:(?:\s*E([+-]?[\d.]+))|(?=[^;]*?(?:E([+-]?[\d.]+)))|)(?:(?:\s*Z([+-]?[\d.]+))|(?=[^;]*?(?:Z([+-]?[\d.]+)))|)(?:(?:\s*F([+-]?[\d.]+))|(?=[^;]*?(?:F([+-]?[\d.]+)))|))/i;
 
-const rx_T = /^\s*T\s*(\d+)/i;
+const rxT = /^\s*T\s*(\d+)/i;
 
 /**
  * Parses a single G-Code command line, parsing only commands and arguments known to be of interest during analysis.
@@ -62,8 +62,8 @@ export function parseCommonGCodeCommandLine(line: string): CommonGCodeCommand | 
 	// Note that the "obvious optimisation" of inspecting the first (and second) char codes of line and branching
 	// was less performant for the most common G0/G1 case.
 
-	rx_G01.lastIndex = 0;
-	let m = rx_G01.exec(line);
+	rxG01.lastIndex = 0;
+	let m = rxG01.exec(line);
 	if (m) {
 		return {
 			letter: 'G',
@@ -76,8 +76,8 @@ export function parseCommonGCodeCommandLine(line: string): CommonGCodeCommand | 
 		};
 	}
 
-	rx_G23.lastIndex = 0;
-	m = rx_G23.exec(line);
+	rxG23.lastIndex = 0;
+	m = rxG23.exec(line);
 	if (m) {
 		return {
 			letter: 'G',
@@ -92,8 +92,8 @@ export function parseCommonGCodeCommandLine(line: string): CommonGCodeCommand | 
 		};
 	}
 
-	rx_T.lastIndex = 0;
-	m = rx_T.exec(line);
+	rxT.lastIndex = 0;
+	m = rxT.exec(line);
 	if (m) {
 		return {
 			letter: 'T',
