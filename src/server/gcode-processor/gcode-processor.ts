@@ -42,6 +42,7 @@ interface Options {
 	rmmu?: boolean;
 	overwrite?: boolean;
 	onProgress?: (report: progress.Progress) => void;
+	abortSignal?: AbortSignal;
 }
 
 export async function processGCode(inputFile: string, outputFile: string, options: Options) {
@@ -61,8 +62,8 @@ export async function processGCode(inputFile: string, outputFile: string, option
 	}
 	try {
 		fh = await open(outputFile, 'w');
-		const gcodeProcessor = new GCodeProcessor(!!options.idex, !!options.rmmu, false);
-		const encoder = new BookmarkingBufferEncoder();
+		const gcodeProcessor = new GCodeProcessor(!!options.idex, !!options.rmmu, false, options.abortSignal);
+		const encoder = new BookmarkingBufferEncoder(undefined, undefined, options.abortSignal);
 		const progressStream = progress({ length: inputStat.size });
 		if (options.onProgress) {
 			progressStream.on('progress', options.onProgress);
