@@ -149,6 +149,9 @@ install_udev_rule()
 	if [ ! -e /etc/udev/rules.d/97-ratos.rules ]; then
 		$sudo ln -s "$SCRIPT_DIR/ratos.rules" /etc/udev/rules.d/97-ratos.rules
 	fi
+	if [ ! -e /etc/udev/rules.d/97-vaoc.rules ]; then
+		$sudo ln -s "$SCRIPT_DIR/vaoc.rules" /etc/udev/rules.d/97-vaoc.rules
+	fi
 }
 
 ensure_sudo_command_whitelisting()

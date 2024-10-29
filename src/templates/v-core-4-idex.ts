@@ -76,6 +76,10 @@ ${helper.renderSaveVariables({
 	zcontrolpoint: 10,
 	zoffsetcontrolpoint: 0,
 })}
+
+[gcode_macro _VAOC]
+variable_expected_camera_x_position: ${config.size.x / 2 - 37.5}
+variable_expected_camera_y_position: ${config.size.y + 30.5}
 `;
 
 export const initialPrinterCfg = (config: PrinterConfiguration, helper: KlipperConfigHelper) => `
@@ -141,7 +145,7 @@ ${helper.renderUserStepperSections({
 			max: config.size.x + margin.max,
 			endstop: config.size.x + margin.max,
 		}),
-		safeDistance: 60,
+		safeDistance: 55,
 	},
 	y: {
 		directionInverted: true,
