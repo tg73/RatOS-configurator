@@ -145,7 +145,7 @@ ${helper.renderUserStepperSections({
 			max: config.size.x + margin.max,
 			endstop: config.size.x + margin.max,
 		}),
-		safeDistance: 60,
+		safeDistance: 55,
 	},
 	y: {
 		directionInverted: true,
