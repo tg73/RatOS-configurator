@@ -421,6 +421,7 @@ class RatOS:
 							move_x = ''
 							move_y = ''
 							move_line = 0
+							move_z_hop_line = 0
 							if toolchange_line > 0:
 								for i2 in range(20):
 									if lines[toolchange_line + i2].rstrip().replace("  ", " ").startswith("G1 X"):
@@ -430,6 +431,8 @@ class RatOS:
 												move_x = splittedstring[1].rstrip()
 												move_y = splittedstring[2].rstrip()
 												move_line = toolchange_line + i2
+												if lines[toolchange_line + i2 - 1].rstrip().startswith("G1 Z"):
+													move_z_hop_line = toolchange_line + i2 - 1
 												break
 
 							# z-drop after toolchange
@@ -482,6 +485,8 @@ class RatOS:
 									new_toolchange_gcode = ('TOOL T=' + lines[toolchange_line].rstrip().replace("T", "") + ' ' + move_x.replace("X", "X=") + ' ' + move_y.replace("Y", "Y=") + ' ' + move_z.replace("Z", "Z=")).rstrip()
 								lines[toolchange_line] = new_toolchange_gcode + '\n'
 								lines[move_line] = REMOVED_BY_POST_PROCESSOR + lines[move_line].rstrip().replace("  ", " ") + '\n'
+								if move_z_hop_line > 0:
+									lines[move_z_hop_line] = REMOVED_BY_POST_PROCESSOR + lines[move_z_hop_line].rstrip() + '\n'
 								if retraction_line > 0 and extrusion_line > 0:
 									lines[retraction_line] = REMOVED_BY_POST_PROCESSOR + lines[retraction_line].rstrip() + '\n'
 									lines[extrusion_line] = REMOVED_BY_POST_PROCESSOR + lines[extrusion_line].rstrip() + '\n'
