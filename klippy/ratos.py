@@ -431,8 +431,9 @@ class RatOS:
 												move_x = splittedstring[1].rstrip()
 												move_y = splittedstring[2].rstrip()
 												move_line = toolchange_line + i2
-												if lines[toolchange_line + i2 - 1].rstrip().startswith("G1 Z"):
-													move_z_hop_line = toolchange_line + i2 - 1
+												if slicer_name == PRUSA_SLICER or slicer_name == SUPER_SLICER:
+													if lines[toolchange_line + i2 - 1].rstrip().startswith("G1 Z"):
+														move_z_hop_line = toolchange_line + i2 - 1
 												break
 
 							# z-drop after toolchange
