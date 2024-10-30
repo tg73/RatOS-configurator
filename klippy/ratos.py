@@ -485,7 +485,14 @@ class RatOS:
 								else:
 									new_toolchange_gcode = ('TOOL T=' + lines[toolchange_line].rstrip().replace("T", "") + ' ' + move_x.replace("X", "X=") + ' ' + move_y.replace("Y", "Y=") + ' ' + move_z.replace("Z", "Z=")).rstrip()
 								lines[toolchange_line] = new_toolchange_gcode + '\n'
-								lines[move_line] = REMOVED_BY_POST_PROCESSOR + lines[move_line].rstrip().replace("  ", " ") + '\n'
+								# --------------------------------------------------------------------------------
+								# temporarily outcommented to fix gcode render issues in gcode viewer applications
+								# the toolshift already moves the toolhead to this position but this wont be reflected in viewer applications
+								# originally outcommented to avoid microstuttering for ultra fast toolshifts
+								# needs to be tested if microstuttering is still an issue
+								# --------------------------------------------------------------------------------
+								# lines[move_line] = REMOVED_BY_POST_PROCESSOR + lines[move_line].rstrip().replace("  ", " ") + '\n'
+								# --------------------------------------------------------------------------------
 								if move_z_hop_line > 0:
 									lines[move_z_hop_line] = REMOVED_BY_POST_PROCESSOR + lines[move_z_hop_line].rstrip() + '\n'
 								if retraction_line > 0 and extrusion_line > 0:
