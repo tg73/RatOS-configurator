@@ -5078,8 +5078,8 @@ var require_use_sync_external_store_shim_development = __commonJS({
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
         }
-        var React44 = require_react();
-        var ReactSharedInternals = React44.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var React46 = require_react();
+        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function error(format) {
           {
             {
@@ -5109,13 +5109,13 @@ var require_use_sync_external_store_shim_development = __commonJS({
           return x === y && (x !== 0 || 1 / x === 1 / y) || x !== x && y !== y;
         }
         var objectIs = typeof Object.is === "function" ? Object.is : is;
-        var useState14 = React44.useState, useEffect17 = React44.useEffect, useLayoutEffect2 = React44.useLayoutEffect, useDebugValue = React44.useDebugValue;
+        var useState14 = React46.useState, useEffect17 = React46.useEffect, useLayoutEffect2 = React46.useLayoutEffect, useDebugValue = React46.useDebugValue;
         var didWarnOld18Alpha = false;
         var didWarnUncachedGetSnapshot = false;
         function useSyncExternalStore2(subscribe, getSnapshot, getServerSnapshot) {
           {
             if (!didWarnOld18Alpha) {
-              if (React44.startTransition !== void 0) {
+              if (React46.startTransition !== void 0) {
                 didWarnOld18Alpha = true;
                 error("You are using an outdated, pre-release alpha of React 18 that does not support useSyncExternalStore. The use-sync-external-store shim will not work correctly. Upgrade to a newer pre-release.");
               }
@@ -5180,7 +5180,7 @@ var require_use_sync_external_store_shim_development = __commonJS({
         var canUseDOM = !!(typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined");
         var isServerEnvironment = !canUseDOM;
         var shim = isServerEnvironment ? useSyncExternalStore$12 : useSyncExternalStore2;
-        var useSyncExternalStore$2 = React44.useSyncExternalStore !== void 0 ? React44.useSyncExternalStore : shim;
+        var useSyncExternalStore$2 = React46.useSyncExternalStore !== void 0 ? React46.useSyncExternalStore : shim;
         exports.useSyncExternalStore = useSyncExternalStore$2;
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(new Error());
@@ -8665,10 +8665,10 @@ var require_react_dom_server_legacy_node_development = __commonJS({
     if (process.env.NODE_ENV !== "production") {
       (function() {
         "use strict";
-        var React44 = require_react();
+        var React46 = require_react();
         var stream = __require("stream");
         var ReactVersion = "18.2.0";
-        var ReactSharedInternals = React44.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             {
@@ -10564,7 +10564,7 @@ var require_react_dom_server_legacy_node_development = __commonJS({
         }
         function flattenOptionChildren(children) {
           var content = "";
-          React44.Children.forEach(children, function(child) {
+          React46.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -14063,10 +14063,10 @@ var require_react_dom_server_node_development = __commonJS({
     if (process.env.NODE_ENV !== "production") {
       (function() {
         "use strict";
-        var React44 = require_react();
+        var React46 = require_react();
         var util3 = __require("util");
         var ReactVersion = "18.2.0";
-        var ReactSharedInternals = React44.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             {
@@ -16059,7 +16059,7 @@ var require_react_dom_server_node_development = __commonJS({
         }
         function flattenOptionChildren(children) {
           var content = "";
-          React44.Children.forEach(children, function(child) {
+          React46.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -25885,9 +25885,9 @@ var require_react_reconciler_development = __commonJS({
       module.exports = function $$$reconciler($$$hostConfig) {
         var exports2 = {};
         "use strict";
-        var React44 = require_react();
+        var React46 = require_react();
         var Scheduler = require_scheduler();
-        var ReactSharedInternals = React44.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         var suppressWarning = false;
         function setSuppressWarning(newSuppressWarning) {
           {
@@ -29685,7 +29685,7 @@ var require_react_reconciler_development = __commonJS({
           }
         }
         var fakeInternalInstance = {};
-        var emptyRefsObject = new React44.Component().refs;
+        var emptyRefsObject = new React46.Component().refs;
         var didWarnAboutStateAssignmentForComponent;
         var didWarnAboutUninitializedState;
         var didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate;
@@ -81091,7 +81091,7 @@ var proxyClient = createTRPCProxyClient({
 });
 
 // ratos.tsx
-var import_react63 = __toESM(require_react(), 1);
+var import_react64 = __toESM(require_react(), 1);
 import { stat as stat2 } from "node:fs/promises";
 import path8 from "path";
 
@@ -90065,7 +90065,7 @@ var InstallProgressUI = (props) => {
       setCurrentCmd(cmd);
     }, [])
   );
-  return /* @__PURE__ */ React.createElement(Container, null, /* @__PURE__ */ React.createElement(Box_default, { flexDirection: "column", rowGap: 0 }, /* @__PURE__ */ React.createElement(Box_default, { marginBottom: 1, flexDirection: "column" }, /* @__PURE__ */ React.createElement(Text, { color: props.statusColor ?? "white", dimColor: false, bold: true }, ["red", "redBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ React.createElement(Text, { bold: true }, "\u2718", "  ") : ["green", "greenBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ React.createElement(Text, { bold: true }, "\u2713", "  ") : "   ", props.status), props.stepText && props.stepTextBeforeSteps && /* @__PURE__ */ React.createElement(Text, null, props.isLoading ? /* @__PURE__ */ React.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ React.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ React.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), /* @__PURE__ */ React.createElement(Static, { items: props.warnings ?? [] }, (warning) => /* @__PURE__ */ React.createElement(Text, { color: "yellow", dimColor: true, key: warning, bold: false }, "   ", warning)), /* @__PURE__ */ React.createElement(Static, { items: props.errors ?? [] }, (error) => /* @__PURE__ */ React.createElement(Text, { color: "red", dimColor: true, key: error, bold: false }, "   ", error)), props.steps && props.steps.map((step) => /* @__PURE__ */ React.createElement(Text, { key: step.name }, step.status === "running" && /* @__PURE__ */ React.createElement(Text, { bold: true }, /* @__PURE__ */ React.createElement(build_default, { type: "dots" }), "  "), step.status === "success" && /* @__PURE__ */ React.createElement(Text, { bold: true, color: "green" }, "\u2713", "  "), step.status === "error" && /* @__PURE__ */ React.createElement(Text, { bold: true, color: "red" }, "\u2718", "  "), step.status === "warning" && /* @__PURE__ */ React.createElement(Text, { bold: true, color: "yellow" }, "\u26A0", "  "), step.status === "pending" && /* @__PURE__ */ React.createElement(Text, { bold: true, color: "gray" }, "\u2022", "  "), /* @__PURE__ */ React.createElement(Text, { color: "gray", bold: false }, step.name))), props.stepText && !props.stepTextBeforeSteps && /* @__PURE__ */ React.createElement(Text, null, props.isLoading ? /* @__PURE__ */ React.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ React.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ React.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), currentCmd && /* @__PURE__ */ React.createElement(Box_default, { marginTop: 1, flexDirection: "column" }, /* @__PURE__ */ React.createElement(Text, { color: "white" }, "Running: ", /* @__PURE__ */ React.createElement(Transform, { transform: formatCmd }, currentCmd))));
+  return /* @__PURE__ */ import_react30.default.createElement(Container, null, /* @__PURE__ */ import_react30.default.createElement(Box_default, { flexDirection: "column", rowGap: 0 }, /* @__PURE__ */ import_react30.default.createElement(Box_default, { marginBottom: 1, flexDirection: "column" }, /* @__PURE__ */ import_react30.default.createElement(Text, { color: props.statusColor ?? "white", dimColor: false, bold: true }, ["red", "redBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react30.default.createElement(Text, { bold: true }, "\u2718", "  ") : ["green", "greenBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react30.default.createElement(Text, { bold: true }, "\u2713", "  ") : "   ", props.status), props.stepText && props.stepTextBeforeSteps && /* @__PURE__ */ import_react30.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react30.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react30.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react30.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), /* @__PURE__ */ import_react30.default.createElement(Static, { items: props.warnings ?? [] }, (warning) => /* @__PURE__ */ import_react30.default.createElement(Text, { color: "yellow", dimColor: true, key: warning, bold: false }, "   ", warning)), /* @__PURE__ */ import_react30.default.createElement(Static, { items: props.errors ?? [] }, (error) => /* @__PURE__ */ import_react30.default.createElement(Text, { color: "red", dimColor: true, key: error, bold: false }, "   ", error)), props.steps && props.steps.map((step) => /* @__PURE__ */ import_react30.default.createElement(Text, { key: step.name }, step.status === "running" && /* @__PURE__ */ import_react30.default.createElement(Text, { bold: true }, /* @__PURE__ */ import_react30.default.createElement(build_default, { type: "dots" }), "  "), step.status === "success" && /* @__PURE__ */ import_react30.default.createElement(Text, { bold: true, color: "green" }, "\u2713", "  "), step.status === "error" && /* @__PURE__ */ import_react30.default.createElement(Text, { bold: true, color: "red" }, "\u2718", "  "), step.status === "warning" && /* @__PURE__ */ import_react30.default.createElement(Text, { bold: true, color: "yellow" }, "\u26A0", "  "), step.status === "pending" && /* @__PURE__ */ import_react30.default.createElement(Text, { bold: true, color: "gray" }, "\u2022", "  "), /* @__PURE__ */ import_react30.default.createElement(Text, { color: "gray", bold: false }, step.name))), props.stepText && !props.stepTextBeforeSteps && /* @__PURE__ */ import_react30.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react30.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react30.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react30.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), currentCmd && /* @__PURE__ */ import_react30.default.createElement(Box_default, { marginTop: 1, flexDirection: "column" }, /* @__PURE__ */ import_react30.default.createElement(Text, { color: "white" }, "Running: ", /* @__PURE__ */ import_react30.default.createElement(Transform, { transform: formatCmd }, currentCmd))));
 };
 
 // logger.ts
@@ -90134,6 +90134,7 @@ import { readFile as readFile2, writeFile } from "node:fs/promises";
 import { existsSync as existsSync4 } from "node:fs";
 import { $ as $2 } from "zx";
 var import_dotenv3 = __toESM(require_main(), 1);
+var import_react31 = __toESM(require_react(), 1);
 var frontend = (program3) => {
   const frontend2 = program3.command("frontend").description("Switch between klipper frontend UIs");
   const fluidConfigFile = `/etc/nginx/sites-available/fluidd`;
@@ -90160,10 +90161,10 @@ var frontend = (program3) => {
     const steps = [];
     const moonrakerConfig = environment.KLIPPER_CONFIG_PATH + "/moonraker.conf";
     let moonrakerConfigContents = await readFile2(moonrakerConfig, "utf-8");
-    let { rerender } = render_default(/* @__PURE__ */ React.createElement(InstallProgressUI, { status: "Installing fluidd..", cmdSignal, steps }));
+    let { rerender } = render_default(/* @__PURE__ */ import_react31.default.createElement(InstallProgressUI, { status: "Installing fluidd..", cmdSignal, steps }));
     if (!existsSync4(mainsailConfigFile)) {
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90179,7 +90180,7 @@ var frontend = (program3) => {
     } else {
       if (!existsSync4(`/home/${environment.USER}/fluidd`)) {
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90195,7 +90196,7 @@ var frontend = (program3) => {
         await $$`wget https://github.com/Rat-OS/fluidd/releases/latest/download/fluidd.zip -O /tmp/fluidd.zip`;
         steps.push({ name: "Download RatOS Fluidd", status: "success" });
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90219,7 +90220,7 @@ var frontend = (program3) => {
       }
       if (!existsSync4(`/home/${environment.USER}/printer_data/config/.fluidd-theme`)) {
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90243,7 +90244,7 @@ var frontend = (program3) => {
       const fluiddSection = findSection("update_manager Fluidd", moonrakerConfigContents);
       if (fluiddSection != null) {
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90262,7 +90263,7 @@ var frontend = (program3) => {
         steps.push({ name: "Existing Fluidd update manager entries removed", status: "warning" });
       }
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90286,7 +90287,7 @@ ${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}`;
       const fluiddThemeSection = findSection("update_manager FluiddTheme", moonrakerConfigContents);
       if (fluiddThemeSection != null) {
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90305,7 +90306,7 @@ ${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}`;
         steps.push({ name: "Existing Fluidd Theme update manager entries removed", status: "warning" });
       }
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90330,7 +90331,7 @@ is_system_service: false
       steps.push({ name: "New Fluidd Theme update manager entry added", status: "success" });
       if (!existsSync4("/etc/nginx/sites-available/fluidd")) {
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90352,7 +90353,7 @@ is_system_service: false
         steps.push({ name: "Nginx fluidd configuration created", status: "success" });
       }
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90371,7 +90372,7 @@ is_system_service: false
       }
       steps.push({ name: "Nginx configuration updated", status: "success" });
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90398,7 +90399,7 @@ is_system_service: false
           warnings.push(nginxValidation.stdout);
         }
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90417,7 +90418,7 @@ is_system_service: false
         steps.push({ name: "Restored previous mainsail configuration", status: "success" });
         cmdSignal(null);
         rerender(
-          /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ import_react31.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -90435,7 +90436,7 @@ is_system_service: false
         return;
       }
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90452,7 +90453,7 @@ is_system_service: false
       steps.push({ name: "Nginx reloaded", status: "success" });
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90468,7 +90469,7 @@ is_system_service: false
       await writeFile(moonrakerConfig, moonrakerConfigContents);
       steps.push({ name: "Moonraker configuration written to disk", status: "success" });
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90485,7 +90486,7 @@ is_system_service: false
       cmdSignal(null);
       steps.push({ name: "Moonraker restarted", status: "success" });
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90526,7 +90527,7 @@ is_system_service: false
       return renderError("Mainsail configuration file not found", { exitCode: 2 });
     }
     const { rerender } = render_default(
-      /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ import_react31.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -90539,7 +90540,7 @@ is_system_service: false
     );
     if (mainsailOverrideSection != null && mainsailOverrideSection[0].properties.channel !== channel) {
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90558,7 +90559,7 @@ is_system_service: false
       steps.push({ name: `Switched mainsail update manager to use ${channel} releases`, status: "warning" });
     } else if (mainsailOverrideSection == null && channel !== "stable") {
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90578,7 +90579,7 @@ channel: ${channel}`;
       steps.push({ name: `Mainsail update manager override added (channel: ${channel})`, status: "success" });
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90595,7 +90596,7 @@ channel: ${channel}`;
       cmdSignal(null);
       steps.push({ name: "Moonraker configuration written to disk", status: "success" });
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90615,7 +90616,7 @@ channel: ${channel}`;
     if (existsSync4("/etc/nginx/sites-enabled/mainsail")) {
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90632,7 +90633,7 @@ channel: ${channel}`;
       return;
     }
     rerender(
-      /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ import_react31.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -90668,7 +90669,7 @@ channel: ${channel}`;
         warnings.push(nginxValidation.stdout);
       }
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90687,7 +90688,7 @@ channel: ${channel}`;
       cmdSignal(null);
       steps.push({ name: "Restored previous fluidd configuration", status: "success" });
       rerender(
-        /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ import_react31.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -90705,7 +90706,7 @@ channel: ${channel}`;
       return;
     }
     rerender(
-      /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ import_react31.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -90722,7 +90723,7 @@ channel: ${channel}`;
     steps.push({ name: "Nginx reloaded", status: "success" });
     cmdSignal(null);
     rerender(
-      /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ import_react31.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -92264,11 +92265,11 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/badge.js
 init_cjs_shim();
-var import_react32 = __toESM(require_react(), 1);
+var import_react33 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/theme.js
 init_cjs_shim();
-var import_react31 = __toESM(require_react(), 1);
+var import_react32 = __toESM(require_react(), 1);
 var import_deepmerge = __toESM(require_cjs2(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/theme.js
@@ -92871,9 +92872,9 @@ var defaultTheme = {
     PasswordInput: theme_default13
   }
 };
-var ThemeContext = (0, import_react31.createContext)(defaultTheme);
+var ThemeContext = (0, import_react32.createContext)(defaultTheme);
 var useComponentTheme = (component) => {
-  const theme14 = (0, import_react31.useContext)(ThemeContext);
+  const theme14 = (0, import_react32.useContext)(ThemeContext);
   return theme14.components[component];
 };
 
@@ -92882,59 +92883,59 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/confirm-input.js
 init_cjs_shim();
-var import_react33 = __toESM(require_react(), 1);
+var import_react34 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/index.js
 init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
 init_cjs_shim();
-var import_react37 = __toESM(require_react(), 1);
+var import_react38 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
 init_cjs_shim();
-var import_react35 = __toESM(require_react(), 1);
+var import_react36 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
 init_cjs_shim();
-var import_react34 = __toESM(require_react(), 1);
+var import_react35 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/constants.js
 init_cjs_shim();
 var defaultMarker = figures_default.line;
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
-var UnorderedListItemContext = (0, import_react34.createContext)({
+var UnorderedListItemContext = (0, import_react35.createContext)({
   marker: defaultMarker
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
 function UnorderedListItem({ children }) {
-  const { marker } = (0, import_react35.useContext)(UnorderedListItemContext);
+  const { marker } = (0, import_react36.useContext)(UnorderedListItemContext);
   const { styles: styles5 } = useComponentTheme("UnorderedList");
-  return import_react35.default.createElement(
+  return import_react36.default.createElement(
     Box_default,
     { ...styles5.listItem() },
-    import_react35.default.createElement(Text, { ...styles5.marker() }, marker),
-    import_react35.default.createElement(Box_default, { ...styles5.content() }, children)
+    import_react36.default.createElement(Text, { ...styles5.marker() }, marker),
+    import_react36.default.createElement(Box_default, { ...styles5.content() }, children)
   );
 }
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-context.js
 init_cjs_shim();
-var import_react36 = __toESM(require_react(), 1);
-var UnorderedListContext = (0, import_react36.createContext)({
+var import_react37 = __toESM(require_react(), 1);
+var UnorderedListContext = (0, import_react37.createContext)({
   depth: 0
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
 function UnorderedList({ children }) {
-  const { depth } = (0, import_react37.useContext)(UnorderedListContext);
+  const { depth } = (0, import_react38.useContext)(UnorderedListContext);
   const { styles: styles5, config } = useComponentTheme("UnorderedList");
-  const listContext = (0, import_react37.useMemo)(() => ({
+  const listContext = (0, import_react38.useMemo)(() => ({
     depth: depth + 1
   }), [depth]);
-  const listItemContext = (0, import_react37.useMemo)(() => {
+  const listItemContext = (0, import_react38.useMemo)(() => {
     const { marker } = config();
     if (typeof marker === "string") {
       return { marker };
@@ -92948,13 +92949,13 @@ function UnorderedList({ children }) {
       marker: defaultMarker
     };
   }, [config, depth]);
-  return import_react37.default.createElement(
+  return import_react38.default.createElement(
     UnorderedListContext.Provider,
     { value: listContext },
-    import_react37.default.createElement(
+    import_react38.default.createElement(
       UnorderedListItemContext.Provider,
       { value: listItemContext },
-      import_react37.default.createElement(Box_default, { ...styles5.list() }, children)
+      import_react38.default.createElement(Box_default, { ...styles5.list() }, children)
     )
   );
 }
@@ -92965,15 +92966,15 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select.js
 init_cjs_shim();
-var import_react40 = __toESM(require_react(), 1);
+var import_react41 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select-option.js
 init_cjs_shim();
-var import_react38 = __toESM(require_react(), 1);
+var import_react39 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/use-multi-select-state.js
 init_cjs_shim();
-var import_react39 = __toESM(require_react(), 1);
+var import_react40 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/lib/option-map.js
 init_cjs_shim();
@@ -92986,10 +92987,10 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/progress-bar.js
 init_cjs_shim();
-var import_react41 = __toESM(require_react(), 1);
+var import_react42 = __toESM(require_react(), 1);
 function ProgressBar({ value }) {
-  const [width, setWidth] = (0, import_react41.useState)(0);
-  const [ref, setRef] = (0, import_react41.useState)(null);
+  const [width, setWidth] = (0, import_react42.useState)(0);
+  const [ref, setRef] = (0, import_react42.useState)(null);
   if (ref) {
     const dimensions = measure_element_default(ref);
     if (dimensions.width !== width) {
@@ -93000,25 +93001,25 @@ function ProgressBar({ value }) {
   const complete = Math.round(progress2 / 100 * width);
   const remaining = width - complete;
   const { styles: styles5, config } = useComponentTheme("ProgressBar");
-  return import_react41.default.createElement(
+  return import_react42.default.createElement(
     Box_default,
     { ref: setRef, ...styles5.container() },
-    complete > 0 && import_react41.default.createElement(Text, { ...styles5.completed() }, config().completedCharacter.repeat(complete)),
-    remaining > 0 && import_react41.default.createElement(Text, { ...styles5.remaining() }, config().remainingCharacter.repeat(remaining))
+    complete > 0 && import_react42.default.createElement(Text, { ...styles5.completed() }, config().completedCharacter.repeat(complete)),
+    remaining > 0 && import_react42.default.createElement(Text, { ...styles5.remaining() }, config().remainingCharacter.repeat(remaining))
   );
 }
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select.js
 init_cjs_shim();
-var import_react44 = __toESM(require_react(), 1);
+var import_react45 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select-option.js
 init_cjs_shim();
-var import_react42 = __toESM(require_react(), 1);
+var import_react43 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select-state.js
 init_cjs_shim();
-var import_react43 = __toESM(require_react(), 1);
+var import_react44 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select.js
 init_cjs_shim();
@@ -93028,26 +93029,26 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/spinner.js
 init_cjs_shim();
-var import_react46 = __toESM(require_react(), 1);
+var import_react47 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/use-spinner.js
 init_cjs_shim();
-var import_react45 = __toESM(require_react(), 1);
+var import_react46 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/index.js
 init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/text-input.js
 init_cjs_shim();
-var import_react49 = __toESM(require_react(), 1);
+var import_react50 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input-state.js
 init_cjs_shim();
-var import_react47 = __toESM(require_react(), 1);
+var import_react48 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input.js
 init_cjs_shim();
-var import_react48 = __toESM(require_react(), 1);
+var import_react49 = __toESM(require_react(), 1);
 var cursor = source_default.inverse(" ");
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/index.js
@@ -93055,62 +93056,62 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
 init_cjs_shim();
-var import_react53 = __toESM(require_react(), 1);
+var import_react54 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
 init_cjs_shim();
-var import_react51 = __toESM(require_react(), 1);
+var import_react52 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item-context.js
 init_cjs_shim();
-var import_react50 = __toESM(require_react(), 1);
-var OrderedListItemContext = (0, import_react50.createContext)({
+var import_react51 = __toESM(require_react(), 1);
+var OrderedListItemContext = (0, import_react51.createContext)({
   marker: figures_default.line
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
 function OrderedListItem({ children }) {
-  const { marker } = (0, import_react51.useContext)(OrderedListItemContext);
+  const { marker } = (0, import_react52.useContext)(OrderedListItemContext);
   const { styles: styles5 } = useComponentTheme("OrderedList");
-  return import_react51.default.createElement(
+  return import_react52.default.createElement(
     Box_default,
     { ...styles5.listItem() },
-    import_react51.default.createElement(Text, { ...styles5.marker() }, marker),
-    import_react51.default.createElement(Box_default, { ...styles5.content() }, children)
+    import_react52.default.createElement(Text, { ...styles5.marker() }, marker),
+    import_react52.default.createElement(Box_default, { ...styles5.content() }, children)
   );
 }
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-context.js
 init_cjs_shim();
-var import_react52 = __toESM(require_react(), 1);
-var OrderedListContext = (0, import_react52.createContext)({
+var import_react53 = __toESM(require_react(), 1);
+var OrderedListContext = (0, import_react53.createContext)({
   marker: ""
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
 function OrderedList({ children }) {
-  const { marker: parentMarker } = (0, import_react53.useContext)(OrderedListContext);
+  const { marker: parentMarker } = (0, import_react54.useContext)(OrderedListContext);
   const { styles: styles5 } = useComponentTheme("OrderedList");
   let numberOfItems = 0;
-  for (const child of import_react53.default.Children.toArray(children)) {
-    if (!(0, import_react53.isValidElement)(child) || child.type !== OrderedListItem) {
+  for (const child of import_react54.default.Children.toArray(children)) {
+    if (!(0, import_react54.isValidElement)(child) || child.type !== OrderedListItem) {
       continue;
     }
     numberOfItems++;
   }
   const maxMarkerWidth = String(numberOfItems).length;
-  return import_react53.default.createElement(Box_default, { ...styles5.list() }, import_react53.default.Children.map(children, (child, index) => {
-    if (!(0, import_react53.isValidElement)(child) || child.type !== OrderedListItem) {
+  return import_react54.default.createElement(Box_default, { ...styles5.list() }, import_react54.default.Children.map(children, (child, index) => {
+    if (!(0, import_react54.isValidElement)(child) || child.type !== OrderedListItem) {
       return child;
     }
     const paddedMarker = `${String(index + 1).padStart(maxMarkerWidth)}.`;
     const marker = `${parentMarker}${paddedMarker}`;
     return (
       // eslint-disable-next-line react/jsx-no-constructed-context-values
-      import_react53.default.createElement(
+      import_react54.default.createElement(
         OrderedListContext.Provider,
         { value: { marker } },
-        import_react53.default.createElement(OrderedListItemContext.Provider, { value: { marker } }, child)
+        import_react54.default.createElement(OrderedListItemContext.Provider, { value: { marker } }, child)
       )
     );
   }));
@@ -93122,15 +93123,15 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/password-input.js
 init_cjs_shim();
-var import_react56 = __toESM(require_react(), 1);
+var import_react57 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input-state.js
 init_cjs_shim();
-var import_react54 = __toESM(require_react(), 1);
+var import_react55 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input.js
 init_cjs_shim();
-var import_react55 = __toESM(require_react(), 1);
+var import_react56 = __toESM(require_react(), 1);
 var cursor2 = source_default.inverse(" ");
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/index.js
@@ -93138,18 +93139,18 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/status-message.js
 init_cjs_shim();
-var import_react57 = __toESM(require_react(), 1);
+var import_react58 = __toESM(require_react(), 1);
 function StatusMessage({ children, variant }) {
   const { styles: styles5, config } = useComponentTheme("StatusMessage");
-  return import_react57.default.createElement(
+  return import_react58.default.createElement(
     Box_default,
     { ...styles5.container() },
-    import_react57.default.createElement(
+    import_react58.default.createElement(
       Box_default,
       { ...styles5.iconContainer() },
-      import_react57.default.createElement(Text, { ...styles5.icon({ variant }) }, config({ variant }).icon)
+      import_react58.default.createElement(Text, { ...styles5.icon({ variant }) }, config({ variant }).icon)
     ),
-    import_react57.default.createElement(Text, { ...styles5.message() }, children)
+    import_react58.default.createElement(Text, { ...styles5.message() }, children)
   );
 }
 
@@ -93158,29 +93159,29 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/alert.js
 init_cjs_shim();
-var import_react58 = __toESM(require_react(), 1);
+var import_react59 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/index.js
 init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/email-input.js
 init_cjs_shim();
-var import_react61 = __toESM(require_react(), 1);
+var import_react62 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input-state.js
 init_cjs_shim();
-var import_react59 = __toESM(require_react(), 1);
+var import_react60 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input.js
 init_cjs_shim();
-var import_react60 = __toESM(require_react(), 1);
+var import_react61 = __toESM(require_react(), 1);
 var cursor3 = source_default.inverse(" ");
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/types.js
 init_cjs_shim();
 
 // commands/postprocessor.tsx
-var import_react62 = __toESM(require_react(), 1);
+var import_react63 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/luxon@3.4.4/node_modules/luxon/src/luxon.js
 init_cjs_shim();
@@ -99457,7 +99458,7 @@ var ProgressReportUI = ({ report, fileName, done }) => {
   const duration = Duration.fromObject({ minutes: report ? report.eta / 60 / 60 : 0 }, { locale: "en-GB" }).normalize().shiftTo(
     ...[eta < 1 ? "seconds" : "minutes", eta > 60 ? "hours" : null].filter(Boolean)
   ).toHuman({ unitDisplay: "short", listStyle: "narrow", maximumFractionDigits: 0 });
-  return /* @__PURE__ */ import_react62.default.createElement(Container, null, /* @__PURE__ */ import_react62.default.createElement(Text, null, "Processing ", fileName, "..."), /* @__PURE__ */ import_react62.default.createElement(Box_default, { flexDirection: "row", columnGap: 1 }, report ? /* @__PURE__ */ import_react62.default.createElement(import_react62.default.Fragment, null, /* @__PURE__ */ import_react62.default.createElement(Text, null, percentage.toFixed(2).padStart(6, " "), "%"), /* @__PURE__ */ import_react62.default.createElement(Box_default, { width: 30 }, /* @__PURE__ */ import_react62.default.createElement(ProgressBar, { value: report?.percentage ?? 0 })), /* @__PURE__ */ import_react62.default.createElement(Text, null, duration, " remaining")) : done ? /* @__PURE__ */ import_react62.default.createElement(StatusMessage, { variant: "success" }, "Done") : /* @__PURE__ */ import_react62.default.createElement(Text, { color: "gray" }, "Initializing post processor...")));
+  return /* @__PURE__ */ import_react63.default.createElement(Container, null, /* @__PURE__ */ import_react63.default.createElement(Text, null, "Processing ", fileName, "..."), /* @__PURE__ */ import_react63.default.createElement(Box_default, { flexDirection: "row", columnGap: 1 }, report ? /* @__PURE__ */ import_react63.default.createElement(import_react63.default.Fragment, null, /* @__PURE__ */ import_react63.default.createElement(Text, null, percentage.toFixed(2).padStart(6, " "), "%"), /* @__PURE__ */ import_react63.default.createElement(Box_default, { width: 30 }, /* @__PURE__ */ import_react63.default.createElement(ProgressBar, { value: report?.percentage ?? 0 })), /* @__PURE__ */ import_react63.default.createElement(Text, null, duration, " remaining")) : done ? /* @__PURE__ */ import_react63.default.createElement(StatusMessage, { variant: "success" }, "Done") : /* @__PURE__ */ import_react63.default.createElement(Text, { color: "gray" }, "Initializing post processor...")));
 };
 var postprocessor = (program3) => {
   program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").argument("<input>", "Path to the gcode file to postprocess").argument("<output>", "Path to the output gcode file").action(async (inputFile, outputFile, args) => {
@@ -99465,10 +99466,10 @@ var postprocessor = (program3) => {
     let rerender = void 0;
     let lastProgressPercentage = 0;
     if (process.stdout.isTTY) {
-      const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react62.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile) }));
+      const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react63.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile) }));
       rerender = _rerender;
       onProgress = (report) => {
-        _rerender(/* @__PURE__ */ import_react62.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), report }));
+        _rerender(/* @__PURE__ */ import_react63.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), report }));
       };
     } else {
       echo2(`Processing ${path7.basename(inputFile)}...`);
@@ -99487,7 +99488,7 @@ var postprocessor = (program3) => {
       onProgress
     });
     if (rerender) {
-      rerender(/* @__PURE__ */ import_react62.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), done: true }));
+      rerender(/* @__PURE__ */ import_react63.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), done: true }));
     }
   });
 };
@@ -99511,7 +99512,7 @@ program2.command("info").description("Print info about this RatOS installation")
     ip: await client.ipAddress.query()
   };
   render_default(
-    /* @__PURE__ */ import_react63.default.createElement(Box_default, { flexDirection: "row", columnGap: 5, padding: 2, paddingTop: 1 }, /* @__PURE__ */ import_react63.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react63.default.createElement(Text, { color: "white", dimColor: true }, "Machine IP"), /* @__PURE__ */ import_react63.default.createElement(Text, { color: "white", dimColor: true }, "RatOS Version"), /* @__PURE__ */ import_react63.default.createElement(Text, { color: "white", dimColor: true }, "Configurator Version"), /* @__PURE__ */ import_react63.default.createElement(Text, { color: "white", dimColor: true }, "Klipper Version")), /* @__PURE__ */ import_react63.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react63.default.createElement(Text, null, info.ip), /* @__PURE__ */ import_react63.default.createElement(Text, null, info.osVersion), /* @__PURE__ */ import_react63.default.createElement(Text, null, info.version), /* @__PURE__ */ import_react63.default.createElement(Text, null, info.klipperVersion)))
+    /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "row", columnGap: 5, padding: 2, paddingTop: 1 }, /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react64.default.createElement(Text, { color: "white", dimColor: true }, "Machine IP"), /* @__PURE__ */ import_react64.default.createElement(Text, { color: "white", dimColor: true }, "RatOS Version"), /* @__PURE__ */ import_react64.default.createElement(Text, { color: "white", dimColor: true }, "Configurator Version"), /* @__PURE__ */ import_react64.default.createElement(Text, { color: "white", dimColor: true }, "Klipper Version")), /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react64.default.createElement(Text, null, info.ip), /* @__PURE__ */ import_react64.default.createElement(Text, null, info.osVersion), /* @__PURE__ */ import_react64.default.createElement(Text, null, info.version), /* @__PURE__ */ import_react64.default.createElement(Text, null, info.klipperVersion)))
   );
 });
 var extensions = program2.command("extensions").description("Register, unregister or symlink extensions managed by the RatOS Configurator");
@@ -99528,7 +99529,7 @@ extensions.command("list").description("List all registered extensions").action(
   const klippyExtensions = await client["klippy-extensions"].list.query();
   const moonrakerExtensions = await client["moonraker-extensions"].list.query();
   render_default(
-    /* @__PURE__ */ import_react63.default.createElement(Container, null, /* @__PURE__ */ import_react63.default.createElement(Box_default, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ import_react63.default.createElement(Text, null, klippyExtensions.length, " Registered Klipper ", klippyExtensions.length === 1 ? "Extension" : "Extensions", klippyExtensions.length ? ":" : ""), klippyExtensions.map((ext) => /* @__PURE__ */ import_react63.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react63.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))), /* @__PURE__ */ import_react63.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react63.default.createElement(Text, null, moonrakerExtensions.length, " Registered Moonraker", " ", moonrakerExtensions.length === 1 ? "Extension" : "Extensions", moonrakerExtensions.length ? ":" : ""), moonrakerExtensions.map((ext) => /* @__PURE__ */ import_react63.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react63.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))))
+    /* @__PURE__ */ import_react64.default.createElement(Container, null, /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ import_react64.default.createElement(Text, null, klippyExtensions.length, " Registered Klipper ", klippyExtensions.length === 1 ? "Extension" : "Extensions", klippyExtensions.length ? ":" : ""), klippyExtensions.map((ext) => /* @__PURE__ */ import_react64.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react64.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))), /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react64.default.createElement(Text, null, moonrakerExtensions.length, " Registered Moonraker", " ", moonrakerExtensions.length === 1 ? "Extension" : "Extensions", moonrakerExtensions.length ? ":" : ""), moonrakerExtensions.map((ext) => /* @__PURE__ */ import_react64.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react64.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))))
   );
 });
 registerExtensions.command("klipper").description("Register a Klipper extension to be managed by the RatOS Configurator").option("-k, --kinematics", "Register as a kinematics extension").option("-e, --error-if-exists", "Throw error if the extension already exists").argument("<name>", "Name of the extension").argument("<file>", "The extension itself").showHelpAfterError().action(async (extName, extFile, options) => {
@@ -99569,7 +99570,7 @@ registerExtensions.command("klipper").description("Register a Klipper extension 
     return renderError("Failed to register extension", { exitCode: 2 });
   }
   render_default(
-    /* @__PURE__ */ import_react63.default.createElement(Container, null, /* @__PURE__ */ import_react63.default.createElement(
+    /* @__PURE__ */ import_react64.default.createElement(Container, null, /* @__PURE__ */ import_react64.default.createElement(
       Status,
       {
         results: {
@@ -99611,7 +99612,7 @@ registerExtensions.command("moonraker").description("Register a Moonraker extens
       }
     });
     render_default(
-      /* @__PURE__ */ import_react63.default.createElement(Container, null, /* @__PURE__ */ import_react63.default.createElement(
+      /* @__PURE__ */ import_react64.default.createElement(Container, null, /* @__PURE__ */ import_react64.default.createElement(
         Status,
         {
           results: {
@@ -99791,7 +99792,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   });
   const steps = [];
   let { rerender } = render_default(
-    /* @__PURE__ */ import_react63.default.createElement(
+    /* @__PURE__ */ import_react64.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -99801,10 +99802,10 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
       }
     )
   );
-  await $$`sudo ${(await getEnvironment()).RATOS_SCRIPT_DIR}/scripts/update.sh`;
+  await $$`sudo ${(await getEnvironment()).RATOS_SCRIPT_DIR}/update.sh`;
   steps.push({ name: "Repaired RatOS configurator", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react63.default.createElement(
+    /* @__PURE__ */ import_react64.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -99818,7 +99819,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo systemctl restart ratos-configurator`;
   steps.push({ name: "Restarted RatOS configurator", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react63.default.createElement(
+    /* @__PURE__ */ import_react64.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -99832,7 +99833,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo ${(await getEnvironment()).RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
   steps.push({ name: "Repaired RatOS configuration", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react63.default.createElement(
+    /* @__PURE__ */ import_react64.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -99846,7 +99847,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo systemctl restart klipper`;
   steps.push({ name: "Restarted Klipper", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react63.default.createElement(
+    /* @__PURE__ */ import_react64.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -99860,7 +99861,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo systemctl restart moonraker`;
   steps.push({ name: "Restarted Moonraker", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react63.default.createElement(
+    /* @__PURE__ */ import_react64.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",

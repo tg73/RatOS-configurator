@@ -10,6 +10,8 @@ import { InstallProgressUI, InstallStep } from '@/cli/components/install-progres
 import { getLogger } from '@/cli/logger.ts';
 import { ensureSudo, renderError } from '@/cli/util.tsx';
 import dotenv from 'dotenv';
+import React from 'react';
+
 export const frontend = (program: Command) => {
 	const frontend = program.command('frontend').description('Switch between klipper frontend UIs');
 

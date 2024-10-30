@@ -481,7 +481,7 @@ const doctor = program
 			/>,
 		);
 
-		await $$`sudo ${(await getEnvironment()).RATOS_SCRIPT_DIR}/scripts/update.sh`;
+		await $$`sudo ${(await getEnvironment()).RATOS_SCRIPT_DIR}/update.sh`;
 		steps.push({ name: 'Repaired RatOS configurator', status: 'success' });
 		rerender(
 			<InstallProgressUI
