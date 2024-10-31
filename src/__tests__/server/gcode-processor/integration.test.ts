@@ -118,44 +118,41 @@ describe('other', async () => {
 	});
 });
 
+// For now, removing the RMMU variant tests, as Helge has a separate unreleased processor for this,
+// so testing is pointless for now.
 describe('legacy equivalence', { timeout: 60000 }, async () => {
-	test.each(
-		cartesian(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }), [false, true]) as [
-			[string, boolean],
-		],
-	)('%s with rmmu_hub=%s', async (fixtureFile, printerHasRmmuHub) => {
-		const outputDir = path.join(__dirname, 'fixtures', 'output');
-		fs.mkdir(outputDir, { recursive: true });
-		let outputPath = path.join(outputDir, fixtureFile);
-		if (printerHasRmmuHub) {
-			outputPath = replaceExtension(outputPath, '.rmmu.gcode');
-		}
+	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
+		'%s',
+		async (fixtureFile) => {
+			const outputDir = path.join(__dirname, 'fixtures', 'output');
+			fs.mkdir(outputDir, { recursive: true });
+			const outputPath = path.join(outputDir, fixtureFile);
 
-		console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
-		let fh: FileHandle | undefined = undefined;
-		try {
-			fh = await fs.open(outputPath, 'w');
-			const gcodeProcessor = new GCodeProcessor(true, printerHasRmmuHub, false);
-			const encoder = new BookmarkingBufferEncoder();
+			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
+			let fh: FileHandle | undefined = undefined;
+			try {
+				fh = await fs.open(outputPath, 'w');
+				const gcodeProcessor = new GCodeProcessor(true, false, false);
+				const encoder = new BookmarkingBufferEncoder();
 
-			await pipeline(
-				createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
-				split(),
-				gcodeProcessor,
-				encoder,
-				createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
-			);
+				await pipeline(
+					createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
+					split(),
+					gcodeProcessor,
+					encoder,
+					createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
+				);
 
-			await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
-		} finally {
-			await fh?.close();
-		}
+				await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+			} finally {
+				try {
+					await fh?.close();
+				} catch {}
+			}
 
-		let legacyPath = path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile);
-		if (printerHasRmmuHub) {
-			legacyPath = replaceExtension(legacyPath, '.rmmu.gcode');
-		}
+			const legacyPath = path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile);
 
-		await legacyAndModernGcodeFilesAreEquivalent(legacyPath, outputPath);
-	});
+			await legacyAndModernGcodeFilesAreEquivalent(legacyPath, outputPath);
+		},
+	);
 });
