@@ -113,9 +113,9 @@ export const getGcodeInfo: Action = (c, s) => {
 				}
 				break;
 			case GCodeFlavour.SuperSlicer:
-				if (semver.neq('2.5.59', parsed.generatorVersion)) {
+				if (!semver.satisfies(parsed.generatorVersion, '2.5.59 || 2.5.60')) {
 					throw new SlicerNotSupported(
-						`Only version 2.5.59 of SuperSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+						`Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${parsed.generatorVersion} is not supported`,
 						{ cause: parsed },
 					);
 				}
