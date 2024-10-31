@@ -304,14 +304,36 @@ export const processToolchange: Action = (c, s) => {
 		//     and the instructions don't say to set this, so current output from SS will not be
 		//     detected anyhow.
 		// TODO: Consider reinstating and fixing after initial regression tests pass.
+		//
+		// UPDATE: Partially porting. Not porting Orca branch as there's no reproduction for that at this time.
+
+		let zHopBeforeToolchange: ProcessLineContext | undefined = undefined;
+		if (
+			!s.hasPurgeTower &&
+			(s.gcodeInfo.flavour === GCodeFlavour.PrusaSlicer || s.gcodeInfo.flavour === GCodeFlavour.SuperSlicer)
+		) {
+			for (let scan of c.scanBack(19)) {
+				if (scan.line.startsWith('; custom gcode: end_filament_gcode')) {
+					const preceding = scan.getLine(-1);
+					const cmd = parseCommonGCodeCommandLine(preceding.line);
+					if (cmd && cmd.letter === 'G' && cmd.value === '1' && cmd.z && !cmd.x && !cmd.y) {
+						const z = Number(cmd.z);
+						if (z > 0) {
+							zHopBeforeToolchange = preceding;
+						}
+					}
+					break;
+				}
+			}
+		}
 
 		// NOT PORTING `# toolchange line` section (line ~379)
 		// - This looks for `Tn` from the current line up to 19 lines ahead, but will always match
 		//   on the current line because all the code is inside an
 		//  `if current line is 'Tn'` check. So `toolchange_line` will always be equal to the current line.
 
-		// Retraction before toolchange:
-		let retractLine: ProcessLineContext | undefined = undefined;
+		// Retraction associatd with toolchange (before/after Tn depends on slicer):
+		let retractForToolchange: { line: ProcessLineContext; zHopLine?: ProcessLineContext } | undefined = undefined;
 
 		if (!s.hasPurgeTower) {
 			switch (s.gcodeInfo.flavour) {
@@ -319,7 +341,11 @@ export const processToolchange: Action = (c, s) => {
 				case GCodeFlavour.SuperSlicer:
 					for (let scan of c.scanForward(19)) {
 						if (scan.line.startsWith('G1 E-')) {
-							retractLine = scan;
+							retractForToolchange = { line: scan };
+							const next = scan.getLine(1);
+							if (next.line.startsWith('G1 Z')) {
+								retractForToolchange.zHopLine = next;
+							}
 							break;
 						}
 					}
@@ -327,7 +353,7 @@ export const processToolchange: Action = (c, s) => {
 				case GCodeFlavour.OrcaSlicer:
 					for (let scan of c.scanBack(19)) {
 						if (scan.line.startsWith('G1 E-')) {
-							retractLine = scan;
+							retractForToolchange = { line: scan };
 							break;
 						}
 					}
@@ -336,7 +362,9 @@ export const processToolchange: Action = (c, s) => {
 		}
 
 		// XY move after toolchange:
-		let xyMoveAfterToolchange: [x: string, y: string, line: ProcessLineContext] | undefined = undefined;
+		let xyMoveAfterToolchange:
+			| { x: string; y: string; line: ProcessLineContext; zHopLine?: ProcessLineContext }
+			| undefined = undefined;
 		for (let scan of c.scanForward(19)) {
 			const match = parseCommonGCodeCommandLine(scan.line);
 			if (match) {
@@ -344,7 +372,11 @@ export const processToolchange: Action = (c, s) => {
 					if (match.e) {
 						throw newGCodeError('Unexpected extruding move after toolchange.', scan, s);
 					}
-					xyMoveAfterToolchange = [match.x, match.y, scan];
+					xyMoveAfterToolchange = { x: match.x, y: match.y, line: scan };
+					const prev = scan.getLine(-1);
+					if (prev.line.startsWith('G1 Z')) {
+						xyMoveAfterToolchange.zHopLine = prev;
+					}
 					break;
 				} else if (match.x || match.y) {
 					throw newGCodeError('Unexpected X-only or Y-only move after toolchange.', scan, s);
@@ -369,7 +401,7 @@ export const processToolchange: Action = (c, s) => {
 				case GCodeFlavour.PrusaSlicer:
 				case GCodeFlavour.SuperSlicer:
 				case GCodeFlavour.OrcaSlicer:
-					for (let scan of (xyMoveAfterToolchange?.[2] ?? c).scanForward(2)) {
+					for (let scan of (xyMoveAfterToolchange?.line ?? c).scanForward(2)) {
 						const match = parseCommonGCodeCommandLine(scan.line);
 						if (match) {
 							if (match.z) {
@@ -391,9 +423,12 @@ export const processToolchange: Action = (c, s) => {
 			// TODO: Brittle. Must scan beyond filament start gcode, which is of unknown length. Often at least contains
 			// SET_PRESSURE_ADVANCE. Maybe require stricter custom gcode format, eg must end with a line `;END filament gcode`.
 			// TODO: BUGGY IN PYTHON, produces incorrect gcode, bug reproduced here for initial regression testing.
-			for (let scan of xyMoveAfterToolchange[2].scanForward(4)) {
+			for (let scan of xyMoveAfterToolchange.line.scanForward(4)) {
 				if (scan.line.startsWith('G1 E')) {
-					deretractLine = scan;
+					const match = parseCommonGCodeCommandLine(scan.line);
+					if (match?.e && Number(match.e) > 0) {
+						deretractLine = scan;
+					}
 					break;
 				}
 			}
@@ -403,14 +438,17 @@ export const processToolchange: Action = (c, s) => {
 		if (xyMoveAfterToolchange) {
 			// The aboe condition is ported from python - but why? Should it be an error if there's a toolchange with no xy move found?
 			// TODO: reinstate and fix zhop line redaction.
+			if (zHopBeforeToolchange) {
+				zHopBeforeToolchange.prepend(REMOVED_BY_RATOS);
+			}
 
 			if (zMoveAfterToolchange) {
 				zMoveAfterToolchange[1].prepend(REMOVED_BY_RATOS);
 			}
 
 			c.line = s.kPrinterHasRmmuHub
-				? `TOOL T=${tool} X=${xyMoveAfterToolchange[0]} Y=${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange[0] : ''}`
-				: `T${tool} X${xyMoveAfterToolchange[0]} Y${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange[0] : ''}`;
+				? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange[0] : ''}`
+				: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange[0] : ''}`;
 
 			// --------------------------------------------------------------------------------
 			// TG 2024-10-31: Ported from #b1e51390 from RatOS-configuration (HK)
@@ -419,11 +457,20 @@ export const processToolchange: Action = (c, s) => {
 			// originally outcommented to avoid microstuttering for ultra fast toolshifts
 			// needs to be tested if microstuttering is still an issue
 			// --------------------------------------------------------------------------------
-			// xyMoveAfterToolchange[2].prepend(REMOVED_BY_RATOS);
+			// xyMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
 			// --------------------------------------------------------------------------------
 
-			if (retractLine && deretractLine) {
-				retractLine.prepend(REMOVED_BY_RATOS);
+			if (
+				xyMoveAfterToolchange.zHopLine &&
+				!retractForToolchange?.zHopLine && // avoid double-prepending the same line
+				(s.gcodeInfo.flavour === GCodeFlavour.PrusaSlicer || s.gcodeInfo.flavour === GCodeFlavour.SuperSlicer)
+			) {
+				xyMoveAfterToolchange.zHopLine.prepend(REMOVED_BY_RATOS);
+			}
+
+			if (retractForToolchange && deretractLine) {
+				retractForToolchange.line.prepend(REMOVED_BY_RATOS);
+				retractForToolchange.zHopLine?.prepend(REMOVED_BY_RATOS);
 				deretractLine.prepend(REMOVED_BY_RATOS);
 			}
 		}
