@@ -394,7 +394,7 @@ export const processToolchange: Action = (c, s) => {
 
 		// Z-move after toolchange. This can be either a z-drop after a z-hop, or it can be just
 		// a statement of desired z height, often effectively a no-op.
-		let zMoveAfterToolchange: [z: string, line: ProcessLineContext] | undefined = undefined;
+		let zMoveAfterToolchange: { z: string; line: ProcessLineContext } | undefined = undefined;
 
 		if (!s.hasPurgeTower) {
 			switch (s.gcodeInfo.flavour) {
@@ -405,7 +405,7 @@ export const processToolchange: Action = (c, s) => {
 						const match = parseCommonGCodeCommandLine(scan.line);
 						if (match) {
 							if (match.z) {
-								zMoveAfterToolchange = [match.z, scan];
+								zMoveAfterToolchange = { z: match.z, line: scan };
 								break;
 							}
 						}
@@ -443,12 +443,12 @@ export const processToolchange: Action = (c, s) => {
 			}
 
 			if (zMoveAfterToolchange) {
-				zMoveAfterToolchange[1].prepend(REMOVED_BY_RATOS);
+				zMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
 			}
 
 			c.line = s.kPrinterHasRmmuHub
-				? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange[0] : ''}`
-				: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange[0] : ''}`;
+				? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange.z : ''}`
+				: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
 
 			// --------------------------------------------------------------------------------
 			// TG 2024-10-31: Ported from #b1e51390 from RatOS-configuration (HK)
