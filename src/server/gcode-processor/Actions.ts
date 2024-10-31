@@ -412,7 +412,15 @@ export const processToolchange: Action = (c, s) => {
 				? `TOOL T=${tool} X=${xyMoveAfterToolchange[0]} Y=${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange[0] : ''}`
 				: `T${tool} X${xyMoveAfterToolchange[0]} Y${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange[0] : ''}`;
 
-			xyMoveAfterToolchange[2].prepend(REMOVED_BY_RATOS);
+			// --------------------------------------------------------------------------------
+			// TG 2024-10-31: Ported from #b1e51390 from RatOS-configuration (HK)
+			// temporarily outcommented to fix gcode render issues in gcode viewer applications
+			// the toolshift already moves the toolhead to this position but this wont be reflected in viewer applications
+			// originally outcommented to avoid microstuttering for ultra fast toolshifts
+			// needs to be tested if microstuttering is still an issue
+			// --------------------------------------------------------------------------------
+			// xyMoveAfterToolchange[2].prepend(REMOVED_BY_RATOS);
+			// --------------------------------------------------------------------------------
 
 			if (retractLine && deretractLine) {
 				retractLine.prepend(REMOVED_BY_RATOS);
