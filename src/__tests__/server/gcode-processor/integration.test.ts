@@ -111,7 +111,7 @@ describe('other', async () => {
 	test('processing can be cancelled', async () => {
 		await expect(async () =>
 			processToNullWithoutBookmarkProcessing(
-				path.join(__dirname, 'fixtures', 'slicer_output', 'benchy2c_ps.gcode'),
+				path.join(__dirname, 'fixtures', 'slicer_output', 'SS_IDEX_MultiColor_WipeTower.gcode'),
 				AbortSignal.timeout(100),
 			),
 		).rejects.toThrow(/timeout/);
