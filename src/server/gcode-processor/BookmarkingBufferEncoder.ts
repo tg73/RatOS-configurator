@@ -36,7 +36,7 @@ export interface BookmarkCollection {
  * encoded byte length, tracks any requested bookmarks, and passes on the encoded
  * buffers. Intended to be pipelined immediately after {@link SlidingWindowLineProcessor}.
  */
-export class BookmarkingBufferEncoder extends Transform implements BookmarkCollection {	
+export class BookmarkingBufferEncoder extends Transform implements BookmarkCollection {
 	constructor(
 		public readonly newline: string = '\n',
 		public readonly encoding: BufferEncoding = 'utf8',
