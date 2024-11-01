@@ -215,6 +215,7 @@ class RatOS:
 			mem_available = meminfo['MemAvailable'] * 1024 * 0.85
 			if (size > mem_available):
 				if (enable_post_processing):
+					self.ratos_echo(echo_prefix, "File is too large (file is %smb but only %smb of memory is available) for required IDEX post processing. A new post processor is coming soon without this limitation." % (size / 1024 / 1024, mem_available / 1024 / 1024))
 					raise self.printer.command_error("File is too large (file is %smb but only %smb of memory is available) for required IDEX post processing. A new post processor is coming soon without this limitation." % (size / 1024 / 1024, mem_available / 1024 / 1024))
 				else:
 					self.ratos_echo(echo_prefix, "File is too large for post processing (file is %smb but only %smb of memory is available), skipping.." % (size / 1024 / 1024, mem_available / 1024 / 1024))
@@ -237,19 +238,46 @@ class RatOS:
 
 			if (enable_post_processing):
 				if slicer_name != PRUSA_SLICER and slicer_name != SUPER_SLICER and slicer_name != ORCA_SLICER:
+					self.ratos_echo(echo_prefix, "Unsupported Slicer")
 					raise self.printer.command_error("Unsupported Slicer")
+
+			# get start filament gcode line count
+			pause_counter = 0
+			filament_start_gcode_line_count = [1,1]
+			START_FILAMENT_GCODE = "; start_filament_gcode = "
+			if slicer_name == ORCA_SLICER:
+				START_FILAMENT_GCODE = "; filament_start_gcode = "
+			if (enable_post_processing):
+				line_count = len(lines) - 1
+				filament_start_gcode = []
+				for line in range(line_count):
+					# give the cpu some time
+					pause_counter += 1
+					if pause_counter == 1000:
+						pause_counter = 0
+						self.reactor.pause(.001)
+					# get filament_start_gcode settings
+					if filament_start_gcode == []:
+						if lines[line_count - line].rstrip().startswith(START_FILAMENT_GCODE):
+							filament_start_gcode = lines[line_count - line].rstrip().replace(START_FILAMENT_GCODE, "").split('";"')
+				if len(filament_start_gcode) != 2:
+					# this should never happen since PS, SS and OS store this config in the gcode file under the same name
+					self.ratos_echo(echo_prefix, "Gcode format error! filament_start_gcode.")
+					raise self.printer.command_error("Gcode format error! filament_start_gcode.")
+				filament_start_gcode_line_count[0] = len(filament_start_gcode[0].split("\n"))
+				filament_start_gcode_line_count[1] = len(filament_start_gcode[1].split("\n"))
 
 			min_x = 1000
 			max_x = 0
 			first_x = -1
 			first_y = -1
+			pause_counter = 0
 			toolshift_count = 0
 			tower_line = -1
 			start_print_line = 0
 			file_has_changed = False
-			wipe_accel = 0
+			wipe_tower_acceleration = 0
 			used_tools = []
-			pause_counter = 0
 			extruder_temps = []
 			extruder_temps_line = 0
 			for line in range(len(lines)):
@@ -259,12 +287,12 @@ class RatOS:
 					pause_counter = 0
 					self.reactor.pause(.001)
 
-				# get slicer profile settings
+				# get wipe_tower_acceleration settings
 				if (enable_post_processing):
 					if slicer_name == PRUSA_SLICER:
-						if wipe_accel == 0:
+						if wipe_tower_acceleration == 0:
 							if lines[line].rstrip().startswith("; wipe_tower_acceleration = "):
-								wipe_accel = int(lines[line].rstrip().replace("; wipe_tower_acceleration = ", ""))
+								wipe_tower_acceleration = int(lines[line].rstrip().replace("; wipe_tower_acceleration = ", ""))
 
 				# get the start_print line number
 				if start_print_line == 0:
@@ -359,10 +387,13 @@ class RatOS:
 										return False
 
 				# toolshift processing
-				if (enable_post_processing):
+				if (enable_post_processing and toolshift_count > 0):
 					if start_print_line > 0:
 						if lines[line].rstrip().startswith("T") and lines[line].rstrip()[1:].isdigit():
 
+							tool = int(lines[line].rstrip()[1:])
+							toolchange_line = line
+							
 							# purge tower
 							if tower_line == -1:
 								tower_line = 0
@@ -371,135 +402,61 @@ class RatOS:
 										tower_line = line-i2
 										break
 
-							# z-hop before toolchange
-							zhop = 0
-							zhop_line = 0
+							# before toolchange
 							if tower_line == 0:
 								for i2 in range(20):
-									if slicer_name == PRUSA_SLICER or slicer_name == SUPER_SLICER:
-										if lines[line-i2].rstrip().startswith("; custom gcode: end_filament_gcode"):
-											if lines[line-i2-1].rstrip().startswith("G1 Z"):
-												split = lines[line-i2-1].rstrip().split(" ")
-												if split[1].startswith("Z"):
-													zhop = float(split[1].replace("Z", ""))
-													if zhop > 0.0:
-														zhop_line = line-i2-1
-														break
-									elif slicer_name == ORCA_SLICER:
-										if lines[line+i2].rstrip().startswith("G1 Z"):
-											split = lines[line+i2].rstrip().split(" ")
-											if split[1].startswith("Z"):
-												zhop = float(split[1].replace("Z", ""))
-												if zhop > 0.0:
-													zhop_line = line+i2
-													break
+									# stop conditions
+									if lines[toolchange_line - i2].rstrip().startswith("G1 X"):
+										break
+									if lines[toolchange_line - i2].rstrip().startswith("G1 Y"):
+										break
+									# extrusion moves
+									if lines[toolchange_line - i2].rstrip().startswith("G1 E"):
+										lines[toolchange_line - i2] = REMOVED_BY_POST_PROCESSOR + lines[toolchange_line - i2].rstrip() + '\n'
+									# z moves
+									if lines[toolchange_line - i2].rstrip().startswith("G1 Z"):
+										lines[toolchange_line - i2] = REMOVED_BY_POST_PROCESSOR + lines[toolchange_line - i2].rstrip() + '\n'
 
-							# toolchange line
-							toolchange_line = 0
-							for i2 in range(20):
-								if lines[line + i2].rstrip().startswith("T") and lines[line].rstrip()[1:].isdigit():
-									toolchange_line = line + i2
-									break
-
-							# toolchange retraction
-							retraction_line = 0
-							retraction_z_hop_line = 0
-							if tower_line == 0 and toolchange_line > 0:
-								for i2 in range(20):
-									if slicer_name == PRUSA_SLICER or slicer_name == SUPER_SLICER:
-										if lines[toolchange_line + i2].rstrip().startswith("G1 E-"):
-											retraction_line = toolchange_line + i2
-											if lines[toolchange_line + i2 + 1].rstrip().startswith("G1 Z"):
-												retraction_z_hop_line = toolchange_line + i2 + 1
-											break
-									elif slicer_name == ORCA_SLICER:
-										if lines[toolchange_line - i2].rstrip().startswith("G1 E-"):
-											retraction_line = toolchange_line - i2
-											break
-
-							# move after toolchange
+							# after toolchange
 							move_x = ''
 							move_y = ''
-							move_line = 0
-							move_z_hop_line = 0
-							if toolchange_line > 0:
-								for i2 in range(20):
-									if lines[toolchange_line + i2].rstrip().replace("  ", " ").startswith("G1 X"):
-										splittedstring = lines[toolchange_line + i2].rstrip().replace("  ", " ").split(" ")
-										if splittedstring[1].startswith("X"):
-											if splittedstring[2].startswith("Y"):
-												move_x = splittedstring[1].rstrip()
-												move_y = splittedstring[2].rstrip()
-												move_line = toolchange_line + i2
-												if slicer_name == PRUSA_SLICER or slicer_name == SUPER_SLICER:
-													if lines[toolchange_line + i2 - 1].rstrip().startswith("G1 Z"):
-														move_z_hop_line = toolchange_line + i2 - 1
-												break
-
-							# z-drop after toolchange
 							move_z = ''
-							zdrop_line = 0
+							after_toolchange_line = toolchange_line + filament_start_gcode_line_count[tool]
+							if slicer_name == SUPER_SLICER:
+								after_toolchange_line = after_toolchange_line + 2
 							if tower_line == 0:
-								if slicer_name == PRUSA_SLICER or slicer_name == SUPER_SLICER:
-									if lines[move_line + 1].rstrip().startswith("G1 Z"):
-										zdrop_line = move_line + 1
-									elif lines[move_line + 2].rstrip().startswith("G1 Z"):
-										zdrop_line = move_line + 2
-									if zdrop_line > 0:
-										split = lines[zdrop_line].rstrip().split(" ")
-										if split[1].startswith("Z"):
-											move_z = split[1].rstrip()
-								elif slicer_name == ORCA_SLICER:
-									if zhop_line > 0:
-										for i in range(5):
-											if lines[zhop_line+i].rstrip().startswith("G1 Z"):
-												for i2 in range(5):
-													if lines[zhop_line+i+i2].rstrip().startswith("G1 Z"):
-														zdrop_line = zhop_line+i+i2
-														split = lines[zdrop_line].rstrip().split(" ")
-														if split[1].startswith("Z"):
-															move_z = split[1].rstrip()
-
-							# extrusion after move
-							extrusion_line = 0
-							if tower_line == 0 and move_line > 0:
-								for i2 in range(5):
-									if lines[move_line + i2].rstrip().startswith("G1 E"):
-										extrusion_line = move_line + i2
+								for i2 in range(20):
+									# stop conditions
+									if lines[after_toolchange_line + i2].rstrip().startswith(";TYPE:"):
 										break
+									if lines[after_toolchange_line + i2].rstrip().startswith("; custom gcode:"):
+										break
+									if lines[after_toolchange_line + i2].rstrip().startswith(";BETWEEN_EXTRUSION_ROLE"):
+										break
+									# xy
+									if lines[after_toolchange_line + i2].rstrip().replace("  ", " ").startswith("G1 X"):
+										move_split = lines[after_toolchange_line + i2].rstrip().replace("  ", " ").split(" ")
+										if move_split[1].startswith("X"):
+											if move_split[2].startswith("Y"):
+												move_x = move_split[1].rstrip()
+												move_y = move_split[2].rstrip()
+									# e
+									if lines[after_toolchange_line + i2].rstrip().startswith("G1 E"):
+										lines[after_toolchange_line + i2] = REMOVED_BY_POST_PROCESSOR + lines[after_toolchange_line + i2].rstrip() + '\n'
+									# z
+									if lines[after_toolchange_line + i2].rstrip().startswith("G1 Z"):
+										z_drop_split = lines[after_toolchange_line + i2].rstrip().split(" ")
+										if z_drop_split[1].startswith("Z"):
+											move_z = z_drop_split[1].rstrip()
+										lines[after_toolchange_line + i2] = REMOVED_BY_POST_PROCESSOR + lines[after_toolchange_line + i2].rstrip() + '\n'
 
 							# make toolshift changes
-							if toolshift_count > 0 and toolchange_line > 0 and move_line > 0:
-								file_has_changed = True
-								if zhop_line > 0:
-									lines[zhop_line] = REMOVED_BY_POST_PROCESSOR + lines[zhop_line].rstrip() + '\n'
-									if slicer_name == ORCA_SLICER:
-										for i in range(5):
-											if lines[zhop_line+i].rstrip().startswith("G1 Z"):
-												lines[zhop_line+i] = REMOVED_BY_POST_PROCESSOR + lines[zhop_line+i].rstrip() + '\n'
-												break
-								if zdrop_line > 0:
-									lines[zdrop_line] = REMOVED_BY_POST_PROCESSOR + lines[zdrop_line].rstrip() + '\n'
-								if self.rmmu_hub == None:
-									new_toolchange_gcode = (lines[toolchange_line].rstrip() + ' ' + move_x + ' ' + move_y + ' ' + move_z).rstrip()
-								else:
-									new_toolchange_gcode = ('TOOL T=' + lines[toolchange_line].rstrip().replace("T", "") + ' ' + move_x.replace("X", "X=") + ' ' + move_y.replace("Y", "Y=") + ' ' + move_z.replace("Z", "Z=")).rstrip()
-								lines[toolchange_line] = new_toolchange_gcode + '\n'
-								# --------------------------------------------------------------------------------
-								# temporarily outcommented to fix gcode render issues in gcode viewer applications
-								# the toolshift already moves the toolhead to this position but this wont be reflected in viewer applications
-								# originally outcommented to avoid microstuttering for ultra fast toolshifts
-								# needs to be tested if microstuttering is still an issue
-								# --------------------------------------------------------------------------------
-								# lines[move_line] = REMOVED_BY_POST_PROCESSOR + lines[move_line].rstrip().replace("  ", " ") + '\n'
-								# --------------------------------------------------------------------------------
-								if move_z_hop_line > 0:
-									lines[move_z_hop_line] = REMOVED_BY_POST_PROCESSOR + lines[move_z_hop_line].rstrip() + '\n'
-								if retraction_line > 0 and extrusion_line > 0:
-									lines[retraction_line] = REMOVED_BY_POST_PROCESSOR + lines[retraction_line].rstrip() + '\n'
-									lines[extrusion_line] = REMOVED_BY_POST_PROCESSOR + lines[extrusion_line].rstrip() + '\n'
-									if retraction_z_hop_line > 0:
-										lines[retraction_z_hop_line] = REMOVED_BY_POST_PROCESSOR + lines[retraction_z_hop_line].rstrip() + '\n'
+							file_has_changed = True
+							if self.rmmu_hub == None:
+								new_toolchange_gcode = (lines[toolchange_line].rstrip() + ' ' + move_x + ' ' + move_y + ' ' + move_z).rstrip()
+							else:
+								new_toolchange_gcode = ('TOOL T=' + lines[toolchange_line].rstrip().replace("T", "") + ' ' + move_x.replace("X", "X=") + ' ' + move_y.replace("Y", "Y=") + ' ' + move_z.replace("Z", "Z=")).rstrip()
+							lines[toolchange_line] = new_toolchange_gcode + '\n'
 
 			# add START_PRINT parameters 
 			if (enable_post_processing):
@@ -516,7 +473,7 @@ class RatOS:
 					if len(used_tools) > 0:
 						file_has_changed = True
 						lines[start_print_line] = lines[start_print_line].rstrip() + ' USED_TOOLS=' + ','.join(used_tools) + '\n'
-						lines[start_print_line] = lines[start_print_line].rstrip() + ' WIPE_ACCEL=' + str(wipe_accel) + '\n'
+						lines[start_print_line] = lines[start_print_line].rstrip() + ' WIPE_ACCEL=' + str(wipe_tower_acceleration) + '\n'
 						# fix super slicer inactive toolhead other layer temperature bug
 						if len(extruder_temps) > 0:
 							for tool in used_tools:
