@@ -28,6 +28,7 @@ import {
 import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
 import { parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
+import { InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
 
 // TODO: Review pad lengths.
 
@@ -90,46 +91,54 @@ export const getGcodeInfo: Action = (c, s) => {
 			throw new AlreadyProcessedError(parsed);
 		}
 		s.gcodeInfo = parsed;
-		switch (parsed.flavour) {
-			case GCodeFlavour.Unknown:
-				throw new SlicerNotSupported(
-					`Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
-					{ cause: parsed },
-				);
-			case GCodeFlavour.PrusaSlicer:
-				if (semver.neq('2.8.0', parsed.generatorVersion)) {
+		try {
+			switch (parsed.flavour) {
+				case GCodeFlavour.Unknown:
 					throw new SlicerNotSupported(
-						`Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+						`Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
 						{ cause: parsed },
 					);
-				}
-				break;
-			case GCodeFlavour.OrcaSlicer:
-				if (semver.neq('2.1.1', parsed.generatorVersion)) {
-					throw new SlicerNotSupported(
-						`Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
-						{ cause: parsed },
-					);
-				}
-				break;
-			case GCodeFlavour.SuperSlicer:
-				if (!semver.satisfies(parsed.generatorVersion, '2.5.59 || 2.5.60')) {
-					throw new SlicerNotSupported(
-						`Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${parsed.generatorVersion} is not supported`,
-						{ cause: parsed },
-					);
-				}
-				break;
-			case GCodeFlavour.RatOS:
-				if (semver.neq('0.1', parsed.generatorVersion)) {
-					throw new SlicerNotSupported(
-						`Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported`,
-						{ cause: parsed },
-					);
-				}
-				break;
-			default:
-				throw new InternalError('unexpected state'); // should never happen
+				case GCodeFlavour.PrusaSlicer:
+					if (semver.neq('2.8.0', parsed.generatorVersion)) {
+						throw new SlicerNotSupported(
+							`Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				case GCodeFlavour.OrcaSlicer:
+					if (semver.neq('2.1.1', parsed.generatorVersion)) {
+						throw new SlicerNotSupported(
+							`Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				case GCodeFlavour.SuperSlicer:
+					if (!semver.satisfies(parsed.generatorVersion, '2.5.59 || 2.5.60')) {
+						throw new SlicerNotSupported(
+							`Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				case GCodeFlavour.RatOS:
+					if (semver.neq('0.1', parsed.generatorVersion)) {
+						throw new SlicerNotSupported(
+							`Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				default:
+					throw new InternalError('unexpected state'); // should never happen
+			}
+		} catch (ex) {
+			if (s.kAllowUnsupportedSlicerVersions && s.onWarning && ex instanceof SlicerNotSupported) {
+				s.onWarning('PP001', ex.message + ' This may result in print defects and incorrect operation of the printer.');
+			} else {
+				throw ex;
+			}
 		}
 	}
 	c.line = c.line.padEnd(c.line.length + 100);
@@ -230,13 +239,12 @@ export const findFirstMoveXY: Action = (c, s) => {
 		s.firstMoveY ??= s._cmd!.y;
 
 		if (s.firstMoveX && s.firstMoveY) {
+			if (s.kInpsectionOnly) {
+				throw new InspectionIsComplete();
+			}
 			// We don't need to do this check any more. G0/G1 are extremely frequent, so avoid any excess work.
 			return ActionResult.RemoveAndContinue;
 		}
-
-		// NOTE: original ratos.py has a short-circuit when !enable_post_processing and both firstMoveX and firstMoveY have been found,
-		// which calls run_script_from_command  then returns. (see around line 320). Something like this would be the equivalent
-		// short circuit here: if (s.kInpsectionOnly) { throw new SomeObjectToSayAnalysisIsDone() }
 	}
 };
 

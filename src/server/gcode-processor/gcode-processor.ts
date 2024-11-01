@@ -18,7 +18,7 @@
  * NOTE: Incomplete, API requirements to be determined.
  */
 
-import { GCodeProcessor } from '@/server/gcode-processor/GCodeProcessor';
+import { AnalysisResult, GCodeProcessor, InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
 import { createReadStream, createWriteStream, existsSync, PathLike } from 'node:fs';
 import { FileHandle, access, constants, stat, open } from 'node:fs/promises';
 import path from 'node:path';
@@ -37,15 +37,68 @@ class NullSink extends Writable {
 	}
 }
 
-interface Options {
+interface CommonOptions {
 	idex?: boolean;
 	rmmu?: boolean;
 	overwrite?: boolean;
+	allowUnsupportedSlicerVersions?: boolean;
 	onProgress?: (report: progress.Progress) => void;
+	onWarning?: (code: string, message: string) => void;
 	abortSignal?: AbortSignal;
 }
 
-export async function processGCode(inputFile: string, outputFile: string, options: Options) {
+interface ProcessOptions extends CommonOptions {
+	overwrite?: boolean;
+}
+
+interface InspectOptions extends CommonOptions {
+	/**
+	 * If true, the whole file is examined, and a full {@link AnalysisResult} is built. Otherwise,
+	 * a quick inspection is performed, and at most the `gcodeInfo`, `firstMoveX` and `firstMoveY`
+	 * fields will be populated.
+	 */
+	fullInspection?: boolean;
+}
+
+export async function inspectGCode(inputFile: string, options: InspectOptions): Promise<AnalysisResult> {
+	const inputStat = await stat(path.resolve(inputFile));
+	if (!inputStat.isFile()) {
+		throw new Error(`${inputFile} is not a file`);
+	}
+	const gcodeProcessor = new GCodeProcessor(
+		!!options.idex,
+		!!options.rmmu,
+		!options.fullInspection,
+		!!options.allowUnsupportedSlicerVersions,
+		options.onWarning,
+		options.abortSignal,
+	);
+	const progressStream = progress({ length: inputStat.size });
+	if (options.onProgress) {
+		progressStream.on('progress', options.onProgress);
+	}
+	try {
+		await pipeline(
+			createReadStream(inputFile),
+			progressStream,
+			split(),
+			gcodeProcessor,
+			new NullSink({ objectMode: true }),
+		);
+	} catch (e) {
+		if (e instanceof InspectionIsComplete) {
+			return gcodeProcessor.getAnalysisResult();
+		}
+		throw e;
+	}
+	return gcodeProcessor.getAnalysisResult();
+}
+
+export async function processGCode(
+	inputFile: string,
+	outputFile: string,
+	options: ProcessOptions,
+): Promise<AnalysisResult> {
 	let fh: FileHandle | undefined = undefined;
 	const inputStat = await stat(path.resolve(inputFile));
 	const outPath = path.resolve(path.dirname(outputFile));
@@ -62,7 +115,14 @@ export async function processGCode(inputFile: string, outputFile: string, option
 	}
 	try {
 		fh = await open(outputFile, 'w');
-		const gcodeProcessor = new GCodeProcessor(!!options.idex, !!options.rmmu, false, options.abortSignal);
+		const gcodeProcessor = new GCodeProcessor(
+			!!options.idex,
+			!!options.rmmu,
+			false,
+			!!options.allowUnsupportedSlicerVersions,
+			options.onWarning,
+			options.abortSignal,
+		);
 		const encoder = new BookmarkingBufferEncoder(undefined, undefined, options.abortSignal);
 		const progressStream = progress({ length: inputStat.size });
 		if (options.onProgress) {
@@ -78,7 +138,11 @@ export async function processGCode(inputFile: string, outputFile: string, option
 		);
 
 		await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+
+		return gcodeProcessor.getAnalysisResult();
 	} finally {
-		await fh?.close();
+		try {
+			await fh?.close();
+		} catch {}
 	}
 }

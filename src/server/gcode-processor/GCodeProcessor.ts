@@ -25,7 +25,7 @@ import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { InternalError } from '@/server/gcode-processor/errors';
 import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { State } from '@/server/gcode-processor/State';
+import { IState, State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
@@ -36,6 +36,9 @@ import semver from 'semver';
  * Remove this ASAP after merging the rewrite.
  * */
 const LEGACY_MODE = true;
+
+export interface AnalysisResult extends IState {}
+export class InspectionIsComplete extends Error {}
 
 /**
  * Processes a stream of text lines read-forward-once, analysing and transforming on the fly.
@@ -48,9 +51,22 @@ const LEGACY_MODE = true;
  * by random access changes to the output file at the end of streaming.
  **/
 export class GCodeProcessor extends SlidingWindowLineProcessor {
-	constructor(printerHasIdex: boolean, printerHasRmmuHub: boolean, inspectionOnly: boolean, abortSignal?: AbortSignal) {
+	constructor(
+		printerHasIdex: boolean,
+		printerHasRmmuHub: boolean,
+		quickInspectionOnly: boolean,
+		allowUnsupportedSlicerVersions: boolean,
+		onWarning?: (code: string, message: string) => void,
+		abortSignal?: AbortSignal,
+	) {
 		super(20, 20, abortSignal);
-		this.#state = new State(printerHasIdex, printerHasRmmuHub, inspectionOnly);
+		this.#state = new State(
+			printerHasIdex,
+			printerHasRmmuHub,
+			quickInspectionOnly,
+			allowUnsupportedSlicerVersions,
+			onWarning,
+		);
 	}
 
 	#state: State;
@@ -225,14 +241,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		}
 	}
 
-	/**
-	 * TODO, pending public API requirements, to be decided.
-	 */
-	getSidecarData(): Object {
-		// TODO: This can be called at the end of both inspection and transformation pipelines to emit sidecar
-		// data. For inspection pipelines, this is the only way to emit the results of the analysis.
-		// For mutating pipelines, some data is also extracted for UI use, such as filament information
-		// or toolchange timings.
-		throw new InternalError('not implemented');
+	getAnalysisResult(): AnalysisResult {
+		return this.#state;
 	}
 }

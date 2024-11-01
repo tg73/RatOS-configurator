@@ -26,6 +26,19 @@ export class BookmarkedLine {
 	) {}
 }
 
+export interface IState {
+	readonly extruderTemps?: string[];
+	readonly toolChangeCount: number;
+	readonly firstMoveX?: string;
+	readonly firstMoveY?: string;
+	readonly minX: number;
+	readonly maxX: number;
+	readonly hasPurgeTower?: boolean;
+	readonly configSection?: Map<string, string>;
+	readonly usedTools: string[];
+	readonly gcodeInfo?: GCodeInfo;
+}
+
 /**
  * The state shared between actions in the action sequence for RatOS G-code post processing.
  * Property naming convention:
@@ -33,11 +46,13 @@ export class BookmarkedLine {
  *  * `_` prefix: iteration-scope state that gets reset for each line
  *  * no prefix: G-code file-scope state that is maintained for the whole file
  */
-export class State {
+export class State implements IState {
 	constructor(
 		public readonly kPrinterHasIdex: boolean,
 		public readonly kPrinterHasRmmuHub: boolean,
 		public readonly kInpsectionOnly: boolean,
+		public readonly kAllowUnsupportedSlicerVersions: boolean,
+		public readonly onWarning?: (code: string, message: string) => void,
 	) {}
 
 	// Stream-scope fields:
