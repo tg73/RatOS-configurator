@@ -209,9 +209,6 @@ importers:
       framer-motion:
         specifier: ^11.2.6
         version: 11.2.6(@emotion/is-prop-valid@0.8.8)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      fs-reader:
-        specifier: ^1.0.4
-        version: 1.0.4
       glob:
         specifier: ^10.3.10
         version: 10.3.10
@@ -3141,9 +3138,6 @@ packages:
   fs-extra@10.1.0:
     resolution: {integrity: sha512-oRXApq54ETRj4eMiFzGnHWGy+zo5raudjuxN0b8H7s/RU2oW0Wvsx9O0ACRN/kRq9E8Vu/ReskGB5o3ji+FzHQ==}
     engines: {node: '>=12'}
-
-  fs-reader@1.0.4:
-    resolution: {integrity: sha512-bC1UAB7bHUmkOUiaynoUfZJ2xsMdvbY2slslcMfv4ahTP7sWoutuQEfSMRmfnXyGqLBsl/rzkfngbN3dqExrpg==}
 
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
@@ -8352,8 +8346,6 @@ snapshots:
       graceful-fs: 4.2.10
       jsonfile: 6.1.0
       universalify: 2.0.1
-
-  fs-reader@1.0.4: {}
 
   fs.realpath@1.0.0: {}
 
