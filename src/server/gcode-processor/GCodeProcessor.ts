@@ -25,7 +25,7 @@ import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { InternalError } from '@/server/gcode-processor/errors';
 import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { IState, State } from '@/server/gcode-processor/State';
+import { State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
@@ -37,7 +37,19 @@ import semver from 'semver';
  * */
 const LEGACY_MODE = true;
 
-export interface AnalysisResult extends IState {}
+export interface AnalysisResult {
+	readonly extruderTemps?: string[];
+	readonly toolChangeCount?: number;
+	readonly firstMoveX?: string;
+	readonly firstMoveY?: string;
+	readonly minX?: number;
+	readonly maxX?: number;
+	readonly hasPurgeTower?: boolean;
+	readonly configSection?: Map<string, string>;
+	readonly usedTools?: string[];
+	readonly gcodeInfo?: GCodeInfo;
+}
+
 export class InspectionIsComplete extends Error {}
 
 /**
@@ -242,6 +254,30 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	}
 
 	getAnalysisResult(): AnalysisResult {
-		return this.#state;
+		const s = this.#state;
+		if (s.kQuickInpsectionOnly) {
+			// Only return known-complete data.
+			return {
+				extruderTemps: s.extruderTemps,
+				firstMoveX: s.firstMoveX,
+				firstMoveY: s.firstMoveY,
+				hasPurgeTower: s.hasPurgeTower,
+				configSection: s.configSection,
+				gcodeInfo: s.gcodeInfo,
+			};
+		} else {
+			return {
+				extruderTemps: s.extruderTemps,
+				toolChangeCount: s.toolChangeCount,
+				firstMoveX: s.firstMoveX,
+				firstMoveY: s.firstMoveY,
+				minX: s.minX,
+				maxX: s.maxX,
+				hasPurgeTower: s.hasPurgeTower,
+				configSection: s.configSection,
+				usedTools: s.usedTools,
+				gcodeInfo: s.gcodeInfo,
+			};
+		}
 	}
 }

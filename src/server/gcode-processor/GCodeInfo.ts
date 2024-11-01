@@ -18,7 +18,7 @@ import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
 import semver, { SemVer } from 'semver';
 import { GCodeError } from '@/server/gcode-processor/errors';
 import date2 from 'date-and-time';
-const fsReader = require('fs-reader');
+import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
 
 /** A known flavour of G-code. */

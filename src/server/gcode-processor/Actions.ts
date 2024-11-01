@@ -239,7 +239,7 @@ export const findFirstMoveXY: Action = (c, s) => {
 		s.firstMoveY ??= s._cmd!.y;
 
 		if (s.firstMoveX && s.firstMoveY) {
-			if (s.kInpsectionOnly) {
+			if (s.kQuickInpsectionOnly) {
 				throw new InspectionIsComplete();
 			}
 			// We don't need to do this check any more. G0/G1 are extremely frequent, so avoid any excess work.

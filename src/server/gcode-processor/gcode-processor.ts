@@ -19,7 +19,7 @@
  */
 
 import { AnalysisResult, GCodeProcessor, InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
-import { createReadStream, createWriteStream, existsSync, PathLike } from 'node:fs';
+import { createReadStream, createWriteStream, existsSync } from 'node:fs';
 import { FileHandle, access, constants, stat, open } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -30,11 +30,16 @@ import {
 	replaceBookmarkedGcodeLine,
 } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Writable } from 'node:stream';
+import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 
 class NullSink extends Writable {
 	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
 		callback();
 	}
+}
+
+export interface ProcessorResult extends AnalysisResult {
+	wasAlreadyProcessed: boolean;
 }
 
 interface CommonOptions {
@@ -60,11 +65,21 @@ interface InspectOptions extends CommonOptions {
 	fullInspection?: boolean;
 }
 
-export async function inspectGCode(inputFile: string, options: InspectOptions): Promise<AnalysisResult> {
+export async function inspectGCode(inputFile: string, options: InspectOptions): Promise<ProcessorResult> {
 	const inputStat = await stat(path.resolve(inputFile));
 	if (!inputStat.isFile()) {
 		throw new Error(`${inputFile} is not a file`);
 	}
+
+	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
+
+	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
+		return {
+			gcodeInfo: gcInfoBeforeProcessing,
+			wasAlreadyProcessed: true,
+		};
+	}
+
 	const gcodeProcessor = new GCodeProcessor(
 		!!options.idex,
 		!!options.rmmu,
@@ -87,24 +102,40 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 		);
 	} catch (e) {
 		if (e instanceof InspectionIsComplete) {
-			return gcodeProcessor.getAnalysisResult();
+			return {
+				...gcodeProcessor.getAnalysisResult(),
+				wasAlreadyProcessed: false,
+			};
 		}
 		throw e;
 	}
-	return gcodeProcessor.getAnalysisResult();
+	return {
+		...gcodeProcessor.getAnalysisResult(),
+		wasAlreadyProcessed: false,
+	};
 }
 
 export async function processGCode(
 	inputFile: string,
 	outputFile: string,
 	options: ProcessOptions,
-): Promise<AnalysisResult> {
+): Promise<ProcessorResult> {
 	let fh: FileHandle | undefined = undefined;
 	const inputStat = await stat(path.resolve(inputFile));
 	const outPath = path.resolve(path.dirname(outputFile));
 	if (!inputStat.isFile()) {
 		throw new Error(`${inputFile} is not a file`);
 	}
+
+	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
+
+	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
+		return {
+			gcodeInfo: gcInfoBeforeProcessing,
+			wasAlreadyProcessed: true,
+		};
+	}
+
 	try {
 		await access(outPath, constants.W_OK);
 	} catch (e) {
@@ -139,7 +170,10 @@ export async function processGCode(
 
 		await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
 
-		return gcodeProcessor.getAnalysisResult();
+		return {
+			...gcodeProcessor.getAnalysisResult(),
+			wasAlreadyProcessed: false,
+		};
 	} finally {
 		try {
 			await fh?.close();

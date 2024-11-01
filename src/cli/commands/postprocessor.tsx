@@ -92,7 +92,10 @@ export const postprocessor = (program: Command) => {
 				rerender(<ProgressReportUI fileName={path.basename(inputFile)} done={true} />);
 			}
 
+			if (outputFile && result.wasAlreadyProcessed) {
+				echo('The input file was already processed, therefore the output file was not written.');
+			}
 			// Demo
-			// echo(`firstMove: X${result.firstMoveX} Y${result.firstMoveY}`);
+			//echo(`${JSON.stringify(result, undefined, 1)}`);
 		});
 };
