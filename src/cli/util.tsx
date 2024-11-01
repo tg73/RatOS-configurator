@@ -7,6 +7,7 @@ import { readFile, realpath } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { serverSchema } from '@/env/schema.mjs';
 import dotenv from 'dotenv';
+import React from 'react';
 
 const reservedWords = [
 	'if',

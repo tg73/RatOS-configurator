@@ -1,7 +1,7 @@
 import { Signal, useSignal } from '@/app/_helpers/signal.ts';
 import { TextProps, Static, Box, Text, Transform } from 'ink';
 import Spinner from 'ink-spinner';
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { formatCmd } from '@/cli/util.tsx';
 import { Container } from '@/cli/components/container.tsx';
 
