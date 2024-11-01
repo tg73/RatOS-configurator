@@ -283,7 +283,7 @@ class RatOS:
 			for line in range(len(lines)):
 				# give the cpu some time
 				pause_counter += 1
-				if pause_counter == 1000:
+				if pause_counter == 500:
 					pause_counter = 0
 					self.reactor.pause(.001)
 
