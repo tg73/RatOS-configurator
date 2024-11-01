@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { Progress } from 'progress-stream';
-import { processGCode } from '@/server/gcode-processor/gcode-processor.ts';
+import { inspectGCode, processGCode } from '@/server/gcode-processor/gcode-processor.ts';
 import { echo } from 'zx';
 import { ProgressBar, StatusMessage } from '@inkjs/ui';
 import { Box, render, Text } from 'ink';
@@ -52,7 +52,7 @@ export const postprocessor = (program: Command) => {
 		.option('-i, --idex', 'Postprocess for an IDEX printer')
 		.option('-o, --overwrite', 'Overwrite the output file if it exists')
 		.argument('<input>', 'Path to the gcode file to postprocess')
-		.argument('<output>', 'Path to the output gcode file')
+		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
 			let onProgress: ((report: Progress) => void) | undefined = undefined;
 			let rerender: ((element: React.ReactNode) => void) | undefined = undefined;
@@ -73,14 +73,26 @@ export const postprocessor = (program: Command) => {
 					}
 				};
 			}
-			await processGCode(inputFile, outputFile, {
+
+			const opts = {
 				idex: args.idex,
 				rmmu: args.rmmu,
 				overwrite: args.overwrite,
 				onProgress,
-			});
+				// Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
+				// Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
+				// onWarning: (code: string, message: string) => { /* TODO */ },
+			};
+
+			const result = !!outputFile
+				? await processGCode(inputFile, outputFile, { ...opts, overwrite: args.overwrite })
+				: await inspectGCode(inputFile, { ...opts, fullInspection: false }); // fullInspection default is false, just to demo.
+
 			if (rerender) {
 				rerender(<ProgressReportUI fileName={path.basename(inputFile)} done={true} />);
 			}
+
+			// Demo
+			// echo(`firstMove: X${result.firstMoveX} Y${result.firstMoveY}`);
 		});
 };
