@@ -37,6 +37,17 @@ export enum GCodeFlavour {
 
 const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
 
+/** Serialized characteristics of a G-code file, typically determined from the header lines of the file. */
+export interface SerializedGcodeInfo {
+	generator: string;
+	generatorVersion: string;
+	flavour: GCodeFlavour;
+	generatorTimestamp: string;
+	ratosDialectVersion?: string;
+	processedByRatOSVersion?: string;
+	processedByRatOSTimestamp?: string;
+}
+
 /** Characteristics of a G-code file, typically determined from the header lines of the file. */
 export class GCodeInfo {
 	/** The placeholder version used to represent files transformed by the legacy ratos.py post processor. */
@@ -147,4 +158,20 @@ export class GCodeInfo {
 		public readonly processedByRatOSVersion?: SemVer,
 		public readonly processedByRatOSTimestamp?: Date,
 	) {}
+
+	public toJSON(): string {
+		return JSON.stringify(this.serialize());
+	}
+
+	public serialize(): SerializedGcodeInfo {
+		return {
+			generator: this.generator,
+			generatorVersion: this.generatorVersion.toString(),
+			flavour: this.flavour,
+			generatorTimestamp: this.generatorTimestamp.toISOString(),
+			ratosDialectVersion: this.ratosDialectVersion?.toString(),
+			processedByRatOSVersion: this.processedByRatOSVersion?.toString(),
+			processedByRatOSTimestamp: this.processedByRatOSTimestamp?.toISOString(),
+		};
+	}
 }

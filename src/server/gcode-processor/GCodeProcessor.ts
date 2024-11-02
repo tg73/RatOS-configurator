@@ -24,8 +24,8 @@ import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEn
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { InternalError } from '@/server/gcode-processor/errors';
-import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { State } from '@/server/gcode-processor/State';
+import { GCodeFlavour, GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { SerializedState, State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
@@ -37,19 +37,12 @@ import semver from 'semver';
  * */
 const LEGACY_MODE = true;
 
-export interface AnalysisResult {
-	readonly extruderTemps?: string[];
-	readonly toolChangeCount?: number;
-	readonly firstMoveX?: string;
-	readonly firstMoveY?: string;
-	readonly minX?: number;
-	readonly maxX?: number;
-	readonly hasPurgeTower?: boolean;
-	readonly configSection?: Map<string, string>;
-	readonly usedTools?: string[];
-	readonly gcodeInfo?: GCodeInfo;
-}
-
+export type AnalysisResult =
+	| SerializedState
+	| ({ gcodeInfo: SerializedGcodeInfo } & Pick<
+			SerializedState,
+			'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'
+	  >);
 export class InspectionIsComplete extends Error {}
 
 /**
@@ -254,8 +247,8 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	}
 
 	getAnalysisResult(): AnalysisResult {
-		const s = this.#state;
-		if (s.kQuickInpsectionOnly) {
+		const s = this.#state.serialize();
+		if (this.#state.kQuickInpsectionOnly) {
 			// Only return known-complete data.
 			return {
 				extruderTemps: s.extruderTemps,
@@ -263,7 +256,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 				firstMoveY: s.firstMoveY,
 				hasPurgeTower: s.hasPurgeTower,
 				configSection: s.configSection,
-				gcodeInfo: s.gcodeInfo,
+				gcodeInfo: this.#state.gcodeInfo.serialize(),
 			};
 		} else {
 			return {
@@ -276,7 +269,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 				hasPurgeTower: s.hasPurgeTower,
 				configSection: s.configSection,
 				usedTools: s.usedTools,
-				gcodeInfo: s.gcodeInfo,
+				gcodeInfo: this.#state.gcodeInfo.serialize(),
 			};
 		}
 	}

@@ -14,7 +14,7 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { InternalError } from '@/server/gcode-processor/errors';
 import { BookmarkKey } from '@/server/gcode-processor/Bookmark';
 import { CommonGCodeCommand } from '@/server/gcode-processor/CommonGCodeCommand';
@@ -24,6 +24,21 @@ export class BookmarkedLine {
 		public readonly line: string,
 		public readonly bookmark: BookmarkKey,
 	) {}
+}
+
+export interface SerializedState {
+	readonly extruderTemps?: string[];
+	readonly toolChangeCount: number;
+	readonly firstMoveX?: string;
+	readonly firstMoveY?: string;
+	readonly minX: number;
+	readonly maxX: number;
+	readonly hasPurgeTower?: boolean;
+	readonly usedTools: string[];
+	readonly gcodeInfo: SerializedGcodeInfo;
+	readonly configSection?: {
+		[key: string]: string;
+	};
 }
 
 /**
@@ -89,5 +104,15 @@ export class State {
 
 	get gcodeInfoOrUndefined(): GCodeInfo | undefined {
 		return this.#gcodeInfo;
+	}
+
+	public serialize(): SerializedState {
+		const configSectionEntries = this.configSection?.entries();
+		const configSection = configSectionEntries ? Object.fromEntries(configSectionEntries) : undefined;
+		return {
+			...this,
+			configSection,
+			gcodeInfo: this.gcodeInfo.serialize(),
+		};
 	}
 }

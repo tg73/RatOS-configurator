@@ -38,9 +38,9 @@ class NullSink extends Writable {
 	}
 }
 
-export interface ProcessorResult extends AnalysisResult {
+type ProcessorResult = AnalysisResult & {
 	wasAlreadyProcessed: boolean;
-}
+};
 
 interface CommonOptions {
 	idex?: boolean;
@@ -75,7 +75,7 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 
 	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
 		return {
-			gcodeInfo: gcInfoBeforeProcessing,
+			gcodeInfo: gcInfoBeforeProcessing.serialize(),
 			wasAlreadyProcessed: true,
 		};
 	}
@@ -131,7 +131,7 @@ export async function processGCode(
 
 	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
 		return {
-			gcodeInfo: gcInfoBeforeProcessing,
+			gcodeInfo: gcInfoBeforeProcessing.serialize(),
 			wasAlreadyProcessed: true,
 		};
 	}
