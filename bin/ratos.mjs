@@ -92230,7 +92230,7 @@ M104 S${s2.extruderTemps[Number(tool)]} T${tool}`;
         firstMoveY: s2.firstMoveY,
         hasPurgeTower: s2.hasPurgeTower,
         configSection: s2.configSection,
-        gcodeInfo: this.#state.gcodeInfo.serialize()
+        gcodeInfo: s2.gcodeInfo
       };
     } else {
       return {
@@ -92243,7 +92243,7 @@ M104 S${s2.extruderTemps[Number(tool)]} T${tool}`;
         hasPurgeTower: s2.hasPurgeTower,
         configSection: s2.configSection,
         usedTools: s2.usedTools,
-        gcodeInfo: this.#state.gcodeInfo.serialize()
+        gcodeInfo: s2.gcodeInfo
       };
     }
   }

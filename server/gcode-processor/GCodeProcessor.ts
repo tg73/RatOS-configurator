@@ -256,7 +256,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 				firstMoveY: s.firstMoveY,
 				hasPurgeTower: s.hasPurgeTower,
 				configSection: s.configSection,
-				gcodeInfo: this.#state.gcodeInfo.serialize(),
+				gcodeInfo: s.gcodeInfo,
 			};
 		} else {
 			return {
@@ -269,7 +269,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 				hasPurgeTower: s.hasPurgeTower,
 				configSection: s.configSection,
 				usedTools: s.usedTools,
-				gcodeInfo: this.#state.gcodeInfo.serialize(),
+				gcodeInfo: s.gcodeInfo,
 			};
 		}
 	}
