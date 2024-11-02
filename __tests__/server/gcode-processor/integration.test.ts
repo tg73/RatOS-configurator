@@ -25,11 +25,24 @@ import { glob } from 'glob';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs, { FileHandle } from 'node:fs/promises';
 import path from 'node:path';
+import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import split from 'split2';
 import { describe, test, expect, chai } from 'vitest';
 
 chai.use(require('chai-string'));
+
+class NullSink extends Writable {
+	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+		callback();
+	}
+}
+
+async function processToNullWithoutBookmarkProcessing(gcodePath: string, abortSignal?: AbortSignal) {
+	const gcodeProcessor = new GCodeProcessor(true, false, false, abortSignal);
+	const encoder = new BookmarkingBufferEncoder(undefined, undefined, abortSignal);
+	await pipeline(createReadStream(gcodePath), split(), gcodeProcessor, encoder, new NullSink());
+}
 
 // https://stackoverflow.com/a/43053803
 function cartesian(...a: any) {
@@ -87,44 +100,59 @@ async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modern
 	}
 }
 
-describe('legacy equivalence', { timeout: 60000 }, async () => {
-	test.each(
-		cartesian(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }), [false, true]) as [
-			[string, boolean],
-		],
-	)('%s with rmmu_hub=%s', async (fixtureFile, printerHasRmmuHub) => {
-		const outputDir = path.join(__dirname, 'fixtures', 'output');
-		fs.mkdir(outputDir, { recursive: true });
-		let outputPath = path.join(outputDir, fixtureFile);
-		if (printerHasRmmuHub) {
-			outputPath = replaceExtension(outputPath, '.rmmu.gcode');
-		}
-
-		console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
-		let fh: FileHandle | undefined = undefined;
-		try {
-			fh = await fs.open(outputPath, 'w');
-			const gcodeProcessor = new GCodeProcessor(true, printerHasRmmuHub, false);
-			const encoder = new BookmarkingBufferEncoder();
-
-			await pipeline(
-				createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
-				split(),
-				gcodeProcessor,
-				encoder,
-				createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
-			);
-
-			await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
-		} finally {
-			await fh?.close();
-		}
-
-		let legacyPath = path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile);
-		if (printerHasRmmuHub) {
-			legacyPath = replaceExtension(legacyPath, '.rmmu.gcode');
-		}
-
-		await legacyAndModernGcodeFilesAreEquivalent(legacyPath, outputPath);
+describe('other', async () => {
+	test('G2/G3 arcs are not supported', async () => {
+		await expect(
+			async () =>
+				await processToNullWithoutBookmarkProcessing(path.join(__dirname, 'fixtures', 'other', 'has_arcs_ps.gcode')),
+		).rejects.toThrow(/arcs.*not.*supported/);
 	});
+
+	test('processing can be cancelled', async () => {
+		await expect(async () =>
+			processToNullWithoutBookmarkProcessing(
+				path.join(__dirname, 'fixtures', 'slicer_output', 'SS_IDEX_MultiColor_WipeTower.gcode'),
+				AbortSignal.timeout(100),
+			),
+		).rejects.toThrow(/timeout/);
+	});
+});
+
+// For now, removing the RMMU variant tests, as Helge has a separate unreleased processor for this,
+// so testing is pointless for now.
+describe('legacy equivalence', { timeout: 60000 }, async () => {
+	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
+		'%s',
+		async (fixtureFile) => {
+			const outputDir = path.join(__dirname, 'fixtures', 'output');
+			fs.mkdir(outputDir, { recursive: true });
+			const outputPath = path.join(outputDir, fixtureFile);
+
+			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
+			let fh: FileHandle | undefined = undefined;
+			try {
+				fh = await fs.open(outputPath, 'w');
+				const gcodeProcessor = new GCodeProcessor(true, false, false);
+				const encoder = new BookmarkingBufferEncoder();
+
+				await pipeline(
+					createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
+					split(),
+					gcodeProcessor,
+					encoder,
+					createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
+				);
+
+				await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+			} finally {
+				try {
+					await fh?.close();
+				} catch {}
+			}
+
+			const legacyPath = path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile);
+
+			await legacyAndModernGcodeFilesAreEquivalent(legacyPath, outputPath);
+		},
+	);
 });

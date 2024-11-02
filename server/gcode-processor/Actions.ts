@@ -27,7 +27,8 @@ import {
 } from '@/server/gcode-processor/errors';
 import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
-import { CommonGCodeCommand } from '@/server/gcode-processor/CommonGCodeCommand';
+import { parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
+import { InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
 
 // TODO: Review pad lengths.
 
@@ -80,7 +81,7 @@ export function newGCodeError(message: string, ctx: ProcessLineContext, state: S
 // ];
 
 export const getGcodeInfo: Action = (c, s) => {
-	let parsed = GCodeInfo.tryParseHeader(
+	const parsed = GCodeInfo.tryParseHeader(
 		c.line + '\n' + c.getLineOrUndefined(1)?.line + '\n' + c.getLineOrUndefined(2)?.line + '\n',
 	);
 	if (!parsed) {
@@ -90,46 +91,54 @@ export const getGcodeInfo: Action = (c, s) => {
 			throw new AlreadyProcessedError(parsed);
 		}
 		s.gcodeInfo = parsed;
-		switch (parsed.flavour) {
-			case GCodeFlavour.Unknown:
-				throw new SlicerNotSupported(
-					`Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
-					{ cause: parsed },
-				);
-			case GCodeFlavour.PrusaSlicer:
-				if (semver.neq('2.8.0', parsed.generatorVersion)) {
+		try {
+			switch (parsed.flavour) {
+				case GCodeFlavour.Unknown:
 					throw new SlicerNotSupported(
-						`Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+						`Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
 						{ cause: parsed },
 					);
-				}
-				break;
-			case GCodeFlavour.OrcaSlicer:
-				if (semver.neq('2.1.1', parsed.generatorVersion)) {
-					throw new SlicerNotSupported(
-						`Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
-						{ cause: parsed },
-					);
-				}
-				break;
-			case GCodeFlavour.SuperSlicer:
-				if (semver.neq('2.5.59', parsed.generatorVersion)) {
-					throw new SlicerNotSupported(
-						`Only version 2.5.59 of SuperSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
-						{ cause: parsed },
-					);
-				}
-				break;
-			case GCodeFlavour.RatOS:
-				if (semver.neq('0.1', parsed.generatorVersion)) {
-					throw new SlicerNotSupported(
-						`Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported`,
-						{ cause: parsed },
-					);
-				}
-				break;
-			default:
-				throw new InternalError('unexpected state'); // should never happen
+				case GCodeFlavour.PrusaSlicer:
+					if (semver.neq('2.8.0', parsed.generatorVersion)) {
+						throw new SlicerNotSupported(
+							`Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				case GCodeFlavour.OrcaSlicer:
+					if (semver.neq('2.1.1', parsed.generatorVersion)) {
+						throw new SlicerNotSupported(
+							`Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				case GCodeFlavour.SuperSlicer:
+					if (!semver.satisfies(parsed.generatorVersion, '2.5.59 || 2.5.60')) {
+						throw new SlicerNotSupported(
+							`Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				case GCodeFlavour.RatOS:
+					if (semver.neq('0.1', parsed.generatorVersion)) {
+						throw new SlicerNotSupported(
+							`Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported.`,
+							{ cause: parsed },
+						);
+					}
+					break;
+				default:
+					throw new InternalError('unexpected state'); // should never happen
+			}
+		} catch (ex) {
+			if (s.kAllowUnsupportedSlicerVersions && s.onWarning && ex instanceof SlicerNotSupported) {
+				s.onWarning('PP001', ex.message + ' This may result in print defects and incorrect operation of the printer.');
+			} else {
+				throw ex;
+			}
 		}
 	}
 	c.line = c.line.padEnd(c.line.length + 100);
@@ -139,7 +148,7 @@ export const getGcodeInfo: Action = (c, s) => {
 };
 
 export const getStartPrint: Action = (c, s) => {
-	let match =
+	const match =
 		/^(START_PRINT|RMMU_START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
 			c.line,
 		);
@@ -149,12 +158,12 @@ export const getStartPrint: Action = (c, s) => {
 		c.bookmarkKey = Symbol('START_PRINT');
 		s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
 
-		let initialTool = match.groups?.INITIAL_TOOL;
+		const initialTool = match.groups?.INITIAL_TOOL;
 		if (initialTool) {
 			s.usedTools.push(initialTool);
 		}
 
-		let extruderOtherLayerTemp = match?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
+		const extruderOtherLayerTemp = match?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
 		if (extruderOtherLayerTemp) {
 			s.extruderTemps = extruderOtherLayerTemp.split(',');
 		}
@@ -220,37 +229,45 @@ export const fixOrcaSetAccelaration: Action = [
  * line is not one of the common commands, the subsequence is skipped, and the main sequence continues.
  */
 export const whenCommonCommandDoThenStop: Action = (c, s) => {
-	s._cmd = CommonGCodeCommand.parseOptimisedForOrderXYEZF(c.line);
+	s._cmd = parseCommonGCodeCommandLine(c.line);
 	return s._cmd ? ActionResult.Stop : ActionResult.Continue | ActionResult.flagSkipSubSequence;
 };
 
 export const findFirstMoveXY: Action = (c, s) => {
-	if (s._cmd!.g) {
-		s.firstMoveX ??= s._cmd?.x;
-		s.firstMoveY ??= s._cmd?.y;
+	if (s._cmd!.letter === 'G') {
+		s.firstMoveX ??= s._cmd!.x;
+		s.firstMoveY ??= s._cmd!.y;
 
 		if (s.firstMoveX && s.firstMoveY) {
+			if (s.kQuickInpsectionOnly) {
+				throw new InspectionIsComplete();
+			}
 			// We don't need to do this check any more. G0/G1 are extremely frequent, so avoid any excess work.
 			return ActionResult.RemoveAndContinue;
 		}
-
-		// NOTE: original ratos.py has a short-circuit when !enable_post_processing and both firstMoveX and firstMoveY have been found,
-		// which calls run_script_from_command  then returns. (see around line 320). Something like this would be the equivalent
-		// short circuit here: if (s.kInpsectionOnly) { throw new SomeObjectToSayAnalysisIsDone() }
 	}
 };
 
 export const findMinMaxX: Action = (c, s) => {
-	if (s._cmd!.g) {
-		let x = s._cmd?.x;
-		if (x) {
-			let n = Number(x);
-			if (n < s.minX) {
-				s.minX = n;
-			}
-			if (n > s.maxX) {
-				s.maxX = n;
-			}
+	// TODO: Support G2/G3 (arcs)
+	if (s._cmd!.letter === 'G') {
+		switch (s._cmd!.value) {
+			// Reminder: parseCommonGCodeCommandLine normalizes G0 to G1, we only need to check for '1'.
+			case '1':
+				const x = s._cmd!.x;
+				if (x) {
+					const n = Number(x);
+					if (n < s.minX) {
+						s.minX = n;
+					}
+					if (n > s.maxX) {
+						s.maxX = n;
+					}
+				}
+				break;
+			case '2':
+			case '3':
+				throw newGCodeError('G2/G3 commands (arcs) are not currently supported.', c, s);
 		}
 
 		// Within the commom commands subgroup, this is the last action that handles to G lines. Subsequent
@@ -261,8 +278,8 @@ export const findMinMaxX: Action = (c, s) => {
 };
 
 export const processToolchange: Action = (c, s) => {
-	let tool = s._cmd!.t;
-	if (tool) {
+	if (s._cmd!.letter === 'T') {
+		const tool = s._cmd!.value;
 		if (++s.toolChangeCount == 1) {
 			// Remove first toolchange
 			c.prepend(REMOVED_BY_RATOS);
@@ -295,14 +312,36 @@ export const processToolchange: Action = (c, s) => {
 		//     and the instructions don't say to set this, so current output from SS will not be
 		//     detected anyhow.
 		// TODO: Consider reinstating and fixing after initial regression tests pass.
+		//
+		// UPDATE: Partially porting. Not porting Orca branch as there's no reproduction for that at this time.
+
+		let zHopBeforeToolchange: ProcessLineContext | undefined = undefined;
+		if (
+			!s.hasPurgeTower &&
+			(s.gcodeInfo.flavour === GCodeFlavour.PrusaSlicer || s.gcodeInfo.flavour === GCodeFlavour.SuperSlicer)
+		) {
+			for (let scan of c.scanBack(19)) {
+				if (scan.line.startsWith('; custom gcode: end_filament_gcode')) {
+					const preceding = scan.getLine(-1);
+					const cmd = parseCommonGCodeCommandLine(preceding.line);
+					if (cmd && cmd.letter === 'G' && cmd.value === '1' && cmd.z && !cmd.x && !cmd.y) {
+						const z = Number(cmd.z);
+						if (z > 0) {
+							zHopBeforeToolchange = preceding;
+						}
+					}
+					break;
+				}
+			}
+		}
 
 		// NOT PORTING `# toolchange line` section (line ~379)
 		// - This looks for `Tn` from the current line up to 19 lines ahead, but will always match
 		//   on the current line because all the code is inside an
 		//  `if current line is 'Tn'` check. So `toolchange_line` will always be equal to the current line.
 
-		// Retraction before toolchange:
-		let retractLine: ProcessLineContext | undefined = undefined;
+		// Retraction associatd with toolchange (before/after Tn depends on slicer):
+		let retractForToolchange: { line: ProcessLineContext; zHopLine?: ProcessLineContext } | undefined = undefined;
 
 		if (!s.hasPurgeTower) {
 			switch (s.gcodeInfo.flavour) {
@@ -310,7 +349,11 @@ export const processToolchange: Action = (c, s) => {
 				case GCodeFlavour.SuperSlicer:
 					for (let scan of c.scanForward(19)) {
 						if (scan.line.startsWith('G1 E-')) {
-							retractLine = scan;
+							retractForToolchange = { line: scan };
+							const next = scan.getLine(1);
+							if (next.line.startsWith('G1 Z')) {
+								retractForToolchange.zHopLine = next;
+							}
 							break;
 						}
 					}
@@ -318,7 +361,7 @@ export const processToolchange: Action = (c, s) => {
 				case GCodeFlavour.OrcaSlicer:
 					for (let scan of c.scanBack(19)) {
 						if (scan.line.startsWith('G1 E-')) {
-							retractLine = scan;
+							retractForToolchange = { line: scan };
 							break;
 						}
 					}
@@ -327,15 +370,21 @@ export const processToolchange: Action = (c, s) => {
 		}
 
 		// XY move after toolchange:
-		let xyMoveAfterToolchange: [x: string, y: string, line: ProcessLineContext] | undefined = undefined;
+		let xyMoveAfterToolchange:
+			| { x: string; y: string; line: ProcessLineContext; zHopLine?: ProcessLineContext }
+			| undefined = undefined;
 		for (let scan of c.scanForward(19)) {
-			const match = CommonGCodeCommand.parseOptimisedForOrderXYEZF(scan.line);
+			const match = parseCommonGCodeCommandLine(scan.line);
 			if (match) {
 				if (match.x && match.y) {
 					if (match.e) {
 						throw newGCodeError('Unexpected extruding move after toolchange.', scan, s);
 					}
-					xyMoveAfterToolchange = [match.x, match.y, scan];
+					xyMoveAfterToolchange = { x: match.x, y: match.y, line: scan };
+					const prev = scan.getLine(-1);
+					if (prev.line.startsWith('G1 Z')) {
+						xyMoveAfterToolchange.zHopLine = prev;
+					}
 					break;
 				} else if (match.x || match.y) {
 					throw newGCodeError('Unexpected X-only or Y-only move after toolchange.', scan, s);
@@ -353,18 +402,18 @@ export const processToolchange: Action = (c, s) => {
 
 		// Z-move after toolchange. This can be either a z-drop after a z-hop, or it can be just
 		// a statement of desired z height, often effectively a no-op.
-		let zMoveAfterToolchange: [z: string, line: ProcessLineContext] | undefined = undefined;
+		let zMoveAfterToolchange: { z: string; line: ProcessLineContext } | undefined = undefined;
 
 		if (!s.hasPurgeTower) {
 			switch (s.gcodeInfo.flavour) {
 				case GCodeFlavour.PrusaSlicer:
 				case GCodeFlavour.SuperSlicer:
 				case GCodeFlavour.OrcaSlicer:
-					for (let scan of (xyMoveAfterToolchange?.[2] ?? c).scanForward(2)) {
-						const match = CommonGCodeCommand.parseOptimisedForOrderXYEZF(scan.line);
+					for (let scan of (xyMoveAfterToolchange?.line ?? c).scanForward(2)) {
+						const match = parseCommonGCodeCommandLine(scan.line);
 						if (match) {
 							if (match.z) {
-								zMoveAfterToolchange = [match.z, scan];
+								zMoveAfterToolchange = { z: match.z, line: scan };
 								break;
 							}
 						}
@@ -382,9 +431,12 @@ export const processToolchange: Action = (c, s) => {
 			// TODO: Brittle. Must scan beyond filament start gcode, which is of unknown length. Often at least contains
 			// SET_PRESSURE_ADVANCE. Maybe require stricter custom gcode format, eg must end with a line `;END filament gcode`.
 			// TODO: BUGGY IN PYTHON, produces incorrect gcode, bug reproduced here for initial regression testing.
-			for (let scan of xyMoveAfterToolchange[2].scanForward(4)) {
+			for (let scan of xyMoveAfterToolchange.line.scanForward(4)) {
 				if (scan.line.startsWith('G1 E')) {
-					deretractLine = scan;
+					const match = parseCommonGCodeCommandLine(scan.line);
+					if (match?.e && Number(match.e) > 0) {
+						deretractLine = scan;
+					}
 					break;
 				}
 			}
@@ -394,19 +446,39 @@ export const processToolchange: Action = (c, s) => {
 		if (xyMoveAfterToolchange) {
 			// The aboe condition is ported from python - but why? Should it be an error if there's a toolchange with no xy move found?
 			// TODO: reinstate and fix zhop line redaction.
+			if (zHopBeforeToolchange) {
+				zHopBeforeToolchange.prepend(REMOVED_BY_RATOS);
+			}
 
 			if (zMoveAfterToolchange) {
-				zMoveAfterToolchange[1].prepend(REMOVED_BY_RATOS);
+				zMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
 			}
 
 			c.line = s.kPrinterHasRmmuHub
-				? `TOOL T=${tool} X=${xyMoveAfterToolchange[0]} Y=${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange[0] : ''}`
-				: `T${tool} X${xyMoveAfterToolchange[0]} Y${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange[0] : ''}`;
+				? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange.z : ''}`
+				: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
 
-			xyMoveAfterToolchange[2].prepend(REMOVED_BY_RATOS);
+			// --------------------------------------------------------------------------------
+			// TG 2024-10-31: Ported from #b1e51390 from RatOS-configuration (HK)
+			// temporarily outcommented to fix gcode render issues in gcode viewer applications
+			// the toolshift already moves the toolhead to this position but this wont be reflected in viewer applications
+			// originally outcommented to avoid microstuttering for ultra fast toolshifts
+			// needs to be tested if microstuttering is still an issue
+			// --------------------------------------------------------------------------------
+			// xyMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
+			// --------------------------------------------------------------------------------
 
-			if (retractLine && deretractLine) {
-				retractLine.prepend(REMOVED_BY_RATOS);
+			if (
+				xyMoveAfterToolchange.zHopLine &&
+				!retractForToolchange?.zHopLine && // avoid double-prepending the same line
+				(s.gcodeInfo.flavour === GCodeFlavour.PrusaSlicer || s.gcodeInfo.flavour === GCodeFlavour.SuperSlicer)
+			) {
+				xyMoveAfterToolchange.zHopLine.prepend(REMOVED_BY_RATOS);
+			}
+
+			if (retractForToolchange && deretractLine) {
+				retractForToolchange.line.prepend(REMOVED_BY_RATOS);
+				retractForToolchange.zHopLine?.prepend(REMOVED_BY_RATOS);
 				deretractLine.prepend(REMOVED_BY_RATOS);
 			}
 		}

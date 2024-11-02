@@ -41911,7 +41911,7 @@ var require_receiver = __commonJS({
   "../node_modules/.pnpm/ws@8.17.0/node_modules/ws/lib/receiver.js"(exports, module) {
     "use strict";
     init_cjs_shim();
-    var { Writable } = __require("stream");
+    var { Writable: Writable2 } = __require("stream");
     var PerMessageDeflate = require_permessage_deflate();
     var {
       BINARY_TYPES,
@@ -41929,7 +41929,7 @@ var require_receiver = __commonJS({
     var GET_DATA = 4;
     var INFLATING = 5;
     var DEFER_EVENT = 6;
-    var Receiver2 = class extends Writable {
+    var Receiver2 = class extends Writable2 {
       /**
        * Creates a Receiver instance.
        *
@@ -73427,9 +73427,10 @@ var require_semver2 = __commonJS({
   }
 });
 
-// ../node_modules/.pnpm/fs-reader@1.0.4/node_modules/fs-reader/index.js
+// ../server/helpers/fs-reader.js
 var require_fs_reader = __commonJS({
-  "../node_modules/.pnpm/fs-reader@1.0.4/node_modules/fs-reader/index.js"(exports, module) {
+  "../server/helpers/fs-reader.js"(exports, module) {
+    "use strict";
     init_cjs_shim();
     var fs2 = __require("fs");
     function getLines(file, lines, callback) {
@@ -73503,7 +73504,7 @@ var require_fs_reader = __commonJS({
             var length = getRemainingFileSize();
             if (length <= 0)
               return callback(void 0, data);
-            var buffer = new Buffer(bufferSize > length ? length : bufferSize);
+            var buffer = Buffer.alloc(bufferSize > length ? length : bufferSize);
             fs2.read(stream, buffer, 0, buffer.length, getReadStartPosition(buffer), function(err3, numRead, buffer2) {
               var newData = buffer2.toString("utf8", 0, buffer2.length);
               do {
@@ -73944,7 +73945,7 @@ var require_stream_writable = __commonJS({
     "use strict";
     init_cjs_shim();
     var pna = require_process_nextick_args();
-    module.exports = Writable;
+    module.exports = Writable2;
     function CorkedRequest(state) {
       var _this = this;
       this.next = null;
@@ -73955,7 +73956,7 @@ var require_stream_writable = __commonJS({
     }
     var asyncWrite = !process.browser && ["v0.10", "v0.9."].indexOf(process.version.slice(0, 5)) > -1 ? setImmediate : pna.nextTick;
     var Duplex;
-    Writable.WritableState = WritableState;
+    Writable2.WritableState = WritableState;
     var util3 = Object.create(require_util());
     util3.inherits = require_inherits();
     var internalUtil = {
@@ -73972,7 +73973,7 @@ var require_stream_writable = __commonJS({
       return Buffer2.isBuffer(obj) || obj instanceof OurUint8Array;
     }
     var destroyImpl = require_destroy();
-    util3.inherits(Writable, Stream2);
+    util3.inherits(Writable2, Stream2);
     function nop() {
     }
     function WritableState(options, stream) {
@@ -74041,11 +74042,11 @@ var require_stream_writable = __commonJS({
     var realHasInstance;
     if (typeof Symbol === "function" && Symbol.hasInstance && typeof Function.prototype[Symbol.hasInstance] === "function") {
       realHasInstance = Function.prototype[Symbol.hasInstance];
-      Object.defineProperty(Writable, Symbol.hasInstance, {
+      Object.defineProperty(Writable2, Symbol.hasInstance, {
         value: function(object) {
           if (realHasInstance.call(this, object))
             return true;
-          if (this !== Writable)
+          if (this !== Writable2)
             return false;
           return object && object._writableState instanceof WritableState;
         }
@@ -74055,10 +74056,10 @@ var require_stream_writable = __commonJS({
         return object instanceof this;
       };
     }
-    function Writable(options) {
+    function Writable2(options) {
       Duplex = Duplex || require_stream_duplex();
-      if (!realHasInstance.call(Writable, this) && !(this instanceof Duplex)) {
-        return new Writable(options);
+      if (!realHasInstance.call(Writable2, this) && !(this instanceof Duplex)) {
+        return new Writable2(options);
       }
       this._writableState = new WritableState(options, this);
       this.writable = true;
@@ -74074,7 +74075,7 @@ var require_stream_writable = __commonJS({
       }
       Stream2.call(this);
     }
-    Writable.prototype.pipe = function() {
+    Writable2.prototype.pipe = function() {
       this.emit("error", new Error("Cannot pipe, not readable"));
     };
     function writeAfterEnd(stream, cb) {
@@ -74097,7 +74098,7 @@ var require_stream_writable = __commonJS({
       }
       return valid;
     }
-    Writable.prototype.write = function(chunk, encoding, cb) {
+    Writable2.prototype.write = function(chunk, encoding, cb) {
       var state = this._writableState;
       var ret = false;
       var isBuf = !state.objectMode && _isUint8Array(chunk);
@@ -74122,11 +74123,11 @@ var require_stream_writable = __commonJS({
       }
       return ret;
     };
-    Writable.prototype.cork = function() {
+    Writable2.prototype.cork = function() {
       var state = this._writableState;
       state.corked++;
     };
-    Writable.prototype.uncork = function() {
+    Writable2.prototype.uncork = function() {
       var state = this._writableState;
       if (state.corked) {
         state.corked--;
@@ -74134,7 +74135,7 @@ var require_stream_writable = __commonJS({
           clearBuffer(this, state);
       }
     };
-    Writable.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
+    Writable2.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
       if (typeof encoding === "string")
         encoding = encoding.toLowerCase();
       if (!(["hex", "utf8", "utf-8", "ascii", "binary", "base64", "ucs2", "ucs-2", "utf16le", "utf-16le", "raw"].indexOf((encoding + "").toLowerCase()) > -1))
@@ -74148,7 +74149,7 @@ var require_stream_writable = __commonJS({
       }
       return chunk;
     }
-    Object.defineProperty(Writable.prototype, "writableHighWaterMark", {
+    Object.defineProperty(Writable2.prototype, "writableHighWaterMark", {
       // making it explicit this property is not enumerable
       // because otherwise some prototype manipulation in
       // userland will fail
@@ -74301,11 +74302,11 @@ var require_stream_writable = __commonJS({
       state.bufferedRequest = entry;
       state.bufferProcessing = false;
     }
-    Writable.prototype._write = function(chunk, encoding, cb) {
+    Writable2.prototype._write = function(chunk, encoding, cb) {
       cb(new Error("_write() is not implemented"));
     };
-    Writable.prototype._writev = null;
-    Writable.prototype.end = function(chunk, encoding, cb) {
+    Writable2.prototype._writev = null;
+    Writable2.prototype.end = function(chunk, encoding, cb) {
       var state = this._writableState;
       if (typeof chunk === "function") {
         cb = chunk;
@@ -74384,7 +74385,7 @@ var require_stream_writable = __commonJS({
       }
       state.corkedRequestsFree.next = corkReq;
     }
-    Object.defineProperty(Writable.prototype, "destroyed", {
+    Object.defineProperty(Writable2.prototype, "destroyed", {
       get: function() {
         if (this._writableState === void 0) {
           return false;
@@ -74398,9 +74399,9 @@ var require_stream_writable = __commonJS({
         this._writableState.destroyed = value;
       }
     });
-    Writable.prototype.destroy = destroyImpl.destroy;
-    Writable.prototype._undestroy = destroyImpl.undestroy;
-    Writable.prototype._destroy = function(err, cb) {
+    Writable2.prototype.destroy = destroyImpl.destroy;
+    Writable2.prototype._undestroy = destroyImpl.undestroy;
+    Writable2.prototype._destroy = function(err, cb) {
       this.end();
       cb(err);
     };
@@ -74424,14 +74425,14 @@ var require_stream_duplex = __commonJS({
     var util3 = Object.create(require_util());
     util3.inherits = require_inherits();
     var Readable = require_stream_readable();
-    var Writable = require_stream_writable();
+    var Writable2 = require_stream_writable();
     util3.inherits(Duplex, Readable);
     {
-      keys = objectKeys(Writable.prototype);
+      keys = objectKeys(Writable2.prototype);
       for (v = 0; v < keys.length; v++) {
         method = keys[v];
         if (!Duplex.prototype[method])
-          Duplex.prototype[method] = Writable.prototype[method];
+          Duplex.prototype[method] = Writable2.prototype[method];
       }
     }
     var keys;
@@ -74441,7 +74442,7 @@ var require_stream_duplex = __commonJS({
       if (!(this instanceof Duplex))
         return new Duplex(options);
       Readable.call(this, options);
-      Writable.call(this, options);
+      Writable2.call(this, options);
       if (options && options.readable === false)
         this.readable = false;
       if (options && options.writable === false)
@@ -90952,12 +90953,14 @@ var ProcessLineContext = class {
   }
 };
 var SlidingWindowLineProcessor = class extends Transform2 {
-  constructor(maxLinesAhead = 10, maxLinesBehind = 10) {
+  constructor(maxLinesAhead = 10, maxLinesBehind = 10, abortSignal) {
     super({ objectMode: true });
     this.maxLinesAhead = maxLinesAhead;
     this.maxLinesBehind = maxLinesBehind;
+    this.#abortSignal = abortSignal;
     this.#buf = new import_ring_buffer_ts.RingBuffer(maxLinesBehind + maxLinesAhead + 1);
   }
+  #abortSignal;
   /**
    * The current position within `#buf`. When the window is primed and streaming
    * is well underway, `#position` will always be `maxLinesBehind`. During initial priming,
@@ -90975,6 +90978,10 @@ var SlidingWindowLineProcessor = class extends Transform2 {
   }
   #getLineContextClosure = (offset2) => this.#getLineContext(offset2);
   _transform(chunk, encoding, callback) {
+    if (this.#abortSignal?.aborted) {
+      callback(this.#abortSignal.reason);
+      return;
+    }
     if (typeof chunk !== "string") {
       return callback(new InternalError("chunk must be a string"));
     }
@@ -91019,6 +91026,10 @@ var SlidingWindowLineProcessor = class extends Transform2 {
     callback();
   }
   _flush(callback) {
+    if (this.#abortSignal?.aborted) {
+      callback(this.#abortSignal.reason);
+      return;
+    }
     while (this.#position < this.#buf.getBufferLength() - 1) {
       ++this.#position;
       try {
@@ -91504,9 +91515,9 @@ date.plugin = function(plugin) {
 var date$1 = date;
 
 // ../server/gcode-processor/GCodeInfo.ts
+var import_fs_reader = __toESM(require_fs_reader());
 import util2 from "node:util";
-var fsReader = require_fs_reader();
-var fsReaderGetLines = util2.promisify(fsReader);
+var fsReaderGetLines = util2.promisify(import_fs_reader.default);
 var GCodeInfo = class _GCodeInfo {
   constructor(generator, generatorVersion, flavour, generatorTimestamp, ratosDialectVersion, processedByRatOSVersion, processedByRatOSTimestamp) {
     this.generator = generator;
@@ -91604,6 +91615,20 @@ var GCodeInfo = class _GCodeInfo {
     const now2 = /* @__PURE__ */ new Date();
     return `; processed by RatOS ${currentCodeVersion.toString()} on ${date$1.format(now2, "YYYY-MM-DD [at] HH:mm:ss [UTC]", true)}`;
   }
+  toJSON() {
+    return JSON.stringify(this.serialize());
+  }
+  serialize() {
+    return {
+      generator: this.generator,
+      generatorVersion: this.generatorVersion.toString(),
+      flavour: this.flavour,
+      generatorTimestamp: this.generatorTimestamp.toISOString(),
+      ratosDialectVersion: this.ratosDialectVersion?.toString(),
+      processedByRatOSVersion: this.processedByRatOSVersion?.toString(),
+      processedByRatOSTimestamp: this.processedByRatOSTimestamp?.toISOString()
+    };
+  }
 };
 
 // ../server/gcode-processor/State.ts
@@ -91615,10 +91640,12 @@ var BookmarkedLine = class {
   }
 };
 var State = class {
-  constructor(kPrinterHasIdex, kPrinterHasRmmuHub, kInpsectionOnly) {
+  constructor(kPrinterHasIdex, kPrinterHasRmmuHub, kQuickInpsectionOnly, kAllowUnsupportedSlicerVersions, onWarning) {
     this.kPrinterHasIdex = kPrinterHasIdex;
     this.kPrinterHasRmmuHub = kPrinterHasRmmuHub;
-    this.kInpsectionOnly = kInpsectionOnly;
+    this.kQuickInpsectionOnly = kQuickInpsectionOnly;
+    this.kAllowUnsupportedSlicerVersions = kAllowUnsupportedSlicerVersions;
+    this.onWarning = onWarning;
     // Stream-scope fields:
     this.currentLineNumber = -1;
     this.toolChangeCount = 0;
@@ -91650,6 +91677,15 @@ var State = class {
   get gcodeInfoOrUndefined() {
     return this.#gcodeInfo;
   }
+  serialize() {
+    const configSectionEntries = this.configSection?.entries();
+    const configSection = configSectionEntries ? Object.fromEntries(configSectionEntries) : void 0;
+    return {
+      ...this,
+      configSection,
+      gcodeInfo: this.gcodeInfo.serialize()
+    };
+  }
 };
 
 // ../server/gcode-processor/Actions.ts
@@ -91658,65 +91694,48 @@ var import_semver3 = __toESM(require_semver2());
 
 // ../server/gcode-processor/CommonGCodeCommand.ts
 init_cjs_shim();
-var rxXYEZF = /^(?:T(\d+))|(?:(G0|G1)(?=\s)(?:(?:\sX([+-]?[\d.]+))|(?=.*(?:\sX([+-]?[\d.]+)))|)(?:(?:\sY([+-]?[\d.]+))|(?=.*(?:\sY([+-]?[\d.]+)))|)(?:(?:\sE([+-]?[\d.]+))|(?=.*(?:\sE([+-]?[\d.]+)))|)(?:(?:\sZ([+-]?[\d.]+))|(?=.*(?:\sZ([+-]?[\d.]+)))|)(?=.*(?:\sF([\d.]+))|))/;
-var rxZXYEF = /^(?:T(\d+))|(?:(G0|G1)(?=\s)(?:(?:\sZ([+-]?[\d.]+))|(?=.*(?:\sZ([+-]?[\d.]+)))|)(?:(?:\sX([+-]?[\d.]+))|(?=.*(?:\sX([+-]?[\d.]+)))|)(?:(?:\sY([+-]?[\d.]+))|(?=.*(?:\sY([+-]?[\d.]+)))|)(?:(?:\sE([+-]?[\d.]+))|(?=.*(?:\sE([+-]?[\d.]+)))|)(?=.*(?:\sF([\d.]+))|))/;
-var CommonGCodeCommand = class _CommonGCodeCommand {
-  /**
-   * @param probablyWrongOrderOptimization If `true`, indicates that the other order optimization would likely have been ideal.
-   */
-  constructor(probablyWrongOrderOptimization, t, g, x, y, e, z2, f) {
-    this.probablyWrongOrderOptimization = probablyWrongOrderOptimization;
-    this.t = t;
-    this.g = g;
-    this.x = x;
-    this.y = y;
-    this.e = e;
-    this.z = z2;
-    this.f = f;
+var rxG01 = /^\s*G\s*[01](?=\D)(?:(?:(?:\s*X\s*([+-]?[\d.]+))|(?=[^;]*?(?:X\s*([+-]?[\d.]+)))|)(?:(?:\s*Y\s*([+-]?[\d.]+))|(?=[^;]*?(?:Y\s*([+-]?[\d.]+)))|)(?:(?:\s*E\s*([+-]?[\d.]+))|(?=[^;]*?(?:E\s*([+-]?[\d.]+)))|)(?:(?:\s*Z\s*([+-]?[\d.]+))|(?=[^;]*?(?:Z\s*([+-]?[\d.]+)))|)(?:(?:\s*F\s*([+-]?[\d.]+))|(?=[^;]*?(?:F\s*([+-]?[\d.]+)))|))/i;
+var rxG23 = /^\s*G\s*([23])(?=\D)(?:(?:(?:\s*X([+-]?[\d.]+))|(?=[^;]*?(?:X([+-]?[\d.]+)))|)(?:(?:\s*Y([+-]?[\d.]+))|(?=[^;]*?(?:Y([+-]?[\d.]+)))|)(?:(?:\s*I([+-]?[\d.]+))|(?=[^;]*?(?:I([+-]?[\d.]+)))|)(?:(?:\s*J([+-]?[\d.]+))|(?=[^;]*?(?:J([+-]?[\d.]+)))|)(?:(?:\s*E([+-]?[\d.]+))|(?=[^;]*?(?:E([+-]?[\d.]+)))|)(?:(?:\s*Z([+-]?[\d.]+))|(?=[^;]*?(?:Z([+-]?[\d.]+)))|)(?:(?:\s*F([+-]?[\d.]+))|(?=[^;]*?(?:F([+-]?[\d.]+)))|))/i;
+var rxT = /^\s*T\s*(\d+)/i;
+function parseCommonGCodeCommandLine(line) {
+  rxG01.lastIndex = 0;
+  let m = rxG01.exec(line);
+  if (m) {
+    return {
+      letter: "G",
+      value: "1",
+      x: m[1] ?? m[2],
+      y: m[3] ?? m[4],
+      e: m[5] ?? m[6],
+      z: m[7] ?? m[8],
+      f: m[9] ?? m[10]
+    };
   }
-  /**
-   * parse, optimised for the order most common in non-vase-mode prints.
-   */
-  static parseOptimisedForOrderXYEZF(line) {
-    const m = rxXYEZF.exec(line);
-    if (m) {
-      return new _CommonGCodeCommand(
-        // This condition is true at least for pattern ZXYE (F absent):
-        m[4] !== void 0 && m[6] !== void 0 && m[8] !== void 0 && m[9] !== void 0 && m[11] === void 0,
-        m[1],
-        m[2],
-        m[3] ?? m[4],
-        m[5] ?? m[6],
-        m[7] ?? m[8],
-        m[9] ?? m[10],
-        m[11]
-      );
-    } else {
-      return null;
-    }
+  rxG23.lastIndex = 0;
+  m = rxG23.exec(line);
+  if (m) {
+    return {
+      letter: "G",
+      value: m[1],
+      x: m[2] ?? m[3],
+      y: m[4] ?? m[5],
+      i: m[6] ?? m[7],
+      j: m[8] ?? m[9],
+      e: m[10] ?? m[11],
+      z: m[12] ?? m[13],
+      f: m[14] ?? m[15]
+    };
   }
-  /**
-   * parse, optimised for the order most common in vase-mode prints (after the base layers).
-   */
-  static parseOptimisedForOrderZXYEF(line) {
-    const m = rxZXYEF.exec(line);
-    if (m) {
-      return new _CommonGCodeCommand(
-        // This condition is true at least for pattern XYE (Z and F absent):
-        m[3] === void 0 && m[4] === void 0 && m[5] !== void 0 && m[7] !== void 0 && m[9] !== void 0 && m[11] === void 0,
-        m[1],
-        m[2],
-        m[5] ?? m[6],
-        m[7] ?? m[8],
-        m[9] ?? m[10],
-        m[3] ?? m[4],
-        m[11]
-      );
-    } else {
-      return null;
-    }
+  rxT.lastIndex = 0;
+  m = rxT.exec(line);
+  if (m) {
+    return {
+      letter: "T",
+      value: m[1]
+    };
   }
-};
+  return null;
+}
 
 // ../server/gcode-processor/Actions.ts
 var CHANGED_BY_RATOS = " ; Changed by RatOS post processor: ";
@@ -91725,7 +91744,7 @@ function newGCodeError(message, ctx, state) {
   return new GCodeError(message, ctx.line, state.currentLineNumber);
 }
 var getGcodeInfo = (c, s2) => {
-  let parsed = GCodeInfo.tryParseHeader(
+  const parsed = GCodeInfo.tryParseHeader(
     c.line + "\n" + c.getLineOrUndefined(1)?.line + "\n" + c.getLineOrUndefined(2)?.line + "\n"
   );
   if (!parsed) {
@@ -91735,46 +91754,54 @@ var getGcodeInfo = (c, s2) => {
       throw new AlreadyProcessedError(parsed);
     }
     s2.gcodeInfo = parsed;
-    switch (parsed.flavour) {
-      case 0 /* Unknown */:
-        throw new SlicerNotSupported(
-          `Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
-          { cause: parsed }
-        );
-      case 1 /* PrusaSlicer */:
-        if (import_semver3.default.neq("2.8.0", parsed.generatorVersion)) {
+    try {
+      switch (parsed.flavour) {
+        case 0 /* Unknown */:
           throw new SlicerNotSupported(
-            `Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
+            `Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
             { cause: parsed }
           );
-        }
-        break;
-      case 2 /* OrcaSlicer */:
-        if (import_semver3.default.neq("2.1.1", parsed.generatorVersion)) {
-          throw new SlicerNotSupported(
-            `Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
-            { cause: parsed }
-          );
-        }
-        break;
-      case 4 /* SuperSlicer */:
-        if (import_semver3.default.neq("2.5.59", parsed.generatorVersion)) {
-          throw new SlicerNotSupported(
-            `Only version 2.5.59 of SuperSlicer is supported. Version ${parsed.generatorVersion} is not supported`,
-            { cause: parsed }
-          );
-        }
-        break;
-      case 8 /* RatOS */:
-        if (import_semver3.default.neq("0.1", parsed.generatorVersion)) {
-          throw new SlicerNotSupported(
-            `Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported`,
-            { cause: parsed }
-          );
-        }
-        break;
-      default:
-        throw new InternalError("unexpected state");
+        case 1 /* PrusaSlicer */:
+          if (import_semver3.default.neq("2.8.0", parsed.generatorVersion)) {
+            throw new SlicerNotSupported(
+              `Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+              { cause: parsed }
+            );
+          }
+          break;
+        case 2 /* OrcaSlicer */:
+          if (import_semver3.default.neq("2.1.1", parsed.generatorVersion)) {
+            throw new SlicerNotSupported(
+              `Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+              { cause: parsed }
+            );
+          }
+          break;
+        case 4 /* SuperSlicer */:
+          if (!import_semver3.default.satisfies(parsed.generatorVersion, "2.5.59 || 2.5.60")) {
+            throw new SlicerNotSupported(
+              `Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
+              { cause: parsed }
+            );
+          }
+          break;
+        case 8 /* RatOS */:
+          if (import_semver3.default.neq("0.1", parsed.generatorVersion)) {
+            throw new SlicerNotSupported(
+              `Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported.`,
+              { cause: parsed }
+            );
+          }
+          break;
+        default:
+          throw new InternalError("unexpected state");
+      }
+    } catch (ex) {
+      if (s2.kAllowUnsupportedSlicerVersions && s2.onWarning && ex instanceof SlicerNotSupported) {
+        s2.onWarning("PP001", ex.message + " This may result in print defects and incorrect operation of the printer.");
+      } else {
+        throw ex;
+      }
     }
   }
   c.line = c.line.padEnd(c.line.length + 100);
@@ -91783,18 +91810,18 @@ var getGcodeInfo = (c, s2) => {
   return 3 /* RemoveAndStop */;
 };
 var getStartPrint = (c, s2) => {
-  let match2 = /^(START_PRINT|RMMU_START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
+  const match2 = /^(START_PRINT|RMMU_START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
     c.line
   );
   if (match2) {
     c.line = c.line.replace("#", "").padEnd(c.line.length + 250);
     c.bookmarkKey = Symbol("START_PRINT");
     s2.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
-    let initialTool = match2.groups?.INITIAL_TOOL;
+    const initialTool = match2.groups?.INITIAL_TOOL;
     if (initialTool) {
       s2.usedTools.push(initialTool);
     }
-    let extruderOtherLayerTemp = match2?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
+    const extruderOtherLayerTemp = match2?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
     if (extruderOtherLayerTemp) {
       s2.extruderTemps = extruderOtherLayerTemp.split(",");
     }
@@ -91839,36 +91866,46 @@ var fixOrcaSetAccelaration = [
   }
 ];
 var whenCommonCommandDoThenStop = (c, s2) => {
-  s2._cmd = CommonGCodeCommand.parseOptimisedForOrderXYEZF(c.line);
+  s2._cmd = parseCommonGCodeCommandLine(c.line);
   return s2._cmd ? 2 /* Stop */ : 0 /* Continue */ | 256 /* flagSkipSubSequence */;
 };
 var findFirstMoveXY = (c, s2) => {
-  if (s2._cmd.g) {
-    s2.firstMoveX ??= s2._cmd?.x;
-    s2.firstMoveY ??= s2._cmd?.y;
+  if (s2._cmd.letter === "G") {
+    s2.firstMoveX ??= s2._cmd.x;
+    s2.firstMoveY ??= s2._cmd.y;
     if (s2.firstMoveX && s2.firstMoveY) {
+      if (s2.kQuickInpsectionOnly) {
+        throw new InspectionIsComplete();
+      }
       return 1 /* RemoveAndContinue */;
     }
   }
 };
 var findMinMaxX = (c, s2) => {
-  if (s2._cmd.g) {
-    let x = s2._cmd?.x;
-    if (x) {
-      let n2 = Number(x);
-      if (n2 < s2.minX) {
-        s2.minX = n2;
-      }
-      if (n2 > s2.maxX) {
-        s2.maxX = n2;
-      }
+  if (s2._cmd.letter === "G") {
+    switch (s2._cmd.value) {
+      case "1":
+        const x = s2._cmd.x;
+        if (x) {
+          const n2 = Number(x);
+          if (n2 < s2.minX) {
+            s2.minX = n2;
+          }
+          if (n2 > s2.maxX) {
+            s2.maxX = n2;
+          }
+        }
+        break;
+      case "2":
+      case "3":
+        throw newGCodeError("G2/G3 commands (arcs) are not currently supported.", c, s2);
     }
     return 2 /* Stop */;
   }
 };
 var processToolchange = (c, s2) => {
-  let tool = s2._cmd.t;
-  if (tool) {
+  if (s2._cmd.letter === "T") {
+    const tool = s2._cmd.value;
     if (++s2.toolChangeCount == 1) {
       c.prepend(REMOVED_BY_RATOS);
       return 2 /* Stop */;
@@ -91885,14 +91922,34 @@ var processToolchange = (c, s2) => {
         }
       }
     }
-    let retractLine = void 0;
+    let zHopBeforeToolchange = void 0;
+    if (!s2.hasPurgeTower && (s2.gcodeInfo.flavour === 1 /* PrusaSlicer */ || s2.gcodeInfo.flavour === 4 /* SuperSlicer */)) {
+      for (let scan of c.scanBack(19)) {
+        if (scan.line.startsWith("; custom gcode: end_filament_gcode")) {
+          const preceding = scan.getLine(-1);
+          const cmd = parseCommonGCodeCommandLine(preceding.line);
+          if (cmd && cmd.letter === "G" && cmd.value === "1" && cmd.z && !cmd.x && !cmd.y) {
+            const z2 = Number(cmd.z);
+            if (z2 > 0) {
+              zHopBeforeToolchange = preceding;
+            }
+          }
+          break;
+        }
+      }
+    }
+    let retractForToolchange = void 0;
     if (!s2.hasPurgeTower) {
       switch (s2.gcodeInfo.flavour) {
         case 1 /* PrusaSlicer */:
         case 4 /* SuperSlicer */:
           for (let scan of c.scanForward(19)) {
             if (scan.line.startsWith("G1 E-")) {
-              retractLine = scan;
+              retractForToolchange = { line: scan };
+              const next = scan.getLine(1);
+              if (next.line.startsWith("G1 Z")) {
+                retractForToolchange.zHopLine = next;
+              }
               break;
             }
           }
@@ -91900,7 +91957,7 @@ var processToolchange = (c, s2) => {
         case 2 /* OrcaSlicer */:
           for (let scan of c.scanBack(19)) {
             if (scan.line.startsWith("G1 E-")) {
-              retractLine = scan;
+              retractForToolchange = { line: scan };
               break;
             }
           }
@@ -91909,13 +91966,17 @@ var processToolchange = (c, s2) => {
     }
     let xyMoveAfterToolchange = void 0;
     for (let scan of c.scanForward(19)) {
-      const match2 = CommonGCodeCommand.parseOptimisedForOrderXYEZF(scan.line);
+      const match2 = parseCommonGCodeCommandLine(scan.line);
       if (match2) {
         if (match2.x && match2.y) {
           if (match2.e) {
             throw newGCodeError("Unexpected extruding move after toolchange.", scan, s2);
           }
-          xyMoveAfterToolchange = [match2.x, match2.y, scan];
+          xyMoveAfterToolchange = { x: match2.x, y: match2.y, line: scan };
+          const prev = scan.getLine(-1);
+          if (prev.line.startsWith("G1 Z")) {
+            xyMoveAfterToolchange.zHopLine = prev;
+          }
           break;
         } else if (match2.x || match2.y) {
           throw newGCodeError("Unexpected X-only or Y-only move after toolchange.", scan, s2);
@@ -91928,11 +91989,11 @@ var processToolchange = (c, s2) => {
         case 1 /* PrusaSlicer */:
         case 4 /* SuperSlicer */:
         case 2 /* OrcaSlicer */:
-          for (let scan of (xyMoveAfterToolchange?.[2] ?? c).scanForward(2)) {
-            const match2 = CommonGCodeCommand.parseOptimisedForOrderXYEZF(scan.line);
+          for (let scan of (xyMoveAfterToolchange?.line ?? c).scanForward(2)) {
+            const match2 = parseCommonGCodeCommandLine(scan.line);
             if (match2) {
               if (match2.z) {
-                zMoveAfterToolchange = [match2.z, scan];
+                zMoveAfterToolchange = { z: match2.z, line: scan };
                 break;
               }
             }
@@ -91942,21 +92003,31 @@ var processToolchange = (c, s2) => {
     }
     let deretractLine = void 0;
     if (!s2.hasPurgeTower && xyMoveAfterToolchange) {
-      for (let scan of xyMoveAfterToolchange[2].scanForward(4)) {
+      for (let scan of xyMoveAfterToolchange.line.scanForward(4)) {
         if (scan.line.startsWith("G1 E")) {
-          deretractLine = scan;
+          const match2 = parseCommonGCodeCommandLine(scan.line);
+          if (match2?.e && Number(match2.e) > 0) {
+            deretractLine = scan;
+          }
           break;
         }
       }
     }
     if (xyMoveAfterToolchange) {
-      if (zMoveAfterToolchange) {
-        zMoveAfterToolchange[1].prepend(REMOVED_BY_RATOS);
+      if (zHopBeforeToolchange) {
+        zHopBeforeToolchange.prepend(REMOVED_BY_RATOS);
       }
-      c.line = s2.kPrinterHasRmmuHub ? `TOOL T=${tool} X=${xyMoveAfterToolchange[0]} Y=${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? " Z=" + zMoveAfterToolchange[0] : ""}` : `T${tool} X${xyMoveAfterToolchange[0]} Y${xyMoveAfterToolchange[1]}${zMoveAfterToolchange ? " Z" + zMoveAfterToolchange[0] : ""}`;
-      xyMoveAfterToolchange[2].prepend(REMOVED_BY_RATOS);
-      if (retractLine && deretractLine) {
-        retractLine.prepend(REMOVED_BY_RATOS);
+      if (zMoveAfterToolchange) {
+        zMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
+      }
+      c.line = s2.kPrinterHasRmmuHub ? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z=" + zMoveAfterToolchange.z : ""}` : `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z" + zMoveAfterToolchange.z : ""}`;
+      if (xyMoveAfterToolchange.zHopLine && !retractForToolchange?.zHopLine && // avoid double-prepending the same line
+      (s2.gcodeInfo.flavour === 1 /* PrusaSlicer */ || s2.gcodeInfo.flavour === 4 /* SuperSlicer */)) {
+        xyMoveAfterToolchange.zHopLine.prepend(REMOVED_BY_RATOS);
+      }
+      if (retractForToolchange && deretractLine) {
+        retractForToolchange.line.prepend(REMOVED_BY_RATOS);
+        retractForToolchange.zHopLine?.prepend(REMOVED_BY_RATOS);
         deretractLine.prepend(REMOVED_BY_RATOS);
       }
     }
@@ -92008,10 +92079,18 @@ var captureConfigSection = (c, s2) => {
 // ../server/gcode-processor/GCodeProcessor.ts
 var import_semver4 = __toESM(require_semver2());
 var LEGACY_MODE = true;
+var InspectionIsComplete = class extends Error {
+};
 var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
-  constructor(printerHasIdex, printerHasRmmuHub, inspectionOnly) {
-    super(20, 20);
-    this.#state = new State(printerHasIdex, printerHasRmmuHub, inspectionOnly);
+  constructor(printerHasIdex, printerHasRmmuHub, quickInspectionOnly, allowUnsupportedSlicerVersions, onWarning, abortSignal) {
+    super(20, 20, abortSignal);
+    this.#state = new State(
+      printerHasIdex,
+      printerHasRmmuHub,
+      quickInspectionOnly,
+      allowUnsupportedSlicerVersions,
+      onWarning
+    );
   }
   #state;
   // NB: The order of actions is significant.
@@ -92142,11 +92221,31 @@ M104 S${s2.extruderTemps[Number(tool)]} T${tool}`;
       }
     }
   }
-  /**
-   * TODO, pending public API requirements, to be decided.
-   */
-  getSidecarData() {
-    throw new InternalError("not implemented");
+  getAnalysisResult() {
+    const s2 = this.#state.serialize();
+    if (this.#state.kQuickInpsectionOnly) {
+      return {
+        extruderTemps: s2.extruderTemps,
+        firstMoveX: s2.firstMoveX,
+        firstMoveY: s2.firstMoveY,
+        hasPurgeTower: s2.hasPurgeTower,
+        configSection: s2.configSection,
+        gcodeInfo: this.#state.gcodeInfo.serialize()
+      };
+    } else {
+      return {
+        extruderTemps: s2.extruderTemps,
+        toolChangeCount: s2.toolChangeCount,
+        firstMoveX: s2.firstMoveX,
+        firstMoveY: s2.firstMoveY,
+        minX: s2.minX,
+        maxX: s2.maxX,
+        hasPurgeTower: s2.hasPurgeTower,
+        configSection: s2.configSection,
+        usedTools: s2.usedTools,
+        gcodeInfo: this.#state.gcodeInfo.serialize()
+      };
+    }
   }
 };
 
@@ -92164,14 +92263,20 @@ import { Transform as Transform3 } from "node:stream";
 var BookmarkingBufferError = class extends GCodeProcessorError {
 };
 var BookmarkingBufferEncoder = class extends Transform3 {
-  constructor(newline = "\n", encoding = "utf8") {
+  constructor(newline = "\n", encoding = "utf8", abortSignal) {
     super({ objectMode: true });
     this.newline = newline;
     this.encoding = encoding;
+    this.#abortSignal = abortSignal;
   }
+  #abortSignal;
   #bookmarks = /* @__PURE__ */ new Map();
   #bytesWritten = 0;
   _transform(chunk, encoding, callback) {
+    if (this.#abortSignal?.aborted) {
+      callback(this.#abortSignal.reason);
+      return;
+    }
     if (chunk instanceof BookmarkableLine) {
       let buffer = Buffer.from(chunk.line + this.newline, this.encoding);
       if (chunk.bookmarkKey) {
@@ -92203,7 +92308,7 @@ var BookmarkingBufferEncoder = class extends Transform3 {
   }
 };
 async function replaceBookmarkedGcodeLine(fh, bookmark, replacementLine) {
-  let line = replacementLine.trimEnd();
+  const line = replacementLine.trimEnd();
   let buf = Buffer.from(line);
   if (buf.length + 1 > bookmark.byteLength) {
     throw new RangeError(
@@ -92218,12 +92323,71 @@ async function replaceBookmarkedGcodeLine(fh, bookmark, replacementLine) {
 }
 
 // ../server/gcode-processor/gcode-processor.ts
+import { Writable } from "node:stream";
+var NullSink = class extends Writable {
+  _write(chunk, encoding, callback) {
+    callback();
+  }
+};
+async function inspectGCode(inputFile, options) {
+  const inputStat = await stat(path6.resolve(inputFile));
+  if (!inputStat.isFile()) {
+    throw new Error(`${inputFile} is not a file`);
+  }
+  const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
+  if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
+    return {
+      gcodeInfo: gcInfoBeforeProcessing.serialize(),
+      wasAlreadyProcessed: true
+    };
+  }
+  const gcodeProcessor = new GCodeProcessor(
+    !!options.idex,
+    !!options.rmmu,
+    !options.fullInspection,
+    !!options.allowUnsupportedSlicerVersions,
+    options.onWarning,
+    options.abortSignal
+  );
+  const progressStream = (0, import_progress_stream.default)({ length: inputStat.size });
+  if (options.onProgress) {
+    progressStream.on("progress", options.onProgress);
+  }
+  try {
+    await pipeline(
+      createReadStream(inputFile),
+      progressStream,
+      (0, import_split2.default)(),
+      gcodeProcessor,
+      new NullSink({ objectMode: true })
+    );
+  } catch (e) {
+    if (e instanceof InspectionIsComplete) {
+      return {
+        ...gcodeProcessor.getAnalysisResult(),
+        wasAlreadyProcessed: false
+      };
+    }
+    throw e;
+  }
+  return {
+    ...gcodeProcessor.getAnalysisResult(),
+    wasAlreadyProcessed: false
+  };
+}
 async function processGCode(inputFile, outputFile, options) {
   let fh = void 0;
   const inputStat = await stat(path6.resolve(inputFile));
   const outPath = path6.resolve(path6.dirname(outputFile));
   if (!inputStat.isFile()) {
     throw new Error(`${inputFile} is not a file`);
+  }
+  const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
+  if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
+    return {
+      gcodeInfo: gcInfoBeforeProcessing.serialize(),
+      wasAlreadyProcessed: true
+    };
   }
   try {
     await access(outPath, constants.W_OK);
@@ -92235,8 +92399,15 @@ async function processGCode(inputFile, outputFile, options) {
   }
   try {
     fh = await open(outputFile, "w");
-    const gcodeProcessor = new GCodeProcessor(!!options.idex, !!options.rmmu, false);
-    const encoder = new BookmarkingBufferEncoder();
+    const gcodeProcessor = new GCodeProcessor(
+      !!options.idex,
+      !!options.rmmu,
+      false,
+      !!options.allowUnsupportedSlicerVersions,
+      options.onWarning,
+      options.abortSignal
+    );
+    const encoder = new BookmarkingBufferEncoder(void 0, void 0, options.abortSignal);
     const progressStream = (0, import_progress_stream.default)({ length: inputStat.size });
     if (options.onProgress) {
       progressStream.on("progress", options.onProgress);
@@ -92250,8 +92421,15 @@ async function processGCode(inputFile, outputFile, options) {
       createWriteStream("|notused|", { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false })
     );
     await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh, bm, line));
+    return {
+      ...gcodeProcessor.getAnalysisResult(),
+      wasAlreadyProcessed: false
+    };
   } finally {
-    await fh?.close();
+    try {
+      await fh?.close();
+    } catch {
+    }
   }
 }
 
@@ -99453,43 +99631,126 @@ function friendlyDateTime(dateTimeish) {
 
 // commands/postprocessor.tsx
 import path7 from "path";
-var ProgressReportUI = ({ report, fileName, done }) => {
+var ProgressReportUI = ({ report, fileName, done, error }) => {
   const eta = report ? report.eta / 60 : 0;
   const percentage = report?.percentage ?? 0;
   const duration = Duration.fromObject({ minutes: report ? report.eta / 60 / 60 : 0 }, { locale: "en-GB" }).normalize().shiftTo(
     ...[eta < 1 ? "seconds" : "minutes", eta > 60 ? "hours" : null].filter(Boolean)
   ).toHuman({ unitDisplay: "short", listStyle: "narrow", maximumFractionDigits: 0 });
-  return /* @__PURE__ */ import_react64.default.createElement(Container, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, "Processing ", fileName, "..."), /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "row", columnGap: 1 }, report ? /* @__PURE__ */ import_react64.default.createElement(import_react64.default.Fragment, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, percentage.toFixed(2).padStart(6, " "), "%"), /* @__PURE__ */ import_react64.default.createElement(Box_default, { width: 30 }, /* @__PURE__ */ import_react64.default.createElement(ProgressBar, { value: report?.percentage ?? 0 })), /* @__PURE__ */ import_react64.default.createElement(Text, null, duration, " remaining")) : done ? /* @__PURE__ */ import_react64.default.createElement(StatusMessage, { variant: "success" }, "Done") : /* @__PURE__ */ import_react64.default.createElement(Text, { color: "gray" }, "Initializing post processor...")));
+  return /* @__PURE__ */ import_react64.default.createElement(Container, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, "Processing ", fileName, "..."), /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "row", columnGap: 1 }, report ? /* @__PURE__ */ import_react64.default.createElement(import_react64.default.Fragment, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, percentage.toFixed(2).padStart(6, " "), "%"), /* @__PURE__ */ import_react64.default.createElement(Box_default, { width: 30 }, /* @__PURE__ */ import_react64.default.createElement(ProgressBar, { value: report?.percentage ?? 0 })), /* @__PURE__ */ import_react64.default.createElement(Text, null, duration, " remaining")) : done ? /* @__PURE__ */ import_react64.default.createElement(StatusMessage, { variant: "success" }, "Done") : error ? /* @__PURE__ */ import_react64.default.createElement(StatusMessage, { variant: "error" }, error) : /* @__PURE__ */ import_react64.default.createElement(Text, { color: "gray" }, "Initializing post processor...")));
+};
+var PostProcessorCLIOutput = z.object({
+  result: z.literal("error"),
+  error: z.string()
+}).or(
+  z.object({
+    result: z.literal("success"),
+    payload: z.object({
+      extruderTemps: z.array(z.string()).optional(),
+      toolChangeCount: z.number(),
+      firstMoveX: z.string().optional(),
+      firstMoveY: z.string().optional(),
+      minX: z.number(),
+      maxX: z.number(),
+      hasPurgeTower: z.boolean().optional(),
+      configSection: z.record(z.string(), z.string()).optional(),
+      usedTools: z.array(z.string()),
+      gcodeInfo: z.object({
+        generator: z.string(),
+        generatorVersion: z.string(),
+        flavour: z.number(),
+        generatorTimestamp: z.string(),
+        ratosDialectVersion: z.string().optional(),
+        processedByRatOSVersion: z.string().optional(),
+        processedByRatOSTimestamp: z.string().optional()
+      })
+    }).or(
+      z.object({
+        wasAlreadyProcessed: z.boolean(),
+        gcodeInfo: z.object({
+          generator: z.string(),
+          generatorVersion: z.string(),
+          flavour: z.number(),
+          generatorTimestamp: z.string(),
+          ratosDialectVersion: z.string().optional(),
+          processedByRatOSVersion: z.string().optional(),
+          processedByRatOSTimestamp: z.string().optional()
+        })
+      })
+    )
+  })
+).or(
+  z.object({
+    result: z.literal("progress"),
+    payload: z.object({
+      percentage: z.number(),
+      eta: z.number()
+    })
+  })
+);
+var toPostProcessorCLIOutput = (obj) => {
+  try {
+    echo2(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
+  } catch (e) {
+    echo2(JSON.stringify({ result: "error", error: `${e}` }));
+  }
 };
 var postprocessor = (program3) => {
-  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").argument("<input>", "Path to the gcode file to postprocess").argument("<output>", "Path to the output gcode file").action(async (inputFile, outputFile, args) => {
+  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
     let onProgress = void 0;
     let rerender = void 0;
     let lastProgressPercentage = 0;
-    if (process.stdout.isTTY) {
+    const isInteractive = process.stdout.isTTY && !args.nonInteractive;
+    if (isInteractive) {
       const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile) }));
       rerender = _rerender;
       onProgress = (report) => {
         _rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), report }));
       };
     } else {
-      echo2(`Processing ${path7.basename(inputFile)}...`);
       onProgress = (report) => {
         const progressTens = Math.floor(report.percentage / 10) * 10;
         if (progressTens > lastProgressPercentage && report.percentage > 10) {
           lastProgressPercentage = progressTens;
-          echo2(`${lastProgressPercentage}%`);
+          toPostProcessorCLIOutput({ result: "progress", payload: { percentage: progressTens, eta: report.eta } });
         }
       };
     }
-    await processGCode(inputFile, outputFile, {
+    const opts = {
       idex: args.idex,
       rmmu: args.rmmu,
       overwrite: args.overwrite,
       onProgress
-    });
-    if (rerender) {
-      rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), done: true }));
+      // Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
+      // Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
+      // onWarning: (code: string, message: string) => { /* TODO */ },
+    };
+    try {
+      const result = !!outputFile ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
+      if (rerender && isInteractive) {
+        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), done: true }));
+      } else {
+        toPostProcessorCLIOutput({
+          result: "success",
+          payload: result
+        });
+      }
+    } catch (e) {
+      let errorMessage = "";
+      if (e instanceof Error) {
+        if ("code" in e && e.code === "ENOENT" && "path" in e) {
+          errorMessage = `File ${e.path} not found`;
+        } else {
+          errorMessage = e.message;
+        }
+      } else {
+        errorMessage = `${e}`;
+      }
+      if (rerender && isInteractive) {
+        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), error: errorMessage }));
+      } else {
+        toPostProcessorCLIOutput({ result: "error", error: errorMessage });
+      }
     }
   });
 };

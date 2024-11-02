@@ -154,13 +154,16 @@ export abstract class SlidingWindowLineProcessor extends Transform {
 	constructor(
 		public readonly maxLinesAhead = 10,
 		public readonly maxLinesBehind = 10,
+		abortSignal?: AbortSignal,
 	) {
 		super({ objectMode: true });
-
+		this.#abortSignal = abortSignal;
 		this.#buf = new RingBuffer<ProcessorLine>(maxLinesBehind + maxLinesAhead + 1);
 	}
 
 	protected abstract _processLine(context: ProcessLineContext): void;
+
+	#abortSignal?: AbortSignal;
 
 	/**
 	 * The current position within `#buf`. When the window is primed and streaming
@@ -183,6 +186,11 @@ export abstract class SlidingWindowLineProcessor extends Transform {
 	#getLineContextClosure = (offset: number) => this.#getLineContext(offset);
 
 	_transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+		if (this.#abortSignal?.aborted) {
+			callback(this.#abortSignal.reason);
+			return;
+		}
+
 		if (typeof chunk !== 'string') {
 			return callback(new InternalError('chunk must be a string'));
 		}
@@ -238,6 +246,11 @@ export abstract class SlidingWindowLineProcessor extends Transform {
 	}
 
 	_flush(callback: TransformCallback): void {
+		if (this.#abortSignal?.aborted) {
+			callback(this.#abortSignal.reason);
+			return;
+		}
+
 		// At this point:
 		// 1. Any items in #buf at index > #position in #buf have not yet been processed.
 		// 2. No items in #buf have been pushed.

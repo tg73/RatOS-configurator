@@ -18,7 +18,7 @@ import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
 import semver, { SemVer } from 'semver';
 import { GCodeError } from '@/server/gcode-processor/errors';
 import date2 from 'date-and-time';
-const fsReader = require('fs-reader');
+import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
 
 /** A known flavour of G-code. */
@@ -36,6 +36,17 @@ export enum GCodeFlavour {
 }
 
 const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
+
+/** Serialized characteristics of a G-code file, typically determined from the header lines of the file. */
+export interface SerializedGcodeInfo {
+	generator: string;
+	generatorVersion: string;
+	flavour: GCodeFlavour;
+	generatorTimestamp: string;
+	ratosDialectVersion?: string;
+	processedByRatOSVersion?: string;
+	processedByRatOSTimestamp?: string;
+}
 
 /** Characteristics of a G-code file, typically determined from the header lines of the file. */
 export class GCodeInfo {
@@ -147,4 +158,20 @@ export class GCodeInfo {
 		public readonly processedByRatOSVersion?: SemVer,
 		public readonly processedByRatOSTimestamp?: Date,
 	) {}
+
+	public toJSON(): string {
+		return JSON.stringify(this.serialize());
+	}
+
+	public serialize(): SerializedGcodeInfo {
+		return {
+			generator: this.generator,
+			generatorVersion: this.generatorVersion.toString(),
+			flavour: this.flavour,
+			generatorTimestamp: this.generatorTimestamp.toISOString(),
+			ratosDialectVersion: this.ratosDialectVersion?.toString(),
+			processedByRatOSVersion: this.processedByRatOSVersion?.toString(),
+			processedByRatOSTimestamp: this.processedByRatOSTimestamp?.toISOString(),
+		};
+	}
 }

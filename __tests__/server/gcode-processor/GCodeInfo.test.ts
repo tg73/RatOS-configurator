@@ -123,12 +123,14 @@ describe('tryParseHeader', async () => {
 
 describe('fromFile', async () => {
 	test('unprocessed', async () => {
-		const parsed = await GCodeInfo.fromFile(path.join(__dirname, 'fixtures', 'slicer_output', 'benchy2c_ss.gcode'));
+		const parsed = await GCodeInfo.fromFile(
+			path.join(__dirname, 'fixtures', 'slicer_output', 'SS_IDEX_MultiColor_WipeTower.gcode'),
+		);
 		expect(parsed).not.toBeNull();
 		expect(parsed!.flavour).toEqual(GCodeFlavour.SuperSlicer);
 		expect(parsed!.generator).toEqual('SuperSlicer');
-		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-14 20:39:12 UTC'));
-		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.59.13'));
+		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-10-31T03:29:37.000Z'));
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.60'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
@@ -136,13 +138,13 @@ describe('fromFile', async () => {
 
 	test('legacy processed', async () => {
 		const parsed = await GCodeInfo.fromFile(
-			path.join(__dirname, 'fixtures', 'transformed_legacy', 'benchy2c_ss.gcode'),
+			path.join(__dirname, 'fixtures', 'transformed_legacy', 'SS_IDEX_MultiColor_WipeTower.gcode'),
 		);
 		expect(parsed).not.toBeNull();
 		expect(parsed!.flavour).toEqual(GCodeFlavour.SuperSlicer);
 		expect(parsed!.generator).toEqual('SuperSlicer');
-		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-14 20:39:12 UTC'));
-		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.59.13'));
+		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-10-31T03:29:37.000Z'));
+		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.60'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSVersion).toEqual(new SemVer('1.0.0-legacy'));
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
