@@ -11,7 +11,7 @@ import path from 'path';
 import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger.ts';
 import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions.ts';
-import { getEnvironment } from '@/cli/util.tsx';
+import { loadEnvironment } from '@/cli/util.tsx';
 
 const ProgressReportUI: React.FC<{
 	report?: Progress;
@@ -151,7 +151,7 @@ export const postprocessor = (program: Command) => {
 		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
 			// load env variables
-			await getEnvironment();
+			await loadEnvironment();
 			let onProgress: ((report: Progress) => void) | undefined = undefined;
 			let rerender: ((element: React.ReactNode) => void) | undefined = undefined;
 			let lastProgressPercentage: number = 0;
