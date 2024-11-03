@@ -730,7 +730,7 @@ class RatOS:
 			self.debug_echo("get_ratos_version", ("Exception on run: %s", exc))
 		return version
 	
-	def get_status(self):
+	def get_status(self, eventtime):
 		return {'last_processed_file_result': self.last_processed_file_result}
 
 #####
