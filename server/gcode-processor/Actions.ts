@@ -44,6 +44,10 @@ SET_PRESSURE_ADVANCE ADVANCE=0.03; Override pressure advance value
 export const CHANGED_BY_RATOS = ' ; Changed by RatOS post processor: ';
 export const REMOVED_BY_RATOS = '; Removed by RatOS post processor: ';
 
+export enum ACTION_ERROR_CODES {
+	UNSUPPORTED_SLICER_VERSION = 'UNSUPPORTED_SLICER_VERSION',
+}
+
 /**
  * Either:
  * * {@link GCodeFlavour} - one or more G-code flavours to which the aciton applies (or'd together), regardless of generator or dialect version.
@@ -135,7 +139,10 @@ export const getGcodeInfo: Action = (c, s) => {
 			}
 		} catch (ex) {
 			if (s.kAllowUnsupportedSlicerVersions && s.onWarning && ex instanceof SlicerNotSupported) {
-				s.onWarning('PP001', ex.message + ' This may result in print defects and incorrect operation of the printer.');
+				s.onWarning(
+					ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION,
+					ex.message + ' This may result in print defects and incorrect operation of the printer.',
+				);
 			} else {
 				throw ex;
 			}

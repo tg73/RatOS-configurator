@@ -8,8 +8,9 @@ import React from 'react';
 import { Container } from '@/cli/components/container.tsx';
 import { Duration, DurationLikeObject } from 'luxon';
 import path from 'path';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger.ts';
+import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions.ts';
 
 const ProgressReportUI: React.FC<{
 	report?: Progress;
@@ -52,8 +53,16 @@ const ProgressReportUI: React.FC<{
 export const PostProcessorCLIOutput = z
 	.object({
 		result: z.literal('error'),
-		error: z.string(),
+		title: z.string().optional(),
+		message: z.string(),
 	})
+	.or(
+		z.object({
+			result: z.literal('warning'),
+			title: z.string().optional(),
+			message: z.string(),
+		}),
+	)
 	.or(
 		z.object({
 			result: z.literal('success'),
@@ -112,14 +121,18 @@ export const toPostProcessorCLIOutput = (obj: PostProcessorCLIOutput): void => {
 	try {
 		echo(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
 	} catch (e) {
-		getLogger().error(obj, 'Invalid data passed to toPostProcessorCLIOutput');
 		getLogger().error(e, 'An error occurred while serializing postprocessor output');
-		echo(
-			JSON.stringify({
-				result: 'error',
-				error: `An error occurred while serializing postprocessor output`,
-			} satisfies PostProcessorCLIOutput),
-		);
+		if (e instanceof ZodError) {
+			getLogger().trace(obj, 'Invalid data passed to toPostProcessorCLIOutput');
+			echo(
+				JSON.stringify({
+					result: 'error',
+					message: `An error occurred while serializing postprocessor output`,
+				} satisfies PostProcessorCLIOutput),
+			);
+		} else {
+			throw e;
+		}
 	}
 };
 
@@ -132,6 +145,7 @@ export const postprocessor = (program: Command) => {
 		.option('-i, --idex', 'Postprocess for an IDEX printer')
 		.option('-o, --overwrite', 'Overwrite the output file if it exists')
 		.option('-O, --overwrite-input', 'Overwrite the input file')
+		.option('-a, --allow-unsupported-slicer-versions', 'Allow unsupported slicer versions')
 		.argument('<input>', 'Path to the gcode file to postprocess')
 		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
@@ -152,7 +166,7 @@ export const postprocessor = (program: Command) => {
 						lastProgressPercentage = progressTens;
 						toPostProcessorCLIOutput({
 							result: 'progress',
-							payload: { percentage: progressTens, eta: report.eta ?? 0 },
+							payload: { percentage: progressTens, eta: isNaN(report.eta) ? 0 : report.eta ?? 0 },
 						});
 					}
 				};
@@ -162,7 +176,18 @@ export const postprocessor = (program: Command) => {
 				idex: args.idex,
 				rmmu: args.rmmu,
 				overwrite: args.overwrite || args.overwriteInput,
+				allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
 				onProgress,
+				onWarning: (code: string, message: string) => {
+					getLogger().warn(code, message);
+					if (code === ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION) {
+						toPostProcessorCLIOutput({
+							result: 'warning',
+							title: 'Unsupported slicer version',
+							message: message,
+						});
+					}
+				},
 				// Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
 				// Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
 				// onWarning: (code: string, message: string) => { /* TODO */ },
@@ -206,7 +231,7 @@ export const postprocessor = (program: Command) => {
 				if (rerender && isInteractive) {
 					rerender(<ProgressReportUI fileName={path.basename(inputFile)} error={errorMessage} />);
 				} else {
-					toPostProcessorCLIOutput({ result: 'error', error: errorMessage });
+					toPostProcessorCLIOutput({ result: 'error', message: errorMessage });
 				}
 				process.exit(1);
 			}

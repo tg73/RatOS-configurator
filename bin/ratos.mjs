@@ -91801,7 +91801,10 @@ var getGcodeInfo = (c, s2) => {
       }
     } catch (ex) {
       if (s2.kAllowUnsupportedSlicerVersions && s2.onWarning && ex instanceof SlicerNotSupported) {
-        s2.onWarning("PP001", ex.message + " This may result in print defects and incorrect operation of the printer.");
+        s2.onWarning(
+          "UNSUPPORTED_SLICER_VERSION" /* UNSUPPORTED_SLICER_VERSION */,
+          ex.message + " This may result in print defects and incorrect operation of the printer."
+        );
       } else {
         throw ex;
       }
@@ -99644,8 +99647,15 @@ var ProgressReportUI = ({ report, fileName, done, error }) => {
 };
 var PostProcessorCLIOutput = z.object({
   result: z.literal("error"),
-  error: z.string()
+  title: z.string().optional(),
+  message: z.string()
 }).or(
+  z.object({
+    result: z.literal("warning"),
+    title: z.string().optional(),
+    message: z.string()
+  })
+).or(
   z.object({
     result: z.literal("success"),
     payload: z.object({
@@ -99695,18 +99705,22 @@ var toPostProcessorCLIOutput = (obj) => {
   try {
     echo2(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
   } catch (e) {
-    getLogger().error(obj, "Invalid data passed to toPostProcessorCLIOutput");
     getLogger().error(e, "An error occurred while serializing postprocessor output");
-    echo2(
-      JSON.stringify({
-        result: "error",
-        error: `An error occurred while serializing postprocessor output`
-      })
-    );
+    if (e instanceof ZodError) {
+      getLogger().trace(obj, "Invalid data passed to toPostProcessorCLIOutput");
+      echo2(
+        JSON.stringify({
+          result: "error",
+          message: `An error occurred while serializing postprocessor output`
+        })
+      );
+    } else {
+      throw e;
+    }
   }
 };
 var postprocessor = (program3) => {
-  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
+  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
     let onProgress = void 0;
     let rerender = void 0;
     let lastProgressPercentage = 0;
@@ -99724,7 +99738,7 @@ var postprocessor = (program3) => {
           lastProgressPercentage = progressTens;
           toPostProcessorCLIOutput({
             result: "progress",
-            payload: { percentage: progressTens, eta: report.eta ?? 0 }
+            payload: { percentage: progressTens, eta: isNaN(report.eta) ? 0 : report.eta ?? 0 }
           });
         }
       };
@@ -99733,7 +99747,18 @@ var postprocessor = (program3) => {
       idex: args.idex,
       rmmu: args.rmmu,
       overwrite: args.overwrite || args.overwriteInput,
-      onProgress
+      allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
+      onProgress,
+      onWarning: (code, message) => {
+        getLogger().warn(code, message);
+        if (code === "UNSUPPORTED_SLICER_VERSION" /* UNSUPPORTED_SLICER_VERSION */) {
+          toPostProcessorCLIOutput({
+            result: "warning",
+            title: "Unsupported slicer version",
+            message
+          });
+        }
+      }
       // Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
       // Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
       // onWarning: (code: string, message: string) => { /* TODO */ },
@@ -99770,7 +99795,7 @@ var postprocessor = (program3) => {
       if (rerender && isInteractive) {
         rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), error: errorMessage }));
       } else {
-        toPostProcessorCLIOutput({ result: "error", error: errorMessage });
+        toPostProcessorCLIOutput({ result: "error", message: errorMessage });
       }
       process.exit(1);
     }
