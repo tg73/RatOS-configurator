@@ -12,6 +12,7 @@ SUPER_SLICER = "superslicer"
 ORCA_SLICER = "orcaslicer"
 UNKNOWN_SLICER = "unknown"
 
+CHANGED_BY_POST_PROCESSOR = " ; Changed by RatOS post processor: "
 REMOVED_BY_POST_PROCESSOR = "; Removed by RatOS post processor: "
 
 class RatOS:
@@ -356,32 +357,6 @@ class RatOS:
 					self.ratos_echo(echo_prefix, "Unsupported Slicer")
 					raise self.printer.command_error("Unsupported Slicer")
 
-			# get start filament gcode line count
-			pause_counter = 0
-			filament_start_gcode_line_count = [1,1]
-			START_FILAMENT_GCODE = "; start_filament_gcode = "
-			if slicer_name == ORCA_SLICER:
-				START_FILAMENT_GCODE = "; filament_start_gcode = "
-			if (enable_post_processing):
-				line_count = len(lines) - 1
-				filament_start_gcode = []
-				for line in range(line_count):
-					# give the cpu some time
-					pause_counter += 1
-					if pause_counter == 1000:
-						pause_counter = 0
-						self.reactor.pause(.001)
-					# get filament_start_gcode settings
-					if filament_start_gcode == []:
-						if lines[line_count - line].rstrip().startswith(START_FILAMENT_GCODE):
-							filament_start_gcode = lines[line_count - line].rstrip().replace(START_FILAMENT_GCODE, "").split('";"')
-				if len(filament_start_gcode) != 2:
-					# this should never happen since PS, SS and OS store this config in the gcode file under the same name
-					self.ratos_echo(echo_prefix, "Gcode format error! filament_start_gcode.")
-					raise self.printer.command_error("Gcode format error! filament_start_gcode.")
-				filament_start_gcode_line_count[0] = len(filament_start_gcode[0].split("\n"))
-				filament_start_gcode_line_count[1] = len(filament_start_gcode[1].split("\n"))
-
 			min_x = 1000
 			max_x = 0
 			first_x = -1
@@ -398,28 +373,31 @@ class RatOS:
 			for line in range(len(lines)):
 				# give the cpu some time
 				pause_counter += 1
-				if pause_counter == 500:
+				if pause_counter == 1000:
 					pause_counter = 0
 					self.reactor.pause(.001)
+
+				# current line string
+				line_str = lines[line].rstrip().replace("  ", " ")
 
 				# get wipe_tower_acceleration settings
 				if (enable_post_processing):
 					if slicer_name == PRUSA_SLICER:
 						if wipe_tower_acceleration == 0:
-							if lines[line].rstrip().startswith("; wipe_tower_acceleration = "):
-								wipe_tower_acceleration = int(lines[line].rstrip().replace("; wipe_tower_acceleration = ", ""))
+							if line_str.startswith("; wipe_tower_acceleration = "):
+								wipe_tower_acceleration = int(line_str.replace("; wipe_tower_acceleration = ", ""))
 
 				# get the start_print line number
 				if start_print_line == 0:
-					if lines[line].rstrip().startswith("START_PRINT") or lines[line].rstrip().startswith("RMMU_START_PRINT"):
-						lines[line] = lines[line].replace("#", "") # fix color variable format
+					if line_str.startswith("START_PRINT") or line_str.startswith("RMMU_START_PRINT"):
+						lines[line] = line_str.replace("#", "") # fix color variable format
 						start_print_line = line
 
 				# fix superslicer and orcaslicer other layer temperature bug
 				if (enable_post_processing):
 					if start_print_line > 0 and extruder_temps_line == 0:
 						if slicer_name == SUPER_SLICER or slicer_name == ORCA_SLICER:
-							if lines[line].rstrip().startswith("_ON_LAYER_CHANGE LAYER=2"):
+							if line_str.startswith("_ON_LAYER_CHANGE LAYER=2"):
 								extruder_temps_line = line
 								pattern = r"EXTRUDER_OTHER_LAYER_TEMP=([\d,]+)"
 								matches = re.search(pattern, lines[start_print_line].rstrip())
@@ -429,19 +407,19 @@ class RatOS:
 				# fix orcaslicer set acceleration gcode command
 				if (enable_post_processing):
 					if start_print_line > 0 and slicer_name == ORCA_SLICER:
-						if lines[line].rstrip().startswith("SET_VELOCITY_LIMIT"):
+						if line_str.startswith("SET_VELOCITY_LIMIT"):
 							pattern = r"ACCEL=(\d+)"
-							matches = re.search(pattern, lines[line].rstrip())
+							matches = re.search(pattern, line_str)
 							if matches:
 								accel = matches.group(1)
-								lines[line] = 'M204 S' + str(accel) + ' ; Changed by RatOS post processor: ' + lines[line].rstrip() + '\n'
+								lines[line] = 'M204 S' + str(accel) + CHANGED_BY_POST_PROCESSOR + line_str + '\n'
 
 				# count toolshifts
 				if (enable_post_processing):
 					if start_print_line > 0:
-						if lines[line].rstrip().startswith("T") and lines[line].rstrip()[1:].isdigit():
+						if line_str.startswith("T") and line_str[1:].isdigit():
 							if toolshift_count == 0:
-								lines[line] = REMOVED_BY_POST_PROCESSOR + lines[line].rstrip() + '\n' # remove first toolchange
+								lines[line] = REMOVED_BY_POST_PROCESSOR + line_str + '\n' # remove first toolchange
 							toolshift_count += 1
 
 				# get first tools usage in order
@@ -451,16 +429,16 @@ class RatOS:
 							index = lines[start_print_line].rstrip().find("INITIAL_TOOL=")
 							if index != -1:
 								used_tools.append(lines[start_print_line].rstrip()[index + len("INITIAL_TOOL="):].split()[0])
-						if lines[line].rstrip().startswith("T") and lines[line].rstrip()[1:].isdigit():
+						if line_str.startswith("T") and line_str[1:].isdigit():
 							# add tool to the list if not already added
-							t = lines[line].rstrip()[1:]
+							t = line_str[1:]
 							if t not in used_tools:
 								used_tools.append(t)
 
 				# get first XY coordinates
 				if start_print_line > 0 and first_x < 0 and first_y < 0:
-					if lines[line].rstrip().startswith("G1") or lines[line].rstrip().startswith("G0"):
-						split = lines[line].rstrip().replace("  ", " ").split(" ")
+					if line_str.startswith("G1") or line_str.startswith("G0"):
+						split = line_str.split(" ")
 						for s in range(len(split)):
 							if split[s].lower().startswith("x"):
 								try:
@@ -487,8 +465,8 @@ class RatOS:
 				# get x boundaries 
 				if (enable_post_processing):
 					if start_print_line > 0:
-						if lines[line].rstrip().startswith("G1") or lines[line].rstrip().startswith("G0"):
-							split = lines[line].rstrip().replace("  ", " ").split(" ")
+						if line_str.startswith("G1") or line_str.startswith("G0"):
+							split = line_str.split(" ")
 							for s in range(len(split)):
 								if split[s].lower().startswith("x"):
 									try:
@@ -512,65 +490,79 @@ class RatOS:
 							# purge tower
 							if tower_line == -1:
 								tower_line = 0
-								for i2 in range(20):
+								for i2 in range(100):
 									if lines[line-i2].rstrip().startswith("; CP TOOLCHANGE START"):
 										tower_line = line-i2
 										break
 
 							# before toolchange
+							# remove all Z and E moves
+							# skip if a purge tower is used
 							if tower_line == 0:
 								for i2 in range(20):
+									# current line string
+									line_str = lines[toolchange_line - i2].rstrip().replace("  ", " ")
+
 									# stop conditions
-									if lines[toolchange_line - i2].rstrip().startswith("G1 X"):
+									if line_str.startswith("G1 X"):
 										break
-									if lines[toolchange_line - i2].rstrip().startswith("G1 Y"):
+									if line_str.startswith("G1 Y"):
 										break
+
 									# extrusion moves
-									if lines[toolchange_line - i2].rstrip().startswith("G1 E"):
-										lines[toolchange_line - i2] = REMOVED_BY_POST_PROCESSOR + lines[toolchange_line - i2].rstrip() + '\n'
+									if line_str.startswith("G1 E"):
+										lines[toolchange_line - i2] = REMOVED_BY_POST_PROCESSOR + line_str + '\n'
+
 									# z moves
-									if lines[toolchange_line - i2].rstrip().startswith("G1 Z"):
-										lines[toolchange_line - i2] = REMOVED_BY_POST_PROCESSOR + lines[toolchange_line - i2].rstrip() + '\n'
+									if line_str.startswith("G1 Z"):
+										lines[toolchange_line - i2] = REMOVED_BY_POST_PROCESSOR + line_str + '\n'
 
 							# after toolchange
+							# get the next XYZ move coordinates
+							# remove all Z and E moves if no purge tower is used
 							move_x = ''
 							move_y = ''
 							move_z = ''
-							after_toolchange_line = toolchange_line + filament_start_gcode_line_count[tool]
-							if slicer_name == SUPER_SLICER:
-								after_toolchange_line = after_toolchange_line + 2
-							if tower_line == 0:
-								for i2 in range(20):
-									# stop conditions
-									if lines[after_toolchange_line + i2].rstrip().startswith(";TYPE:"):
+							xy_move_found = False
+							z_move_found = False
+							for i2 in range(20):
+								# current line string
+								line_str = lines[toolchange_line + i2].rstrip().replace("  ", " ")
+
+								# stop conditions
+								if xy_move_found:
+									if line_str.startswith("G1 X"):
 										break
-									if lines[after_toolchange_line + i2].rstrip().startswith("; custom gcode:"):
+									if line_str.startswith("G1 Y"):
 										break
-									if lines[after_toolchange_line + i2].rstrip().startswith(";BETWEEN_EXTRUSION_ROLE"):
-										break
-									# xy
-									if lines[after_toolchange_line + i2].rstrip().replace("  ", " ").startswith("G1 X"):
-										move_split = lines[after_toolchange_line + i2].rstrip().replace("  ", " ").split(" ")
-										if move_split[1].startswith("X"):
-											if move_split[2].startswith("Y"):
-												move_x = move_split[1].rstrip()
-												move_y = move_split[2].rstrip()
-									# e
-									if lines[after_toolchange_line + i2].rstrip().startswith("G1 E"):
-										lines[after_toolchange_line + i2] = REMOVED_BY_POST_PROCESSOR + lines[after_toolchange_line + i2].rstrip() + '\n'
-									# z
-									if lines[after_toolchange_line + i2].rstrip().startswith("G1 Z"):
-										z_drop_split = lines[after_toolchange_line + i2].rstrip().split(" ")
-										if z_drop_split[1].startswith("Z"):
-											move_z = z_drop_split[1].rstrip()
-										lines[after_toolchange_line + i2] = REMOVED_BY_POST_PROCESSOR + lines[after_toolchange_line + i2].rstrip() + '\n'
+
+								# xy
+								if line_str.startswith("G1 X"):
+									xy_move_found = True
+									move_split = line_str.split(" ")
+									if move_split[1].startswith("X"):
+										if move_split[2].startswith("Y"):
+											move_x = move_split[1].rstrip()
+											move_y = move_split[2].rstrip()
+
+								# ez
+								if tower_line == 0:
+									if line_str.startswith("G1 E"):
+										lines[toolchange_line + i2] = REMOVED_BY_POST_PROCESSOR + line_str + '\n'
+									if not z_move_found:
+										if line_str.startswith("G1 Z"):
+											z_drop_split = line_str.split(" ")
+											if z_drop_split[1].startswith("Z"):
+												z_move_found = True
+												move_z = z_drop_split[1].rstrip()
+												lines[toolchange_line + i2] = REMOVED_BY_POST_PROCESSOR + line_str + '\n'
 
 							# make toolshift changes
-							file_has_changed = True
+							line_str = lines[toolchange_line].rstrip().replace("  ", " ")
 							if self.rmmu_hub == None:
-								new_toolchange_gcode = (lines[toolchange_line].rstrip() + ' ' + move_x + ' ' + move_y + ' ' + move_z).rstrip()
+								new_toolchange_gcode = (line_str + ' ' + move_x + ' ' + move_y + ' ' + move_z).rstrip()
 							else:
-								new_toolchange_gcode = ('TOOL T=' + lines[toolchange_line].rstrip().replace("T", "") + ' ' + move_x.replace("X", "X=") + ' ' + move_y.replace("Y", "Y=") + ' ' + move_z.replace("Z", "Z=")).rstrip()
+								new_toolchange_gcode = ('TOOL T=' + line_str.replace("T", "") + ' ' + move_x.replace("X", "X=") + ' ' + move_y.replace("Y", "Y=") + ' ' + move_z.replace("Z", "Z=")).rstrip()
 							lines[toolchange_line] = new_toolchange_gcode + '\n'
 
 			# add START_PRINT parameters 
