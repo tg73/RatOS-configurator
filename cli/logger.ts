@@ -13,7 +13,10 @@ export const getLogger = () => {
 	const environment = serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
 	const transportOption: pino.LoggerOptions['transport'] =
 		process.env.NODE_ENV === 'development'
-			? undefined
+			? {
+					target: 'pino/pretty',
+					options: { colorize: true },
+				}
 			: {
 					target: 'pino/file',
 					options: { destination: environment.LOG_FILE, append: true },

@@ -959,7 +959,7 @@ var require_command = __commonJS({
     var EventEmitter3 = __require("events").EventEmitter;
     var childProcess = __require("child_process");
     var path9 = __require("path");
-    var fs2 = __require("fs");
+    var fs3 = __require("fs");
     var process15 = __require("process");
     var { Argument: Argument2, humanReadableArgName } = require_argument();
     var { CommanderError: CommanderError2 } = require_error();
@@ -1792,11 +1792,11 @@ Expecting one of '${allowedValues.join("', '")}'`);
         const sourceExt = [".js", ".ts", ".tsx", ".mjs", ".cjs"];
         function findFile(baseDir, baseName) {
           const localBin = path9.resolve(baseDir, baseName);
-          if (fs2.existsSync(localBin))
+          if (fs3.existsSync(localBin))
             return localBin;
           if (sourceExt.includes(path9.extname(baseName)))
             return void 0;
-          const foundExt = sourceExt.find((ext) => fs2.existsSync(`${localBin}${ext}`));
+          const foundExt = sourceExt.find((ext) => fs3.existsSync(`${localBin}${ext}`));
           if (foundExt)
             return `${localBin}${foundExt}`;
           return void 0;
@@ -1808,7 +1808,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
         if (this._scriptPath) {
           let resolvedScriptPath;
           try {
-            resolvedScriptPath = fs2.realpathSync(this._scriptPath);
+            resolvedScriptPath = fs3.realpathSync(this._scriptPath);
           } catch (err) {
             resolvedScriptPath = this._scriptPath;
           }
@@ -65777,7 +65777,7 @@ var require_package = __commonJS({
 var require_main = __commonJS({
   "../node_modules/.pnpm/dotenv@16.3.1/node_modules/dotenv/lib/main.js"(exports, module) {
     init_cjs_shim();
-    var fs2 = __require("fs");
+    var fs3 = __require("fs");
     var path9 = __require("path");
     var os2 = __require("os");
     var crypto = __require("crypto");
@@ -65902,7 +65902,7 @@ var require_main = __commonJS({
         }
       }
       try {
-        const parsed = DotenvModule.parse(fs2.readFileSync(dotenvPath, { encoding }));
+        const parsed = DotenvModule.parse(fs3.readFileSync(dotenvPath, { encoding }));
         let processEnv = process.env;
         if (options && options.processEnv != null) {
           processEnv = options.processEnv;
@@ -65921,7 +65921,7 @@ var require_main = __commonJS({
       if (_dotenvKey(options).length === 0) {
         return DotenvModule.configDotenv(options);
       }
-      if (!fs2.existsSync(vaultPath)) {
+      if (!fs3.existsSync(vaultPath)) {
         _warn(`You set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}. Did you forget to build it?`);
         return DotenvModule.configDotenv(options);
       }
@@ -68816,7 +68816,7 @@ var require_sonic_boom = __commonJS({
   "../node_modules/.pnpm/sonic-boom@3.7.0/node_modules/sonic-boom/index.js"(exports, module) {
     "use strict";
     init_cjs_shim();
-    var fs2 = __require("fs");
+    var fs3 = __require("fs");
     var EventEmitter3 = __require("events");
     var inherits = __require("util").inherits;
     var path9 = __require("path");
@@ -68868,21 +68868,21 @@ var require_sonic_boom = __commonJS({
       if (sonic.sync) {
         try {
           if (sonic.mkdir)
-            fs2.mkdirSync(path9.dirname(file), { recursive: true });
-          const fd = fs2.openSync(file, flags, mode);
+            fs3.mkdirSync(path9.dirname(file), { recursive: true });
+          const fd = fs3.openSync(file, flags, mode);
           fileOpened(null, fd);
         } catch (err) {
           fileOpened(err);
           throw err;
         }
       } else if (sonic.mkdir) {
-        fs2.mkdir(path9.dirname(file), { recursive: true }, (err) => {
+        fs3.mkdir(path9.dirname(file), { recursive: true }, (err) => {
           if (err)
             return fileOpened(err);
-          fs2.open(file, flags, mode, fileOpened);
+          fs3.open(file, flags, mode, fileOpened);
         });
       } else {
-        fs2.open(file, flags, mode, fileOpened);
+        fs3.open(file, flags, mode, fileOpened);
       }
     }
     function SonicBoom(opts) {
@@ -68921,16 +68921,16 @@ var require_sonic_boom = __commonJS({
         this.flush = flushBuffer;
         this.flushSync = flushBufferSync;
         this._actualWrite = actualWriteBuffer;
-        fsWriteSync = () => fs2.writeSync(this.fd, this._writingBuf);
-        fsWrite = () => fs2.write(this.fd, this._writingBuf, this.release);
+        fsWriteSync = () => fs3.writeSync(this.fd, this._writingBuf);
+        fsWrite = () => fs3.write(this.fd, this._writingBuf, this.release);
       } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
         this._writingBuf = "";
         this.write = write;
         this.flush = flush;
         this.flushSync = flushSync;
         this._actualWrite = actualWrite;
-        fsWriteSync = () => fs2.writeSync(this.fd, this._writingBuf, "utf8");
-        fsWrite = () => fs2.write(this.fd, this._writingBuf, "utf8", this.release);
+        fsWriteSync = () => fs3.writeSync(this.fd, this._writingBuf, "utf8");
+        fsWrite = () => fs3.write(this.fd, this._writingBuf, "utf8", this.release);
       } else {
         throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
       }
@@ -68987,7 +68987,7 @@ var require_sonic_boom = __commonJS({
           }
         }
         if (this._fsync) {
-          fs2.fsyncSync(this.fd);
+          fs3.fsyncSync(this.fd);
         }
         const len = this._len;
         if (this._reopening) {
@@ -69087,7 +69087,7 @@ var require_sonic_boom = __commonJS({
       this._flushPending = true;
       const onDrain = () => {
         if (!this._fsync) {
-          fs2.fsync(this.fd, (err) => {
+          fs3.fsync(this.fd, (err) => {
             this._flushPending = false;
             cb(err);
           });
@@ -69183,7 +69183,7 @@ var require_sonic_boom = __commonJS({
       const fd = this.fd;
       this.once("ready", () => {
         if (fd !== this.fd) {
-          fs2.close(fd, (err) => {
+          fs3.close(fd, (err) => {
             if (err) {
               return this.emit("error", err);
             }
@@ -69232,7 +69232,7 @@ var require_sonic_boom = __commonJS({
           buf = this._bufs[0];
         }
         try {
-          const n2 = fs2.writeSync(this.fd, buf, "utf8");
+          const n2 = fs3.writeSync(this.fd, buf, "utf8");
           buf = buf.slice(n2);
           this._len = Math.max(this._len - n2, 0);
           if (buf.length <= 0) {
@@ -69247,7 +69247,7 @@ var require_sonic_boom = __commonJS({
         }
       }
       try {
-        fs2.fsyncSync(this.fd);
+        fs3.fsyncSync(this.fd);
       } catch {
       }
     }
@@ -69268,7 +69268,7 @@ var require_sonic_boom = __commonJS({
           buf = mergeBuf(this._bufs[0], this._lens[0]);
         }
         try {
-          const n2 = fs2.writeSync(this.fd, buf);
+          const n2 = fs3.writeSync(this.fd, buf);
           buf = buf.subarray(n2);
           this._len = Math.max(this._len - n2, 0);
           if (buf.length <= 0) {
@@ -69296,13 +69296,13 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf || this._bufs.shift() || "";
       if (this.sync) {
         try {
-          const written = fs2.writeSync(this.fd, this._writingBuf, "utf8");
+          const written = fs3.writeSync(this.fd, this._writingBuf, "utf8");
           release(null, written);
         } catch (err) {
           release(err);
         }
       } else {
-        fs2.write(this.fd, this._writingBuf, "utf8", release);
+        fs3.write(this.fd, this._writingBuf, "utf8", release);
       }
     }
     function actualWriteBuffer() {
@@ -69311,13 +69311,13 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
       if (this.sync) {
         try {
-          const written = fs2.writeSync(this.fd, this._writingBuf);
+          const written = fs3.writeSync(this.fd, this._writingBuf);
           release(null, written);
         } catch (err) {
           release(err);
         }
       } else {
-        fs2.write(this.fd, this._writingBuf, release);
+        fs3.write(this.fd, this._writingBuf, release);
       }
     }
     function actualClose(sonic) {
@@ -69328,10 +69328,10 @@ var require_sonic_boom = __commonJS({
       sonic.destroyed = true;
       sonic._bufs = [];
       sonic._lens = [];
-      fs2.fsync(sonic.fd, closeWrapped);
+      fs3.fsync(sonic.fd, closeWrapped);
       function closeWrapped() {
         if (sonic.fd !== 1 && sonic.fd !== 2) {
-          fs2.close(sonic.fd, done);
+          fs3.close(sonic.fd, done);
         } else {
           done();
         }
@@ -73432,13 +73432,13 @@ var require_fs_reader = __commonJS({
   "../server/helpers/fs-reader.js"(exports, module) {
     "use strict";
     init_cjs_shim();
-    var fs2 = __require("fs");
+    var fs3 = __require("fs");
     function getLines(file, lines, callback) {
-      fs2.stat(file, function(err, stats) {
+      fs3.stat(file, function(err, stats) {
         if (err)
           return callback(err);
         if (!lines)
-          return fs2.readFile(file, callback);
+          return fs3.readFile(file, callback);
         var fileSize = stats.size;
         if (fileSize <= 0)
           return callback(void 0, "");
@@ -73497,7 +73497,7 @@ var require_fs_reader = __commonJS({
           };
         }
         var readLines2 = 0;
-        fs2.open(file, "r", function(err2, stream) {
+        fs3.open(file, "r", function(err2, stream) {
           if (err2)
             return callback(err2);
           function read() {
@@ -73505,7 +73505,7 @@ var require_fs_reader = __commonJS({
             if (length <= 0)
               return callback(void 0, data);
             var buffer = Buffer.alloc(bufferSize > length ? length : bufferSize);
-            fs2.read(stream, buffer, 0, buffer.length, getReadStartPosition(buffer), function(err3, numRead, buffer2) {
+            fs3.read(stream, buffer, 0, buffer.length, getReadStartPosition(buffer), function(err3, numRead, buffer2) {
               var newData = buffer2.toString("utf8", 0, buffer2.length);
               do {
                 var snipPos = getNextNewline(newData);
@@ -90091,7 +90091,10 @@ var getLogger = () => {
     return logger;
   }
   const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv2.default.parse(envFile) });
-  const transportOption = process.env.NODE_ENV === "development" ? void 0 : {
+  const transportOption = process.env.NODE_ENV === "development" ? {
+    target: "pino/pretty",
+    options: { colorize: true }
+  } : {
     target: "pino/file",
     options: { destination: environment.LOG_FILE, append: true }
   };
@@ -92434,7 +92437,7 @@ async function processGCode(inputFile, outputFile, options) {
 }
 
 // commands/postprocessor.tsx
-import { echo as echo2 } from "zx";
+import { echo as echo2, fs as fs2, tmpfile } from "zx";
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/index.js
 init_cjs_shim();
@@ -99676,7 +99679,7 @@ var PostProcessorCLIOutput = z.object({
           processedByRatOSVersion: z.string().optional(),
           processedByRatOSTimestamp: z.string().optional()
         })
-      })
+      }).passthrough()
     )
   })
 ).or(
@@ -99692,11 +99695,18 @@ var toPostProcessorCLIOutput = (obj) => {
   try {
     echo2(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
   } catch (e) {
-    echo2(JSON.stringify({ result: "error", error: `${e}` }));
+    getLogger().error(obj, "Invalid data passed to toPostProcessorCLIOutput");
+    getLogger().error(e, "An error occurred while serializing postprocessor output");
+    echo2(
+      JSON.stringify({
+        result: "error",
+        error: `An error occurred while serializing postprocessor output`
+      })
+    );
   }
 };
 var postprocessor = (program3) => {
-  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
+  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
     let onProgress = void 0;
     let rerender = void 0;
     let lastProgressPercentage = 0;
@@ -99712,21 +99722,30 @@ var postprocessor = (program3) => {
         const progressTens = Math.floor(report.percentage / 10) * 10;
         if (progressTens > lastProgressPercentage && report.percentage > 10) {
           lastProgressPercentage = progressTens;
-          toPostProcessorCLIOutput({ result: "progress", payload: { percentage: progressTens, eta: report.eta } });
+          toPostProcessorCLIOutput({
+            result: "progress",
+            payload: { percentage: progressTens, eta: report.eta ?? 0 }
+          });
         }
       };
     }
     const opts = {
       idex: args.idex,
       rmmu: args.rmmu,
-      overwrite: args.overwrite,
+      overwrite: args.overwrite || args.overwriteInput,
       onProgress
       // Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
       // Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
       // onWarning: (code: string, message: string) => { /* TODO */ },
     };
     try {
+      if (args.overwriteInput) {
+        outputFile = tmpfile();
+      }
       const result = !!outputFile ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
+      if (args.overwriteInput) {
+        fs2.renameSync(outputFile, inputFile);
+      }
       if (rerender && isInteractive) {
         rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), done: true }));
       } else {
@@ -99741,16 +99760,19 @@ var postprocessor = (program3) => {
         if ("code" in e && e.code === "ENOENT" && "path" in e) {
           errorMessage = `File ${e.path} not found`;
         } else {
-          errorMessage = e.message;
+          errorMessage = "An unexpected error occurred while processing the file, please download a debug-zip and report this issue.";
+          getLogger().error(e, "Unexpected error while processing gcode file");
         }
       } else {
-        errorMessage = `${e}`;
+        errorMessage = "An unexpected error occurred while processing the file, please download a debug-zip and report this issue.";
+        getLogger().error(e, "Unexpected error while processing gcode file");
       }
       if (rerender && isInteractive) {
         rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), error: errorMessage }));
       } else {
         toPostProcessorCLIOutput({ result: "error", error: errorMessage });
       }
+      process.exit(1);
     }
   });
 };
