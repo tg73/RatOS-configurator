@@ -25,6 +25,8 @@ class RatOS:
 		self.printer = config.get_printer()
 		self.name = config.get_name()
 		self.last_processed_file_result = None
+		self.allow_unsupported_slicer_versions = False
+		self.enable_post_processing = False
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
 
@@ -57,7 +59,8 @@ class RatOS:
 	# Settings
 	#####
 	def load_settings(self):
-		self.enable_post_processing = True if self.config.get('enable_post_processing', "false").lower() == "true" else False 
+		self.enable_post_processing = True if self.config.get('enable_post_processing', "false").lower() == "true" else False
+		self.allow_unsupported_slicer_versions = True if self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true" else False
 		
 	def get_status(self, eventtime):
 		return {'name': self.name}
@@ -219,6 +222,8 @@ class RatOS:
 				args.append('--idex')
 			if enable_post_processing:
 				args.append('--overwrite-input')
+			if self.allow_unsupported_slicer_versions:
+				args.append('--allow-unsupported-slicer-versions')
 			args.append(filename)
 			process = subprocess.Popen(
 				args,
@@ -232,7 +237,10 @@ class RatOS:
 			def _interpret_output(data):
 				# Handle the parsed data
 				if data['result'] == 'error' and 'error' in data:
+					self.last_processed_file_result = None
 					self.console_echo('An error occurred during post processing', 'alert', data['error'])
+				if data['result'] == 'warning' and 'warning' in data:
+					self.console_echo('A warning occurred during post processing', 'warning', data['warning'])
 				if data['result'] == 'success':
 					self.last_processed_file_result = data['payload']
 					if data['payload']['wasAlreadyProcessed']:
@@ -721,6 +729,9 @@ class RatOS:
 		except Exception as exc:
 			self.debug_echo("get_ratos_version", ("Exception on run: %s", exc))
 		return version
+	
+	def get_status(self):
+		return {'last_processed_file_result': self.last_processed_file_result}
 
 #####
 # Bed Mesh Profile Manager
