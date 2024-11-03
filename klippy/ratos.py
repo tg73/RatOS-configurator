@@ -1,5 +1,6 @@
 import os, logging, re, glob
-import logging, collections, pathlib, subprocess
+import logging, collections, pathlib
+import json, asyncio, subprocess
 from . import bed_mesh as BedMesh
 
 #####
@@ -22,6 +23,7 @@ class RatOS:
 		self.config = config
 		self.printer = config.get_printer()
 		self.name = config.get_name()
+		self.last_processed_file_result = None
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
 
@@ -202,6 +204,119 @@ class RatOS:
 					self.gcode.run_script_from_command("CONSOLE_ECHO TYPE=debug TITLE='Beacon scan compensation' MSG='Mesh scan profile " + str(profile_name) + " compensated with contact profile " + str(profile) + "'")
 		except BedMesh.BedMeshError as e:
 			self.gcode.run_script_from_command("CONSOLE_ECHO TYPE=error TITLE='Beacon scan compensation error' MSG='" + str(e) + "'")
+
+	def process_gcode_file(self, filename, enable_post_processing):
+		try:
+			# Start ratos postprocess command
+			args = ['ratos', 'postprocess', '--non-interactive']
+			isIdex = self.config.has_section("dual_carriage")
+			if isIdex:
+				args.append('--idex')
+			args.append(filename)
+			process = subprocess.Popen(
+				['ratos', 'postprocess', '--non-interactive', filename],
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE
+			)
+
+			self.partial_output = ""
+			reactor = self.printer.get_reactor()
+
+			def _interpret_output(data):
+				# Handle the parsed data
+				if data['result'] == 'error' and 'error' in data:
+					self.console_echo('An error occurred during post processing', 'alert', data['error'])
+				if data['result'] == 'success':
+					self.last_processed_file_result = data['payload']
+					if data['payload']['wasAlreadyProcessed']:
+						self.console_echo('Post processing completed', 'success', 'File already processed, continuing...')
+					else:
+						self.console_echo(
+							'Post processing completed', 'success',
+							f'Slicer: {data["payload"]["gcodeInfo"]["generator"]} v{data["payload"]["gcodeInfo"]["generatorVersion"]} ' +
+							f'_N_Used tools: T{", T".join(data["payload"]["usedTools"])} ' +
+							f'_N_Toolshifts: {data["payload"]["toolChangeCount"]}'
+						)
+				if data['result'] == 'progress':
+					eta_secs = data['payload']['eta']
+					if eta_secs < 60:
+						eta_str = f"{eta_secs}s"
+					elif eta_secs < 3600:
+						mins = eta_secs // 60
+						secs = eta_secs % 60
+						eta_str = f"{mins}m {secs}s"
+					else:
+						hours = eta_secs // 3600
+						mins = (eta_secs % 3600) // 60
+						secs = eta_secs % 60
+						eta_str = f"{hours}h {mins}m {secs}s"
+					self.console_echo('Post-processing progress', 'info', f"Progress: {data['payload']['percentage']}%_N_Estimated time remaining: {eta_str}")
+
+			def _process_output(eventtime):
+				if process.stdout is None:
+					return
+				try:
+					data = os.read(process.stdout.fileno(), 4096)
+				except Exception:
+					return
+
+				data = self.partial_output + data.decode()
+				
+				if '\n' not in data:
+					self.partial_output = data
+					return
+				elif data[-1] != '\n':
+					split = data.rfind('\n') + 1
+					self.partial_output = data[split:]
+					data = data[:split]
+				else:
+					self.partial_output = ""
+
+				for line in data.splitlines():
+					try:
+						# Parse JSON from each line
+						json_data = json.loads(line)
+						if not 'result' in json_data:
+							continue
+						_interpret_output(json_data)
+					except json.JSONDecodeError:
+						# Skip lines that aren't valid JSON
+						logging.warning("RatOS postprocessor: Invalid JSON line: " + line)
+
+			# Register file descriptor with reactor
+			hdl = reactor.register_fd(process.stdout.fileno(), _process_output)
+
+			# Wait for process completion with timeout
+			eventtime = reactor.monotonic()
+			endtime = eventtime + 300.0 # 5 minute timeout
+			complete = False
+
+			while eventtime < endtime:
+				eventtime = reactor.pause(eventtime + .05)
+				if process.poll() is not None:
+					complete = True
+					break
+
+			# Cleanup
+			reactor.unregister_fd(hdl)
+			if not complete:
+				process.terminate()
+				raise self.printer.command_error("Post-processing timed out")
+
+			if process.returncode != 0:
+				error = process.stderr.read().decode().strip()
+				if error:
+					raise self.printer.command_error(
+						f"Post-processing failed: {error}"
+					)
+
+			return True
+
+		except Exception as e:
+			self.console_echo('Unexpected post-processing error', 'error', str(e))
+			if enable_post_processing:
+				raise
+			return False
 
 	#####
 	# G-code post processor
@@ -572,6 +687,9 @@ class RatOS:
 
 	def debug_echo(self, prefix, msg):
 		self.gcode.run_script_from_command("DEBUG_ECHO PREFIX=" + str(prefix) + " MSG='" + str(msg) + "'")
+	
+	def console_echo(self, title, type, msg):
+		self.gcode.run_script_from_command("CONSOLE_ECHO TITLE=" + str(title) + " TYPE=" + str(type) + " MSG='" + str(msg) + "'")
 
 	def get_is_graph_files(self):
 		try:
