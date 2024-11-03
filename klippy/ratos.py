@@ -80,9 +80,13 @@ class RatOS:
 		dual_carriage = self.dual_carriage
 		self.dual_carriage = True
 		filename = gcmd.get('FILENAME', "")
+		use_new_postprocess = gcmd.get('USE_NEW', "false").lower() == "true"
 		if filename[0] == '/':
 			filename = filename[1:]
-		self.process_gode_file(filename, True)
+		if use_new_postprocess:
+			self.process_gcode_file(filename, True)
+		else:
+			self.old_postprocess(filename, True)
 		self.dual_carriage = dual_carriage
 
 	desc_HELLO_RATOS = "RatOS mainsail welcome message"
@@ -156,10 +160,10 @@ class RatOS:
 		if (self.dual_carriage == None and self.rmmu_hub == None) or not self.enable_post_processing:
 			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=" + str(-1))
 			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=" + str(-1))
-			self.process_gode_file(filename, False)
+			self.old_postprocess(filename, False)
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 		else:
-			if self.process_gode_file(filename, True):
+			if self.old_postprocess(filename, True):
 				self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 			else:
 				raise self.printer.command_error("Could not process gcode file")
@@ -213,9 +217,11 @@ class RatOS:
 			isIdex = self.config.has_section("dual_carriage")
 			if isIdex:
 				args.append('--idex')
+			if enable_post_processing:
+				args.append('--overwrite-input')
 			args.append(filename)
 			process = subprocess.Popen(
-				['ratos', 'postprocess', '--non-interactive', filename],
+				args,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.PIPE
 			)
@@ -322,7 +328,7 @@ class RatOS:
 	#####
 	# G-code post processor
 	#####
-	def process_gode_file(self, filename, enable_post_processing):
+	def old_postprocess(self, filename, enable_post_processing):
 		echo_prefix = "POST_PROCESSOR"
 		try:
 			[path, size] = self.get_gcode_file_info(filename)
