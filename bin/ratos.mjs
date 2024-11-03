@@ -90004,7 +90004,9 @@ async function getRealPath(program3, p) {
   return await realpath(path5.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), p));
 }
 async function getEnvironment() {
-  const envFile2 = existsSync2("./.env.local") ? await readFile(".env.local") : await readFile(".env");
+  const envFilePath = existsSync2("./.env.local") ? ".env.local" : ".env";
+  import_dotenv.default.config({ path: envFilePath });
+  const envFile2 = await readFile(envFilePath, "utf8");
   return serverSchema.parse({ NODE_ENV: "production", ...import_dotenv.default.parse(envFile2) });
 }
 
@@ -99721,6 +99723,7 @@ var toPostProcessorCLIOutput = (obj) => {
 };
 var postprocessor = (program3) => {
   program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
+    await getEnvironment();
     let onProgress = void 0;
     let rerender = void 0;
     let lastProgressPercentage = 0;

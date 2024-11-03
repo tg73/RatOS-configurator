@@ -172,6 +172,8 @@ export async function getRealPath(program: Command, p: string) {
 }
 
 export async function getEnvironment() {
-	const envFile = existsSync('./.env.local') ? await readFile('.env.local') : await readFile('.env');
+	const envFilePath = existsSync('./.env.local') ? '.env.local' : '.env';
+	dotenv.config({ path: envFilePath });
+	const envFile = await readFile(envFilePath, 'utf8');
 	return serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
 }
