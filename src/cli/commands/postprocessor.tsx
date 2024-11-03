@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { Progress } from 'progress-stream';
 import { inspectGCode, processGCode } from '@/server/gcode-processor/gcode-processor.ts';
-import { echo } from 'zx';
+import { echo, fs, tmpfile } from 'zx';
 import { ProgressBar, StatusMessage } from '@inkjs/ui';
 import { Box, render, Text } from 'ink';
 import React from 'react';
@@ -9,6 +9,7 @@ import { Container } from '@/cli/components/container.tsx';
 import { Duration, DurationLikeObject } from 'luxon';
 import path from 'path';
 import { z } from 'zod';
+import { getLogger } from '@/cli/logger.ts';
 
 const ProgressReportUI: React.FC<{
 	report?: Progress;
@@ -78,18 +79,20 @@ export const PostProcessorCLIOutput = z
 					}),
 				})
 				.or(
-					z.object({
-						wasAlreadyProcessed: z.boolean(),
-						gcodeInfo: z.object({
-							generator: z.string(),
-							generatorVersion: z.string(),
-							flavour: z.number(),
-							generatorTimestamp: z.string(),
-							ratosDialectVersion: z.string().optional(),
-							processedByRatOSVersion: z.string().optional(),
-							processedByRatOSTimestamp: z.string().optional(),
-						}),
-					}),
+					z
+						.object({
+							wasAlreadyProcessed: z.boolean(),
+							gcodeInfo: z.object({
+								generator: z.string(),
+								generatorVersion: z.string(),
+								flavour: z.number(),
+								generatorTimestamp: z.string(),
+								ratosDialectVersion: z.string().optional(),
+								processedByRatOSVersion: z.string().optional(),
+								processedByRatOSTimestamp: z.string().optional(),
+							}),
+						})
+						.passthrough(),
 				),
 		}),
 	)
@@ -109,7 +112,14 @@ export const toPostProcessorCLIOutput = (obj: PostProcessorCLIOutput): void => {
 	try {
 		echo(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
 	} catch (e) {
-		echo(JSON.stringify({ result: 'error', error: `${e}` } satisfies PostProcessorCLIOutput));
+		getLogger().error(obj, 'Invalid data passed to toPostProcessorCLIOutput');
+		getLogger().error(e, 'An error occurred while serializing postprocessor output');
+		echo(
+			JSON.stringify({
+				result: 'error',
+				error: `An error occurred while serializing postprocessor output`,
+			} satisfies PostProcessorCLIOutput),
+		);
 	}
 };
 
@@ -121,6 +131,7 @@ export const postprocessor = (program: Command) => {
 		.option('--non-interactive', 'Output ndjson to stdout instead of rendering a UI')
 		.option('-i, --idex', 'Postprocess for an IDEX printer')
 		.option('-o, --overwrite', 'Overwrite the output file if it exists')
+		.option('-O, --overwrite-input', 'Overwrite the input file')
 		.argument('<input>', 'Path to the gcode file to postprocess')
 		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
@@ -139,7 +150,10 @@ export const postprocessor = (program: Command) => {
 					const progressTens = Math.floor(report.percentage / 10) * 10;
 					if (progressTens > lastProgressPercentage && report.percentage > 10) {
 						lastProgressPercentage = progressTens;
-						toPostProcessorCLIOutput({ result: 'progress', payload: { percentage: progressTens, eta: report.eta } });
+						toPostProcessorCLIOutput({
+							result: 'progress',
+							payload: { percentage: progressTens, eta: report.eta ?? 0 },
+						});
 					}
 				};
 			}
@@ -147,7 +161,7 @@ export const postprocessor = (program: Command) => {
 			const opts = {
 				idex: args.idex,
 				rmmu: args.rmmu,
-				overwrite: args.overwrite,
+				overwrite: args.overwrite || args.overwriteInput,
 				onProgress,
 				// Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
 				// Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
@@ -155,9 +169,16 @@ export const postprocessor = (program: Command) => {
 			};
 
 			try {
+				if (args.overwriteInput) {
+					outputFile = tmpfile();
+				}
 				const result = !!outputFile
 					? await processGCode(inputFile, outputFile, opts)
 					: await inspectGCode(inputFile, { ...opts, fullInspection: false }); // fullInspection default is false, just to demo.
+
+				if (args.overwriteInput) {
+					fs.renameSync(outputFile, inputFile);
+				}
 
 				if (rerender && isInteractive) {
 					rerender(<ProgressReportUI fileName={path.basename(inputFile)} done={true} />);
@@ -173,16 +194,21 @@ export const postprocessor = (program: Command) => {
 					if ('code' in e && e.code === 'ENOENT' && 'path' in e) {
 						errorMessage = `File ${e.path} not found`;
 					} else {
-						errorMessage = e.message;
+						errorMessage =
+							'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
+						getLogger().error(e, 'Unexpected error while processing gcode file');
 					}
 				} else {
-					errorMessage = `${e}`;
+					errorMessage =
+						'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
+					getLogger().error(e, 'Unexpected error while processing gcode file');
 				}
 				if (rerender && isInteractive) {
 					rerender(<ProgressReportUI fileName={path.basename(inputFile)} error={errorMessage} />);
 				} else {
 					toPostProcessorCLIOutput({ result: 'error', error: errorMessage });
 				}
+				process.exit(1);
 			}
 		});
 };
