@@ -12,6 +12,7 @@ import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger.ts';
 import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions.ts';
 import { loadEnvironment } from '@/cli/util.tsx';
+import { GCodeProcessorError } from '@/server/gcode-processor/errors.ts';
 
 const ProgressReportUI: React.FC<{
 	report?: Progress;
@@ -154,7 +155,7 @@ export const postprocessor = (program: Command) => {
 			await loadEnvironment();
 			let onProgress: ((report: Progress) => void) | undefined = undefined;
 			let rerender: ((element: React.ReactNode) => void) | undefined = undefined;
-			let lastProgressPercentage: number = 0;
+			let lastProgressPercentage: number = -1;
 			const isInteractive = process.stdout.isTTY && !args.nonInteractive;
 			if (isInteractive) {
 				const { rerender: _rerender } = render(<ProgressReportUI fileName={path.basename(inputFile)} />);
@@ -165,7 +166,7 @@ export const postprocessor = (program: Command) => {
 			} else {
 				onProgress = (report) => {
 					const progressTens = Math.floor(report.percentage / 10) * 10;
-					if (progressTens > lastProgressPercentage && report.percentage > 10) {
+					if (progressTens > lastProgressPercentage && report.percentage) {
 						lastProgressPercentage = progressTens;
 						toPostProcessorCLIOutput({
 							result: 'progress',
@@ -218,15 +219,22 @@ export const postprocessor = (program: Command) => {
 				}
 			} catch (e) {
 				let errorMessage = '';
+				let errorTitle = 'An unexpected error occurred during post-processing';
 				if (e instanceof Error) {
 					if ('code' in e && e.code === 'ENOENT' && 'path' in e) {
+						errorTitle = 'File not found';
 						errorMessage = `File ${e.path} not found`;
 					} else {
+						errorTitle = 'An unexpected error occurred during post-processing';
 						errorMessage =
 							'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
 						getLogger().error(e, 'Unexpected error while processing gcode file');
 					}
+				} else if (e instanceof GCodeProcessorError) {
+					errorTitle = 'G-code could not be processed';
+					errorMessage = e.message;
 				} else {
+					errorTitle = 'An unexpected error occurred during post-processing';
 					errorMessage =
 						'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
 					getLogger().error(e, 'Unexpected error while processing gcode file');
@@ -234,7 +242,11 @@ export const postprocessor = (program: Command) => {
 				if (rerender && isInteractive) {
 					rerender(<ProgressReportUI fileName={path.basename(inputFile)} error={errorMessage} />);
 				} else {
-					toPostProcessorCLIOutput({ result: 'error', message: errorMessage });
+					toPostProcessorCLIOutput({
+						result: 'error',
+						message: errorMessage,
+						title: errorTitle,
+					});
 				}
 				process.exit(1);
 			}
