@@ -99732,7 +99732,7 @@ var postprocessor = (program3) => {
     await loadEnvironment();
     let onProgress = void 0;
     let rerender = void 0;
-    let lastProgressPercentage = 0;
+    let lastProgressPercentage = -1;
     const isInteractive = process.stdout.isTTY && !args.nonInteractive;
     if (isInteractive) {
       const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile) }));
@@ -99743,7 +99743,7 @@ var postprocessor = (program3) => {
     } else {
       onProgress = (report) => {
         const progressTens = Math.floor(report.percentage / 10) * 10;
-        if (progressTens > lastProgressPercentage && report.percentage > 10) {
+        if (progressTens > lastProgressPercentage && report.percentage) {
           lastProgressPercentage = progressTens;
           toPostProcessorCLIOutput({
             result: "progress",
@@ -99790,21 +99790,32 @@ var postprocessor = (program3) => {
       }
     } catch (e) {
       let errorMessage = "";
+      let errorTitle = "An unexpected error occurred during post-processing";
       if (e instanceof Error) {
         if ("code" in e && e.code === "ENOENT" && "path" in e) {
+          errorTitle = "File not found";
           errorMessage = `File ${e.path} not found`;
         } else {
+          errorTitle = "An unexpected error occurred during post-processing";
           errorMessage = "An unexpected error occurred while processing the file, please download a debug-zip and report this issue.";
           getLogger().error(e, "Unexpected error while processing gcode file");
         }
+      } else if (e instanceof GCodeProcessorError) {
+        errorTitle = "G-code could not be processed";
+        errorMessage = e.message;
       } else {
+        errorTitle = "An unexpected error occurred during post-processing";
         errorMessage = "An unexpected error occurred while processing the file, please download a debug-zip and report this issue.";
         getLogger().error(e, "Unexpected error while processing gcode file");
       }
       if (rerender && isInteractive) {
         rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path7.basename(inputFile), error: errorMessage }));
       } else {
-        toPostProcessorCLIOutput({ result: "error", message: errorMessage });
+        toPostProcessorCLIOutput({
+          result: "error",
+          message: errorMessage,
+          title: errorTitle
+        });
       }
       process.exit(1);
     }
