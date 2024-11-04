@@ -26,6 +26,7 @@ class RatOS:
 		self.name = config.get_name()
 		self.last_processed_file_result = None
 		self.allow_unsupported_slicer_versions = False
+		self.use_legacy_post_processor = False
 		self.enable_post_processing = False
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
@@ -61,7 +62,8 @@ class RatOS:
 	def load_settings(self):
 		self.enable_post_processing = True if self.config.get('enable_post_processing', "false").lower() == "true" else False
 		self.allow_unsupported_slicer_versions = True if self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true" else False
-		
+		self.use_legacy_post_processor = True if self.config.get('use_legacy_post_processor', "false").lower() == "true" else False
+
 	def get_status(self, eventtime):
 		return {'name': self.name}
 
@@ -164,13 +166,22 @@ class RatOS:
 		if (self.dual_carriage == None and self.rmmu_hub == None) or not self.enable_post_processing:
 			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=" + str(-1))
 			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=" + str(-1))
-			self.old_postprocess(filename, False)
+			if self.use_legacy_post_processor:
+				self.old_postprocess(filename, False)
+			else:
+				self.process_gcode_file(filename, True)
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 		else:
-			if self.old_postprocess(filename, True):
-				self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
+			if self.use_legacy_post_processor:
+				if self.old_postprocess(filename, True):
+					self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
+				else:
+					raise self.printer.command_error("Could not process gcode file")
 			else:
-				raise self.printer.command_error("Could not process gcode file")
+				if self.process_gcode_file(filename, True):
+					self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
+				else:
+					raise self.printer.command_error("Could not process gcode file using legacy post processor.")
 
 	desc_BEACON_APPLY_SCAN_COMPENSATION = "Compensates magnetic inaccuracies for beacon scan meshes."
 	def cmd_BEACON_APPLY_SCAN_COMPENSATION(self, gcmd):
