@@ -86088,8 +86088,8 @@ import { existsSync as existsSync6 } from "node:fs";
 // util.tsx
 init_cjs_shim();
 import { $, chalk as chalk2, echo, path as path5 } from "zx";
-import { readFile, realpath } from "node:fs/promises";
-import { existsSync as existsSync2 } from "node:fs";
+import { realpath } from "node:fs/promises";
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
 
 // ../env/schema.mjs
 init_cjs_shim();
@@ -90003,11 +90003,17 @@ async function getRealPath(program3, p) {
   }
   return await realpath(path5.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), p));
 }
-async function getEnvironment() {
+var alreadyLoaded = false;
+function loadEnvironment() {
+  if (alreadyLoaded) {
+    return serverSchema.parse(process.env);
+  }
   const envFilePath = existsSync2("./.env.local") ? ".env.local" : ".env";
-  import_dotenv.default.config({ path: envFilePath });
-  const envFile2 = await readFile(envFilePath, "utf8");
-  return serverSchema.parse({ NODE_ENV: "production", ...import_dotenv.default.parse(envFile2) });
+  const envFile2 = readFileSync2(envFilePath, "utf8");
+  const env3 = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv.default.parse(envFile2) });
+  import_dotenv.default.populate(process.env, env3);
+  alreadyLoaded = true;
+  return env3;
 }
 
 // components/install-progress.tsx
@@ -90085,9 +90091,9 @@ var globalPinoOpts = {
 
 // logger.ts
 var import_dotenv2 = __toESM(require_main(), 1);
-import { existsSync as existsSync3, readFileSync as readFileSync2 } from "fs";
+import { existsSync as existsSync3, readFileSync as readFileSync3 } from "fs";
 var logger = null;
-var envFile = existsSync3("./.env.local") ? readFileSync2(".env.local") : readFileSync2(".env");
+var envFile = existsSync3("./.env.local") ? readFileSync3(".env.local") : readFileSync3(".env");
 var getLogger = () => {
   if (logger != null) {
     return logger;
@@ -99723,7 +99729,7 @@ var toPostProcessorCLIOutput = (obj) => {
 };
 var postprocessor = (program3) => {
   program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
-    await getEnvironment();
+    await loadEnvironment();
     let onProgress = void 0;
     let rerender = void 0;
     let lastProgressPercentage = 0;
@@ -100078,7 +100084,7 @@ log.command("tail").option("-f, --follow", "Follow the log").option("-n, --lines
   if (options.lines) {
     flags.push(`-n${options.lines}`);
   }
-  const logFile = (await getEnvironment()).LOG_FILE;
+  const logFile = (await loadEnvironment()).LOG_FILE;
   const whichPretty = await which("pino-pretty");
   if (whichPretty.trim() === "") {
     echo3("pino-pretty not found, installing (requires sudo permissions)...");
@@ -100114,7 +100120,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
       }
     )
   );
-  await $$`sudo ${(await getEnvironment()).RATOS_SCRIPT_DIR}/update.sh`;
+  await $$`sudo ${(await loadEnvironment()).RATOS_SCRIPT_DIR}/update.sh`;
   steps.push({ name: "Repaired RatOS configurator", status: "success" });
   rerender(
     /* @__PURE__ */ import_react65.default.createElement(
@@ -100142,7 +100148,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
       }
     )
   );
-  await $$`sudo ${(await getEnvironment()).RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
+  await $$`sudo ${(await loadEnvironment()).RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
   steps.push({ name: "Repaired RatOS configuration", status: "success" });
   rerender(
     /* @__PURE__ */ import_react65.default.createElement(
@@ -100185,6 +100191,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
     )
   );
 });
+loadEnvironment();
 await program2.parseAsync();
 /**
  * @file ActionSequence.ts

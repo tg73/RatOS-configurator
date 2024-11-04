@@ -11,7 +11,7 @@ import { Status } from '@/cli/components/status.jsx';
 import { readPackageUp } from 'read-package-up';
 import { $, echo, which } from 'zx';
 import { existsSync } from 'node:fs';
-import { ensureSudo, getRealPath, renderApiResults, renderError, errorColor, getEnvironment } from '@/cli/util.tsx';
+import { ensureSudo, getRealPath, renderApiResults, renderError, errorColor, loadEnvironment } from '@/cli/util.tsx';
 import { InstallProgressUI, InstallStep } from '@/cli/components/install-progress.tsx';
 import { createSignal } from '@/app/_helpers/signal.ts';
 import { getLogger } from '@/cli/logger.ts';
@@ -437,7 +437,7 @@ log
 		if (options.lines) {
 			flags.push(`-n${options.lines}`);
 		}
-		const logFile = (await getEnvironment()).LOG_FILE;
+		const logFile = (await loadEnvironment()).LOG_FILE;
 		const whichPretty = await which('pino-pretty');
 		if (whichPretty.trim() === '') {
 			echo('pino-pretty not found, installing (requires sudo permissions)...');
@@ -481,7 +481,7 @@ const doctor = program
 			/>,
 		);
 
-		await $$`sudo ${(await getEnvironment()).RATOS_SCRIPT_DIR}/update.sh`;
+		await $$`sudo ${(await loadEnvironment()).RATOS_SCRIPT_DIR}/update.sh`;
 		steps.push({ name: 'Repaired RatOS configurator', status: 'success' });
 		rerender(
 			<InstallProgressUI
@@ -503,7 +503,7 @@ const doctor = program
 				steps={steps}
 			/>,
 		);
-		await $$`sudo ${(await getEnvironment()).RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
+		await $$`sudo ${(await loadEnvironment()).RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
 		steps.push({ name: 'Repaired RatOS configuration', status: 'success' });
 		rerender(
 			<InstallProgressUI
@@ -538,4 +538,5 @@ const doctor = program
 		);
 	});
 
+loadEnvironment();
 await program.parseAsync();

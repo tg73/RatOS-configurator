@@ -4,7 +4,7 @@ import { APIResult, Status } from '@/cli/components/status.tsx';
 import { render } from 'ink';
 import { Command } from 'commander';
 import { readFile, realpath } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { serverSchema } from '@/env/schema.mjs';
 import dotenv from 'dotenv';
 import React from 'react';
@@ -171,9 +171,15 @@ export async function getRealPath(program: Command, p: string) {
 	return await realpath(path.resolve(process.env.RATOS_BIN_CWD ?? program.getOptionValue('cwd'), p));
 }
 
-export async function getEnvironment() {
+let alreadyLoaded = false;
+export function loadEnvironment() {
+	if (alreadyLoaded) {
+		return serverSchema.parse(process.env);
+	}
 	const envFilePath = existsSync('./.env.local') ? '.env.local' : '.env';
-	dotenv.config({ path: envFilePath });
-	const envFile = await readFile(envFilePath, 'utf8');
-	return serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
+	const envFile = readFileSync(envFilePath, 'utf8');
+	const env = serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
+	dotenv.populate(process.env as any, env);
+	alreadyLoaded = true;
+	return env;
 }
