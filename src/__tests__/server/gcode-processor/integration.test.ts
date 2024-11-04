@@ -39,7 +39,7 @@ class NullSink extends Writable {
 }
 
 async function processToNullWithoutBookmarkProcessing(gcodePath: string, abortSignal?: AbortSignal) {
-	const gcodeProcessor = new GCodeProcessor(true, false, false, abortSignal);
+	const gcodeProcessor = new GCodeProcessor(true, false, false, true, () => {}, abortSignal);
 	const encoder = new BookmarkingBufferEncoder(undefined, undefined, abortSignal);
 	await pipeline(createReadStream(gcodePath), split(), gcodeProcessor, encoder, new NullSink());
 }
@@ -132,7 +132,7 @@ describe('legacy equivalence', { timeout: 60000 }, async () => {
 			let fh: FileHandle | undefined = undefined;
 			try {
 				fh = await fs.open(outputPath, 'w');
-				const gcodeProcessor = new GCodeProcessor(true, false, false);
+				const gcodeProcessor = new GCodeProcessor(true, false, false, false);
 				const encoder = new BookmarkingBufferEncoder();
 
 				await pipeline(
