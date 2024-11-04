@@ -109,14 +109,15 @@ class RatOS:
 		msg = gcmd.get('MSG', '')
 		type = gcmd.get('TYPE', '')
 
-		color = "white" 
+		color = "white"
 		opacity = 1.0
-		if type == 'info': color = "#38bdf8" 
-		if type == 'success': color = "#a3e635" 
-		if type == 'warning': color = "#fbbf24" 
-		if type == 'alert': color = "#f87171" 
-		if type == 'debug': color = "#38bdf8" 
-		if type == 'debug': opacity = 0.7 
+		if type == 'info': color = "#38bdf8"
+		if type == 'success': color = "#a3e635"
+		if type == 'warning': color = "#fbbf24"
+		if type == 'alert': color = "#f87171"
+		if type == 'error': color = "#f87171"
+		if type == 'debug': color = "#38bdf8"
+		if type == 'debug': opacity = 0.7
 
 		_title = '<b><p style="font-weight-bold; margin:0; opacity:' + str(opacity) + '; color:' + color + '">' + title + '</p></b>'
 		_msg = '<p style="margin:0; opacity:' + str(opacity) + '; color:' + color + '">' + msg.replace("_N_","\n") + '</p>'
@@ -215,6 +216,7 @@ class RatOS:
 
 	def process_gcode_file(self, filename, enable_post_processing):
 		try:
+			[path, size] = self.get_gcode_file_info(filename)
 			# Start ratos postprocess command
 			args = ['ratos', 'postprocess', '--non-interactive']
 			isIdex = self.config.has_section("dual_carriage")
@@ -224,7 +226,8 @@ class RatOS:
 				args.append('--overwrite-input')
 			if self.allow_unsupported_slicer_versions:
 				args.append('--allow-unsupported-slicer-versions')
-			args.append(filename)
+			args.append(path)
+			self.console_echo('Post processing started', 'info',  'Processing %s (%smb)' % (filename, size / 1024 / 1024));
 			process = subprocess.Popen(
 				args,
 				stdout=subprocess.PIPE,
@@ -243,7 +246,7 @@ class RatOS:
 					self.console_echo('A warning occurred during post processing', 'warning', data['warning'])
 				if data['result'] == 'success':
 					self.last_processed_file_result = data['payload']
-					if data['payload']['wasAlreadyProcessed']:
+					if 'wasAlreadyProcessed' in data['payload'] and data['payload']['wasAlreadyProcessed']:
 						self.console_echo('Post processing completed', 'success', 'File already processed, continuing...')
 					else:
 						self.console_echo(
@@ -324,6 +327,7 @@ class RatOS:
 					raise self.printer.command_error(
 						f"Post-processing failed: {error}"
 					)
+				raise self.printer.command_error(f"Post-processing failed")
 
 			return True
 
@@ -695,7 +699,7 @@ class RatOS:
 		self.gcode.run_script_from_command("DEBUG_ECHO PREFIX=" + str(prefix) + " MSG='" + str(msg) + "'")
 	
 	def console_echo(self, title, type, msg):
-		self.gcode.run_script_from_command("CONSOLE_ECHO TITLE=" + str(title) + " TYPE=" + str(type) + " MSG='" + str(msg) + "'")
+		self.gcode.run_script_from_command("CONSOLE_ECHO TITLE='" + str(title) + "' TYPE='" + str(type) + "' MSG='" + str(msg) + "'")
 
 	def get_is_graph_files(self):
 		try:
