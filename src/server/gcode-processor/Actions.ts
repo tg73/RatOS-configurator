@@ -217,18 +217,6 @@ export const fixOtherLayerTemperature: Action = [
 	},
 ];
 
-export const fixOrcaSetAccelaration: Action = [
-	GCodeFlavour.OrcaSlicer,
-	(c, s) => {
-		// SET_VELOCITY_LIMIT ACCEL=2500 ACCEL_TO_DECEL=1250
-		const match = /^SET_VELOCITY_LIMIT.*\sACCEL=(\d+)/i.exec(c.line);
-		if (match) {
-			c.line = `M204 S${match[1]}${CHANGED_BY_RATOS}${c.line}`;
-			return ActionResult.Stop;
-		}
-	},
-];
-
 /**
  * A subsequence entry action that parses `Tn`, `G0` and `G1` commands. All handlers for these commands
  * must be placed in this command's subsequence in the action sequence. If the current line is one

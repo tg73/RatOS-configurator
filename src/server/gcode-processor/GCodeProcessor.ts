@@ -84,7 +84,6 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
 		subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
 		act.fixOtherLayerTemperature,
-		act.fixOrcaSetAccelaration,
 		act.captureConfigSection,
 	];
 
