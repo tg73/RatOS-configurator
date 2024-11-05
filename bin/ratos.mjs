@@ -91749,7 +91749,6 @@ function parseCommonGCodeCommandLine(line) {
 }
 
 // ../server/gcode-processor/Actions.ts
-var CHANGED_BY_RATOS = " ; Changed by RatOS post processor: ";
 var REMOVED_BY_RATOS = "; Removed by RatOS post processor: ";
 function newGCodeError(message, ctx, state) {
   return new GCodeError(message, ctx.line, state.currentLineNumber);
@@ -91781,9 +91780,9 @@ var getGcodeInfo = (c, s2) => {
           }
           break;
         case 2 /* OrcaSlicer */:
-          if (import_semver3.default.neq("2.1.1", parsed.generatorVersion)) {
+          if (!import_semver3.default.satisfies(parsed.generatorVersion, "2.1.1 || 2.2.0")) {
             throw new SlicerNotSupported(
-              `Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+              `Only versions 2.1.1 and 2.2.0 of OrcasSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
               { cause: parsed }
             );
           }
@@ -91869,16 +91868,6 @@ var fixOtherLayerTemperature = [
     }
   }
 ];
-var fixOrcaSetAccelaration = [
-  2 /* OrcaSlicer */,
-  (c, s2) => {
-    const match2 = /^SET_VELOCITY_LIMIT.*\sACCEL=(\d+)/i.exec(c.line);
-    if (match2) {
-      c.line = `M204 S${match2[1]}${CHANGED_BY_RATOS}${c.line}`;
-      return 2 /* Stop */;
-    }
-  }
-];
 var whenCommonCommandDoThenStop = (c, s2) => {
   s2._cmd = parseCommonGCodeCommandLine(c.line);
   return s2._cmd ? 2 /* Stop */ : 0 /* Continue */ | 256 /* flagSkipSubSequence */;
@@ -91929,122 +91918,70 @@ var processToolchange = (c, s2) => {
     }
     if (s2.hasPurgeTower === void 0) {
       s2.hasPurgeTower = false;
-      for (let scan of c.scanBack(19)) {
+      for (let scan of c.scanBack(100)) {
         if (scan.line.startsWith("; CP TOOLCHANGE START")) {
           s2.hasPurgeTower = true;
           break;
         }
       }
     }
-    let zHopBeforeToolchange = void 0;
-    if (!s2.hasPurgeTower && (s2.gcodeInfo.flavour === 1 /* PrusaSlicer */ || s2.gcodeInfo.flavour === 4 /* SuperSlicer */)) {
+    if (!s2.hasPurgeTower) {
+      let foundStop = false;
       for (let scan of c.scanBack(19)) {
-        if (scan.line.startsWith("; custom gcode: end_filament_gcode")) {
-          const preceding = scan.getLine(-1);
-          const cmd = parseCommonGCodeCommandLine(preceding.line);
-          if (cmd && cmd.letter === "G" && cmd.value === "1" && cmd.z && !cmd.x && !cmd.y) {
-            const z2 = Number(cmd.z);
-            if (z2 > 0) {
-              zHopBeforeToolchange = preceding;
-            }
+        const cmd = parseCommonGCodeCommandLine(scan.line);
+        if (cmd && cmd.letter === "G" && cmd.value === "1") {
+          if (cmd.x || cmd.y) {
+            foundStop = true;
+            break;
           }
-          break;
+          if (cmd.e || cmd.z) {
+            scan.prepend(REMOVED_BY_RATOS);
+          }
         }
       }
-    }
-    let retractForToolchange = void 0;
-    if (!s2.hasPurgeTower) {
-      switch (s2.gcodeInfo.flavour) {
-        case 1 /* PrusaSlicer */:
-        case 4 /* SuperSlicer */:
-          for (let scan of c.scanForward(19)) {
-            if (scan.line.startsWith("G1 E-")) {
-              retractForToolchange = { line: scan };
-              const next = scan.getLine(1);
-              if (next.line.startsWith("G1 Z")) {
-                retractForToolchange.zHopLine = next;
-              }
-              break;
-            }
-          }
-          break;
-        case 2 /* OrcaSlicer */:
-          for (let scan of c.scanBack(19)) {
-            if (scan.line.startsWith("G1 E-")) {
-              retractForToolchange = { line: scan };
-              break;
-            }
-          }
-          break;
+      if (!foundStop) {
+        s2.onWarning?.(
+          "HEURISTIC_SMELL" /* HEURISTIC_SMELL */,
+          "End of scan back before toolchange reached without detecting end condition."
+        );
       }
     }
     let xyMoveAfterToolchange = void 0;
-    for (let scan of c.scanForward(19)) {
-      const match2 = parseCommonGCodeCommandLine(scan.line);
-      if (match2) {
-        if (match2.x && match2.y) {
-          if (match2.e) {
-            throw newGCodeError("Unexpected extruding move after toolchange.", scan, s2);
-          }
-          xyMoveAfterToolchange = { x: match2.x, y: match2.y, line: scan };
-          const prev = scan.getLine(-1);
-          if (prev.line.startsWith("G1 Z")) {
-            xyMoveAfterToolchange.zHopLine = prev;
-          }
-          break;
-        } else if (match2.x || match2.y) {
-          throw newGCodeError("Unexpected X-only or Y-only move after toolchange.", scan, s2);
-        }
-      }
-    }
     let zMoveAfterToolchange = void 0;
-    if (!s2.hasPurgeTower) {
-      switch (s2.gcodeInfo.flavour) {
-        case 1 /* PrusaSlicer */:
-        case 4 /* SuperSlicer */:
-        case 2 /* OrcaSlicer */:
-          for (let scan of (xyMoveAfterToolchange?.line ?? c).scanForward(2)) {
-            const match2 = parseCommonGCodeCommandLine(scan.line);
-            if (match2) {
-              if (match2.z) {
-                zMoveAfterToolchange = { z: match2.z, line: scan };
-                break;
-              }
+    {
+      let foundStop = false;
+      for (let scan of c.scanForward(19)) {
+        const cmd = parseCommonGCodeCommandLine(scan.line);
+        if (cmd && cmd.letter === "G" && cmd.value === "1") {
+          if (cmd.x || cmd.y) {
+            if (!xyMoveAfterToolchange) {
+              xyMoveAfterToolchange = cmd;
+            } else {
+              foundStop = true;
+              break;
             }
           }
-          break;
-      }
-    }
-    let deretractLine = void 0;
-    if (!s2.hasPurgeTower && xyMoveAfterToolchange) {
-      for (let scan of xyMoveAfterToolchange.line.scanForward(4)) {
-        if (scan.line.startsWith("G1 E")) {
-          const match2 = parseCommonGCodeCommandLine(scan.line);
-          if (match2?.e && Number(match2.e) > 0) {
-            deretractLine = scan;
+          if (!s2.hasPurgeTower) {
+            if (cmd.e) {
+              scan.prepend(REMOVED_BY_RATOS);
+            } else if (cmd.z && !zMoveAfterToolchange) {
+              zMoveAfterToolchange = cmd;
+              scan.prepend(REMOVED_BY_RATOS);
+            }
           }
-          break;
         }
       }
-    }
-    if (xyMoveAfterToolchange) {
-      if (zHopBeforeToolchange) {
-        zHopBeforeToolchange.prepend(REMOVED_BY_RATOS);
-      }
-      if (zMoveAfterToolchange) {
-        zMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
-      }
-      c.line = s2.kPrinterHasRmmuHub ? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z=" + zMoveAfterToolchange.z : ""}` : `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z" + zMoveAfterToolchange.z : ""}`;
-      if (xyMoveAfterToolchange.zHopLine && !retractForToolchange?.zHopLine && // avoid double-prepending the same line
-      (s2.gcodeInfo.flavour === 1 /* PrusaSlicer */ || s2.gcodeInfo.flavour === 4 /* SuperSlicer */)) {
-        xyMoveAfterToolchange.zHopLine.prepend(REMOVED_BY_RATOS);
-      }
-      if (retractForToolchange && deretractLine) {
-        retractForToolchange.line.prepend(REMOVED_BY_RATOS);
-        retractForToolchange.zHopLine?.prepend(REMOVED_BY_RATOS);
-        deretractLine.prepend(REMOVED_BY_RATOS);
+      if (!foundStop) {
+        s2.onWarning?.(
+          "HEURISTIC_SMELL" /* HEURISTIC_SMELL */,
+          "End of scan forward after toolchange reached without detecting end condition."
+        );
       }
     }
+    if (!xyMoveAfterToolchange) {
+      throw newGCodeError("Failed to detect XY move after toolchange.", c, s2);
+    }
+    c.line = s2.kPrinterHasRmmuHub ? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z=" + zMoveAfterToolchange.z : ""}` : `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z" + zMoveAfterToolchange.z : ""}`;
     return 2 /* Stop */;
   }
 };
@@ -92097,7 +92034,7 @@ var InspectionIsComplete = class extends Error {
 };
 var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
   constructor(printerHasIdex, printerHasRmmuHub, quickInspectionOnly, allowUnsupportedSlicerVersions, onWarning, abortSignal) {
-    super(20, 20, abortSignal);
+    super(20, 100, abortSignal);
     this.#state = new State(
       printerHasIdex,
       printerHasRmmuHub,
@@ -92114,7 +92051,6 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
     // NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
     subSequence(whenCommonCommandDoThenStop, [findFirstMoveXY, findMinMaxX, processToolchange]),
     fixOtherLayerTemperature,
-    fixOrcaSetAccelaration,
     captureConfigSection
   ];
   _processLine(ctx) {

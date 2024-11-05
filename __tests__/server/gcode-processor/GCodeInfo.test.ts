@@ -124,7 +124,7 @@ describe('tryParseHeader', async () => {
 describe('fromFile', async () => {
 	test('unprocessed', async () => {
 		const parsed = await GCodeInfo.fromFile(
-			path.join(__dirname, 'fixtures', 'slicer_output', 'SS_IDEX_MultiColor_WipeTower.gcode'),
+			path.join(__dirname, 'fixtures', 'slicer_output', '001', 'SS_IDEX_MultiColor_WipeTower.gcode'),
 		);
 		expect(parsed).not.toBeNull();
 		expect(parsed!.flavour).toEqual(GCodeFlavour.SuperSlicer);
@@ -138,7 +138,7 @@ describe('fromFile', async () => {
 
 	test('legacy processed', async () => {
 		const parsed = await GCodeInfo.fromFile(
-			path.join(__dirname, 'fixtures', 'transformed_legacy', 'SS_IDEX_MultiColor_WipeTower.gcode'),
+			path.join(__dirname, 'fixtures', 'transformed_legacy', '001', 'SS_IDEX_MultiColor_WipeTower.gcode'),
 		);
 		expect(parsed).not.toBeNull();
 		expect(parsed!.flavour).toEqual(GCodeFlavour.SuperSlicer);

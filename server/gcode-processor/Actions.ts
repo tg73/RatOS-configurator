@@ -27,7 +27,7 @@ import {
 } from '@/server/gcode-processor/errors';
 import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
-import { parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
+import { CommonGCodeCommand, parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
 import { InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
 
 // TODO: Review pad lengths.
@@ -46,6 +46,7 @@ export const REMOVED_BY_RATOS = '; Removed by RatOS post processor: ';
 
 export enum ACTION_ERROR_CODES {
 	UNSUPPORTED_SLICER_VERSION = 'UNSUPPORTED_SLICER_VERSION',
+	HEURISTIC_SMELL = 'HEURISTIC_SMELL',
 }
 
 /**
@@ -111,9 +112,9 @@ export const getGcodeInfo: Action = (c, s) => {
 					}
 					break;
 				case GCodeFlavour.OrcaSlicer:
-					if (semver.neq('2.1.1', parsed.generatorVersion)) {
+					if (!semver.satisfies(parsed.generatorVersion, '2.1.1 || 2.2.0')) {
 						throw new SlicerNotSupported(
-							`Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+							`Only versions 2.1.1 and 2.2.0 of OrcasSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
 							{ cause: parsed },
 						);
 					}
@@ -217,18 +218,6 @@ export const fixOtherLayerTemperature: Action = [
 	},
 ];
 
-export const fixOrcaSetAccelaration: Action = [
-	GCodeFlavour.OrcaSlicer,
-	(c, s) => {
-		// SET_VELOCITY_LIMIT ACCEL=2500 ACCEL_TO_DECEL=1250
-		const match = /^SET_VELOCITY_LIMIT.*\sACCEL=(\d+)/i.exec(c.line);
-		if (match) {
-			c.line = `M204 S${match[1]}${CHANGED_BY_RATOS}${c.line}`;
-			return ActionResult.Stop;
-		}
-	},
-];
-
 /**
  * A subsequence entry action that parses `Tn`, `G0` and `G1` commands. All handlers for these commands
  * must be placed in this command's subsequence in the action sequence. If the current line is one
@@ -305,7 +294,7 @@ export const processToolchange: Action = (c, s) => {
 		// Detect purge/wipe tower:
 		if (s.hasPurgeTower === undefined) {
 			s.hasPurgeTower = false;
-			for (let scan of c.scanBack(19)) {
+			for (let scan of c.scanBack(100)) {
 				if (scan.line.startsWith('; CP TOOLCHANGE START')) {
 					s.hasPurgeTower = true;
 					break;
@@ -313,182 +302,92 @@ export const processToolchange: Action = (c, s) => {
 			}
 		}
 
-		// NOT PORTING `#z-hop before toolchange` (line ~356)
-		//  1) it looks like PS and OS no longer zhop around a tool change.
-		//  2) SS does still zhop, but will not emit '; custom gcode: end_filament_gcode' by default
-		//     and the instructions don't say to set this, so current output from SS will not be
-		//     detected anyhow.
-		// TODO: Consider reinstating and fixing after initial regression tests pass.
-		//
-		// UPDATE: Partially porting. Not porting Orca branch as there's no reproduction for that at this time.
-
-		let zHopBeforeToolchange: ProcessLineContext | undefined = undefined;
-		if (
-			!s.hasPurgeTower &&
-			(s.gcodeInfo.flavour === GCodeFlavour.PrusaSlicer || s.gcodeInfo.flavour === GCodeFlavour.SuperSlicer)
-		) {
+		// BEFORE TOOLCHANGE
+		// Look backwards:
+		// - skip if a purge tower is used
+		// - stop looking on any X and/or Y move
+		// - remove all Z moves
+		// - remove all E moves
+		if (!s.hasPurgeTower) {
+			let foundStop = false;
 			for (let scan of c.scanBack(19)) {
-				if (scan.line.startsWith('; custom gcode: end_filament_gcode')) {
-					const preceding = scan.getLine(-1);
-					const cmd = parseCommonGCodeCommandLine(preceding.line);
-					if (cmd && cmd.letter === 'G' && cmd.value === '1' && cmd.z && !cmd.x && !cmd.y) {
-						const z = Number(cmd.z);
-						if (z > 0) {
-							zHopBeforeToolchange = preceding;
-						}
+				const cmd = parseCommonGCodeCommandLine(scan.line);
+				if (cmd && cmd.letter === 'G' && cmd.value === '1') {
+					// Stop on any XY move:
+					if (cmd.x || cmd.y) {
+						foundStop = true;
+						break;
 					}
-					break;
+
+					// Remove any E or Z moves:
+					if (cmd.e || cmd.z) {
+						scan.prepend(REMOVED_BY_RATOS);
+					}
 				}
+			}
+
+			if (!foundStop) {
+				// Smells bad, we hit the end of the scan back without explicitly
+				// detecting a stop condition.
+				s.onWarning?.(
+					ACTION_ERROR_CODES.HEURISTIC_SMELL,
+					'End of scan back before toolchange reached without detecting end condition.',
+				);
 			}
 		}
 
-		// NOT PORTING `# toolchange line` section (line ~379)
-		// - This looks for `Tn` from the current line up to 19 lines ahead, but will always match
-		//   on the current line because all the code is inside an
-		//  `if current line is 'Tn'` check. So `toolchange_line` will always be equal to the current line.
-
-		// Retraction associatd with toolchange (before/after Tn depends on slicer):
-		let retractForToolchange: { line: ProcessLineContext; zHopLine?: ProcessLineContext } | undefined = undefined;
-
-		if (!s.hasPurgeTower) {
-			switch (s.gcodeInfo.flavour) {
-				case GCodeFlavour.PrusaSlicer:
-				case GCodeFlavour.SuperSlicer:
-					for (let scan of c.scanForward(19)) {
-						if (scan.line.startsWith('G1 E-')) {
-							retractForToolchange = { line: scan };
-							const next = scan.getLine(1);
-							if (next.line.startsWith('G1 Z')) {
-								retractForToolchange.zHopLine = next;
-							}
+		// AFTER TOOLCHANGE
+		// Look forwards:
+		// - note the first XY move encountered
+		// - stop looking on any subsequent XY move
+		// - If there's no purge tower:
+		//   - remove all E moves
+		//   - note and remove the first z move encountered
+		let xyMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
+		let zMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
+		{
+			let foundStop = false;
+			for (let scan of c.scanForward(19)) {
+				const cmd = parseCommonGCodeCommandLine(scan.line);
+				if (cmd && cmd.letter === 'G' && cmd.value === '1') {
+					if (cmd.x || cmd.y) {
+						if (!xyMoveAfterToolchange) {
+							xyMoveAfterToolchange = cmd;
+						} else {
+							// Stop on any XY move after the first one:
+							foundStop = true;
 							break;
 						}
 					}
-					break;
-				case GCodeFlavour.OrcaSlicer:
-					for (let scan of c.scanBack(19)) {
-						if (scan.line.startsWith('G1 E-')) {
-							retractForToolchange = { line: scan };
-							break;
+
+					if (!s.hasPurgeTower) {
+						if (cmd.e) {
+							scan.prepend(REMOVED_BY_RATOS);
+						} else if (cmd.z && !zMoveAfterToolchange) {
+							zMoveAfterToolchange = cmd;
+							scan.prepend(REMOVED_BY_RATOS);
 						}
 					}
-					break;
-			}
-		}
-
-		// XY move after toolchange:
-		let xyMoveAfterToolchange:
-			| { x: string; y: string; line: ProcessLineContext; zHopLine?: ProcessLineContext }
-			| undefined = undefined;
-		for (let scan of c.scanForward(19)) {
-			const match = parseCommonGCodeCommandLine(scan.line);
-			if (match) {
-				if (match.x && match.y) {
-					if (match.e) {
-						throw newGCodeError('Unexpected extruding move after toolchange.', scan, s);
-					}
-					xyMoveAfterToolchange = { x: match.x, y: match.y, line: scan };
-					const prev = scan.getLine(-1);
-					if (prev.line.startsWith('G1 Z')) {
-						xyMoveAfterToolchange.zHopLine = prev;
-					}
-					break;
-				} else if (match.x || match.y) {
-					throw newGCodeError('Unexpected X-only or Y-only move after toolchange.', scan, s);
 				}
 			}
-		}
 
-		// NOT PORTING `# z-drop after toolchange` section (line ~379)
-		// 1) it looks like PS and OS no longer zhop around a tool change.
-		// 2) SS does still zhop, but:
-		//    a) the python code fails to detect the hop
-		//    b) the python code only looks up to 2 lines ahead for the drop, and this is not far
-		//       enough with current SS version output, which has 2 lines of comments after the move line.
-		// TODO: Consider reinstating and fixing after initial regression tests pass.
-
-		// Z-move after toolchange. This can be either a z-drop after a z-hop, or it can be just
-		// a statement of desired z height, often effectively a no-op.
-		let zMoveAfterToolchange: { z: string; line: ProcessLineContext } | undefined = undefined;
-
-		if (!s.hasPurgeTower) {
-			switch (s.gcodeInfo.flavour) {
-				case GCodeFlavour.PrusaSlicer:
-				case GCodeFlavour.SuperSlicer:
-				case GCodeFlavour.OrcaSlicer:
-					for (let scan of (xyMoveAfterToolchange?.line ?? c).scanForward(2)) {
-						const match = parseCommonGCodeCommandLine(scan.line);
-						if (match) {
-							if (match.z) {
-								zMoveAfterToolchange = { z: match.z, line: scan };
-								break;
-							}
-						}
-					}
-					break;
-				// TODO: Porting - Orca branch only applies if there's a z-hop, and z-hop detection is
-				// broken in the python code. Reinstate and fix.
+			if (!foundStop) {
+				// Smells bad, we hit the end of the scan forwards without explicitly
+				// detecting a stop condition.
+				s.onWarning?.(
+					ACTION_ERROR_CODES.HEURISTIC_SMELL,
+					'End of scan forward after toolchange reached without detecting end condition.',
+				);
 			}
 		}
 
-		// Deretract after toolchange (`# extrusion after move` in original python)
-		let deretractLine: ProcessLineContext | undefined = undefined;
-
-		if (!s.hasPurgeTower && xyMoveAfterToolchange) {
-			// TODO: Brittle. Must scan beyond filament start gcode, which is of unknown length. Often at least contains
-			// SET_PRESSURE_ADVANCE. Maybe require stricter custom gcode format, eg must end with a line `;END filament gcode`.
-			// TODO: BUGGY IN PYTHON, produces incorrect gcode, bug reproduced here for initial regression testing.
-			for (let scan of xyMoveAfterToolchange.line.scanForward(4)) {
-				if (scan.line.startsWith('G1 E')) {
-					const match = parseCommonGCodeCommandLine(scan.line);
-					if (match?.e && Number(match.e) > 0) {
-						deretractLine = scan;
-					}
-					break;
-				}
-			}
+		if (!xyMoveAfterToolchange) {
+			throw newGCodeError('Failed to detect XY move after toolchange.', c, s);
 		}
 
-		// Convert toolchange to toolshift
-		if (xyMoveAfterToolchange) {
-			// The aboe condition is ported from python - but why? Should it be an error if there's a toolchange with no xy move found?
-			// TODO: reinstate and fix zhop line redaction.
-			if (zHopBeforeToolchange) {
-				zHopBeforeToolchange.prepend(REMOVED_BY_RATOS);
-			}
-
-			if (zMoveAfterToolchange) {
-				zMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
-			}
-
-			c.line = s.kPrinterHasRmmuHub
-				? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange.z : ''}`
-				: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
-
-			// --------------------------------------------------------------------------------
-			// TG 2024-10-31: Ported from #b1e51390 from RatOS-configuration (HK)
-			// temporarily outcommented to fix gcode render issues in gcode viewer applications
-			// the toolshift already moves the toolhead to this position but this wont be reflected in viewer applications
-			// originally outcommented to avoid microstuttering for ultra fast toolshifts
-			// needs to be tested if microstuttering is still an issue
-			// --------------------------------------------------------------------------------
-			// xyMoveAfterToolchange.line.prepend(REMOVED_BY_RATOS);
-			// --------------------------------------------------------------------------------
-
-			if (
-				xyMoveAfterToolchange.zHopLine &&
-				!retractForToolchange?.zHopLine && // avoid double-prepending the same line
-				(s.gcodeInfo.flavour === GCodeFlavour.PrusaSlicer || s.gcodeInfo.flavour === GCodeFlavour.SuperSlicer)
-			) {
-				xyMoveAfterToolchange.zHopLine.prepend(REMOVED_BY_RATOS);
-			}
-
-			if (retractForToolchange && deretractLine) {
-				retractForToolchange.line.prepend(REMOVED_BY_RATOS);
-				retractForToolchange.zHopLine?.prepend(REMOVED_BY_RATOS);
-				deretractLine.prepend(REMOVED_BY_RATOS);
-			}
-		}
+		c.line = s.kPrinterHasRmmuHub
+			? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange.z : ''}`
+			: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
 
 		// This is the only action that handles `Tn` lines.
 		return ActionResult.Stop;

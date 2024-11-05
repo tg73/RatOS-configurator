@@ -39,7 +39,7 @@ class NullSink extends Writable {
 }
 
 async function processToNullWithoutBookmarkProcessing(gcodePath: string, abortSignal?: AbortSignal) {
-	const gcodeProcessor = new GCodeProcessor(true, false, false, abortSignal);
+	const gcodeProcessor = new GCodeProcessor(true, false, false, true, () => {}, abortSignal);
 	const encoder = new BookmarkingBufferEncoder(undefined, undefined, abortSignal);
 	await pipeline(createReadStream(gcodePath), split(), gcodeProcessor, encoder, new NullSink());
 }
@@ -111,7 +111,7 @@ describe('other', async () => {
 	test('processing can be cancelled', async () => {
 		await expect(async () =>
 			processToNullWithoutBookmarkProcessing(
-				path.join(__dirname, 'fixtures', 'slicer_output', 'SS_IDEX_MultiColor_WipeTower.gcode'),
+				path.join(__dirname, 'fixtures', 'slicer_output', '001', 'SS_IDEX_MultiColor_WipeTower.gcode'),
 				AbortSignal.timeout(100),
 			),
 		).rejects.toThrow(/timeout/);
@@ -124,15 +124,19 @@ describe('legacy equivalence', { timeout: 60000 }, async () => {
 	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
 		'%s',
 		async (fixtureFile) => {
-			const outputDir = path.join(__dirname, 'fixtures', 'output');
-			fs.mkdir(outputDir, { recursive: true });
-			const outputPath = path.join(outputDir, fixtureFile);
+			const outputPath = path.join(__dirname, 'fixtures', 'output', fixtureFile);
+			const outputDir = path.dirname(outputPath);
+			await fs.mkdir(outputDir, { recursive: true });
 
 			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
 			let fh: FileHandle | undefined = undefined;
 			try {
 				fh = await fs.open(outputPath, 'w');
-				const gcodeProcessor = new GCodeProcessor(true, false, false);
+				const gcodeProcessor = new GCodeProcessor(true, false, false, false, (c, m) => {
+					// If some specific warning is acceptable during this test, add logic here to ignore it.
+					// Generally, we don't want to encounter warnings in tests.
+					throw new Error(`Got unexpected warning: ${m} (${c})`);
+				});
 				const encoder = new BookmarkingBufferEncoder();
 
 				await pipeline(
