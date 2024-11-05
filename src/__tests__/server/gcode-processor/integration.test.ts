@@ -132,7 +132,11 @@ describe('legacy equivalence', { timeout: 60000 }, async () => {
 			let fh: FileHandle | undefined = undefined;
 			try {
 				fh = await fs.open(outputPath, 'w');
-				const gcodeProcessor = new GCodeProcessor(true, false, false, false);
+				const gcodeProcessor = new GCodeProcessor(true, false, false, false, (c, m) => {
+					// If some specific warning is acceptable during this test, add logic here to ignore it.
+					// Generally, we don't want to encounter warnings in tests.
+					throw new Error(`Got unexpected warning: ${m} (${c})`);
+				});
 				const encoder = new BookmarkingBufferEncoder();
 
 				await pipeline(
