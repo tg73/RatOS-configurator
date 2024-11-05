@@ -111,9 +111,9 @@ export const getGcodeInfo: Action = (c, s) => {
 					}
 					break;
 				case GCodeFlavour.OrcaSlicer:
-					if (semver.neq('2.1.1', parsed.generatorVersion)) {
+					if (!semver.satisfies(parsed.generatorVersion, '2.1.1 || 2.2.0')) {
 						throw new SlicerNotSupported(
-							`Only version 2.1.1 of OrcasSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+							`Only versions 2.1.1 and 2.2.0 of OrcasSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
 							{ cause: parsed },
 						);
 					}
