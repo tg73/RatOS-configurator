@@ -111,7 +111,7 @@ describe('other', async () => {
 	test('processing can be cancelled', async () => {
 		await expect(async () =>
 			processToNullWithoutBookmarkProcessing(
-				path.join(__dirname, 'fixtures', 'slicer_output', 'SS_IDEX_MultiColor_WipeTower.gcode'),
+				path.join(__dirname, 'fixtures', 'slicer_output', '001', 'SS_IDEX_MultiColor_WipeTower.gcode'),
 				AbortSignal.timeout(100),
 			),
 		).rejects.toThrow(/timeout/);
@@ -124,9 +124,9 @@ describe('legacy equivalence', { timeout: 60000 }, async () => {
 	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
 		'%s',
 		async (fixtureFile) => {
-			const outputDir = path.join(__dirname, 'fixtures', 'output');
-			fs.mkdir(outputDir, { recursive: true });
-			const outputPath = path.join(outputDir, fixtureFile);
+			const outputPath = path.join(__dirname, 'fixtures', 'output', fixtureFile);
+			const outputDir = path.dirname(outputPath);
+			await fs.mkdir(outputDir, { recursive: true });
 
 			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
 			let fh: FileHandle | undefined = undefined;
