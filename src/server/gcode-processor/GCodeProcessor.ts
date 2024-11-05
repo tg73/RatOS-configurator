@@ -64,7 +64,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		onWarning?: (code: string, message: string) => void,
 		abortSignal?: AbortSignal,
 	) {
-		super(20, 20, abortSignal);
+		super(20, 100, abortSignal);
 		this.#state = new State(
 			printerHasIdex,
 			printerHasRmmuHub,
