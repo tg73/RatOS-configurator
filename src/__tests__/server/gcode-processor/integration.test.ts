@@ -20,6 +20,7 @@ import {
 	BookmarkingBufferEncoder,
 	replaceBookmarkedGcodeLine,
 } from '@/server/gcode-processor/BookmarkingBufferEncoder';
+import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { GCodeProcessor } from '@/server/gcode-processor/GCodeProcessor';
 import { glob } from 'glob';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -29,6 +30,7 @@ import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import split from 'split2';
 import { describe, test, expect, chai } from 'vitest';
+import semver from 'semver';
 
 chai.use(require('chai-string'));
 
@@ -53,50 +55,76 @@ function replaceExtension(pathStr: string, extensionWithDot: string) {
 	return path.format({ ...path.parse(pathStr), base: '', ext: extensionWithDot });
 }
 
-async function legacyAndModernGcodeFilesAreEquivalent(legacyPath: string, modernPath: string) {
-	let fhLegacy: FileHandle | undefined = undefined;
-	let fhModern: FileHandle | undefined = undefined;
+async function readLines(
+	iter: AsyncIterableIterator<string>,
+	count: number,
+): Promise<{ lines: string; lastIterResult: IteratorResult<string, any> }> {
+	let v = '';
+	let r: IteratorResult<string, any> | undefined;
+
+	for (let n = 0; n < count; ++n) {
+		r = await iter.next();
+		if (r.done) {
+			break;
+		}
+		v = v + '\n' + r.value;
+	}
+	return { lines: v, lastIterResult: r! };
+}
+
+async function processedGCodeFilesAreEquivalent(expectedPath: string, actualPath: string) {
+	let fhExpected: FileHandle | undefined = undefined;
+	let fhActual: FileHandle | undefined = undefined;
 	try {
-		console.log(`Comparing legacy file ${legacyPath} to modern file ${modernPath}`);
+		console.log(`Comparing expected file ${expectedPath} to actual file ${actualPath}`);
 
-		fhLegacy = await fs.open(legacyPath);
-		fhModern = await fs.open(modernPath);
+		fhExpected = await fs.open(expectedPath);
+		fhActual = await fs.open(actualPath);
 
-		const iterLegacy = fhLegacy.readLines()[Symbol.asyncIterator]();
-		const iterModern = fhModern.readLines()[Symbol.asyncIterator]();
+		const iterExpected = fhExpected.readLines()[Symbol.asyncIterator]();
+		const iterActual = fhActual.readLines()[Symbol.asyncIterator]();
 
-		// Skip '; processed by...' line in modern
-		let modern = await iterModern.next();
-		expect(modern.value).to.startWith('; processed by RatOS');
+		const expectedHeader = await readLines(iterExpected, 3);
+		const actualHeader = await readLines(iterActual, 3);
 
-		let lineNumber = 2;
+		const gciExpected = GCodeInfo.tryParseHeader(expectedHeader.lines);
+		const gciActual = GCodeInfo.tryParseHeader(actualHeader.lines);
+
+		expect(gciExpected, ' (could not parse expected file header)').not.toBeNull;
+		expect(gciActual, ' (could not parse actual file header)').not.toBeNull;
+
+		expect(gciExpected!.processedByRatOSVersion).toBeTruthy();
+		expect(gciExpected!.processedByRatOSTimestamp).toBeTruthy();
+		expect(gciActual!.processedByRatOSVersion).toBeTruthy();
+		expect(gciActual!.processedByRatOSTimestamp).toBeTruthy();
+		expect(gciActual!.flavour).to.equal(gciExpected!.flavour, ' while comparing headers');
+		expect(gciActual!.generator).to.equal(gciExpected!.generator, ' while comparing headers');
+		expect(semver.eq(gciActual!.generatorVersion, gciExpected!.generatorVersion)).toBeTruthy();
+		expect(gciActual!.ratosDialectVersion).to.equal(gciExpected!.ratosDialectVersion, ' while comparing headers');
+
+		let lineNumber = 1;
+		let expected = expectedHeader.lastIterResult;
+		let actual = actualHeader.lastIterResult;
 
 		while (true) {
-			let legacy = await iterLegacy.next();
-			modern = await iterModern.next();
+			expected = await iterExpected.next();
+			actual = await iterActual.next();
 
 			++lineNumber;
 
-			if (modern.done) {
-				expect(legacy.value).to.startWith('; processed by RatOS');
+			expect(actual.done).toStrictEqual(expected.done);
+
+			if (actual.done) {
 				break;
 			}
 
-			expect(legacy.done).toBeFalsy();
-
-			// Work around the double-commenting bug in legacy gcode.
-			const legacyLine = legacy.value.startsWith(
-				'; Removed by RatOS post processor: ; Removed by RatOS post processor: ',
-			)
-				? legacy.value.substring('; Removed by RatOS post processor: '.length)
-				: legacy.value;
-			expect(modern.value.trimEnd()).to.equal(legacyLine.trimEnd(), `at line ${lineNumber}`);
+			expect(actual.value.trimEnd()).to.equal(expected.value.trimEnd(), `at line ${lineNumber}`);
 		}
 
 		console.log(`  ${lineNumber} lines compared ok.`);
 	} finally {
-		fhLegacy?.close();
-		fhModern?.close();
+		fhExpected?.close();
+		fhActual?.close();
 	}
 }
 
@@ -120,7 +148,7 @@ describe('other', async () => {
 
 // For now, removing the RMMU variant tests, as Helge has a separate unreleased processor for this,
 // so testing is pointless for now.
-describe('legacy equivalence', { timeout: 60000 }, async () => {
+describe('output equivalence', { timeout: 60000 }, async () => {
 	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
 		'%s',
 		async (fixtureFile) => {
@@ -154,9 +182,9 @@ describe('legacy equivalence', { timeout: 60000 }, async () => {
 				} catch {}
 			}
 
-			const legacyPath = path.join(__dirname, 'fixtures', 'transformed_legacy', fixtureFile);
+			const expectedPath = path.join(__dirname, 'fixtures', 'transformed', fixtureFile);
 
-			await legacyAndModernGcodeFilesAreEquivalent(legacyPath, outputPath);
+			await processedGCodeFilesAreEquivalent(expectedPath, outputPath);
 		},
 	);
 });
