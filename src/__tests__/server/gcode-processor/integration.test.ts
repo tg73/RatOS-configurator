@@ -157,13 +157,15 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 			await fs.mkdir(outputDir, { recursive: true });
 
 			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
+			let gotWarnings = false;
 			let fh: FileHandle | undefined = undefined;
 			try {
 				fh = await fs.open(outputPath, 'w');
 				const gcodeProcessor = new GCodeProcessor(true, false, false, false, (c, m) => {
 					// If some specific warning is acceptable during this test, add logic here to ignore it.
 					// Generally, we don't want to encounter warnings in tests.
-					throw new Error(`Got unexpected warning: ${m} (${c})`);
+					console.warn(`  Warning: ${m} (${c})`);
+					gotWarnings = true;
 				});
 				const encoder = new BookmarkingBufferEncoder();
 
@@ -182,8 +184,11 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 				} catch {}
 			}
 
+			expect(gotWarnings).to.equal(
+				false,
+				'One or more warnings were raised during processing, check console output for details. Correct tests must not produce warnings.',
+			);
 			const expectedPath = path.join(__dirname, 'fixtures', 'transformed', fixtureFile);
-
 			await processedGCodeFilesAreEquivalent(expectedPath, outputPath);
 		},
 	);
