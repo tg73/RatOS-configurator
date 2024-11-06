@@ -657,6 +657,8 @@ export const constructKlipperConfigHelpers = async (
 				const marginMax = rail.axis !== PrinterAxis.y ? config.printer.bedMargin.x[1] : config.printer.bedMargin.y[1];
 				Object.entries(typeof limits == 'function' ? limits({ min: marginMin, max: marginMax }) : limits).forEach(
 					([key, value]) => {
+						// Make sure that position_min is at least -5 to allow for probe calibration (and componensation functions).
+						// Very much dislike that this is necessary.
 						section.push(
 							`position_${key}: ${rail.axis === PrinterAxis.z && key === 'min' ? Math.min(value, -5) : value}`,
 						);

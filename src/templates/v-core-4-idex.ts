@@ -164,7 +164,7 @@ ${helper.renderUserStepperSections({
 		directionInverted: true,
 		rotationComment: '4 for TR8*4 lead screws',
 		limits: {
-			min: 0,
+			min: -7,
 			max: config.size.z,
 		},
 	},
