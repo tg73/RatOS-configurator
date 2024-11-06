@@ -331,7 +331,7 @@ export const processToolchange: Action = (c, s) => {
 				// detecting a stop condition.
 				s.onWarning?.(
 					ACTION_ERROR_CODES.HEURISTIC_SMELL,
-					'End of scan back before toolchange reached without detecting end condition.',
+					`End of scan back before toolchange at line ${s.currentLineNumber} reached without detecting end condition.`,
 				);
 			}
 		}
@@ -342,9 +342,10 @@ export const processToolchange: Action = (c, s) => {
 		// - stop looking on any subsequent XY move
 		// - If there's no purge tower:
 		//   - remove all E moves
-		//   - note and remove the first z move encountered
+		//   - remove all z moves, noting the last move encountered
 		let xyMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
 		let zMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
+		let zMoveCount = 0;
 		{
 			let foundStop = false;
 			for (let scan of c.scanForward(19)) {
@@ -363,9 +364,10 @@ export const processToolchange: Action = (c, s) => {
 					if (!s.hasPurgeTower) {
 						if (cmd.e) {
 							scan.prepend(REMOVED_BY_RATOS);
-						} else if (cmd.z && !zMoveAfterToolchange) {
+						} else if (cmd.z) {
 							zMoveAfterToolchange = cmd;
 							scan.prepend(REMOVED_BY_RATOS);
+							++zMoveCount;
 						}
 					}
 				}
@@ -376,7 +378,15 @@ export const processToolchange: Action = (c, s) => {
 				// detecting a stop condition.
 				s.onWarning?.(
 					ACTION_ERROR_CODES.HEURISTIC_SMELL,
-					'End of scan forward after toolchange reached without detecting end condition.',
+					`End of scan forward after toolchange at line ${s.currentLineNumber} reached without detecting end condition.`,
+				);
+			}
+
+			if (zMoveCount > 2) {
+				// We've only seen examples with 0, 1 or 2 z moves. We need to take a look.
+				s.onWarning?.(
+					ACTION_ERROR_CODES.HEURISTIC_SMELL,
+					`Detected more than two z moves after toolchange at line ${s.currentLineNumber}.`,
 				);
 			}
 		}
