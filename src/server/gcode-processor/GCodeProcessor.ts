@@ -212,13 +212,6 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 
 			if (s.usedTools.length > 0) {
 				toAdd += ` USED_TOOLS=${s.usedTools.join()}`;
-
-				const wipeAccel = s.configSection?.get('wipe_tower_acceleration');
-				if (wipeAccel) {
-					toAdd += ` WIPE_ACCEL=${wipeAccel}`;
-				} else if (LEGACY_MODE) {
-					toAdd += ` WIPE_ACCEL=0`;
-				}
 			}
 
 			if (toAdd) {
