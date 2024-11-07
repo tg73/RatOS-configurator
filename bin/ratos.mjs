@@ -91651,9 +91651,8 @@ var BookmarkedLine = class {
   }
 };
 var State = class {
-  constructor(kPrinterHasIdex, kPrinterHasRmmuHub, kQuickInpsectionOnly, kAllowUnsupportedSlicerVersions, onWarning) {
+  constructor(kPrinterHasIdex, kQuickInpsectionOnly, kAllowUnsupportedSlicerVersions, onWarning) {
     this.kPrinterHasIdex = kPrinterHasIdex;
-    this.kPrinterHasRmmuHub = kPrinterHasRmmuHub;
     this.kQuickInpsectionOnly = kQuickInpsectionOnly;
     this.kAllowUnsupportedSlicerVersions = kAllowUnsupportedSlicerVersions;
     this.onWarning = onWarning;
@@ -91823,27 +91822,32 @@ var getGcodeInfo = (c, s2) => {
   return 3 /* RemoveAndStop */;
 };
 var getStartPrint = (c, s2) => {
-  const match2 = /^(START_PRINT|RMMU_START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
-    c.line
-  );
-  if (match2) {
-    c.line = c.line.replace("#", "").padEnd(c.line.length + 250);
-    c.bookmarkKey = Symbol("START_PRINT");
-    s2.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
-    const initialTool = match2.groups?.INITIAL_TOOL;
-    if (initialTool) {
-      s2.usedTools.push(initialTool);
-    }
-    const extruderOtherLayerTemp = match2?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
-    if (extruderOtherLayerTemp) {
-      s2.extruderTemps = extruderOtherLayerTemp.split(",");
-    }
-    return 3 /* RemoveAndStop */;
-  }
-  if (s2.currentLineNumber > 5e3) {
-    throw new GCodeError(
-      "The START_PRINT or RMMU_START_PRINT command has not been found within the first 5000 lines of the file. Please refer to the slicer configuration instructions."
+  if (!c.line.startsWith(";")) {
+    const spMatch = /^(START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
+      c.line
     );
+    if (spMatch) {
+      c.line = c.line.padEnd(c.line.length + 250);
+      c.bookmarkKey = Symbol("START_PRINT");
+      s2.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
+      const initialTool = spMatch.groups?.INITIAL_TOOL;
+      if (initialTool) {
+        s2.usedTools.push(initialTool);
+      }
+      const extruderOtherLayerTemp = spMatch?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
+      if (extruderOtherLayerTemp) {
+        s2.extruderTemps = extruderOtherLayerTemp.split(",");
+      }
+      return 3 /* RemoveAndStop */;
+    }
+    const cmd = parseCommonGCodeCommandLine(c.line);
+    if (cmd && (cmd.letter === "G" && (cmd.value === "1" || cmd.value === "2" || cmd.value === "3") || cmd.letter === "T")) {
+      throw newGCodeError(
+        "The START_PRINT command was not found before the first move or toolchange instruction. Please refer to the slicer configuration instructions.",
+        c,
+        s2
+      );
+    }
   }
   return 2 /* Stop */;
 };
@@ -91934,7 +91938,7 @@ var processToolchange = (c, s2) => {
             foundStop = true;
             break;
           }
-          if (cmd.e || cmd.z) {
+          if ((cmd.e || cmd.z) && !scan.getLine(-1).line.startsWith(";WIPE_END") && !scan.getLine(-2).line.startsWith(";WIPE_END")) {
             scan.prepend(REMOVED_BY_RATOS);
           }
         }
@@ -91942,14 +91946,17 @@ var processToolchange = (c, s2) => {
       if (!foundStop) {
         s2.onWarning?.(
           "HEURISTIC_SMELL" /* HEURISTIC_SMELL */,
-          "End of scan back before toolchange reached without detecting end condition."
+          `End of scan back before toolchange at line ${s2.currentLineNumber} reached without detecting end condition.`
         );
       }
     }
     let xyMoveAfterToolchange = void 0;
     let zMoveAfterToolchange = void 0;
+    let zMoveCount1 = 0;
+    let zMoveCount2 = 0;
     {
       let foundStop = false;
+      let prevZMove;
       for (let scan of c.scanForward(19)) {
         const cmd = parseCommonGCodeCommandLine(scan.line);
         if (cmd && cmd.letter === "G" && cmd.value === "1") {
@@ -91964,9 +91971,15 @@ var processToolchange = (c, s2) => {
           if (!s2.hasPurgeTower) {
             if (cmd.e) {
               scan.prepend(REMOVED_BY_RATOS);
-            } else if (cmd.z && !zMoveAfterToolchange) {
+            } else if (cmd.z) {
               zMoveAfterToolchange = cmd;
-              scan.prepend(REMOVED_BY_RATOS);
+              prevZMove?.prepend(REMOVED_BY_RATOS);
+              prevZMove = scan;
+              if (!xyMoveAfterToolchange) {
+                ++zMoveCount1;
+              } else {
+                ++zMoveCount2;
+              }
             }
           }
         }
@@ -91974,14 +91987,20 @@ var processToolchange = (c, s2) => {
       if (!foundStop) {
         s2.onWarning?.(
           "HEURISTIC_SMELL" /* HEURISTIC_SMELL */,
-          "End of scan forward after toolchange reached without detecting end condition."
+          `End of scan forward after toolchange at line ${s2.currentLineNumber} reached without detecting end condition.`
+        );
+      }
+      if (zMoveCount1 > 2 || zMoveCount2 > 2) {
+        s2.onWarning?.(
+          "HEURISTIC_SMELL" /* HEURISTIC_SMELL */,
+          `Detected a group with more than two z moves after toolchange at line ${s2.currentLineNumber}.`
         );
       }
     }
     if (!xyMoveAfterToolchange) {
       throw newGCodeError("Failed to detect XY move after toolchange.", c, s2);
     }
-    c.line = s2.kPrinterHasRmmuHub ? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z=" + zMoveAfterToolchange.z : ""}` : `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z" + zMoveAfterToolchange.z : ""}`;
+    c.line = `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? " Z" + zMoveAfterToolchange.z : ""}`;
     return 2 /* Stop */;
   }
 };
@@ -92029,18 +92048,16 @@ var captureConfigSection = (c, s2) => {
 
 // ../server/gcode-processor/GCodeProcessor.ts
 var import_semver4 = __toESM(require_semver2());
-var LEGACY_MODE = true;
 var InspectionIsComplete = class extends Error {
 };
 var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
-  constructor(printerHasIdex, printerHasRmmuHub, quickInspectionOnly, allowUnsupportedSlicerVersions, onWarning, abortSignal) {
-    super(20, 100, abortSignal);
+  constructor(opts) {
+    super(20, 100, opts?.abortSignal);
     this.#state = new State(
-      printerHasIdex,
-      printerHasRmmuHub,
-      quickInspectionOnly,
-      allowUnsupportedSlicerVersions,
-      onWarning
+      !!opts.printerHasIdex,
+      !!opts.quickInspectionOnly,
+      !!opts.allowUnsupportedSlicerVersions,
+      opts.onWarning
     );
   }
   #state;
@@ -92143,12 +92160,6 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
       }
       if (s2.usedTools.length > 0) {
         toAdd += ` USED_TOOLS=${s2.usedTools.join()}`;
-        const wipeAccel = s2.configSection?.get("wipe_tower_acceleration");
-        if (wipeAccel) {
-          toAdd += ` WIPE_ACCEL=${wipeAccel}`;
-        } else if (LEGACY_MODE) {
-          toAdd += ` WIPE_ACCEL=0`;
-        }
       }
       if (toAdd) {
         await replaceLine(bookmarks.getBookmark(s2.startPrintLine.bookmark), s2.startPrintLine.line.trimEnd() + toAdd);
@@ -92291,14 +92302,13 @@ async function inspectGCode(inputFile, options) {
       wasAlreadyProcessed: true
     };
   }
-  const gcodeProcessor = new GCodeProcessor(
-    !!options.idex,
-    !!options.rmmu,
-    !options.fullInspection,
-    !!options.allowUnsupportedSlicerVersions,
-    options.onWarning,
-    options.abortSignal
-  );
+  const gcodeProcessor = new GCodeProcessor({
+    printerHasIdex: options.idex,
+    allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+    quickInspectionOnly: !options.fullInspection,
+    abortSignal: options.abortSignal,
+    onWarning: options.onWarning
+  });
   const progressStream = (0, import_progress_stream.default)({ length: inputStat.size });
   if (options.onProgress) {
     progressStream.on("progress", options.onProgress);
@@ -92349,14 +92359,13 @@ async function processGCode(inputFile, outputFile, options) {
   }
   try {
     fh = await open(outputFile, "w");
-    const gcodeProcessor = new GCodeProcessor(
-      !!options.idex,
-      !!options.rmmu,
-      false,
-      !!options.allowUnsupportedSlicerVersions,
-      options.onWarning,
-      options.abortSignal
-    );
+    const gcodeProcessor = new GCodeProcessor({
+      printerHasIdex: options.idex,
+      allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+      quickInspectionOnly: false,
+      abortSignal: options.abortSignal,
+      onWarning: options.onWarning
+    });
     const encoder = new BookmarkingBufferEncoder(void 0, void 0, options.abortSignal);
     const progressStream = (0, import_progress_stream.default)({ length: inputStat.size });
     if (options.onProgress) {
@@ -99664,7 +99673,7 @@ var toPostProcessorCLIOutput = (obj) => {
   }
 };
 var postprocessor = (program3) => {
-  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("-r, --rmmu", "Postprocess for a printer with an RMMU").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
+  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
     await loadEnvironment();
     let onProgress = void 0;
     let rerender = void 0;
@@ -99690,7 +99699,6 @@ var postprocessor = (program3) => {
     }
     const opts = {
       idex: args.idex,
-      rmmu: args.rmmu,
       overwrite: args.overwrite || args.overwriteInput,
       allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
       onProgress,

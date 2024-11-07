@@ -156,36 +156,44 @@ export const getGcodeInfo: Action = (c, s) => {
 };
 
 export const getStartPrint: Action = (c, s) => {
-	const match =
-		/^(START_PRINT|RMMU_START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
-			c.line,
-		);
-	if (match) {
-		// Fix colour variable format and pad for later modification
-		c.line = c.line.replace('#', '').padEnd(c.line.length + 250);
-		c.bookmarkKey = Symbol('START_PRINT');
-		s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
+	// Quick skip for comment lines, there can be lots for thumbnails before we get to START_PRINT.
+	if (!c.line.startsWith(';')) {
+		const spMatch =
+			/^(START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
+				c.line,
+			);
 
-		const initialTool = match.groups?.INITIAL_TOOL;
-		if (initialTool) {
-			s.usedTools.push(initialTool);
+		if (spMatch) {
+			// Pad for later modification
+			c.line = c.line.padEnd(c.line.length + 250);
+			c.bookmarkKey = Symbol('START_PRINT');
+			s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
+
+			const initialTool = spMatch.groups?.INITIAL_TOOL;
+			if (initialTool) {
+				s.usedTools.push(initialTool);
+			}
+
+			const extruderOtherLayerTemp = spMatch?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
+			if (extruderOtherLayerTemp) {
+				s.extruderTemps = extruderOtherLayerTemp.split(',');
+			}
+
+			return ActionResult.RemoveAndStop;
 		}
 
-		const extruderOtherLayerTemp = match?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
-		if (extruderOtherLayerTemp) {
-			s.extruderTemps = extruderOtherLayerTemp.split(',');
+		const cmd = parseCommonGCodeCommandLine(c.line);
+
+		if (
+			cmd &&
+			((cmd.letter === 'G' && (cmd.value === '1' || cmd.value === '2' || cmd.value === '3')) || cmd.letter === 'T')
+		) {
+			throw newGCodeError(
+				'The START_PRINT command was not found before the first move or toolchange instruction. Please refer to the slicer configuration instructions.',
+				c,
+				s,
+			);
 		}
-
-		return ActionResult.RemoveAndStop;
-	}
-
-	if (s.currentLineNumber > 5000) {
-		// Most likely the START_PRINT line is missing. If this is a huge file, failing fast will be
-		// a better UX.
-		// TODO: Make this behaviour configurable, eg add to opts on public API, State holds opts.
-		throw new GCodeError(
-			'The START_PRINT or RMMU_START_PRINT command has not been found within the first 5000 lines of the file. Please refer to the slicer configuration instructions.',
-		);
 	}
 
 	// Stop at this point in the action sequence until we find START_LINE. If any actions need to inspect pre-START_LINE,
@@ -306,8 +314,7 @@ export const processToolchange: Action = (c, s) => {
 		// Look backwards:
 		// - skip if a purge tower is used
 		// - stop looking on any X and/or Y move
-		// - remove all Z moves
-		// - remove all E moves
+		// - remove all E and Z moves except those in the two lines directly under a `;WIPE_END` line
 		if (!s.hasPurgeTower) {
 			let foundStop = false;
 			for (let scan of c.scanBack(19)) {
@@ -319,8 +326,12 @@ export const processToolchange: Action = (c, s) => {
 						break;
 					}
 
-					// Remove any E or Z moves:
-					if (cmd.e || cmd.z) {
+					// Remove any E or Z moves except those in the two lines directly under a `;WIPE_END` line:
+					if (
+						(cmd.e || cmd.z) &&
+						!scan.getLine(-1).line.startsWith(';WIPE_END') &&
+						!scan.getLine(-2).line.startsWith(';WIPE_END')
+					) {
 						scan.prepend(REMOVED_BY_RATOS);
 					}
 				}
@@ -331,7 +342,7 @@ export const processToolchange: Action = (c, s) => {
 				// detecting a stop condition.
 				s.onWarning?.(
 					ACTION_ERROR_CODES.HEURISTIC_SMELL,
-					'End of scan back before toolchange reached without detecting end condition.',
+					`End of scan back before toolchange at line ${s.currentLineNumber} reached without detecting end condition.`,
 				);
 			}
 		}
@@ -342,11 +353,14 @@ export const processToolchange: Action = (c, s) => {
 		// - stop looking on any subsequent XY move
 		// - If there's no purge tower:
 		//   - remove all E moves
-		//   - note and remove the first z move encountered
+		//   - remove all but the last z move, noting the last move encountered
 		let xyMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
 		let zMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
+		let zMoveCount1 = 0;
+		let zMoveCount2 = 0;
 		{
 			let foundStop = false;
+			let prevZMove: ProcessLineContext | undefined;
 			for (let scan of c.scanForward(19)) {
 				const cmd = parseCommonGCodeCommandLine(scan.line);
 				if (cmd && cmd.letter === 'G' && cmd.value === '1') {
@@ -363,9 +377,16 @@ export const processToolchange: Action = (c, s) => {
 					if (!s.hasPurgeTower) {
 						if (cmd.e) {
 							scan.prepend(REMOVED_BY_RATOS);
-						} else if (cmd.z && !zMoveAfterToolchange) {
+						} else if (cmd.z) {
 							zMoveAfterToolchange = cmd;
-							scan.prepend(REMOVED_BY_RATOS);
+							// Remove all but the last z move
+							prevZMove?.prepend(REMOVED_BY_RATOS);
+							prevZMove = scan;
+							if (!xyMoveAfterToolchange) {
+								++zMoveCount1;
+							} else {
+								++zMoveCount2;
+							}
 						}
 					}
 				}
@@ -376,7 +397,15 @@ export const processToolchange: Action = (c, s) => {
 				// detecting a stop condition.
 				s.onWarning?.(
 					ACTION_ERROR_CODES.HEURISTIC_SMELL,
-					'End of scan forward after toolchange reached without detecting end condition.',
+					`End of scan forward after toolchange at line ${s.currentLineNumber} reached without detecting end condition.`,
+				);
+			}
+
+			if (zMoveCount1 > 2 || zMoveCount2 > 2) {
+				// We've only seen examples with 0, 1 or 2 z moves. We need to take a look.
+				s.onWarning?.(
+					ACTION_ERROR_CODES.HEURISTIC_SMELL,
+					`Detected a group with more than two z moves after toolchange at line ${s.currentLineNumber}.`,
 				);
 			}
 		}
@@ -385,9 +414,7 @@ export const processToolchange: Action = (c, s) => {
 			throw newGCodeError('Failed to detect XY move after toolchange.', c, s);
 		}
 
-		c.line = s.kPrinterHasRmmuHub
-			? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange.z : ''}`
-			: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
+		c.line = `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
 
 		// This is the only action that handles `Tn` lines.
 		return ActionResult.Stop;

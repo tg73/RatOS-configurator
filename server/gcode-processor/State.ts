@@ -51,7 +51,6 @@ export interface SerializedState {
 export class State {
 	constructor(
 		public readonly kPrinterHasIdex: boolean,
-		public readonly kPrinterHasRmmuHub: boolean,
 		public readonly kQuickInpsectionOnly: boolean,
 		public readonly kAllowUnsupportedSlicerVersions: boolean,
 		public readonly onWarning?: (code: string, message: string) => void,

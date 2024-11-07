@@ -142,7 +142,6 @@ export const postprocessor = (program: Command) => {
 	program
 		.command('postprocess')
 		.description('Postprocess a gcode file for RatOS')
-		.option('-r, --rmmu', 'Postprocess for a printer with an RMMU')
 		.option('--non-interactive', 'Output ndjson to stdout instead of rendering a UI')
 		.option('-i, --idex', 'Postprocess for an IDEX printer')
 		.option('-o, --overwrite', 'Overwrite the output file if it exists')
@@ -178,7 +177,6 @@ export const postprocessor = (program: Command) => {
 
 			const opts = {
 				idex: args.idex,
-				rmmu: args.rmmu,
 				overwrite: args.overwrite || args.overwriteInput,
 				allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
 				onProgress,

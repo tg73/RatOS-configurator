@@ -43,7 +43,16 @@ export type AnalysisResult =
 			SerializedState,
 			'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'
 	  >);
+
 export class InspectionIsComplete extends Error {}
+
+export interface GCodeProcessorOptions {
+	printerHasIdex?: boolean;
+	quickInspectionOnly?: boolean;
+	allowUnsupportedSlicerVersions?: boolean;
+	onWarning?: (code: string, message: string) => void;
+	abortSignal?: AbortSignal;
+}
 
 /**
  * Processes a stream of text lines read-forward-once, analysing and transforming on the fly.
@@ -56,21 +65,13 @@ export class InspectionIsComplete extends Error {}
  * by random access changes to the output file at the end of streaming.
  **/
 export class GCodeProcessor extends SlidingWindowLineProcessor {
-	constructor(
-		printerHasIdex: boolean,
-		printerHasRmmuHub: boolean,
-		quickInspectionOnly: boolean,
-		allowUnsupportedSlicerVersions: boolean,
-		onWarning?: (code: string, message: string) => void,
-		abortSignal?: AbortSignal,
-	) {
-		super(20, 100, abortSignal);
+	constructor(opts: GCodeProcessorOptions) {
+		super(20, 100, opts?.abortSignal);
 		this.#state = new State(
-			printerHasIdex,
-			printerHasRmmuHub,
-			quickInspectionOnly,
-			allowUnsupportedSlicerVersions,
-			onWarning,
+			!!opts.printerHasIdex,
+			!!opts.quickInspectionOnly,
+			!!opts.allowUnsupportedSlicerVersions,
+			opts.onWarning,
 		);
 	}
 
@@ -211,13 +212,6 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 
 			if (s.usedTools.length > 0) {
 				toAdd += ` USED_TOOLS=${s.usedTools.join()}`;
-
-				const wipeAccel = s.configSection?.get('wipe_tower_acceleration');
-				if (wipeAccel) {
-					toAdd += ` WIPE_ACCEL=${wipeAccel}`;
-				} else if (LEGACY_MODE) {
-					toAdd += ` WIPE_ACCEL=0`;
-				}
 			}
 
 			if (toAdd) {
