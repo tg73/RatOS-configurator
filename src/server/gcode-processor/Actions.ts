@@ -157,7 +157,7 @@ export const getGcodeInfo: Action = (c, s) => {
 
 export const getStartPrint: Action = (c, s) => {
 	const match =
-		/^(START_PRINT|RMMU_START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
+		/^(START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
 			c.line,
 		);
 	if (match) {
@@ -184,7 +184,7 @@ export const getStartPrint: Action = (c, s) => {
 		// a better UX.
 		// TODO: Make this behaviour configurable, eg add to opts on public API, State holds opts.
 		throw new GCodeError(
-			'The START_PRINT or RMMU_START_PRINT command has not been found within the first 5000 lines of the file. Please refer to the slicer configuration instructions.',
+			'The START_PRINT command has not been found within the first 5000 lines of the file. Please refer to the slicer configuration instructions.',
 		);
 	}
 
@@ -406,9 +406,7 @@ export const processToolchange: Action = (c, s) => {
 			throw newGCodeError('Failed to detect XY move after toolchange.', c, s);
 		}
 
-		c.line = s.kPrinterHasRmmuHub
-			? `TOOL T=${tool} X=${xyMoveAfterToolchange.x} Y=${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z=' + zMoveAfterToolchange.z : ''}`
-			: `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
+		c.line = `T${tool} X${xyMoveAfterToolchange.x} Y${xyMoveAfterToolchange.y}${zMoveAfterToolchange ? ' Z' + zMoveAfterToolchange.z : ''}`;
 
 		// This is the only action that handles `Tn` lines.
 		return ActionResult.Stop;

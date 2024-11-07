@@ -44,7 +44,6 @@ type ProcessorResult = AnalysisResult & {
 
 interface CommonOptions {
 	idex?: boolean;
-	rmmu?: boolean;
 	overwrite?: boolean;
 	allowUnsupportedSlicerVersions?: boolean;
 	onProgress?: (report: progress.Progress) => void;
@@ -80,14 +79,13 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 		};
 	}
 
-	const gcodeProcessor = new GCodeProcessor(
-		!!options.idex,
-		!!options.rmmu,
-		!options.fullInspection,
-		!!options.allowUnsupportedSlicerVersions,
-		options.onWarning,
-		options.abortSignal,
-	);
+	const gcodeProcessor = new GCodeProcessor({
+		printerHasIdex: options.idex,
+		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+		quickInspectionOnly: !options.fullInspection,
+		abortSignal: options.abortSignal,
+		onWarning: options.onWarning,
+	});
 	const progressStream = progress({ length: inputStat.size });
 	if (options.onProgress) {
 		progressStream.on('progress', options.onProgress);
@@ -146,14 +144,13 @@ export async function processGCode(
 	}
 	try {
 		fh = await open(outputFile, 'w');
-		const gcodeProcessor = new GCodeProcessor(
-			!!options.idex,
-			!!options.rmmu,
-			false,
-			!!options.allowUnsupportedSlicerVersions,
-			options.onWarning,
-			options.abortSignal,
-		);
+		const gcodeProcessor = new GCodeProcessor({
+			printerHasIdex: options.idex,
+			allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+			quickInspectionOnly: false,
+			abortSignal: options.abortSignal,
+			onWarning: options.onWarning,
+		});
 		const encoder = new BookmarkingBufferEncoder(undefined, undefined, options.abortSignal);
 		const progressStream = progress({ length: inputStat.size });
 		if (options.onProgress) {

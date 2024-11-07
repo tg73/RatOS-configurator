@@ -41,7 +41,13 @@ class NullSink extends Writable {
 }
 
 async function processToNullWithoutBookmarkProcessing(gcodePath: string, abortSignal?: AbortSignal) {
-	const gcodeProcessor = new GCodeProcessor(true, false, false, true, () => {}, abortSignal);
+	const gcodeProcessor = new GCodeProcessor({
+		printerHasIdex: true,
+		quickInspectionOnly: false,
+		allowUnsupportedSlicerVersions: false,
+		onWarning: () => {},
+		abortSignal: abortSignal,
+	});
 	const encoder = new BookmarkingBufferEncoder(undefined, undefined, abortSignal);
 	await pipeline(createReadStream(gcodePath), split(), gcodeProcessor, encoder, new NullSink());
 }
@@ -146,8 +152,6 @@ describe('other', async () => {
 	});
 });
 
-// For now, removing the RMMU variant tests, as Helge has a separate unreleased processor for this,
-// so testing is pointless for now.
 describe('output equivalence', { timeout: 60000 }, async () => {
 	test.each(await glob('**/*.gcode', { cwd: path.join(__dirname, 'fixtures', 'slicer_output') }))(
 		'%s',
@@ -161,12 +165,18 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 			let fh: FileHandle | undefined = undefined;
 			try {
 				fh = await fs.open(outputPath, 'w');
-				const gcodeProcessor = new GCodeProcessor(true, false, false, false, (c, m) => {
-					// If some specific warning is acceptable during this test, add logic here to ignore it.
-					// Generally, we don't want to encounter warnings in tests.
-					console.warn(`  Warning: ${m} (${c})`);
-					gotWarnings = true;
+				const gcodeProcessor = new GCodeProcessor({
+					printerHasIdex: true,
+					quickInspectionOnly: false,
+					allowUnsupportedSlicerVersions: false,
+					onWarning: (c, m) => {
+						// If some specific warning is acceptable during this test, add logic here to ignore it.
+						// Generally, we don't want to encounter warnings in tests.
+						console.warn(`  Warning: ${m} (${c})`);
+						gotWarnings = true;
+					},
 				});
+
 				const encoder = new BookmarkingBufferEncoder();
 
 				await pipeline(
