@@ -1075,31 +1075,6 @@ export const constructKlipperConfigHelpers = async (
 		renderSaveVariables(options?: VAOCControlPoints) {
 			return extrasGenerator.generateSaveVariables(options).join('\n');
 		},
-		renderUserMacroVariableOverrides(size?: number) {
-			const result: string[] = [
-				`variable_macro_travel_speed: ${this.getMacroTravelSpeed()}`,
-				`variable_macro_travel_accel: ${this.getMacroTravelAccel()}`,
-			];
-			const toolheads = utils.getToolheads();
-			const isIdex = toolheads.some((th) => th.getMotionAxis() === PrinterAxis.dual_carriage);
-			if (isIdex) {
-				result.push(`variable_toolchange_travel_speed: ${this.getMacroTravelSpeed()}     # parking travel speed`);
-				result.push(`variable_toolchange_travel_accel: ${this.getMacroTravelAccel()}     # parking travel accel`);
-				result.push(
-					`variable_shaper_x_freq: [0, 0, 0, 0]                    # shaper frequency [T0, T1, COPY, MIRROR]`,
-				);
-				result.push(
-					`variable_shaper_y_freq: [0, 0, 0, 0]                    # shaper frequency [T0, T1, COPY, MIRROR]`,
-				);
-				result.push(
-					`variable_shaper_x_type: ["mzv", "mzv", "mzv", "mzv"]    # shaper frequency algorythm [T0, T1, COPY, MIRROR]`,
-				);
-				result.push(
-					`variable_shaper_y_type: ["mzv", "mzv", "mzv", "mzv"]    # shaper frequency algorythm [T0, T1, COPY, MIRROR]`,
-				);
-			}
-			return utils.formatInlineComments(result).join('\n');
-		},
 		renderControllerFan() {
 			let result: string[] = [];
 			if (config.controllerFan.id === 'none') {
