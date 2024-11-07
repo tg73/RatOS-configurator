@@ -161,8 +161,8 @@ export const getStartPrint: Action = (c, s) => {
 			c.line,
 		);
 	if (match) {
-		// Fix colour variable format and pad for later modification
-		c.line = c.line.replace('#', '').padEnd(c.line.length + 250);
+		// Pad for later modification
+		c.line = c.line.padEnd(c.line.length + 250);
 		c.bookmarkKey = Symbol('START_PRINT');
 		s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
 
