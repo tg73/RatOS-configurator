@@ -198,7 +198,7 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 				false,
 				'One or more warnings were raised during processing, check console output for details. Correct tests must not produce warnings.',
 			);
-			const expectedPath = path.join(__dirname, 'fixtures', 'transformed', fixtureFile);
+			const expectedPath = path.join(__dirname, 'fixtures', 'expected', fixtureFile);
 			await processedGCodeFilesAreEquivalent(expectedPath, outputPath);
 		},
 	);
