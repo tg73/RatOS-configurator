@@ -156,36 +156,44 @@ export const getGcodeInfo: Action = (c, s) => {
 };
 
 export const getStartPrint: Action = (c, s) => {
-	const match =
-		/^(START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
-			c.line,
-		);
-	if (match) {
-		// Pad for later modification
-		c.line = c.line.padEnd(c.line.length + 250);
-		c.bookmarkKey = Symbol('START_PRINT');
-		s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
+	// Quick skip for comment lines, there can be lots for thumbnails before we get to START_PRINT.
+	if (!c.line.startsWith(';')) {
+		const spMatch =
+			/^(START_PRINT)(?=[ $])((?=.*(\sINITIAL_TOOL=(?<INITIAL_TOOL>(\d+))))|)((?=.*(\sEXTRUDER_OTHER_LAYER_TEMP=(?<EXTRUDER_OTHER_LAYER_TEMP>(\d+(,\d+)*))))|)/i.exec(
+				c.line,
+			);
 
-		const initialTool = match.groups?.INITIAL_TOOL;
-		if (initialTool) {
-			s.usedTools.push(initialTool);
+		if (spMatch) {
+			// Pad for later modification
+			c.line = c.line.padEnd(c.line.length + 250);
+			c.bookmarkKey = Symbol('START_PRINT');
+			s.startPrintLine = new BookmarkedLine(c.line, c.bookmarkKey);
+
+			const initialTool = spMatch.groups?.INITIAL_TOOL;
+			if (initialTool) {
+				s.usedTools.push(initialTool);
+			}
+
+			const extruderOtherLayerTemp = spMatch?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
+			if (extruderOtherLayerTemp) {
+				s.extruderTemps = extruderOtherLayerTemp.split(',');
+			}
+
+			return ActionResult.RemoveAndStop;
 		}
 
-		const extruderOtherLayerTemp = match?.groups?.EXTRUDER_OTHER_LAYER_TEMP;
-		if (extruderOtherLayerTemp) {
-			s.extruderTemps = extruderOtherLayerTemp.split(',');
+		const cmd = parseCommonGCodeCommandLine(c.line);
+
+		if (
+			cmd &&
+			((cmd.letter === 'G' && (cmd.value === '1' || cmd.value === '2' || cmd.value === '3')) || cmd.letter === 'T')
+		) {
+			throw newGCodeError(
+				'The START_PRINT command was not found before the first move or toolchange instruction. Please refer to the slicer configuration instructions.',
+				c,
+				s,
+			);
 		}
-
-		return ActionResult.RemoveAndStop;
-	}
-
-	if (s.currentLineNumber > 5000) {
-		// Most likely the START_PRINT line is missing. If this is a huge file, failing fast will be
-		// a better UX.
-		// TODO: Make this behaviour configurable, eg add to opts on public API, State holds opts.
-		throw new GCodeError(
-			'The START_PRINT command has not been found within the first 5000 lines of the file. Please refer to the slicer configuration instructions.',
-		);
 	}
 
 	// Stop at this point in the action sequence until we find START_LINE. If any actions need to inspect pre-START_LINE,

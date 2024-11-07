@@ -135,6 +135,15 @@ async function processedGCodeFilesAreEquivalent(expectedPath: string, actualPath
 }
 
 describe('other', async () => {
+	test('START_PRINT must occur before first move or toolchange', async () => {
+		await expect(
+			async () =>
+				await processToNullWithoutBookmarkProcessing(
+					path.join(__dirname, 'fixtures', 'other', 'without_start_print.gcode'),
+				),
+		).rejects.toThrow(/START_PRINT command was not found before the first move or toolchange instruction/);
+	});
+
 	test('G2/G3 arcs are not supported', async () => {
 		await expect(
 			async () =>
