@@ -306,8 +306,7 @@ export const processToolchange: Action = (c, s) => {
 		// Look backwards:
 		// - skip if a purge tower is used
 		// - stop looking on any X and/or Y move
-		// - remove all Z moves
-		// - remove all E moves
+		// - remove all E and Z moves except those in the two lines directly under a `;WIPE_END` line
 		if (!s.hasPurgeTower) {
 			let foundStop = false;
 			for (let scan of c.scanBack(19)) {
@@ -319,8 +318,12 @@ export const processToolchange: Action = (c, s) => {
 						break;
 					}
 
-					// Remove any E or Z moves:
-					if (cmd.e || cmd.z) {
+					// Remove any E or Z moves except those in the two lines directly under a `;WIPE_END` line:
+					if (
+						(cmd.e || cmd.z) &&
+						!scan.getLine(-1).line.startsWith(';WIPE_END') &&
+						!scan.getLine(-2).line.startsWith(';WIPE_END')
+					) {
 						scan.prepend(REMOVED_BY_RATOS);
 					}
 				}
@@ -342,12 +345,14 @@ export const processToolchange: Action = (c, s) => {
 		// - stop looking on any subsequent XY move
 		// - If there's no purge tower:
 		//   - remove all E moves
-		//   - remove all z moves, noting the last move encountered
+		//   - remove all but the last z move, noting the last move encountered
 		let xyMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
 		let zMoveAfterToolchange: CommonGCodeCommand | undefined = undefined;
-		let zMoveCount = 0;
+		let zMoveCount1 = 0;
+		let zMoveCount2 = 0;
 		{
 			let foundStop = false;
+			let prevZMove: ProcessLineContext | undefined;
 			for (let scan of c.scanForward(19)) {
 				const cmd = parseCommonGCodeCommandLine(scan.line);
 				if (cmd && cmd.letter === 'G' && cmd.value === '1') {
@@ -366,8 +371,14 @@ export const processToolchange: Action = (c, s) => {
 							scan.prepend(REMOVED_BY_RATOS);
 						} else if (cmd.z) {
 							zMoveAfterToolchange = cmd;
-							scan.prepend(REMOVED_BY_RATOS);
-							++zMoveCount;
+							// Remove all but the last z move
+							prevZMove?.prepend(REMOVED_BY_RATOS);
+							prevZMove = scan;
+							if (!xyMoveAfterToolchange) {
+								++zMoveCount1;
+							} else {
+								++zMoveCount2;
+							}
 						}
 					}
 				}
@@ -382,11 +393,11 @@ export const processToolchange: Action = (c, s) => {
 				);
 			}
 
-			if (zMoveCount > 2) {
+			if (zMoveCount1 > 2 || zMoveCount2 > 2) {
 				// We've only seen examples with 0, 1 or 2 z moves. We need to take a look.
 				s.onWarning?.(
 					ACTION_ERROR_CODES.HEURISTIC_SMELL,
-					`Detected more than two z moves after toolchange at line ${s.currentLineNumber}.`,
+					`Detected a group with more than two z moves after toolchange at line ${s.currentLineNumber}.`,
 				);
 			}
 		}
