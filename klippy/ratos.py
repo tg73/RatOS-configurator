@@ -42,7 +42,8 @@ class RatOS:
 	def _connect(self):
 		self.v_sd = self.printer.lookup_object('virtual_sdcard', None)
 		self.sdcard_dirname = self.v_sd.sdcard_dirname
-		self.bed_mesh = self.printer.lookup_object('bed_mesh')
+		if self.config.has_section("bed_mesh"):
+			self.bed_mesh = self.printer.lookup_object('bed_mesh')
 		self.dual_carriage = None
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
