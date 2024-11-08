@@ -103,22 +103,62 @@ variable_filament_load_speed: 5
 
 #############################################################################################################
 ### LCD
-### Pick your LCD configuration
+### The pins in this section are only valid for Prusa Einsy. Uncomment to use.
 #############################################################################################################
-[include RatOS/printers/prusa-mk3s/display.cfg]
+#[display]
+#lcd_type: hd44780
+#rs_pin: PD5
+#e_pin: PF7
+#d4_pin: PF5
+#d5_pin: PG4
+#d6_pin: PH7
+#d7_pin: PG3
+#encoder_pins: ^PJ1,^PJ2
+#click_pin: ^!PH6
+
+#[output_pin BEEPER_pin]
+#pin: PH2
+#pwm: True
+#value: 0
+#shutdown_value:0
+#cycle_time: 0.001
+#scale: 1000
+
+#[menu __filament __load]
+#type: command
+#name: Load Filament
+#gcode:
+#    LOAD_FILAMENT
+
+#[menu __filament __unload]
+#type: command
+#name: Unload Filament
+#gcode:
+#    UNLOAD_FILAMENT
 
 #############################################################################################################
 ### FILAMENT SENSOR
-### Pick your filament sensor configuration
+### The pins in this section are only valid for Prusa Einsy. Uncomment to use.
 #############################################################################################################
-[include RatOS/sensors/prusa-mk3s-filament-switch.cfg]
+#[filament_switch_sensor toolhead_filament_sensor_t0]
+#pause_on_runout: False
+#event_delay: 3.0
+#pause_delay: 0.01
+#switch_pin: ^!PK0
+#runout_gcode:
+#    _ON_TOOLHEAD_FILAMENT_SENSOR_RUNOUT TOOLHEAD=0
+#insert_gcode:
+#    _ON_TOOLHEAD_FILAMENT_SENSOR_INSERT TOOLHEAD=0
 
 #############################################################################################################
 ### FANS
-### Pick your fan configuration
+### Use 100hz pwm
 #############################################################################################################
-[include RatOS/4pin-fans/toolhead-fan-100hz.cfg]
-[include RatOS/4pin-fans/part-cooling-fan-100hz.cfg]
+[heater_fan toolhead_cooling_fan]
+cycle_time: 0.001
+
+[fan part_cooling_fan]
+cycle_time: 0.001
 
 #############################################################################################################
 ### USER OVERRIDES & CUSTOM CONFIGURATION
