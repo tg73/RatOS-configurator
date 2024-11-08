@@ -12,7 +12,8 @@ import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger.ts';
 import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions.ts';
 import { loadEnvironment } from '@/cli/util.tsx';
-import { GCodeProcessorError } from '@/server/gcode-processor/errors.ts';
+import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors.ts';
+import { formatZodError } from '@schema-hub/zod-error-formatter';
 
 const ProgressReportUI: React.FC<{
 	report?: Progress;
@@ -52,6 +53,16 @@ const ProgressReportUI: React.FC<{
 	);
 };
 
+const GcodeInfoZod = z.object({
+	generator: z.string(),
+	generatorVersion: z.string(),
+	flavour: z.number(),
+	generatorTimestamp: z.string(),
+	ratosDialectVersion: z.string().optional(),
+	processedByRatOSVersion: z.string().optional(),
+	processedByRatOSTimestamp: z.string().optional(),
+});
+
 export const PostProcessorCLIOutput = z
 	.object({
 		result: z.literal('error'),
@@ -79,31 +90,18 @@ export const PostProcessorCLIOutput = z
 					hasPurgeTower: z.boolean().optional(),
 					configSection: z.record(z.string(), z.string()).optional(),
 					usedTools: z.array(z.string()),
-					gcodeInfo: z.object({
-						generator: z.string(),
-						generatorVersion: z.string(),
-						flavour: z.number(),
-						generatorTimestamp: z.string(),
-						ratosDialectVersion: z.string().optional(),
-						processedByRatOSVersion: z.string().optional(),
-						processedByRatOSTimestamp: z.string().optional(),
-					}),
+					gcodeInfo: GcodeInfoZod,
 				})
 				.or(
-					z
-						.object({
-							wasAlreadyProcessed: z.boolean(),
-							gcodeInfo: z.object({
-								generator: z.string(),
-								generatorVersion: z.string(),
-								flavour: z.number(),
-								generatorTimestamp: z.string(),
-								ratosDialectVersion: z.string().optional(),
-								processedByRatOSVersion: z.string().optional(),
-								processedByRatOSTimestamp: z.string().optional(),
-							}),
-						})
-						.passthrough(),
+					z.object({
+						extruderTemps: z.array(z.string()).optional(),
+						firstMoveX: z.string().optional(),
+						firstMoveY: z.string().optional(),
+						hasPurgeTower: z.boolean().optional(),
+						configSection: z.record(z.string(), z.string()).optional(),
+						wasAlreadyProcessed: z.boolean(),
+						gcodeInfo: GcodeInfoZod,
+					}),
 				),
 		}),
 	)
@@ -129,7 +127,8 @@ export const toPostProcessorCLIOutput = (obj: PostProcessorCLIOutput): void => {
 			echo(
 				JSON.stringify({
 					result: 'error',
-					message: `An error occurred while serializing postprocessor output`,
+					title: 'An error occurred while serializing postprocessor output',
+					message: `This is likely caused by loading a gcode file that was processed by a legacy version of the RatOS postprocessor.\n\n${formatZodError(e, obj).message}`,
 				} satisfies PostProcessorCLIOutput),
 			);
 		} else {
@@ -216,25 +215,27 @@ export const postprocessor = (program: Command) => {
 					});
 				}
 			} catch (e) {
-				let errorMessage = '';
+				let errorMessage =
+					'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
 				let errorTitle = 'An unexpected error occurred during post-processing';
-				if (e instanceof Error) {
+				if (e instanceof GCodeProcessorError) {
+					errorTitle = 'G-code could not be processed';
+					errorMessage = e.message;
+					if (e instanceof SlicerNotSupported) {
+						errorTitle = 'Unsupported slicer version';
+					}
+					if (e instanceof GCodeError && e.lineNumber) {
+						errorTitle += ` (line ${e.lineNumber})`;
+						errorMessage += `\n\nLine ${e.lineNumber}: ${e.line}`;
+					}
+				} else if (e instanceof Error) {
 					if ('code' in e && e.code === 'ENOENT' && 'path' in e) {
 						errorTitle = 'File not found';
 						errorMessage = `File ${e.path} not found`;
 					} else {
-						errorTitle = 'An unexpected error occurred during post-processing';
-						errorMessage =
-							'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
 						getLogger().error(e, 'Unexpected error while processing gcode file');
 					}
-				} else if (e instanceof GCodeProcessorError) {
-					errorTitle = 'G-code could not be processed';
-					errorMessage = e.message;
 				} else {
-					errorTitle = 'An unexpected error occurred during post-processing';
-					errorMessage =
-						'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
 					getLogger().error(e, 'Unexpected error while processing gcode file');
 				}
 				if (rerender && isInteractive) {
