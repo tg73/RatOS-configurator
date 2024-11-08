@@ -635,7 +635,12 @@ describe('server', async () => {
 					splitRes.forEach((l, i) => l.includes('gcode:') && gcodeBlocks.push(i));
 					for (const block of gcodeBlocks) {
 						try {
-							expect(splitRes[block + 1].startsWith('\t') || splitRes[block + 1].startsWith('  ')).toBeTruthy();
+							expect(
+								splitRes[block + 1].startsWith('\t') ||
+									splitRes[block + 1].startsWith('#\t') ||
+									splitRes[block + 1].startsWith('  ') ||
+									splitRes[block + 1].startsWith('#  '),
+							).toBeTruthy();
 						} catch (e) {
 							throw new Error(
 								`Failed to indent gcode block at line ${block + 1}:\n${annotatedLines.slice(Math.max(block - 4, 0), Math.min(block + 5, annotatedLines.length)).join('\n')}`,

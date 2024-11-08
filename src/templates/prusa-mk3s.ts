@@ -128,13 +128,13 @@ variable_filament_load_speed: 5
 #type: command
 #name: Load Filament
 #gcode:
-#    LOAD_FILAMENT
+#	LOAD_FILAMENT
 
 #[menu __filament __unload]
 #type: command
 #name: Unload Filament
 #gcode:
-#    UNLOAD_FILAMENT
+#	UNLOAD_FILAMENT
 
 #############################################################################################################
 ### FILAMENT SENSOR
@@ -146,9 +146,9 @@ variable_filament_load_speed: 5
 #pause_delay: 0.01
 #switch_pin: ^!PK0
 #runout_gcode:
-#    _ON_TOOLHEAD_FILAMENT_SENSOR_RUNOUT TOOLHEAD=0
+#	_ON_TOOLHEAD_FILAMENT_SENSOR_RUNOUT TOOLHEAD=0
 #insert_gcode:
-#    _ON_TOOLHEAD_FILAMENT_SENSOR_INSERT TOOLHEAD=0
+#	_ON_TOOLHEAD_FILAMENT_SENSOR_INSERT TOOLHEAD=0
 
 #############################################################################################################
 ### FANS
