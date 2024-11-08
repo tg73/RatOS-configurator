@@ -506,7 +506,7 @@ var require_help = __commonJS({
           }
           return term;
         }
-        function formatList(textArray) {
+        function formatList2(textArray) {
           return textArray.join("\n").replace(/^/gm, " ".repeat(itemIndentWidth));
         }
         let output = [`Usage: ${helper.commandUsage(cmd)}`, ""];
@@ -518,27 +518,27 @@ var require_help = __commonJS({
           return formatItem(helper.argumentTerm(argument), helper.argumentDescription(argument));
         });
         if (argumentList.length > 0) {
-          output = output.concat(["Arguments:", formatList(argumentList), ""]);
+          output = output.concat(["Arguments:", formatList2(argumentList), ""]);
         }
         const optionList = helper.visibleOptions(cmd).map((option) => {
           return formatItem(helper.optionTerm(option), helper.optionDescription(option));
         });
         if (optionList.length > 0) {
-          output = output.concat(["Options:", formatList(optionList), ""]);
+          output = output.concat(["Options:", formatList2(optionList), ""]);
         }
         if (this.showGlobalOptions) {
           const globalOptionList = helper.visibleGlobalOptions(cmd).map((option) => {
             return formatItem(helper.optionTerm(option), helper.optionDescription(option));
           });
           if (globalOptionList.length > 0) {
-            output = output.concat(["Global Options:", formatList(globalOptionList), ""]);
+            output = output.concat(["Global Options:", formatList2(globalOptionList), ""]);
           }
         }
         const commandList = helper.visibleCommands(cmd).map((cmd2) => {
           return formatItem(helper.subcommandTerm(cmd2), helper.subcommandDescription(cmd2));
         });
         if (commandList.length > 0) {
-          output = output.concat(["Commands:", formatList(commandList), ""]);
+          output = output.concat(["Commands:", formatList2(commandList), ""]);
         }
         return output.join("\n");
       }
@@ -70191,7 +70191,7 @@ var require_tools = __commonJS({
       return point < 32 ? JSON.stringify(str) : '"' + result + '"';
     }
     function asJson(obj, msg, num, time) {
-      const stringify2 = this[stringifySym];
+      const stringify3 = this[stringifySym];
       const stringifySafe = this[stringifySafeSym];
       const stringifiers = this[stringifiersSym];
       const end = this[endSym];
@@ -70233,7 +70233,7 @@ var require_tools = __commonJS({
               value = (stringifier || asString)(value);
               break;
             default:
-              value = (stringifier || stringify2)(value, stringifySafe);
+              value = (stringifier || stringify3)(value, stringifySafe);
           }
           if (value === void 0)
             continue;
@@ -70262,7 +70262,7 @@ var require_tools = __commonJS({
             msgStr = ',"' + messageKey + '":' + value;
             break;
           default:
-            value = (stringifier || stringify2)(value, stringifySafe);
+            value = (stringifier || stringify3)(value, stringifySafe);
             msgStr = ',"' + messageKey + '":' + value;
         }
       }
@@ -70275,7 +70275,7 @@ var require_tools = __commonJS({
     function asChindings(instance, bindings) {
       let value;
       let data = instance[chindingsSym];
-      const stringify2 = instance[stringifySym];
+      const stringify3 = instance[stringifySym];
       const stringifySafe = instance[stringifySafeSym];
       const stringifiers = instance[stringifiersSym];
       const wildcardStringifier = stringifiers[wildcardFirstSym];
@@ -70287,7 +70287,7 @@ var require_tools = __commonJS({
         const valid = key !== "level" && key !== "serializers" && key !== "formatters" && key !== "customLevels" && bindings.hasOwnProperty(key) && value !== void 0;
         if (valid === true) {
           value = serializers[key] ? serializers[key](value) : value;
-          value = (stringifiers[key] || wildcardStringifier || stringify2)(value, stringifySafe);
+          value = (stringifiers[key] || wildcardStringifier || stringify3)(value, stringifySafe);
           if (value === void 0)
             continue;
           data += ',"' + key + '":' + value;
@@ -70381,13 +70381,13 @@ var require_tools = __commonJS({
         return { opts, stream };
       };
     }
-    function stringify(obj, stringifySafeFn) {
+    function stringify2(obj, stringifySafeFn) {
       try {
         return JSON.stringify(obj);
       } catch (_2) {
         try {
-          const stringify2 = stringifySafeFn || this[stringifySafeSym];
-          return stringify2(obj);
+          const stringify3 = stringifySafeFn || this[stringifySafeSym];
+          return stringify3(obj);
         } catch (_3) {
           return '"[unable to serialize, circular reference is too complex to analyze]"';
         }
@@ -70417,7 +70417,7 @@ var require_tools = __commonJS({
       asJson,
       genLog,
       createArgsNormalizer,
-      stringify,
+      stringify: stringify2,
       buildFormatters,
       normalizeDestFileDescriptor
     };
@@ -70657,7 +70657,7 @@ var require_proto = __commonJS({
       asChindings,
       asJson,
       buildFormatters,
-      stringify
+      stringify: stringify2
     } = require_tools();
     var {
       version
@@ -70745,9 +70745,9 @@ var require_proto = __commonJS({
       }
       if (typeof options.redact === "object" && options.redact !== null || Array.isArray(options.redact)) {
         instance.redact = options.redact;
-        const stringifiers = redaction(instance.redact, stringify);
+        const stringifiers = redaction(instance.redact, stringify2);
         const formatOpts = { stringify: stringifiers[redactFmtSym] };
-        instance[stringifySym] = stringify;
+        instance[stringifySym] = stringify2;
         instance[stringifiersSym] = stringifiers;
         instance[formatOptsSym] = formatOpts;
       }
@@ -70831,13 +70831,13 @@ var require_safe_stable_stringify = __commonJS({
     "use strict";
     init_cjs_shim();
     var { hasOwnProperty: hasOwnProperty3 } = Object.prototype;
-    var stringify = configure();
-    stringify.configure = configure;
-    stringify.stringify = stringify;
-    stringify.default = stringify;
-    exports.stringify = stringify;
+    var stringify2 = configure();
+    stringify2.configure = configure;
+    stringify2.stringify = stringify2;
+    stringify2.default = stringify2;
+    exports.stringify = stringify2;
     exports.configure = configure;
-    module.exports = stringify;
+    module.exports = stringify2;
     var strEscapeSequencesRegExp = /[\u0000-\u001f\u0022\u005c\ud800-\udfff]|[\ud800-\udbff](?![\udc00-\udfff])|(?:[^\ud800-\udbff]|^)[\udc00-\udfff]/;
     var strEscapeSequencesReplacer = new RegExp(strEscapeSequencesRegExp, "g");
     var meta = [
@@ -71513,7 +71513,7 @@ ${originalIndentation}`;
             return fail ? fail(value) : void 0;
         }
       }
-      function stringify2(value, replacer, space) {
+      function stringify3(value, replacer, space) {
         if (arguments.length > 1) {
           let spacer = "";
           if (typeof space === "number") {
@@ -71535,7 +71535,7 @@ ${originalIndentation}`;
         }
         return stringifySimple("", value, []);
       }
-      return stringify2;
+      return stringify3;
     }
   }
 });
@@ -71707,7 +71707,7 @@ var require_pino = __commonJS({
       asChindings,
       buildSafeSonicBoom,
       buildFormatters,
-      stringify,
+      stringify: stringify2,
       normalizeDestFileDescriptor,
       noop: noop5
     } = require_tools();
@@ -71806,7 +71806,7 @@ var require_pino = __commonJS({
         formatters.bindings,
         formatters.log
       );
-      const stringifyFn = stringify.bind({
+      const stringifyFn = stringify2.bind({
         [stringifySafeSym]: stringifySafe
       });
       const stringifiers = redact ? redaction(redact, stringifyFn) : {};
@@ -71816,7 +71816,7 @@ var require_pino = __commonJS({
         [chindingsSym]: "",
         [serializersSym]: serializers2,
         [stringifiersSym]: stringifiers,
-        [stringifySym]: stringify,
+        [stringifySym]: stringify2,
         [stringifySafeSym]: stringifySafe,
         [formattersSym]: allFormatters
       });
@@ -71844,7 +71844,7 @@ var require_pino = __commonJS({
         [streamSym]: stream,
         [timeSym]: time2,
         [timeSliceIndexSym]: timeSliceIndex,
-        [stringifySym]: stringify,
+        [stringifySym]: stringify2,
         [stringifySafeSym]: stringifySafe,
         [stringifiersSym]: stringifiers,
         [endSym]: end,
@@ -73713,11 +73713,11 @@ var require_util = __commonJS({
       return typeof arg === "function";
     }
     exports.isFunction = isFunction2;
-    function isPrimitive(arg) {
+    function isPrimitive2(arg) {
       return arg === null || typeof arg === "boolean" || typeof arg === "number" || typeof arg === "string" || typeof arg === "symbol" || // ES6 symbol
       typeof arg === "undefined";
     }
-    exports.isPrimitive = isPrimitive;
+    exports.isPrimitive = isPrimitive2;
     exports.isBuffer = __require("buffer").Buffer.isBuffer;
     function objectToString(o) {
       return Object.prototype.toString.call(o);
@@ -99590,6 +99590,457 @@ function friendlyDateTime(dateTimeish) {
 
 // commands/postprocessor.tsx
 import path7 from "path";
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/formatter.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/format-issue.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-enum-value.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/list.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/tuple/non-empty-array.js
+init_cjs_shim();
+function isNonEmptyArray(list) {
+  return list.length > 0;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/list.js
+function joinList(values, separator, lastItemSeparator) {
+  const initialList = Array.from(values);
+  const lastItem = initialList.pop();
+  if (initialList.length === 0) {
+    return lastItem;
+  }
+  const joinedInitialList = initialList.join(separator);
+  return `${joinedInitialList}${lastItemSeparator}${lastItem}`;
+}
+function isParsedType(value) {
+  return typeof value === "object" && value !== null && Object.hasOwn(value, "type");
+}
+function stringify(value) {
+  if (isParsedType(value)) {
+    return value.type;
+  }
+  if (value === void 0) {
+    return "undefined";
+  }
+  if (typeof value === "symbol") {
+    return value.toString();
+  }
+  return JSON.stringify(value);
+}
+function formatList(values, lastItemSeparator) {
+  const escapedValues = values.map(stringify);
+  if (!isNonEmptyArray(escapedValues)) {
+    return "unknown";
+  }
+  return joinList(escapedValues, ", ", lastItemSeparator);
+}
+function formatOneOfList(values) {
+  const formattedList = formatList(values, " or ");
+  if (values.length > 1) {
+    return `one of ${formattedList}`;
+  }
+  return formattedList;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-enum-value.js
+function formatInvalidEnumValueIssueMessage(issue) {
+  const { options, received } = issue;
+  const receivedType = getParsedType(received);
+  const formattedOptions = formatOneOfList(options);
+  return `invalid enum value: expected ${formattedOptions}, but got ${receivedType}`;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-literal.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/path.js
+init_cjs_shim();
+var isNonEmptyPath = isNonEmptyArray;
+function formatPath(path9) {
+  return path9.reduce((currentFormattedPath, item, index) => {
+    if (typeof item === "number") {
+      return `${currentFormattedPath}[${item}]`;
+    }
+    if (index === 0) {
+      return item;
+    }
+    return `${currentFormattedPath}.${item}`;
+  }, "");
+}
+function isIndexable(value) {
+  return typeof value === "object" && value !== null;
+}
+function isMap(value) {
+  return value instanceof Map;
+}
+function isMapEntryPathItem(pathItem) {
+  return ["key", "value"].includes(pathItem);
+}
+function determinePathItemKind(pathItem) {
+  return typeof pathItem === "number" ? "key" : "property";
+}
+function findMapValueByPath(value, path9) {
+  if (isNonEmptyPath(path9)) {
+    const [mapEntryKey, keyOrValue, ...remainingPath] = path9;
+    if (keyOrValue !== void 0 && isMapEntryPathItem(keyOrValue)) {
+      const entry = Array.from(value.entries())[mapEntryKey];
+      if (entry !== void 0) {
+        if (keyOrValue === "key") {
+          return findValueByPath(entry[0], remainingPath);
+        }
+        return findValueByPath(entry[1], remainingPath);
+      }
+    }
+    return { found: false, pathItemKind: determinePathItemKind(mapEntryKey) };
+  }
+  return { found: true, value };
+}
+function findValueByPath(value, path9) {
+  if (isMap(value)) {
+    return findMapValueByPath(value, path9);
+  }
+  if (isNonEmptyPath(path9)) {
+    const [currentPathItem, ...remainingPath] = path9;
+    if (isIndexable(value) && Object.hasOwn(value, currentPathItem)) {
+      return findValueByPath(value[currentPathItem], remainingPath);
+    }
+    return { found: false, pathItemKind: determinePathItemKind(currentPathItem) };
+  }
+  return { found: true, value };
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-literal.js
+function formatPrimitiveValue(value) {
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+  return JSON.stringify(value);
+}
+function formatInvalidLiteralIssueMessage(issue, input) {
+  const result = findValueByPath(input, issue.path);
+  if (result.found) {
+    const received = getParsedType(issue.received);
+    const expected = formatPrimitiveValue(issue.expected);
+    return `invalid literal: expected ${expected}, but got ${received}`;
+  }
+  return `missing ${result.pathItemKind}`;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-string.js
+init_cjs_shim();
+function hasProperty(object, key) {
+  return Object.hasOwn(object, key);
+}
+function formatIncludesValidation(includes, position) {
+  if (position !== void 0) {
+    return `string must include "${includes}" at one ore more positions greater than or equal to ${position}`;
+  }
+  return `string must include "${includes}"`;
+}
+function formatInvalidStringIssueMessage(issue) {
+  const { validation } = issue;
+  if (validation === "regex") {
+    return "string doesn\u2019t match expected pattern";
+  }
+  if (typeof validation === "string") {
+    return `invalid ${validation}`;
+  }
+  if (hasProperty(validation, "includes")) {
+    return formatIncludesValidation(validation.includes, validation.position);
+  }
+  if (hasProperty(validation, "startsWith")) {
+    return `string must start with "${validation.startsWith}"`;
+  }
+  return `string must end with "${validation.endsWith}"`;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-type.js
+init_cjs_shim();
+function formatInvalidTypeIssueMessage(issue, input) {
+  const result = findValueByPath(input, issue.path);
+  if (result.found) {
+    return `expected ${issue.expected}, but got ${issue.received}`;
+  }
+  return `missing ${result.pathItemKind}`;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-union-discriminator.js
+init_cjs_shim();
+function formatInvalidUnionDiscriminatorIssueMessage(issue, input) {
+  const result = findValueByPath(input, issue.path);
+  if (result.found) {
+    const formattedOptions = formatOneOfList(issue.options);
+    const receivedValue = result.value;
+    const receivedType = getParsedType(receivedValue);
+    return `invalid discriminator: expected ${formattedOptions}, but got ${receivedType}`;
+  }
+  return "missing property";
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/invalid-union.js
+init_cjs_shim();
+function flattenAllIssues(errors) {
+  return errors.flatMap((error) => {
+    return error.issues.flatMap((issue) => {
+      if (issue.code === "invalid_union") {
+        return flattenAllIssues(issue.unionErrors);
+      }
+      return issue;
+    });
+  });
+}
+function isSamePath(pathA, pathB) {
+  if (pathA.length !== pathB.length) {
+    return false;
+  }
+  return pathA.every((element, index) => {
+    return element === pathB[index];
+  });
+}
+function isSupportedIssueWithSamePath(issue, expectedPath) {
+  return ["invalid_type", "invalid_literal"].includes(issue.code) && isSamePath(issue.path, expectedPath);
+}
+function filterSupportedIssuesWithSamePath(issues, expectedPath) {
+  return issues.filter((issue) => {
+    return isSupportedIssueWithSamePath(issue, expectedPath);
+  });
+}
+function determineReceivedValue(issue) {
+  if (issue.code === "invalid_type") {
+    return issue.received;
+  }
+  return getParsedType(issue.received);
+}
+function isPrimitive(value) {
+  return ["string", "number", "symbol", "bigint", "boolean", "undefined"].includes(typeof value) || value === null;
+}
+function determineExpectedValue(issue) {
+  if (issue.code === "invalid_type") {
+    return { type: issue.expected };
+  }
+  if (isPrimitive(issue.expected)) {
+    return issue.expected;
+  }
+  return JSON.stringify(issue.expected);
+}
+function hasValue(values, expectedValue) {
+  return values.some((value) => {
+    if (isParsedType(value) && isParsedType(expectedValue)) {
+      return value.type === expectedValue.type;
+    }
+    return value === expectedValue;
+  });
+}
+function removeDuplicateListValues(values) {
+  const uniqueValues = [];
+  for (const value of values) {
+    if (!hasValue(uniqueValues, value)) {
+      uniqueValues.push(value);
+    }
+  }
+  return uniqueValues;
+}
+function formatInvalidUnionIssueMessage(issue, input) {
+  const result = findValueByPath(input, issue.path);
+  if (result.found) {
+    const memberIssues = flattenAllIssues(issue.unionErrors);
+    const supportedIssues = filterSupportedIssuesWithSamePath(memberIssues, issue.path);
+    if (memberIssues.length === supportedIssues.length) {
+      const [firstIssue] = supportedIssues;
+      if (firstIssue !== void 0) {
+        const expectedValues = removeDuplicateListValues(supportedIssues.map(determineExpectedValue));
+        const receivedValue = determineReceivedValue(firstIssue);
+        return `invalid value: expected ${formatOneOfList(expectedValues)}, but got ${receivedValue}`;
+      }
+    }
+    return "invalid value doesn\u2019t match expected union";
+  }
+  return `missing ${result.pathItemKind}`;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/not-multiple-of.js
+init_cjs_shim();
+function formatNotMultipleOfIssueMessage(issue) {
+  return `number must be multiple of ${issue.multipleOf}`;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/too-big.js
+init_cjs_shim();
+var collectionTypes = /* @__PURE__ */ new Set(["string", "array", "set"]);
+var numericTypes = /* @__PURE__ */ new Set(["bigint", "number"]);
+function formatInclusivePredicate(issue, inclusiveVariant, nonInclusiveVariant) {
+  if (issue.inclusive) {
+    return inclusiveVariant;
+  }
+  return nonInclusiveVariant;
+}
+function formatPredicate(issue) {
+  if (issue.exact === true) {
+    return "exactly";
+  }
+  if (collectionTypes.has(issue.type)) {
+    return formatInclusivePredicate(issue, "at most", "less than");
+  }
+  if (numericTypes.has(issue.type)) {
+    return formatInclusivePredicate(issue, "less than or equal to", "less than");
+  }
+  return formatInclusivePredicate(issue, "smaller than or equal to", "smaller than");
+}
+function formatCollectionBoundary(issue) {
+  const singularSuffix = issue.type === "string" ? "character" : "element";
+  const suffix = issue.maximum === 1 ? singularSuffix : `${singularSuffix}s`;
+  return `${issue.maximum} ${suffix}`;
+}
+function formatCollection(issue) {
+  const predicate = formatPredicate(issue);
+  const boundary = formatCollectionBoundary(issue);
+  return `${issue.type} must contain ${predicate} ${boundary}`;
+}
+function formatNumeric(issue) {
+  const predicate = formatPredicate(issue);
+  return `${issue.type} must be ${predicate} ${issue.maximum}`;
+}
+function formatDate(issue) {
+  const predicate = formatPredicate(issue);
+  return `${issue.type} must be ${predicate} ${new Date(Number(issue.maximum)).toUTCString()}`;
+}
+function formatTooBigIssueMessage(issue) {
+  if (collectionTypes.has(issue.type)) {
+    return formatCollection(issue);
+  }
+  if (numericTypes.has(issue.type)) {
+    return formatNumeric(issue);
+  }
+  return formatDate(issue);
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/too-small.js
+init_cjs_shim();
+var collectionTypes2 = /* @__PURE__ */ new Set(["string", "array", "set"]);
+var numericTypes2 = /* @__PURE__ */ new Set(["bigint", "number"]);
+function formatInclusivePredicate2(issue, inclusiveVariant, nonInclusiveVariant) {
+  if (issue.inclusive) {
+    return inclusiveVariant;
+  }
+  return nonInclusiveVariant;
+}
+function formatPredicate2(issue) {
+  if (issue.exact === true) {
+    return "exactly";
+  }
+  if (collectionTypes2.has(issue.type)) {
+    return formatInclusivePredicate2(issue, "at least", "more than");
+  }
+  return formatInclusivePredicate2(issue, "greater than or equal to", "greater than");
+}
+function formatCollectionBoundary2(issue) {
+  const singularSuffix = issue.type === "string" ? "character" : "element";
+  const suffix = issue.minimum === 1 ? singularSuffix : `${singularSuffix}s`;
+  return `${issue.minimum} ${suffix}`;
+}
+function formatCollection2(issue) {
+  const predicate = formatPredicate2(issue);
+  const boundary = formatCollectionBoundary2(issue);
+  return `${issue.type} must contain ${predicate} ${boundary}`;
+}
+function formatNumeric2(issue) {
+  const predicate = formatPredicate2(issue);
+  return `${issue.type} must be ${predicate} ${issue.minimum}`;
+}
+function formatDate2(issue) {
+  const predicate = formatPredicate2(issue);
+  return `${issue.type} must be ${predicate} ${new Date(Number(issue.minimum)).toUTCString()}`;
+}
+function formatTooSmallIssueMessage(issue) {
+  if (collectionTypes2.has(issue.type)) {
+    return formatCollection2(issue);
+  }
+  if (numericTypes2.has(issue.type)) {
+    return formatNumeric2(issue);
+  }
+  return formatDate2(issue);
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/issue-specific/unrecognized-keys.js
+init_cjs_shim();
+function formatUnrecognizedKeysIssueMessage(issue) {
+  const formattedProperties = formatList(issue.keys, " and ");
+  const label = issue.keys.length > 1 ? "properties" : "property";
+  return `unexpected additional ${label}: ${formattedProperties}`;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/format-issue.js
+function formatSimpleMessage(message) {
+  return () => {
+    return message;
+  };
+}
+var issueCodeToFormatterMap = {
+  invalid_type: formatInvalidTypeIssueMessage,
+  invalid_literal: formatInvalidLiteralIssueMessage,
+  unrecognized_keys: formatUnrecognizedKeysIssueMessage,
+  too_big: formatTooBigIssueMessage,
+  too_small: formatTooSmallIssueMessage,
+  not_multiple_of: formatNotMultipleOfIssueMessage,
+  invalid_enum_value: formatInvalidEnumValueIssueMessage,
+  invalid_string: formatInvalidStringIssueMessage,
+  invalid_union_discriminator: formatInvalidUnionDiscriminatorIssueMessage,
+  invalid_union: formatInvalidUnionIssueMessage,
+  invalid_arguments: formatSimpleMessage("invalid function arguments"),
+  invalid_return_type: formatSimpleMessage("invalid function return type"),
+  invalid_date: formatSimpleMessage("invalid date"),
+  custom: formatSimpleMessage("invalid input"),
+  invalid_intersection_types: formatSimpleMessage("intersection results could not be merged"),
+  not_finite: formatSimpleMessage("number must be finite")
+};
+function formatIssue(issue, input) {
+  const { path: path9, code } = issue;
+  const formatter = issueCodeToFormatterMap[code];
+  const message = formatter(issue, input);
+  if (isNonEmptyPath(path9)) {
+    const formattedPath = formatPath(path9);
+    return `at ${formattedPath}: ${message}`;
+  }
+  return message;
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/formatted-error.js
+init_cjs_shim();
+function formatCombinedMessage(issues) {
+  if (issues.length === 1) {
+    return `Validation failed: ${issues[0]}`;
+  }
+  return `Validation failed with ${issues.length} issues:
+- ${issues.join("\n- ")}`;
+}
+var FormattedZodError = class extends Error {
+  issues;
+  constructor(issues) {
+    const fullMessage = formatCombinedMessage(issues);
+    super(fullMessage);
+    this.issues = issues;
+  }
+};
+function createFormattedZodError(issues) {
+  return new FormattedZodError(issues);
+}
+
+// ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/formatter.js
+function formatZodError(error, input) {
+  const formattedIssues = error.issues.map((issue) => {
+    return formatIssue(issue, input);
+  });
+  return createFormattedZodError(formattedIssues);
+}
+
+// commands/postprocessor.tsx
 var ProgressReportUI = ({ report, fileName, done, error }) => {
   const eta = report ? report.eta / 60 : 0;
   const percentage = report?.percentage ?? 0;
@@ -99598,6 +100049,15 @@ var ProgressReportUI = ({ report, fileName, done, error }) => {
   ).toHuman({ unitDisplay: "short", listStyle: "narrow", maximumFractionDigits: 0 });
   return /* @__PURE__ */ import_react64.default.createElement(Container, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, "Processing ", fileName, "..."), /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "row", columnGap: 1 }, report ? /* @__PURE__ */ import_react64.default.createElement(import_react64.default.Fragment, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, percentage.toFixed(2).padStart(6, " "), "%"), /* @__PURE__ */ import_react64.default.createElement(Box_default, { width: 30 }, /* @__PURE__ */ import_react64.default.createElement(ProgressBar, { value: report?.percentage ?? 0 })), /* @__PURE__ */ import_react64.default.createElement(Text, null, duration, " remaining")) : done ? /* @__PURE__ */ import_react64.default.createElement(StatusMessage, { variant: "success" }, "Done") : error ? /* @__PURE__ */ import_react64.default.createElement(StatusMessage, { variant: "error" }, error) : /* @__PURE__ */ import_react64.default.createElement(Text, { color: "gray" }, "Initializing post processor...")));
 };
+var GcodeInfoZod = z.object({
+  generator: z.string(),
+  generatorVersion: z.string(),
+  flavour: z.number(),
+  generatorTimestamp: z.string(),
+  ratosDialectVersion: z.string().optional(),
+  processedByRatOSVersion: z.string().optional(),
+  processedByRatOSTimestamp: z.string().optional()
+});
 var PostProcessorCLIOutput = z.object({
   result: z.literal("error"),
   title: z.string().optional(),
@@ -99621,28 +100081,17 @@ var PostProcessorCLIOutput = z.object({
       hasPurgeTower: z.boolean().optional(),
       configSection: z.record(z.string(), z.string()).optional(),
       usedTools: z.array(z.string()),
-      gcodeInfo: z.object({
-        generator: z.string(),
-        generatorVersion: z.string(),
-        flavour: z.number(),
-        generatorTimestamp: z.string(),
-        ratosDialectVersion: z.string().optional(),
-        processedByRatOSVersion: z.string().optional(),
-        processedByRatOSTimestamp: z.string().optional()
-      })
+      gcodeInfo: GcodeInfoZod
     }).or(
       z.object({
+        extruderTemps: z.array(z.string()).optional(),
+        firstMoveX: z.string().optional(),
+        firstMoveY: z.string().optional(),
+        hasPurgeTower: z.boolean().optional(),
+        configSection: z.record(z.string(), z.string()).optional(),
         wasAlreadyProcessed: z.boolean(),
-        gcodeInfo: z.object({
-          generator: z.string(),
-          generatorVersion: z.string(),
-          flavour: z.number(),
-          generatorTimestamp: z.string(),
-          ratosDialectVersion: z.string().optional(),
-          processedByRatOSVersion: z.string().optional(),
-          processedByRatOSTimestamp: z.string().optional()
-        })
-      }).passthrough()
+        gcodeInfo: GcodeInfoZod
+      })
     )
   })
 ).or(
@@ -99664,7 +100113,10 @@ var toPostProcessorCLIOutput = (obj) => {
       echo2(
         JSON.stringify({
           result: "error",
-          message: `An error occurred while serializing postprocessor output`
+          title: "An error occurred while serializing postprocessor output",
+          message: `This is likely caused by loading a gcode file that was processed by a legacy version of the RatOS postprocessor.
+
+${formatZodError(e, obj).message}`
         })
       );
     } else {
@@ -99733,23 +100185,28 @@ var postprocessor = (program3) => {
         });
       }
     } catch (e) {
-      let errorMessage = "";
+      let errorMessage = "An unexpected error occurred while processing the file, please download a debug-zip and report this issue.";
       let errorTitle = "An unexpected error occurred during post-processing";
-      if (e instanceof Error) {
+      if (e instanceof GCodeProcessorError) {
+        errorTitle = "G-code could not be processed";
+        errorMessage = e.message;
+        if (e instanceof SlicerNotSupported) {
+          errorTitle = "Unsupported slicer version";
+        }
+        if (e instanceof GCodeError && e.lineNumber) {
+          errorTitle += ` (line ${e.lineNumber})`;
+          errorMessage += `
+
+Line ${e.lineNumber}: ${e.line}`;
+        }
+      } else if (e instanceof Error) {
         if ("code" in e && e.code === "ENOENT" && "path" in e) {
           errorTitle = "File not found";
           errorMessage = `File ${e.path} not found`;
         } else {
-          errorTitle = "An unexpected error occurred during post-processing";
-          errorMessage = "An unexpected error occurred while processing the file, please download a debug-zip and report this issue.";
           getLogger().error(e, "Unexpected error while processing gcode file");
         }
-      } else if (e instanceof GCodeProcessorError) {
-        errorTitle = "G-code could not be processed";
-        errorMessage = e.message;
       } else {
-        errorTitle = "An unexpected error occurred during post-processing";
-        errorMessage = "An unexpected error occurred while processing the file, please download a debug-zip and report this issue.";
         getLogger().error(e, "Unexpected error while processing gcode file");
       }
       if (rerender && isInteractive) {

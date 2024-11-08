@@ -89,6 +89,9 @@ importers:
       '@recoiljs/refine':
         specifier: ^0.1.1
         version: 0.1.1
+      '@schema-hub/zod-error-formatter':
+        specifier: ^0.0.8
+        version: 0.0.8(zod@3.22.4)
       '@tailwindcss/container-queries':
         specifier: ^0.1.1
         version: 0.1.1(tailwindcss@3.4.3)
@@ -1804,6 +1807,12 @@ packages:
 
   '@rushstack/eslint-patch@1.6.1':
     resolution: {integrity: sha512-UY+FGM/2jjMkzQLn8pxcHGMaVLh9aEitG3zY2CiY7XHdLiz3bZOwa6oDxNqEMv7zZkV+cj5DOdz0cQ1BP5Hjgw==}
+
+  '@schema-hub/zod-error-formatter@0.0.8':
+    resolution: {integrity: sha512-Tm0XHGCRc8b+XM3ncZ+cbCHKMtq9YNln4dR483kXUZ9IOS5hG/FXepC36T9GCKnhsoUGSsAo4pzkN8T74SHqow==}
+    engines: {node: ^22}
+    peerDependencies:
+      zod: ^3.22.4
 
   '@sinclair/typebox@0.25.24':
     resolution: {integrity: sha512-XJfwUVUKDHF5ugKwIcxEgc9k8b7HbznCp6eUfWgu710hMPNIO4aw4/zB5RogDQz8nd6gyCDpU9O/m6qYEWY6yQ==}
@@ -6743,6 +6752,10 @@ snapshots:
     optional: true
 
   '@rushstack/eslint-patch@1.6.1': {}
+
+  '@schema-hub/zod-error-formatter@0.0.8(zod@3.22.4)':
+    dependencies:
+      zod: 3.22.4
 
   '@sinclair/typebox@0.25.24': {}
 
