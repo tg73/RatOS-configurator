@@ -104,9 +104,9 @@ export const getGcodeInfo: Action = (c, s) => {
 						{ cause: parsed },
 					);
 				case GCodeFlavour.PrusaSlicer:
-					if (semver.neq('2.8.0', parsed.generatorVersion)) {
+					if (!semver.satisfies(parsed.generatorVersion, '2.8.0 || 2.8.1')) {
 						throw new SlicerNotSupported(
-							`Only version 2.8.0 of PrusaSlicer is supported. Version ${parsed.generatorVersion} is not supported.`,
+							`Only versions 2.8.0 and 2.8.1 of PrusaSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
 							{ cause: parsed },
 						);
 					}
