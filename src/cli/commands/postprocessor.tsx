@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import { Progress } from 'progress-stream';
-import { inspectGCode, processGCode } from '@/server/gcode-processor/gcode-processor.ts';
+import {
+	inspectGCode,
+	processGCode,
+	PROGRESS_STREAM_SPEED_STABILIZATION_TIME,
+} from '@/server/gcode-processor/gcode-processor.ts';
 import { echo, fs, tmpfile } from 'zx';
 import { ProgressBar, StatusMessage } from '@inkjs/ui';
 import { Box, render, Text } from 'ink';
@@ -164,7 +168,11 @@ export const postprocessor = (program: Command) => {
 			} else {
 				onProgress = (report) => {
 					const progressTens = Math.floor(report.percentage / 10) * 10;
-					if (progressTens > lastProgressPercentage && report.percentage) {
+					// Don't report progress until progress is 1% or runtime is > 5s where the speed should have stabilized and the ETA should be somewhat accurate.
+					if (
+						progressTens > lastProgressPercentage &&
+						(report.percentage >= 1 || report.runtime > PROGRESS_STREAM_SPEED_STABILIZATION_TIME)
+					) {
 						lastProgressPercentage = progressTens;
 						toPostProcessorCLIOutput({
 							result: 'progress',
