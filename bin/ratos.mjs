@@ -92285,6 +92285,7 @@ async function replaceBookmarkedGcodeLine(fh, bookmark, replacementLine) {
 
 // ../server/gcode-processor/gcode-processor.ts
 import { Writable } from "node:stream";
+var PROGRESS_STREAM_SPEED_STABILIZATION_TIME = 3;
 var NullSink = class extends Writable {
   _write(chunk, encoding, callback) {
     callback();
@@ -92367,7 +92368,7 @@ async function processGCode(inputFile, outputFile, options) {
       onWarning: options.onWarning
     });
     const encoder = new BookmarkingBufferEncoder(void 0, void 0, options.abortSignal);
-    const progressStream = (0, import_progress_stream.default)({ length: inputStat.size });
+    const progressStream = (0, import_progress_stream.default)({ length: inputStat.size, speed: PROGRESS_STREAM_SPEED_STABILIZATION_TIME });
     if (options.onProgress) {
       progressStream.on("progress", options.onProgress);
     }
@@ -100140,7 +100141,7 @@ var postprocessor = (program3) => {
     } else {
       onProgress = (report) => {
         const progressTens = Math.floor(report.percentage / 10) * 10;
-        if (progressTens > lastProgressPercentage && report.percentage) {
+        if (progressTens > lastProgressPercentage && (report.percentage >= 1 || report.runtime > PROGRESS_STREAM_SPEED_STABILIZATION_TIME)) {
           lastProgressPercentage = progressTens;
           toPostProcessorCLIOutput({
             result: "progress",
