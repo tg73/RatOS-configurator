@@ -100155,18 +100155,32 @@ var postprocessor = (program3) => {
       allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
       onProgress,
       onWarning: (code, message) => {
-        getLogger().warn(code, message);
-        if (code === "UNSUPPORTED_SLICER_VERSION" /* UNSUPPORTED_SLICER_VERSION */) {
-          toPostProcessorCLIOutput({
-            result: "warning",
-            title: "Unsupported slicer version",
-            message
-          });
+        getLogger().trace(code, "Warning during processing: " + message);
+        switch (code) {
+          case "UNSUPPORTED_SLICER_VERSION" /* UNSUPPORTED_SLICER_VERSION */:
+            toPostProcessorCLIOutput({
+              result: "warning",
+              title: "Unsupported slicer version",
+              message
+            });
+            break;
+          case "HEURISTIC_SMELL" /* HEURISTIC_SMELL */:
+            toPostProcessorCLIOutput({
+              result: "warning",
+              title: "Unexpected g-code sequence",
+              message
+            });
+            break;
+          default:
+            toPostProcessorCLIOutput({
+              result: "warning",
+              title: "Unexpected warning",
+              message
+            });
+            getLogger().warn(code, message);
+            break;
         }
       }
-      // Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
-      // Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
-      // onWarning: (code: string, message: string) => { /* TODO */ },
     };
     try {
       if (args.overwriteInput) {
