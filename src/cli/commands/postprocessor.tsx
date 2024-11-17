@@ -206,9 +206,6 @@ export const postprocessor = (program: Command) => {
 							break;
 					}
 				},
-				// Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
-				// Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
-				// onWarning: (code: string, message: string) => { /* TODO */ },
 			};
 
 			try {
