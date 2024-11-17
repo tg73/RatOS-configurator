@@ -180,13 +180,30 @@ export const postprocessor = (program: Command) => {
 				allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
 				onProgress,
 				onWarning: (code: string, message: string) => {
-					getLogger().warn(code, message);
-					if (code === ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION) {
-						toPostProcessorCLIOutput({
-							result: 'warning',
-							title: 'Unsupported slicer version',
-							message: message,
-						});
+					getLogger().trace(code, 'Warning during processing: ' + message);
+					switch (code) {
+						case ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION:
+							toPostProcessorCLIOutput({
+								result: 'warning',
+								title: 'Unsupported slicer version',
+								message: message,
+							});
+							break;
+						case ACTION_ERROR_CODES.HEURISTIC_SMELL:
+							toPostProcessorCLIOutput({
+								result: 'warning',
+								title: 'Unexpected g-code sequence',
+								message: message,
+							});
+							break;
+						default:
+							toPostProcessorCLIOutput({
+								result: 'warning',
+								title: 'Unexpected warning',
+								message: message,
+							});
+							getLogger().warn(code, message);
+							break;
 					}
 				},
 				// Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
