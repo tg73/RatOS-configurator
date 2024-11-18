@@ -100141,7 +100141,7 @@ var postprocessor = (program3) => {
     } else {
       onProgress = (report) => {
         const progressTens = Math.floor(report.percentage / 10) * 10;
-        if (progressTens > lastProgressPercentage && (report.percentage >= 1 || report.runtime > PROGRESS_STREAM_SPEED_STABILIZATION_TIME)) {
+        if (progressTens > lastProgressPercentage && report.runtime > PROGRESS_STREAM_SPEED_STABILIZATION_TIME) {
           lastProgressPercentage = progressTens;
           toPostProcessorCLIOutput({
             result: "progress",
