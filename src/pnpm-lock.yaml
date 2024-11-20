@@ -92,6 +92,9 @@ importers:
       '@schema-hub/zod-error-formatter':
         specifier: ^0.0.8
         version: 0.0.8(zod@3.22.4)
+      '@shelf/fast-chunk-string':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@tailwindcss/container-queries':
         specifier: ^0.1.1
         version: 0.1.1(tailwindcss@3.4.3)
@@ -1814,6 +1817,10 @@ packages:
     peerDependencies:
       zod: ^3.22.4
 
+  '@shelf/fast-chunk-string@3.0.0':
+    resolution: {integrity: sha512-VgGBn/+laNSpAgUBtnHY3i0hfkX6dgDFPRE5DroyGZReerfRiUCVwizL9vcQcXcjdqvEnPyB0sc6+iyjPXlDCA==}
+    engines: {node: '>=16'}
+
   '@sinclair/typebox@0.25.24':
     resolution: {integrity: sha512-XJfwUVUKDHF5ugKwIcxEgc9k8b7HbznCp6eUfWgu710hMPNIO4aw4/zB5RogDQz8nd6gyCDpU9O/m6qYEWY6yQ==}
 
@@ -2506,6 +2513,10 @@ packages:
   chalk@5.3.0:
     resolution: {integrity: sha512-dLitG79d+GV1Nb/VYcCDFivJeK1hiukt9QjRNVOsUtTy1rR1YJsmpGGTZ3qJos+uw7WmWF4wUwBd9jxjocFC2w==}
     engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
+
+  char-regex@1.0.2:
+    resolution: {integrity: sha512-kWWXztvZ5SBQV+eRgKFeh8q5sLuZY2+8WUIzlxWVTg+oGwY14qylx1KbKzHd8P6ZYkAg0xyIDU9JMHhyJMZ1jw==}
+    engines: {node: '>=10'}
 
   character-entities-legacy@1.1.4:
     resolution: {integrity: sha512-3Xnr+7ZFS1uxeiUDvV02wQ+QDbc55o97tIV5zHScSPJpcLm/r0DFPcoY3tYRp+VZukxuMeKgXYmsXQHO05zQeA==}
@@ -4666,6 +4677,10 @@ packages:
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
+  runes@0.4.3:
+    resolution: {integrity: sha512-K6p9y4ZyL9wPzA+PMDloNQPfoDGTiFYDvdlXznyGKgD10BJpcAosvATKrExRKOrNLgD8E7Um7WGW0lxsnOuNLg==}
+    engines: {node: '>=4.0.0'}
+
   rxjs@7.8.1:
     resolution: {integrity: sha512-AA3TVj+0A2iuIoQkWEK/tqFjBq2j+6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==}
 
@@ -4847,6 +4862,10 @@ packages:
   streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
     engines: {node: '>=10.0.0'}
+
+  string-length@4.0.0:
+    resolution: {integrity: sha512-GWDgJDQvvIwP4e5IEu0tuOyRUs/bVvQNNdh0HhMnZwo0Kuo4NKmjI/as/9I34+GHYWKkuS0nUrHubgRTs4O4fw==}
+    engines: {node: '>=10'}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -6757,6 +6776,11 @@ snapshots:
     dependencies:
       zod: 3.22.4
 
+  '@shelf/fast-chunk-string@3.0.0':
+    dependencies:
+      runes: 0.4.3
+      string-length: 4.0.0
+
   '@sinclair/typebox@0.25.24': {}
 
   '@sinclair/typebox@0.27.8': {}
@@ -7570,6 +7594,8 @@ snapshots:
       supports-color: 7.2.0
 
   chalk@5.3.0: {}
+
+  char-regex@1.0.2: {}
 
   character-entities-legacy@1.1.4: {}
 
@@ -9918,6 +9944,8 @@ snapshots:
     dependencies:
       queue-microtask: 1.2.3
 
+  runes@0.4.3: {}
+
   rxjs@7.8.1:
     dependencies:
       tslib: 2.6.2
@@ -10082,6 +10110,11 @@ snapshots:
       internal-slot: 1.0.5
 
   streamsearch@1.1.0: {}
+
+  string-length@4.0.0:
+    dependencies:
+      char-regex: 1.0.2
+      strip-ansi: 6.0.1
 
   string-width@4.2.3:
     dependencies:
