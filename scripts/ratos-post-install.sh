@@ -1,6 +1,4 @@
 #!/bin/bash
-# This script install additional dependencies
-# for the v-core 3 klipper setup.
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # shellcheck source=./scripts/ratos-common.sh

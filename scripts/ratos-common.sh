@@ -1,33 +1,13 @@
 #!/bin/bash
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+# shellcheck source=./scripts/environment.sh
+source "$SCRIPT_DIR"/environment.sh
+
 report_status()
 {
     echo -e "\n\n###### $1"
 }
-
-
-#create ~/.ratos.env if file does not exist using sane defaults on a ratos pi image.
-#performed outside of a function so that other scripts sourcing this in run this by default
-if [ ! -f ~/.ratos.env ] && [ -f /etc/ratos-release ]; then 
-cat <<EOF > ~/.ratos.env
-RATOS_USERNAME="pi"
-RATOS_USERGROUP="pi"
-RATOS_PRINTER_DATA_DIR="/home/${RATOS_USERNAME}/printer_data"
-MOONRAKER_DIR="/home/${RATOS_USERNAME}/moonraker"
-KLIPPER_DIR="/home/${RATOS_USERNAME}/klipper"
-KLIPPER_ENV="/home/${RATOS_USERNAME}/klippy-env"
-BEACON_DIR="/home/${RATOS_USERNAME}/beacon"
-EOF
-fi
-
-if [ -f ~/.ratos.env ] ; then
-	report_status "Loading RatOS environment data"
-	set -a && source ~/.ratos.env && set +a
-else
-	report_status "Unable to load RatOS environment data, exiting..."
-	exit 1
-fi
-
 
 disable_modem_manager()
 {
@@ -60,7 +40,7 @@ update_beacon_fw()
 		echo "beacon: beacon firmware updater script doesn't exist, skipping..."
 		return
 	fi
-	$KLIPPER_ENV/bin/python $BEACON_DIR/update_firmware.py update all --no-sudo
+	"$KLIPPER_ENV"/bin/python "$BEACON_DIR"/update_firmware.py update all --no-sudo
 }
 
 install_beacon()
@@ -77,12 +57,12 @@ install_beacon()
 		return
 	fi
 
-	git clone https://github.com/beacon3d/beacon_klipper.git ${BEACON_DIR}
-	chown -R ${RATOS_USERNAME}:${RATOS_USERGROUP} ${BEACON_DIR}
+	git clone https://github.com/beacon3d/beacon_klipper.git "$BEACON_DIR"
+	chown -R "${RATOS_USERNAME}:${RATOS_USERGROUP}" "$BEACON_DIR"
 
 	# install beacon requirements to env
 	echo "beacon: installing python requirements to env."
-	"${KLIPPER_ENV}/bin/pip" install -r "${BEACON_DIR}/requirements.txt"
+	"${KLIPPER_ENV}"/bin/pip install -r "${BEACON_DIR}"/requirements.txt
 
 	# update link to beacon.py
 	echo "beacon: registering beacon with the configurator."
@@ -165,9 +145,9 @@ register_ratos_kinematics() {
 	if ratos extensions list | grep "ratos-kinematics" &>/dev/null; then
 		ratos extensions unregister klipper -k ratos_hybrid_corexy
 	fi
-	if [ -e /home/${RATOS_USERNAME}/ratos-kinematics ]; then
+	if [ -e "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics" ]; then
 		report_status "Removing old ratos-kinematics directory..."
-		rm -rf /home/${RATOS_USERNAME}/ratos-kinematics
+		rm -rf "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics"
 	fi
     EXT_NAME="ratos_hybrid_corexy"
     EXT_PATH=$(realpath "${SCRIPT_DIR}/../klippy/kinematics/ratos_hybrid_corexy.py")
@@ -185,9 +165,9 @@ register_ratos()
 
 remove_old_postprocessor()
 {
-	if [ -L ${KLIPPER_DIR}/klippy/extras/ratos_post_processor.py ]; then
+	if [ -L "${KLIPPER_DIR}/klippy/extras/ratos_post_processor.py" ]; then
 		report_status "Removing old postprocessor.py..."
-		rm ${KLIPPER_DIR}/klippy/extras/ratos_post_processor.py
+		rm "${KLIPPER_DIR}/klippy/extras/ratos_post_processor.py"
 	fi
 }
 
@@ -200,23 +180,23 @@ install_hooks()
 	fi
 	if [[ ! -L ${KLIPPER_DIR}/.git/hooks/post-merge ]]
 	then
- 	   ln -s "$SCRIPT_DIR"/klipper-post-merge.sh ${KLIPPER_DIR}/.git/hooks/post-merge
+ 	   ln -s "$SCRIPT_DIR"/klipper-post-merge.sh "${KLIPPER_DIR}/.git/hooks/post-merge"
 	fi
 	if [[ ! -L ${MOONRAKER_DIR}/.git/hooks/post-merge ]]
 	then
- 	   ln -s "$SCRIPT_DIR"/moonraker-post-merge.sh ${MOONRAKER_DIR}/.git/hooks/post-merge
+ 	   ln -s "$SCRIPT_DIR"/moonraker-post-merge.sh "${MOONRAKER_DIR}/.git/hooks/post-merge"
 	fi
 	if [[ ! -L ${BEACON_DIR}/.git/hooks/post-merge ]]
 	then
- 	   ln -s "$SCRIPT_DIR"/beacon-post-merge.sh ${BEACON_DIR}/.git/hooks/post-merge
+ 	   ln -s "$SCRIPT_DIR"/beacon-post-merge.sh "${BEACON_DIR}/.git/hooks/post-merge"
 	fi
 }
 
 ensure_service_permission()
 {
 	report_status "Updating service permissions"
-	if ! grep "klipper_mcu" ${RATOS_PRINTER_DATA_DIR}/moonraker.asvc &>/dev/null || ! grep "ratos-configurator" ${RATOS_PRINTER_DATA_DIR}/moonraker.asvc &>/dev/null; then
-		cat << '#EOF' > ${RATOS_PRINTER_DATA_DIR}/moonraker.asvc
+	if ! grep "klipper_mcu" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" &>/dev/null || ! grep "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" &>/dev/null; then
+		cat << '#EOF' > "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
 klipper_mcu
 webcamd
 MoonCord
@@ -241,7 +221,7 @@ patch_klipperscreen_service_restarts()
 		sudo sed -i 's/\RestartSec=1/\RestartSec=5/g' /etc/systemd/system/KlipperScreen.service
 		sudo sed -i 's/\StartLimitIntervalSec=0/\StartLimitIntervalSec=100\nStartLimitBurst=4/g' /etc/systemd/system/KlipperScreen.service
 		sudo systemctl daemon-reload
-		report_status "KlipperScreen service patched"
+		report_status "KlipperScreen service patched!"
 	fi
 }
 

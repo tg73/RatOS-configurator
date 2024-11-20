@@ -1,8 +1,7 @@
 #!/bin/bash
-# This script install additional dependencies
-# for RatOS.
+# This script installs additional dependencies for RatOS.
 
-PKGLIST="python3-numpy python3-matplotlib curl"
+PKGLIST="python3-numpy python3-matplotlib curl git"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # shellcheck source=./scripts/ratos-common.sh
@@ -19,13 +18,13 @@ install_printer_config()
 {
     report_status "Copying printer configuration"
     PRINTER_CFG="${RATOS_PRINTER_DATA_DIR}/config/printer.cfg"
-    tail -n +2 ${RATOS_PRINTER_DATA_DIR}/config/RatOS/templates/initial-printer.template.cfg > $PRINTER_CFG
+    tail -n +2 "$SCRIPT_DIR"/templates/initial-printer.template.cfg > "$PRINTER_CFG"
 }
 
 install_udev_rules()
 {
     report_status "Installing udev rules"
-    sudo ln -s ${RATOS_PRINTER_DATA_DIR}/config/RatOS/boards/*/*.rules /etc/udev/rules.d/
+    sudo ln -s "$SCRIPT_DIR"/boards/*/*.rules /etc/udev/rules.d/
 }
 
 verify_ready()

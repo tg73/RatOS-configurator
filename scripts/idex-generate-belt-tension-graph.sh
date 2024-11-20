@@ -15,9 +15,11 @@ then
 	DISABLE_X=1
 fi
 
-if [ ! -d "${RATOS_PRINTER_DATA_DIR}/config/input_shaper" ]
+outdir="${SCRIPT_DIR}"/../../input_shaper
+if [ ! -d "${outdir}" ]
 then
-    mkdir ${RATOS_PRINTER_DATA_DIR}/config/input_shaper
+    mkdir "${outdir}"
+    chown "${RATOS_USERNAME}:${RATOS_USERGROUP}" "${outdir}"
 fi
 
 T0=1
@@ -83,7 +85,7 @@ then
 		fi
 	fi
 
-	${KLIPPER_DIR}/scripts/graph_accelerometer.py -c /tmp/*_y_belt_tension.csv -o ${RATOS_PRINTER_DATA_DIR}/config/input_shaper/y_tension_comparison_"$DATE".png
+	"${KLIPPER_DIR}"/scripts/graph_accelerometer.py -c /tmp/*_y_belt_tension.csv -o "${outdir}/y_tension_comparison_${DATE}.png"
 fi
 if [ $DISABLE_X -eq 0 ]
 then
@@ -110,5 +112,5 @@ then
 		mv /tmp/raw_data_x_toolboard_t1_t1.csv /tmp/right_x_belt_tension.csv
 	fi
 
-	${KLIPPER_DIR}/scripts/graph_accelerometer.py -c /tmp/*_x_belt_tension.csv -o ${RATOS_PRINTER_DATA_DIR}/config/input_shaper/x_tension_comparison_"$DATE".png
+	"${KLIPPER_DIR}"/scripts/graph_accelerometer.py -c /tmp/*_x_belt_tension.csv -o "${outdir}/x_tension_comparison_${DATE}.png"
 fi

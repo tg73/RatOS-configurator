@@ -39,7 +39,7 @@ if [ $retVal -eq 0 ]; then
 else
 	echo "Flashing failed."
 fi
-chown ${RATOS_USERNAME}:${RATOS_USERGROUP} -R ${KLIPPER_DIR}
+chown "${RATOS_USERNAME}:${RATOS_USERGROUP}" -R "${KLIPPER_DIR}"
 service klipper start
 popd || exit
 exit $retVal
