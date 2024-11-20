@@ -35,10 +35,12 @@ disable_modem_manager()
 	
 	if ! sudo systemctl is-enabled ModemManager.service &> /dev/null; then
 		report_status "Disabling ModemManager..."
-		sudo systemctl mask ModemManager.service
+		sudo systemctl disable ModemManager.service
 	else
-		report_status "Modem manager is already disabled, continuing..."
+		report_status "ModemManager is already disabled.."
 	fi
+	report_status "Masking ModemManager to ensure it won't start in the future..."
+	sudo systemctl mask ModemManager.service
 }
 
 update_beacon_fw()
@@ -142,13 +144,12 @@ register_resonance_generator()
     _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
 }
 
-register_vaoc_led()
+unregister_vaoc_led()
 {
-    EXT_NAME="vaoc_led"
-    EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
-    EXT_FILE="vaoc_led.py"
-	# Don't error if extension is already registered
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
+	if ratos extensions list | grep "vaoc_led" &>/dev/null; then
+		report_status "Unregistering experimental vaoc_led extension..."
+		ratos extensions unregister klipper vaoc_led
+	fi
 }
 
 register_z_offset_probe()
@@ -268,18 +269,5 @@ ${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: ${RATOS_PRINTER_DATA_DIR}/config/RatOS/sc
 	$sudo chown root:root /tmp/030-ratos-githooks
 	$sudo chmod 440 /tmp/030-ratos-githooks
 	$sudo cp --preserve=mode /tmp/030-ratos-githooks /etc/sudoers.d/030-ratos-githooks
-
-	# Whitelist change hostname script
-	if [[ ! -e /etc/sudoers.d/031-ratos-change-hostname ]]
-	then
-		touch /tmp/031-ratos-change-hostname
-		cat << '#EOF' > /tmp/031-ratos-change-hostname
-${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: ${RATOS_PRINTER_DATA_DIR}/config/RatOS/scripts/change-hostname-as-root.sh
-#EOF
-
-		$sudo chown root:root /tmp/031-ratos-change-hostname
-		$sudo chmod 440 /tmp/031-ratos-change-hostname
-		$sudo cp --preserve=mode /tmp/031-ratos-change-hostname /etc/sudoers.d/031-ratos-change-hostname
-	fi
 }
 
