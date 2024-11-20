@@ -44,7 +44,7 @@ SET_PRESSURE_ADVANCE ADVANCE=0.03; Override pressure advance value
 export const CHANGED_BY_RATOS = ' ; Changed by RatOS post processor: ';
 export const REMOVED_BY_RATOS = '; Removed by RatOS post processor: ';
 
-export enum ACTION_ERROR_CODES {
+export enum ACTION_WARNING_CODES {
 	UNSUPPORTED_SLICER_VERSION = 'UNSUPPORTED_SLICER_VERSION',
 	HEURISTIC_SMELL = 'HEURISTIC_SMELL',
 }
@@ -141,7 +141,7 @@ export const getGcodeInfo: Action = (c, s) => {
 		} catch (ex) {
 			if (s.kAllowUnsupportedSlicerVersions && s.onWarning && ex instanceof SlicerNotSupported) {
 				s.onWarning(
-					ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION,
+					ACTION_WARNING_CODES.UNSUPPORTED_SLICER_VERSION,
 					ex.message + ' This may result in print defects and incorrect operation of the printer.',
 				);
 			} else {
@@ -341,7 +341,7 @@ export const processToolchange: Action = (c, s) => {
 				// Smells bad, we hit the end of the scan back without explicitly
 				// detecting a stop condition.
 				s.onWarning?.(
-					ACTION_ERROR_CODES.HEURISTIC_SMELL,
+					ACTION_WARNING_CODES.HEURISTIC_SMELL,
 					`End of scan back before toolchange at line ${s.currentLineNumber} reached without detecting end condition.`,
 				);
 			}
@@ -396,7 +396,7 @@ export const processToolchange: Action = (c, s) => {
 				// Smells bad, we hit the end of the scan forwards without explicitly
 				// detecting a stop condition.
 				s.onWarning?.(
-					ACTION_ERROR_CODES.HEURISTIC_SMELL,
+					ACTION_WARNING_CODES.HEURISTIC_SMELL,
 					`End of scan forward after toolchange at line ${s.currentLineNumber} reached without detecting end condition.`,
 				);
 			}
@@ -404,7 +404,7 @@ export const processToolchange: Action = (c, s) => {
 			if (zMoveCount1 > 2 || zMoveCount2 > 2) {
 				// We've only seen examples with 0, 1 or 2 z moves. We need to take a look.
 				s.onWarning?.(
-					ACTION_ERROR_CODES.HEURISTIC_SMELL,
+					ACTION_WARNING_CODES.HEURISTIC_SMELL,
 					`Detected a group with more than two z moves after toolchange at line ${s.currentLineNumber}.`,
 				);
 			}

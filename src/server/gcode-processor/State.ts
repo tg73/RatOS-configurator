@@ -26,21 +26,6 @@ export class BookmarkedLine {
 	) {}
 }
 
-export interface SerializedState {
-	readonly extruderTemps?: string[];
-	readonly toolChangeCount: number;
-	readonly firstMoveX?: string;
-	readonly firstMoveY?: string;
-	readonly minX: number;
-	readonly maxX: number;
-	readonly hasPurgeTower?: boolean;
-	readonly usedTools: string[];
-	readonly gcodeInfo: SerializedGcodeInfo;
-	readonly configSection?: {
-		[key: string]: string;
-	};
-}
-
 /**
  * The state shared between actions in the action sequence for RatOS G-code post processing.
  * Property naming convention:
@@ -70,6 +55,7 @@ export class State {
 	public maxX = Number.MIN_VALUE;
 	public hasPurgeTower?: boolean;
 	public configSection?: Map<string, string>;
+	public processingHasBeenFinalized = false;
 
 	/** Used tools, in order of first use. */
 	public usedTools: string[] = [];
@@ -105,13 +91,12 @@ export class State {
 		return this.#gcodeInfo;
 	}
 
-	public serialize(): SerializedState {
+	get configSectionAsObject():
+		| {
+				[key: string]: string;
+		  }
+		| undefined {
 		const configSectionEntries = this.configSection?.entries();
-		const configSection = configSectionEntries ? Object.fromEntries(configSectionEntries) : undefined;
-		return {
-			...this,
-			configSection,
-			gcodeInfo: this.gcodeInfo.serialize(),
-		};
+		return configSectionEntries ? Object.fromEntries(configSectionEntries) : undefined;
 	}
 }

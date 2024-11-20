@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * @file GCodeInfo.test.ts
  * @description
@@ -116,7 +117,7 @@ describe('tryParseHeader', async () => {
 	});
 
 	test('getProcessedByRatosHeader', async () => {
-		const header = await GCodeInfo.getProcessedByRatosHeader();
+		const header = GCodeInfo.getProcessedByRatosHeader(new SemVer('1.2.3'), new Date());
 		expect(header).toMatch(/^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im);
 	});
 });
@@ -146,5 +147,58 @@ describe('fromFile', async () => {
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
 		expect(parsed!.processedByRatOSVersion).toEqual(new SemVer('1.0.0-legacy'));
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+	});
+
+	test('without ratos_meta block', async () => {
+		const warnings: string[] = [];
+		const parsed = await GCodeInfo.fromFile(
+			path.join(__dirname, 'fixtures', 'other', 'without_ratos_meta.gcode'),
+			(c, m) => {
+				const msg = `${c}: ${m}`;
+				warnings.push(msg);
+				//console.log(msg);
+			},
+		);
+		expect(parsed).not.toBeNull();
+		expect(parsed!.processedByRatOSVersion).not.toBeUndefined();
+		expect(parsed!.processedByRatOSTimestamp).not.toBeUndefined();
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0]).toEqual('INVALID_METADATA: The ratos_meta block was not found.');
+	});
+
+	test('without ratos_meta begin', async () => {
+		const warnings: string[] = [];
+		const parsed = await GCodeInfo.fromFile(
+			path.join(__dirname, 'fixtures', 'other', 'without_ratos_meta_begin.gcode'),
+			(c, m) => {
+				const msg = `${c}: ${m}`;
+				warnings.push(msg);
+				//console.log(msg);
+			},
+		);
+		expect(parsed).not.toBeNull();
+		expect(parsed!.processedByRatOSVersion).not.toBeUndefined();
+		expect(parsed!.processedByRatOSTimestamp).not.toBeUndefined();
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0]).toEqual('INVALID_METADATA: Failed to parse ratos_meta block: the begin marker was not found.');
+	});
+
+	test('wrong ratos_meta data length', async () => {
+		const warnings: string[] = [];
+		const parsed = await GCodeInfo.fromFile(
+			path.join(__dirname, 'fixtures', 'other', 'ratos_meta_wrong_data_length.gcode'),
+			(c, m) => {
+				const msg = `${c}: ${m}`;
+				warnings.push(msg);
+				//console.log(msg);
+			},
+		);
+		expect(parsed).not.toBeNull();
+		expect(parsed!.processedByRatOSVersion).not.toBeUndefined();
+		expect(parsed!.processedByRatOSTimestamp).not.toBeUndefined();
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0]).toEqual(
+			'INVALID_METADATA: Failed to parse ratos_meta block: expected 999 base64 characters, but found 34.',
+		);
 	});
 });

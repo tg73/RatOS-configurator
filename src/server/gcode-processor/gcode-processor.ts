@@ -30,7 +30,7 @@ import {
 	replaceBookmarkedGcodeLine,
 } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Writable } from 'node:stream';
-import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
 
 class NullSink extends Writable {
 	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
@@ -38,7 +38,7 @@ class NullSink extends Writable {
 	}
 }
 
-type ProcessorResult = AnalysisResult & {
+type ProcessorResult = SerializedGcodeInfo & {
 	wasAlreadyProcessed: boolean;
 };
 
@@ -70,11 +70,11 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 		throw new Error(`${inputFile} is not a file`);
 	}
 
-	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
+	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile, options.onWarning);
 
 	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
 		return {
-			gcodeInfo: gcInfoBeforeProcessing.serialize(),
+			...gcInfoBeforeProcessing.serialize(),
 			wasAlreadyProcessed: true,
 		};
 	}
@@ -101,14 +101,14 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 	} catch (e) {
 		if (e instanceof InspectionIsComplete) {
 			return {
-				...gcodeProcessor.getAnalysisResult(),
+				...(await gcodeProcessor.finalizeProcessing()).serialize(),
 				wasAlreadyProcessed: false,
 			};
 		}
 		throw e;
 	}
 	return {
-		...gcodeProcessor.getAnalysisResult(),
+		...(await gcodeProcessor.finalizeProcessing()).serialize(),
 		wasAlreadyProcessed: false,
 	};
 }
@@ -125,11 +125,11 @@ export async function processGCode(
 		throw new Error(`${inputFile} is not a file`);
 	}
 
-	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
+	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile, options.onWarning);
 
 	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
 		return {
-			gcodeInfo: gcInfoBeforeProcessing.serialize(),
+			...gcInfoBeforeProcessing.serialize(),
 			wasAlreadyProcessed: true,
 		};
 	}
@@ -165,10 +165,14 @@ export async function processGCode(
 			createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
 		);
 
-		await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+		const processingResult = await gcodeProcessor.finalizeProcessing(encoder, (bm, line) =>
+			replaceBookmarkedGcodeLine(fh!, bm, line),
+		);
+
+		await fh.write(processingResult.getRatosMetaFooter());
 
 		return {
-			...gcodeProcessor.getAnalysisResult(),
+			...processingResult.serialize(),
 			wasAlreadyProcessed: false,
 		};
 	} finally {

@@ -196,7 +196,7 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 					createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
 				);
 
-				await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+				await gcodeProcessor.finalizeProcessing(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
 			} finally {
 				try {
 					await fh?.close();
