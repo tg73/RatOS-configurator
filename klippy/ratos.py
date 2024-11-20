@@ -65,9 +65,6 @@ class RatOS:
 		self.allow_unsupported_slicer_versions = True if self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true" else False
 		self.use_legacy_post_processor = True if self.config.get('use_legacy_post_processor', "false").lower() == "true" else False
 
-	def get_status(self, eventtime):
-		return {'name': self.name}
-
 	#####
 	# Gcode commands
 	#####
@@ -756,7 +753,7 @@ class RatOS:
 		return version
 	
 	def get_status(self, eventtime):
-		return {'last_processed_file_result': self.last_processed_file_result}
+		return {'name': self.name, 'last_processed_file_result': self.last_processed_file_result}
 
 #####
 # Bed Mesh Profile Manager
