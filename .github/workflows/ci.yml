@@ -1,6 +1,6 @@
 name: "CI"
 env:
-  RATOS_CONFIGURATION_PATH: ${{ github.workspace }}/ratos-configuration
+  RATOS_CONFIGURATION_PATH: ${{ github.workspace }}/ratos-configurator/configuration
   KLIPPER_CONFIG_PATH: ${{ github.workspace }}/config
   RATOS_SCRIPT_DIR: ${{ github.workspace }}/ratos-configurator/src/scripts
   KLIPPER_DIR: ${{ github.workspace }}/klipper
