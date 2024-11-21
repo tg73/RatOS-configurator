@@ -78,7 +78,7 @@ jobs:
         run: rm -rf __tests__ app pages components coverage data helpers hooks moonraker env recoil server utils zods test-setup.ts vitest.config.mts tsconfig.vitest.json copy-files-from-to.json components.json postcss.config.js prettier.config.mjs tailwind.config.ts
 
       - name: Rename src/ to app/
-        working-directory: ./src
+        working-directory: ./
         run: mv src app
 
       - name: Push
