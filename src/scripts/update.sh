@@ -32,5 +32,7 @@ ensure_sudo_command_whitelisting
 ensure_pnpm_installation
 pnpm_install
 install_cli
-install_udev_rule root
+install_udev_rule
 patch_log_rotation
+symlink_configuration
+install_or_update_service_file

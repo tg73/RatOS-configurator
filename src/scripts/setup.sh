@@ -26,6 +26,7 @@ ensure_pnpm_installation
 install_logrotation
 pnpm_install
 disable_telemetry
-install_or_update_service_file
 install_udev_rule
 install_cli
+symlink_configuration
+install_or_update_service_file

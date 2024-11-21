@@ -1,5 +1,5 @@
 #!/bin/bash
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )
 
 # shellcheck source=./configuration/scripts/environment.sh
 source "$SCRIPT_DIR"/environment.sh

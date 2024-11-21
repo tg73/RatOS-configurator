@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e -u
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )
 
 # shellcheck source=./configuration/scripts/ratos-common.sh
 source "$SCRIPT_DIR"/ratos-common.sh

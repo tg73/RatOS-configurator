@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-GIT_DIR=$SCRIPT_DIR/../../.git
 SRC_DIR=$(realpath "$SCRIPT_DIR/..")
-GIT_DIR=$(realpath "$GIT_DIR")
+BASE_DIR=$(realpath "$SRC_DIR/..")
+GIT_DIR=$BASE_DIR/.git
 
-source "$SRC_DIR/configuration/scripts/environment.sh"
+source "$BASE_DIR/configuration/scripts/environment.sh"
 
 report_status()
 {
@@ -57,9 +57,9 @@ install_or_update_service_file()
 pnpm_install() {
 	report_status "Installing pnpm dependencies..."
     pushd "$SRC_DIR" || exit 1
-	if [ -d "$GIT_DIR/node_modules" ]; then
+	if [ -d "$BASE_DIR/node_modules" ]; then
 		report_status "Moving node_modules from git directory to src directory"
-		mv "$GIT_DIR/node_modules" "$SRC_DIR"
+		mv "$BASE_DIR/node_modules" "$SRC_DIR"
 	fi
 	if [ "$EUID" -eq 0 ]; then
 		# Check if node_modules is owned by root and delete
@@ -133,10 +133,10 @@ __EOF
 
 patch_log_rotation() {
 	if [ -e /etc/logrotate.d/ratos-configurator ]; then
-		if grep -q "/printer_data/logs/configurator.log" /etc/logrotate.d/ratos-configurator; then
+		if grep -q "${RATOS_PRINTER_DATA_DIR}/logs/ratos-configurator.log" /etc/logrotate.d/ratos-configurator; then
 			report_status "Patching log rotation"
 			sudo sed -i 's|rotate 4|rotate 3|g' /etc/logrotate.d/ratos-configurator
-			sudo sed -i 's|/printer_data/logs/configurator.log"|/printer_data/logs/ratos-configurator.log"|g' /etc/logrotate.d/ratos-configurator
+			sudo sed -i "s|${RATOS_PRINTER_DATA_DIR}/logs/configurator.log|${RATOS_PRINTER_DATA_DIR}/logs/ratos-configurator.log|g" /etc/logrotate.d/ratos-configurator
 		fi
 	else
 		install_logrotation
@@ -145,16 +145,17 @@ patch_log_rotation() {
 
 symlink_configuration() {
 	report_status "Symlinking configuration"
-	[ -z "$RATOS_PRINTER_DATA_DIR" ] && { echo "Error: RATOS_PRINTER_DATA_DIR not set"; return 1; }
-	[ -z "$GIT_DIR" ] && { echo "Error: GIT_DIR not set"; return 1; }
+	[ -z "$RATOS_PRINTER_DATA_DIR" ] && { echo "Error: RATOS_PRINTER_DATA_DIR not set" >&2; return 1; }
+	[ -z "$BASE_DIR" ] && { echo "Error: BASE_DIR not set" >&2; return 1; }
 	
 	sudo=""
 	[ "$EUID" -ne 0 ] && sudo="sudo"
 	
 	target="${RATOS_PRINTER_DATA_DIR}/config/RatOS"
-	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$GIT_DIR/configuration" ]; then
-		$sudo rm -rf "$target" || { echo "Failed to remove old configuration"; return 1; }
-		$sudo ln -s "$GIT_DIR/configuration" "$target" || { echo "Failed to create symlink"; return 1; }
+	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$BASE_DIR/configuration" ]; then
+		$sudo rm -rf "$target" || { echo "Failed to remove old configuration" >&2; return 1; }
+		$sudo ln -s "$BASE_DIR/configuration" "$target" || { echo "Failed to create symlink" >&2; return 1; }
+		$sudo chown -R "${RATOS_USERNAME}:${RATOS_USERGROUP}" "$target" || { echo "Failed to change ownership of configuration" >&2; return 1; }
 		echo "Configuration symlink created successfully"
 	fi
 }
@@ -184,15 +185,18 @@ verify_users()
 
 install_udev_rule()
 {
-	report_status "Installing udev rule"
 
 	sudo=""
 	[ "$EUID" -ne 0 ] && sudo="sudo"
 
-	if [ ! -e /etc/udev/rules.d/97-ratos.rules ]; then
+	if [ ! -L /etc/udev/rules.d/97-ratos.rules ]; then
+		report_status "Installing RatOS udev rule"
+		$sudo rm -f /etc/udev/rules.d/97-ratos.rules
 		$sudo ln -s "$SCRIPT_DIR/ratos.rules" /etc/udev/rules.d/97-ratos.rules
 	fi
-	if [ ! -e /etc/udev/rules.d/97-vaoc.rules ]; then
+	if [ ! -L /etc/udev/rules.d/97-vaoc.rules ]; then
+		report_status "Installing VAOC udev rule"
+		$sudo rm -f /etc/udev/rules.d/97-vaoc.rules
 		$sudo ln -s "$SCRIPT_DIR/vaoc.rules" /etc/udev/rules.d/97-vaoc.rules
 	fi
 }

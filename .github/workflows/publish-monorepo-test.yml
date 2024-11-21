@@ -78,13 +78,13 @@ jobs:
         run: rm -rf __tests__ app pages components coverage data helpers hooks moonraker env recoil server utils zods test-setup.ts vitest.config.mts tsconfig.vitest.json copy-files-from-to.json components.json postcss.config.js prettier.config.mjs tailwind.config.ts
 
       - name: Rename src/ to app/
-        working-directory: ./src
+        working-directory: ./
         run: mv src app
 
-      - name: Push
-        uses: s0/git-publish-subdir-action@develop
-        env:
-          REPO: self
-          BRANCH: monorepo-test-deployment # The branch name where you want to push the assets
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub will automatically add this - you don't need to bother getting a token
-          MESSAGE: "Build: ({sha}) {msg}" # The commit message
+      - name: Publish to monorepo-test-deployment
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: .
+          git-config-name: Mikkel Schmidt
+          git-config-email: mikkel.schmidt@gmail.com
+          branch: monorepo-test-deployment # The branch name where you want to push the assets

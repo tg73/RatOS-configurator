@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )
 # shellcheck source=./configuration/scripts/moonraker-ensure-policykit-rules.sh
 source "$SCRIPT_DIR"/moonraker-ensure-policykit-rules.sh
 ensure_moonraker_policiykit_rules

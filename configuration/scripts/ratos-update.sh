@@ -4,7 +4,7 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )
 # shellcheck source=./configuration/scripts/ratos-common.sh
 source "$SCRIPT_DIR"/ratos-common.sh
 # shellcheck source=./configuration/scripts/moonraker-ensure-policykit-rules.sh
@@ -39,12 +39,6 @@ fix_klippy_env_ownership()
 	fi
 }
 
-restart_configurator()
-{
-	report_status "Restarting configurator..."
-	systemctl restart ratos-configurator
-}
-
 symlink_extensions()
 {
 	report_status "Symlinking klippy extensions"
@@ -74,4 +68,3 @@ register_ratos_kinematics
 unregister_vaoc_led
 symlink_extensions
 update_beacon_fw
-restart_configurator
