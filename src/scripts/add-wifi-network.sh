@@ -87,7 +87,7 @@ __EOF
 # autohotspotN
 
 function get_sbc  {
-    cat /etc/board-release | grep BOARD_NAME | cut -d '=' -f2
+    grep BOARD_NAME /etc/board-release | cut -d '=' -f2
 }
 
 #CB1

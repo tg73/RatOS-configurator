@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-GIT_DIR=$SCRIPT_DIR/../.git
-if echo "$SCRIPT_DIR" | grep "/src/" > /dev/null; then
-	# in the deployment branch src is the root. In main src is a subdirectory.
-	GIT_DIR=$SCRIPT_DIR/../../.git
-fi
+GIT_DIR=$SCRIPT_DIR/../../.git
 SRC_DIR=$(realpath "$SCRIPT_DIR/..")
 GIT_DIR=$(realpath "$GIT_DIR")
+
+source "$SRC_DIR/configuration/scripts/environment.sh"
 
 report_status()
 {
@@ -25,8 +23,44 @@ update_pnpm()
     npm install -g pnpm
 }
 
+install_or_update_service_file()
+{
+	report_status "Updating service file..."
+
+    sudo groupadd -f ratos-configurator
+
+	SERVICE_FILE="/etc/systemd/system/ratos-configurator.service"
+	SERVICE_FILE_TEMPLATE="${SCRIPT_DIR}/service-template.service"
+
+	cp "${SERVICE_FILE_TEMPLATE}" /tmp/ratos-configurator.service
+	
+	sed -i "s|__SRC_DIR__|${SRC_DIR}|g" /tmp/ratos-configurator.service
+	sed -i "s|__RATOS_USERNAME__|${RATOS_USERNAME}|g" /tmp/ratos-configurator.service
+	
+	if [ -f "${SERVICE_FILE}" ]; then
+		if [ "$(md5sum "${SERVICE_FILE_TEMPLATE}")" != "$(md5sum "${SERVICE_FILE}")" ]; then
+			sudo mv /tmp/ratos-configurator.service "${SERVICE_FILE}"
+			sudo systemctl daemon-reload
+			echo "Service file updated!"
+		else
+			echo "Service file is already up to date!"
+		fi
+	else
+		echo "Service file does not exist, installing..."
+		sudo mv /tmp/ratos-configurator.service "${SERVICE_FILE}"
+		sudo systemctl enable ratos-configurator.service
+		sudo systemctl daemon-reload
+		echo "Service file installed!"
+	fi
+}
+
 pnpm_install() {
+	report_status "Installing pnpm dependencies..."
     pushd "$SRC_DIR" || exit 1
+	if [ -d "$GIT_DIR/node_modules" ]; then
+		report_status "Moving node_modules from git directory to src directory"
+		mv "$GIT_DIR/node_modules" "$SRC_DIR"
+	fi
 	if [ "$EUID" -eq 0 ]; then
 		# Check if node_modules is owned by root and delete
 		# Fixes old 2.0 installations
@@ -34,7 +68,7 @@ pnpm_install() {
 			report_status "Deleting root owned node_modules"
 			rm -rf "$SRC_DIR/node_modules"
 		fi
-        sudo -u pi pnpm install --frozen-lockfile --aggregate-output --no-color --config.confirmModulesPurge=false
+        sudo -u "${RATOS_USERNAME}" pnpm install --frozen-lockfile --aggregate-output --no-color --config.confirmModulesPurge=false
     else
 		pnpm install --frozen-lockfile --aggregate-output --no-color --config.confirmModulesPurge=false
 	fi
@@ -54,16 +88,10 @@ ensure_pnpm_installation() {
 ensure_service_permission()
 {
 	report_status "Updating service permissions"
-	if ! grep -q "ratos-configurator" /home/pi/printer_data/moonraker.asvc; then
-		printf '\nratos-configurator' >> /home/pi/printer_data/moonraker.asvc
-		report_status "Configurator added to moonraker service permissions"
+	if ! grep -q "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"; then
+		printf '\nratos-configurator' >> "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
+		echo "Configurator added to moonraker service permissions!"
 	fi
-}
-
-build() {
-    pushd "$SCRIPT_DIR/.." || exit 1
-	pnpm build
-	popd || exit 1
 }
 
 install_hooks()
@@ -74,10 +102,9 @@ install_hooks()
 	fi
 }
 
-
 install_logrotation() {
     LOGROTATE_FILE="/etc/logrotate.d/ratos-configurator"
-    LOGFILE="/home/${USER}/printer_data/logs/ratos-configurator.log"
+    LOGFILE="${RATOS_PRINTER_DATA_DIR}/logs/ratos-configurator.log"
     report_status "Installing RatOS Configurator log rotation script..."
     sudo /bin/sh -c "cat > ${LOGROTATE_FILE}" << __EOF
 #### RatOS-configurator
@@ -116,24 +143,41 @@ patch_log_rotation() {
 	fi
 }
 
+symlink_configuration() {
+	report_status "Symlinking configuration"
+	[ -z "$RATOS_PRINTER_DATA_DIR" ] && { echo "Error: RATOS_PRINTER_DATA_DIR not set"; return 1; }
+	[ -z "$GIT_DIR" ] && { echo "Error: GIT_DIR not set"; return 1; }
+	
+	sudo=""
+	[ "$EUID" -ne 0 ] && sudo="sudo"
+	
+	target="${RATOS_PRINTER_DATA_DIR}/config/RatOS"
+	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$GIT_DIR/configuration" ]; then
+		$sudo rm -rf "$target" || { echo "Failed to remove old configuration"; return 1; }
+		$sudo ln -s "$GIT_DIR/configuration" "$target" || { echo "Failed to create symlink"; return 1; }
+		echo "Configuration symlink created successfully"
+	fi
+}
+
 install_cli()
 {
 	report_status "Installing RatOS CLI"
+
 	sudo=""
-	if [ "$EUID" -ne 0 ]
-	then
-		sudo="sudo"
-	fi
-	if [ ! -L "/usr/local/bin/ratos" ]; then
- 	   $sudo ln -s "$SRC_DIR/bin/ratos" "/usr/local/bin/ratos"
-	   $sudo chmod a+x "/usr/local/bin/ratos"
+	[ "$EUID" -ne 0 ] && sudo="sudo"
+	
+	target="/usr/local/bin/ratos"
+	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$SRC_DIR/bin/ratos" ]; then
+		$sudo rm "$target"
+		$sudo ln -s "$SRC_DIR/bin/ratos" "$target"
+		$sudo chmod a+x "$target"
 	fi
 }
 
 verify_users()
 {
-	if ! id "pi" &>/dev/null; then
-		echo "User pi is not present on the system"
+	if ! id "${RATOS_USERNAME}" &>/dev/null; then
+		echo "User ${RATOS_USERNAME} is not present on the system"
 		exit 1
 	fi
 }
@@ -141,11 +185,10 @@ verify_users()
 install_udev_rule()
 {
 	report_status "Installing udev rule"
+
 	sudo=""
-	if [ "$EUID" -ne 0 ]
-	then
-		sudo="sudo"
-	fi
+	[ "$EUID" -ne 0 ] && sudo="sudo"
+
 	if [ ! -e /etc/udev/rules.d/97-ratos.rules ]; then
 		$sudo ln -s "$SCRIPT_DIR/ratos.rules" /etc/udev/rules.d/97-ratos.rules
 	fi
@@ -156,11 +199,10 @@ install_udev_rule()
 
 ensure_sudo_command_whitelisting()
 {
+
 	sudo=""
-	if [ "$EUID" -ne 0 ]
-	then
-		sudo="sudo"
-	fi
+	[ "$EUID" -ne 0 ] && sudo="sudo"
+
     report_status "Updating whitelisted commands"
 	# Whitelist RatOS configurator git hook scripts
 	if [[ -e /etc/sudoers.d/030-ratos-configurator-githooks ]]
@@ -169,7 +211,7 @@ ensure_sudo_command_whitelisting()
 	fi
 	touch /tmp/030-ratos-configurator-githooks
 	cat << __EOF > /tmp/030-ratos-configurator-githooks
-pi  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/update.sh
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/update.sh
 __EOF
 
 	$sudo chown root:root /tmp/030-ratos-configurator-githooks
@@ -183,12 +225,12 @@ __EOF
 	fi
 	touch /tmp/030-ratos-configurator-scripts
 	cat << __EOF > /tmp/031-ratos-configurator-scripts
-pi  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/add-wifi-network.sh
-pi  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/change-hostname.sh
-pi  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/dfu-flash.sh
-pi  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/board-script.sh
-pi  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/flash-path.sh
-pi  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/klipper-compile.sh
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/add-wifi-network.sh
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/change-hostname.sh
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/dfu-flash.sh
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/board-script.sh
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/flash-path.sh
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: $SCRIPT_DIR/klipper-compile.sh
 __EOF
 
 	$sudo chown root:root /tmp/031-ratos-configurator-scripts
@@ -202,8 +244,8 @@ __EOF
 	fi
 	touch /tmp/031-ratos-configurator-wifi
 	cat << __EOF > /tmp/031-ratos-configurator-wifi
-pi  ALL=(ALL) NOPASSWD: /usr/sbin/iw
-pi  ALL=(ALL) NOPASSWD: /usr/sbin/wpa_cli
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: /usr/sbin/iw
+${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: /usr/sbin/wpa_cli
 __EOF
 
 	$sudo chown root:root /tmp/031-ratos-configurator-wifi

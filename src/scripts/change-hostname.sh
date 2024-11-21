@@ -11,9 +11,7 @@ if [ "$#" -ne 1 ]
   exit
 fi
 
-hostnamectl set-hostname $1
-if [ $? -eq 0 ] 
-then
+if hostnamectl set-hostname "$1"; then
 	echo "Hostname has been changed, please reboot your Raspberry Pi for the change to take effect"
 else
 	echo "An error occured while attempting to change the hostname"
