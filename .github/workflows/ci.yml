@@ -81,6 +81,7 @@ jobs:
 
       - name: Checkout RatOS Configuration
         uses: actions/checkout@v4
+        if: github.ref_name != 'monorepo'
         with:
           repository: Rat-OS/RatOS-configuration
           path: "ratos-configuration"
