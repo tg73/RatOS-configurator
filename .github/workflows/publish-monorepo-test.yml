@@ -83,8 +83,8 @@ jobs:
 
       - name: Publish to monorepo-test-deployment
         uses: JamesIves/github-pages-deploy-action@v4
-        env:
-          folder: ./
+        with:
+          folder: .
           git-config-name: Mikkel Schmidt
           git-config-email: mikkel.schmidt@gmail.com
           branch: monorepo-test-deployment # The branch name where you want to push the assets
