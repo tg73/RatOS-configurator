@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import { Progress } from 'progress-stream';
-import { inspectGCode, processGCode } from '@/server/gcode-processor/gcode-processor.ts';
+import {
+	inspectGCode,
+	processGCode,
+	PROGRESS_STREAM_SPEED_STABILIZATION_TIME,
+} from '@/server/gcode-processor/gcode-processor.ts';
 import { echo, fs, tmpfile } from 'zx';
 import { ProgressBar, StatusMessage } from '@inkjs/ui';
 import { Box, render, Text } from 'ink';
@@ -164,7 +168,8 @@ export const postprocessor = (program: Command) => {
 			} else {
 				onProgress = (report) => {
 					const progressTens = Math.floor(report.percentage / 10) * 10;
-					if (progressTens > lastProgressPercentage && report.percentage) {
+					// Don't report progress until progress is 1% or runtime is > PROGRESS_STREAM_SPEED_STABILIZATION_TIME where the speed should have stabilized and the ETA should be somewhat accurate.
+					if (progressTens > lastProgressPercentage && report.runtime > PROGRESS_STREAM_SPEED_STABILIZATION_TIME) {
 						lastProgressPercentage = progressTens;
 						toPostProcessorCLIOutput({
 							result: 'progress',
@@ -180,18 +185,32 @@ export const postprocessor = (program: Command) => {
 				allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
 				onProgress,
 				onWarning: (code: string, message: string) => {
-					getLogger().warn(code, message);
-					if (code === ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION) {
-						toPostProcessorCLIOutput({
-							result: 'warning',
-							title: 'Unsupported slicer version',
-							message: message,
-						});
+					getLogger().trace(code, 'Warning during processing: ' + message);
+					switch (code) {
+						case ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION:
+							toPostProcessorCLIOutput({
+								result: 'warning',
+								title: 'Unsupported slicer version',
+								message: message,
+							});
+							break;
+						case ACTION_ERROR_CODES.HEURISTIC_SMELL:
+							toPostProcessorCLIOutput({
+								result: 'warning',
+								title: 'Unexpected g-code sequence',
+								message: message,
+							});
+							break;
+						default:
+							toPostProcessorCLIOutput({
+								result: 'warning',
+								title: 'Unexpected warning',
+								message: message,
+							});
+							getLogger().warn(code, message);
+							break;
 					}
 				},
-				// Currently the only warning is about slicer version when allowUnsupportedSlicerVersions is true.
-				// Note that unsupported slicer version will throw if onWarning is not provided regardless of allowUnsupportedSlicerVersions.
-				// onWarning: (code: string, message: string) => { /* TODO */ },
 			};
 
 			try {

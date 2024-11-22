@@ -32,6 +32,8 @@ import {
 import { Writable } from 'node:stream';
 import { GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
 
+export const PROGRESS_STREAM_SPEED_STABILIZATION_TIME = 3;
+
 class NullSink extends Writable {
 	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
 		callback();
@@ -152,7 +154,7 @@ export async function processGCode(
 			onWarning: options.onWarning,
 		});
 		const encoder = new BookmarkingBufferEncoder(undefined, undefined, options.abortSignal);
-		const progressStream = progress({ length: inputStat.size });
+		const progressStream = progress({ length: inputStat.size, speed: PROGRESS_STREAM_SPEED_STABILIZATION_TIME });
 		if (options.onProgress) {
 			progressStream.on('progress', options.onProgress);
 		}
