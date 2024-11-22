@@ -24,18 +24,12 @@ import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEn
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
-import { GCodeFlavour, GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet, getConfiguratorVersion } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
-import semver from 'semver';
-
-/**
- * Force all output other than 'processed by ratos' headers to match the legacy python implementation
- * Remove this ASAP after merging the rewrite.
- * */
-const LEGACY_MODE = true;
+import semver, { SemVer } from 'semver';
 
 export interface FullAnalysisResult {
 	readonly extruderTemps?: string[];
@@ -63,6 +57,12 @@ export interface GCodeProcessorOptions {
 	allowUnsupportedSlicerVersions?: boolean;
 	onWarning?: (code: string, message: string) => void;
 	abortSignal?: AbortSignal;
+}
+
+export interface FinalizeProcessingOptions {
+	bookmarks: BookmarkCollection;
+	replaceLine: (bookmark: Bookmark, line: string) => Promise<void>;
+	getProcessedByRatosHeader: (currentCodeVersion: SemVer, timestamp: Date) => string;
 }
 
 /**
@@ -193,15 +193,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	/**
 	 * Applies all the retrospective changes required after analysing the whole file/stream.
 	 */
-	async finalizeProcessing(): Promise<GCodeInfo>;
-	async finalizeProcessing(
-		bookmarks: BookmarkCollection,
-		replaceLine?: (bookmark: Bookmark, line: string) => Promise<void>,
-	): Promise<GCodeInfo>;
-	async finalizeProcessing(
-		bookmarks?: BookmarkCollection,
-		replaceLine?: (bookmark: Bookmark, line: string) => Promise<void>,
-	): Promise<GCodeInfo> {
+	async finalizeProcessing(options?: FinalizeProcessingOptions): Promise<GCodeInfo> {
 		const s = this.#state;
 
 		if (s.processingHasBeenFinalized) {
@@ -255,15 +247,15 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			};
 		}
 
-		if (!bookmarks || !replaceLine) {
+		if (!options) {
 			// Skip bookmark processing, we're only inspecting.
 			return s.gcodeInfo;
 		}
 
 		if (s.firstLine) {
-			await replaceLine(
-				bookmarks.getBookmark(s.firstLine.bookmark),
-				GCodeInfo.getProcessedByRatosHeader(currentCodeVersion, now) + '\n' + s.firstLine.line.trimEnd(),
+			await options.replaceLine(
+				options.bookmarks.getBookmark(s.firstLine.bookmark),
+				options.getProcessedByRatosHeader(currentCodeVersion, now) + '\n' + s.firstLine.line.trimEnd(),
 			);
 		}
 
@@ -287,7 +279,10 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			}
 
 			if (toAdd) {
-				await replaceLine(bookmarks.getBookmark(s.startPrintLine.bookmark), s.startPrintLine.line.trimEnd() + toAdd);
+				await options.replaceLine(
+					options.bookmarks.getBookmark(s.startPrintLine.bookmark),
+					s.startPrintLine.line.trimEnd() + toAdd,
+				);
 			}
 
 			toAdd = '';
@@ -297,14 +292,17 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 					toAdd += `\nM104 S${s.extruderTemps[Number(tool)]} T${tool}`;
 				}
 
-				await replaceLine(
-					bookmarks.getBookmark(s.onLayerChange2Line.bookmark),
+				await options.replaceLine(
+					options.bookmarks.getBookmark(s.onLayerChange2Line.bookmark),
 					s.onLayerChange2Line.line.trimEnd() + toAdd,
 				);
 
 				if (s.extruderTempLines) {
 					for (let bmLine of s.extruderTempLines) {
-						await replaceLine(bookmarks.getBookmark(bmLine.bookmark), REMOVED_BY_RATOS + bmLine.line.trimEnd());
+						await options.replaceLine(
+							options.bookmarks.getBookmark(bmLine.bookmark),
+							REMOVED_BY_RATOS + bmLine.line.trimEnd(),
+						);
 					}
 				}
 			}
@@ -312,28 +310,4 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 
 		return s.gcodeInfo;
 	}
-	/*
-	getProcessingResult(): GCodeInfo {
-		const s = this.#state;
-		if (!s.gcodeInfoOrUndefined) {
-			// This is essentially an internal error as it indicates a program logic problem with the caller.
-			// This exception will be thrown in the following scenarios:
-			// 1. No data has passed through the GCodeProcessor yet.
-			// 2. The header indicated that the stream is already processed. This will currently throw an
-			//    AlreadyProcessedError, which has a gcodeInfo property for the gcodeInfo parsed from the header.
-			//    At present, the higher-level code in gcode-processor.ts only deals with files - no "process during
-			//    upload" yet. gcode-processor code only invokes a GCodeProcessor for unprocessed files, so GCodeProcessor
-			//    is currently ok to bail when it is given a processed file. However, this will need to be reconsidered
-			//    when we implement process during upload.
-			// 3. Processing threw an error before the file header was parsed, but the caller still tries to get the analysis result.
-			throw new GCodeProcessorError('The analysis result is not available.');
-		}
-
-		if (!s.gcodeInfo.processedByRatOSVersion) {
-			throw new GCodeProcessorError('Processing has not been finalized.');
-		}
-
-		return s.gcodeInfo.clone();
-	}
-*/
 }

@@ -29,6 +29,7 @@ import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
 import { CommonGCodeCommand, parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
 import { InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
+import { GCodeFile } from '@/server/gcode-processor/GCodeFile';
 
 // TODO: Review pad lengths.
 
@@ -86,7 +87,7 @@ export function newGCodeError(message: string, ctx: ProcessLineContext, state: S
 // ];
 
 export const getGcodeInfo: Action = (c, s) => {
-	const parsed = GCodeInfo.tryParseHeader(
+	const parsed = GCodeFile.tryParseHeader(
 		c.line + '\n' + c.getLineOrUndefined(1)?.line + '\n' + c.getLineOrUndefined(2)?.line + '\n',
 	);
 	if (!parsed) {

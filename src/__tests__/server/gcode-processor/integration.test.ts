@@ -31,6 +31,7 @@ import { pipeline } from 'node:stream/promises';
 import split from 'split2';
 import { describe, test, expect, chai } from 'vitest';
 import semver from 'semver';
+import { GCodeFile, TransformOptions } from '@/server/gcode-processor/GCodeFile';
 
 chai.use(require('chai-string'));
 
@@ -93,8 +94,8 @@ async function processedGCodeFilesAreEquivalent(expectedPath: string, actualPath
 		const expectedHeader = await readLines(iterExpected, 3);
 		const actualHeader = await readLines(iterActual, 3);
 
-		const gciExpected = GCodeInfo.tryParseHeader(expectedHeader.lines);
-		const gciActual = GCodeInfo.tryParseHeader(actualHeader.lines);
+		const gciExpected = GCodeFile.tryParseHeader(expectedHeader.lines);
+		const gciActual = GCodeFile.tryParseHeader(actualHeader.lines);
 
 		expect(gciExpected, ' (could not parse expected file header)').not.toBeNull;
 		expect(gciActual, ' (could not parse actual file header)').not.toBeNull;
@@ -171,6 +172,19 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 
 			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
 			let gotWarnings = false;
+			const gcfOptions: TransformOptions = {
+				printerHasIdex: true,
+				allowUnsupportedSlicerVersions: false,
+				onWarning: (c, m) => {
+					// If some specific warning is acceptable during this test, add logic here to ignore it.
+					// Generally, we don't want to encounter warnings in tests.
+					console.warn(`  Warning: ${m} (${c})`);
+					gotWarnings = true;
+				},
+			};
+			const gcf = await GCodeFile.inspect(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile), gcfOptions);
+			await gcf.transform(outputPath, gcfOptions);
+			/*
 			let fh: FileHandle | undefined = undefined;
 			try {
 				fh = await fs.open(outputPath, 'w');
@@ -202,7 +216,7 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 					await fh?.close();
 				} catch {}
 			}
-
+			*/
 			expect(gotWarnings).to.equal(
 				false,
 				'One or more warnings were raised during processing, check console output for details. Correct tests must not produce warnings.',
