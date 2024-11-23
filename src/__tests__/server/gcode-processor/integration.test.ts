@@ -121,6 +121,11 @@ async function processedGCodeFilesAreEquivalent(expectedPath: string, actualPath
 
 			expect(actual.done).toStrictEqual(expected.done);
 
+			if (actual.value.startsWith('; ratos_meta begin ') && expected.value.startsWith('; ratos_meta begin ')) {
+				// Stop comparing. We can't meaningfully compare ratos_meta blocks. This is handled by other tests.
+				break;
+			}
+
 			if (actual.done) {
 				break;
 			}
@@ -171,6 +176,7 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 			await fs.mkdir(outputDir, { recursive: true });
 
 			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
+
 			let gotWarnings = false;
 			const gcfOptions: TransformOptions = {
 				printerHasIdex: true,
@@ -182,41 +188,11 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 					gotWarnings = true;
 				},
 			};
+
 			const gcf = await GCodeFile.inspect(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile), gcfOptions);
+
 			await gcf.transform(outputPath, gcfOptions);
-			/*
-			let fh: FileHandle | undefined = undefined;
-			try {
-				fh = await fs.open(outputPath, 'w');
-				const gcodeProcessor = new GCodeProcessor({
-					printerHasIdex: true,
-					quickInspectionOnly: false,
-					allowUnsupportedSlicerVersions: false,
-					onWarning: (c, m) => {
-						// If some specific warning is acceptable during this test, add logic here to ignore it.
-						// Generally, we don't want to encounter warnings in tests.
-						console.warn(`  Warning: ${m} (${c})`);
-						gotWarnings = true;
-					},
-				});
 
-				const encoder = new BookmarkingBufferEncoder();
-
-				await pipeline(
-					createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
-					split(),
-					gcodeProcessor,
-					encoder,
-					createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
-				);
-
-				await gcodeProcessor.finalizeProcessing(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
-			} finally {
-				try {
-					await fh?.close();
-				} catch {}
-			}
-			*/
 			expect(gotWarnings).to.equal(
 				false,
 				'One or more warnings were raised during processing, check console output for details. Correct tests must not produce warnings.',
