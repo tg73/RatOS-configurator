@@ -154,7 +154,7 @@ export const postprocessor = (program: Command) => {
 		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
 			// load env variables
-			await loadEnvironment();
+			loadEnvironment();
 			let onProgress: ((report: Progress) => void) | undefined = undefined;
 			let rerender: ((element: React.ReactNode) => void) | undefined = undefined;
 			let lastProgressPercentage: number = -1;
