@@ -14,7 +14,7 @@ import { Duration, DurationLikeObject } from 'luxon';
 import path from 'path';
 import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger.ts';
-import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions.ts';
+import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions.ts';
 import { loadEnvironment } from '@/cli/util.tsx';
 import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors.ts';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
@@ -60,11 +60,34 @@ const ProgressReportUI: React.FC<{
 const GcodeInfoZod = z.object({
 	generator: z.string(),
 	generatorVersion: z.string(),
-	flavour: z.number(),
+	flavour: z.string(),
 	generatorTimestamp: z.string(),
 	ratosDialectVersion: z.string().optional(),
 	processedByRatOSVersion: z.string().optional(),
 	processedByRatOSTimestamp: z.string().optional(),
+	wasAlreadyProcessed: z.boolean(),
+	analysisResult: z
+		.object({
+			extruderTemps: z.array(z.string()).optional(),
+			toolChangeCount: z.number(),
+			firstMoveX: z.string().optional(),
+			firstMoveY: z.string().optional(),
+			minX: z.number(),
+			maxX: z.number(),
+			hasPurgeTower: z.boolean().optional(),
+			configSection: z.record(z.string(), z.string()).optional(),
+			usedTools: z.array(z.string()),
+		})
+		.or(
+			z.object({
+				extruderTemps: z.array(z.string()).optional(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				hasPurgeTower: z.boolean().optional(),
+				configSection: z.record(z.string(), z.string()).optional(),
+			}),
+		)
+		.optional(),
 });
 
 export const PostProcessorCLIOutput = z
@@ -83,30 +106,7 @@ export const PostProcessorCLIOutput = z
 	.or(
 		z.object({
 			result: z.literal('success'),
-			payload: z
-				.object({
-					extruderTemps: z.array(z.string()).optional(),
-					toolChangeCount: z.number(),
-					firstMoveX: z.string().optional(),
-					firstMoveY: z.string().optional(),
-					minX: z.number(),
-					maxX: z.number(),
-					hasPurgeTower: z.boolean().optional(),
-					configSection: z.record(z.string(), z.string()).optional(),
-					usedTools: z.array(z.string()),
-					gcodeInfo: GcodeInfoZod,
-				})
-				.or(
-					z.object({
-						extruderTemps: z.array(z.string()).optional(),
-						firstMoveX: z.string().optional(),
-						firstMoveY: z.string().optional(),
-						hasPurgeTower: z.boolean().optional(),
-						configSection: z.record(z.string(), z.string()).optional(),
-						wasAlreadyProcessed: z.boolean(),
-						gcodeInfo: GcodeInfoZod,
-					}),
-				),
+			payload: GcodeInfoZod,
 		}),
 	)
 	.or(
@@ -187,14 +187,14 @@ export const postprocessor = (program: Command) => {
 				onWarning: (code: string, message: string) => {
 					getLogger().trace(code, 'Warning during processing: ' + message);
 					switch (code) {
-						case ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION:
+						case ACTION_WARNING_CODES.UNSUPPORTED_SLICER_VERSION:
 							toPostProcessorCLIOutput({
 								result: 'warning',
 								title: 'Unsupported slicer version',
 								message: message,
 							});
 							break;
-						case ACTION_ERROR_CODES.HEURISTIC_SMELL:
+						case ACTION_WARNING_CODES.HEURISTIC_SMELL:
 							toPostProcessorCLIOutput({
 								result: 'warning',
 								title: 'Unexpected g-code sequence',
