@@ -1,19 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test, vi, Mock } from 'vitest';
-import { render } from 'ink-testing-library';
 import { createTRPCProxyClient } from '@trpc/client';
 import { readPackageUp } from 'read-package-up';
-import { $ } from 'zx';
+import { $, tmpfile, echo, path } from 'zx';
 import { Command } from 'commander';
+import { PostProcessorCLIOutput } from '@/cli/commands/postprocessor';
+import { render as mockedRender } from 'ink';
+import { formatZodError } from '@schema-hub/zod-error-formatter';
 
 // Mock dependencies
 vi.mock('@trpc/client');
 vi.mock('read-package-up');
 vi.mock('zx');
-const mockedRender = vi.fn().mockImplementation(render);
-vi.mock('ink', async () => ({
-	...(await vi.importActual('ink')),
-	render: mockedRender,
-}));
 vi.mock('@/cli/util.tsx', async () => ({
 	...(await vi.importActual('@/cli/util.tsx')),
 	renderError: vi.fn().mockImplementation((error: string, options: { exitCode: number }) => {
@@ -39,7 +36,14 @@ vi.mock('node:fs/promises', async () => ({
 	}),
 }));
 
-describe('RatOS CLI', () => {
+describe('RatOS CLI', async () => {
+	vi.mock('ink', async () => {
+		const { render } = (await vi.importActual('ink-testing-library')) as typeof import('ink-testing-library');
+		return {
+			...(await vi.importActual('ink')),
+			render: vi.fn().mockImplementation(render),
+		};
+	});
 	const mockTrpcClient = {
 		osVersion: { query: vi.fn<any, Promise<string>>() },
 		version: { query: vi.fn<any, Promise<string>>() },
@@ -144,6 +148,50 @@ describe('RatOS CLI', () => {
 			await import('@/cli/ratos');
 
 			expect(mockExec).toHaveBeenCalled();
+		});
+	});
+
+	describe('postprocess command', () => {
+		test('should return schema compliant success result', async () => {
+			const zx = await vi.importActual('zx');
+			const realPath = zx.path as typeof path;
+			const realTmpfile = zx.tmpfile as typeof tmpfile;
+			process.argv = [
+				'node',
+				'ratos',
+				'postprocess',
+				'-i',
+				'-o',
+				'-a',
+				'--non-interactive',
+				realPath.resolve(
+					__dirname,
+					'server/gcode-processor/fixtures/slicer_output/002/IDEX_MultiColor/PS_2.8.1_PurgeTower.gcode',
+				),
+				realTmpfile(),
+			];
+			await import('@/cli/ratos');
+
+			expect(mockedRender).not.toHaveBeenCalled();
+			expect(echo).toHaveBeenCalled();
+			const results = (echo as Mock<Parameters<typeof echo>, ReturnType<typeof echo>>).mock.calls;
+			const successResult = results.find((res) => JSON.parse(res[0]).result === 'success');
+			expect(successResult).toBeDefined();
+			if (successResult == null) {
+				throw new Error('No success result found from postprocess command');
+			}
+			const parsedObject = JSON.parse(successResult[0]);
+			const parsed = PostProcessorCLIOutput.safeParse(parsedObject);
+			if (!parsed.success) {
+				throw formatZodError(parsed.error, parsedObject);
+			}
+			if (parsed.data.result !== 'success') {
+				throw new Error('Postprocess command did not return success');
+			}
+			expect(parsed.data.payload.gcodeInfo.generator).toBe('PrusaSlicer');
+			expect(parsed.data.payload.gcodeInfo.generatorVersion).toBe('2.8.1');
+			expect(parsed.data.payload.gcodeInfo.flavour).toBe(1);
+			expect(parsed.data.payload.gcodeInfo.generatorTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 		});
 	});
 });
