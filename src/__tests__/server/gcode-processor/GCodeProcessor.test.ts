@@ -29,7 +29,7 @@ type TestAction = [id: string, result: TestActionResult];
 
 describe('invokeAction', async () => {
 	const state = new State(false, false, false);
-	state.gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+	state.gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 	const ctx = new ProcessLineContext(new ProcessorLine('; test'), (n) => undefined, 0);
 	const stateWithoutGCodeInfo = new State(false, false, false);
 
@@ -123,31 +123,31 @@ describe('invokeAction', async () => {
 
 describe('satisfiesFilter', async () => {
 	test('simple match', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, GCodeFlavour.PrusaSlicer);
 		expect(match).toStrictEqual(true);
 	});
 
 	test('simple match 2-or', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, GCodeFlavour.PrusaSlicer | GCodeFlavour.OrcaSlicer);
 		expect(match).toStrictEqual(true);
 	});
 
 	test('simple not-match', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, GCodeFlavour.OrcaSlicer);
 		expect(match).toStrictEqual(false);
 	});
 
 	test('version match 1', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, [GCodeFlavour.PrusaSlicer, '>2.1']);
 		expect(match).toStrictEqual(true);
 	});
 
 	test('version match 2', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, [
 			[GCodeFlavour.OrcaSlicer, '>5.9'],
 			[GCodeFlavour.PrusaSlicer, '>2.1'],
@@ -156,7 +156,7 @@ describe('satisfiesFilter', async () => {
 	});
 
 	test('mixed match 1', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, [
 			[GCodeFlavour.OrcaSlicer, '>5.9'],
 			GCodeFlavour.PrusaSlicer,
@@ -165,7 +165,7 @@ describe('satisfiesFilter', async () => {
 	});
 
 	test('mixed match 2', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, [
 			[GCodeFlavour.OrcaSlicer, '>5.9'],
 			GCodeFlavour.SuperSlicer,
@@ -175,13 +175,13 @@ describe('satisfiesFilter', async () => {
 	});
 
 	test('version not-match 1', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('1.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('1.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, [GCodeFlavour.PrusaSlicer, '>2.1']);
 		expect(match).toStrictEqual(false);
 	});
 
 	test('version not-match 2', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('1.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('1.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		const match = GCodeProcessor['satisfiesFilter'](gcodeInfo, [
 			[GCodeFlavour.OrcaSlicer, '>5.9'],
 			[GCodeFlavour.PrusaSlicer, '>2.1'],
@@ -190,21 +190,21 @@ describe('satisfiesFilter', async () => {
 	});
 
 	test('match GCodeFlavour.Unknown should throw', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		expect(() => {
 			GCodeProcessor['satisfiesFilter'](gcodeInfo, GCodeFlavour.Unknown);
 		}).toThrow(InternalError);
 	});
 
 	test('version match GCodeFlavour.Unknown should throw', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		expect(() => {
 			GCodeProcessor['satisfiesFilter'](gcodeInfo, [GCodeFlavour.Unknown, '>2.1']);
 		}).toThrow(InternalError);
 	});
 
 	test('version match two bits should throw', () => {
-		const gcodeInfo = new GCodeInfo('PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
+		const gcodeInfo = new GCodeInfo(1, 'PrusaSlicer', semver.coerce('2.8')!, GCodeFlavour.PrusaSlicer, new Date());
 		expect(() => {
 			GCodeProcessor['satisfiesFilter'](gcodeInfo, [GCodeFlavour.PrusaSlicer | GCodeFlavour.OrcaSlicer, '>2.1']);
 		}).toThrow(InternalError);

@@ -85,7 +85,7 @@ const rxGeneratorHeader =
 	/^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im;
 
 const rxProcessedByRatosHeader =
-	/^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d UTC)(?: v:(?<V>2) m:(?<M>[\da-fA-F]+))?$/im;
+	/^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d(?:Z| UTC))(?: v:(?<V>2) m:(?<M>[\da-fA-F]+))?$/im;
 
 function coerceSemVerOrThrow(version: string | undefined, message: string): SemVer | undefined {
 	if (version === undefined) {
