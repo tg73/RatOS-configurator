@@ -67,57 +67,52 @@ const GcodeInfoZod = z.object({
 	processedByRatOSTimestamp: z.string().optional(),
 });
 
-export const PostProcessorCLIOutput = z
-	.object({
+export const PostProcessorCLIOutput = z.discriminatedUnion('result', [
+	z.object({
 		result: z.literal('error'),
 		title: z.string().optional(),
 		message: z.string(),
-	})
-	.or(
-		z.object({
-			result: z.literal('warning'),
-			title: z.string().optional(),
-			message: z.string(),
-		}),
-	)
-	.or(
-		z.object({
-			result: z.literal('success'),
-			payload: z
-				.object({
-					extruderTemps: z.array(z.string()).optional(),
-					toolChangeCount: z.number(),
-					firstMoveX: z.string().optional(),
-					firstMoveY: z.string().optional(),
-					minX: z.number(),
-					maxX: z.number(),
-					hasPurgeTower: z.boolean().optional(),
-					configSection: z.record(z.string(), z.string()).optional(),
-					usedTools: z.array(z.string()),
-					gcodeInfo: GcodeInfoZod,
-				})
-				.or(
-					z.object({
-						extruderTemps: z.array(z.string()).optional(),
-						firstMoveX: z.string().optional(),
-						firstMoveY: z.string().optional(),
-						hasPurgeTower: z.boolean().optional(),
-						configSection: z.record(z.string(), z.string()).optional(),
-						wasAlreadyProcessed: z.boolean(),
-						gcodeInfo: GcodeInfoZod,
-					}),
-				),
-		}),
-	)
-	.or(
-		z.object({
-			result: z.literal('progress'),
-			payload: z.object({
-				percentage: z.number(),
-				eta: z.number(),
+	}),
+	z.object({
+		result: z.literal('warning'),
+		title: z.string().optional(),
+		message: z.string(),
+	}),
+	z.object({
+		result: z.literal('success'),
+		payload: z.discriminatedUnion('wasAlreadyProcessed', [
+			z.object({
+				extruderTemps: z.array(z.string()).optional(),
+				toolChangeCount: z.number(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				minX: z.number(),
+				maxX: z.number(),
+				hasPurgeTower: z.boolean().optional(),
+				configSection: z.record(z.string(), z.string()).optional(),
+				usedTools: z.array(z.string()),
+				gcodeInfo: GcodeInfoZod,
+				wasAlreadyProcessed: z.literal(false),
 			}),
+			z.object({
+				extruderTemps: z.array(z.string()).optional(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				hasPurgeTower: z.boolean().optional(),
+				configSection: z.record(z.string(), z.string()).optional(),
+				wasAlreadyProcessed: z.literal(true),
+				gcodeInfo: GcodeInfoZod,
+			}),
+		]),
+	}),
+	z.object({
+		result: z.literal('progress'),
+		payload: z.object({
+			percentage: z.number(),
+			eta: z.number(),
 		}),
-	);
+	}),
+]);
 
 export type PostProcessorCLIOutput = z.infer<typeof PostProcessorCLIOutput>;
 
@@ -154,7 +149,7 @@ export const postprocessor = (program: Command) => {
 		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
 			// load env variables
-			await loadEnvironment();
+			loadEnvironment();
 			let onProgress: ((report: Progress) => void) | undefined = undefined;
 			let rerender: ((element: React.ReactNode) => void) | undefined = undefined;
 			let lastProgressPercentage: number = -1;
