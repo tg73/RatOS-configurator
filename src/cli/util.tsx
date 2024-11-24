@@ -1,6 +1,6 @@
 import { $, chalk, echo, path } from 'zx';
-import { Container } from '@/cli/components/container.tsx';
-import { APIResult, Status } from '@/cli/components/status.tsx';
+import { Container } from '@/cli/components/container';
+import { APIResult, Status } from '@/cli/components/status';
 import { render } from 'ink';
 import { Command } from 'commander';
 import { readFile, realpath } from 'node:fs/promises';

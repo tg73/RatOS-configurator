@@ -4,19 +4,19 @@ import {
 	inspectGCode,
 	processGCode,
 	PROGRESS_STREAM_SPEED_STABILIZATION_TIME,
-} from '@/server/gcode-processor/gcode-processor.ts';
+} from '@/server/gcode-processor/gcode-processor';
 import { echo, fs, tmpfile } from 'zx';
 import { ProgressBar, StatusMessage } from '@inkjs/ui';
 import { Box, render, Text } from 'ink';
 import React from 'react';
-import { Container } from '@/cli/components/container.tsx';
+import { Container } from '@/cli/components/container';
 import { Duration, DurationLikeObject } from 'luxon';
 import path from 'path';
 import { z, ZodError } from 'zod';
-import { getLogger } from '@/cli/logger.ts';
-import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions.ts';
-import { loadEnvironment } from '@/cli/util.tsx';
-import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors.ts';
+import { getLogger } from '@/cli/logger';
+import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions';
+import { loadEnvironment } from '@/cli/util';
+import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
 
 const ProgressReportUI: React.FC<{

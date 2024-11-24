@@ -1,9 +1,9 @@
-import { Signal, useSignal } from '@/app/_helpers/signal.ts';
+import { Signal, useSignal } from '@/app/_helpers/signal';
 import { TextProps, Static, Box, Text, Transform } from 'ink';
 import Spinner from 'ink-spinner';
 import React, { useState, useCallback } from 'react';
-import { formatCmd } from '@/cli/util.tsx';
-import { Container } from '@/cli/components/container.tsx';
+import { formatCmd } from '@/cli/util';
+import { Container } from '@/cli/components/container';
 
 export type InstallStep = {
 	name: string;
