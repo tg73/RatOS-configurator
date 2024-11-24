@@ -67,57 +67,54 @@ const GcodeInfoZod = z.object({
 	processedByRatOSTimestamp: z.string().optional(),
 	wasAlreadyProcessed: z.boolean(),
 	analysisResult: z
-		.object({
-			extruderTemps: z.array(z.string()).optional(),
-			toolChangeCount: z.number(),
-			firstMoveX: z.string().optional(),
-			firstMoveY: z.string().optional(),
-			minX: z.number(),
-			maxX: z.number(),
-			hasPurgeTower: z.boolean().optional(),
-			configSection: z.record(z.string(), z.string()).optional(),
-			usedTools: z.array(z.string()),
-		})
-		.or(
+		.discriminatedUnion('kind', [
 			z.object({
+				kind: z.literal('full'),
+				extruderTemps: z.array(z.string()).optional(),
+				toolChangeCount: z.number(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				minX: z.number(),
+				maxX: z.number(),
+				hasPurgeTower: z.boolean().optional(),
+				configSection: z.record(z.string(), z.string()).optional(),
+				usedTools: z.array(z.string()),
+			}),
+
+			z.object({
+				kind: z.literal('quick'),
 				extruderTemps: z.array(z.string()).optional(),
 				firstMoveX: z.string().optional(),
 				firstMoveY: z.string().optional(),
 				hasPurgeTower: z.boolean().optional(),
-				configSection: z.record(z.string(), z.string()).optional(),
 			}),
-		)
+		])
 		.optional(),
 });
 
-export const PostProcessorCLIOutput = z
-	.object({
+export const PostProcessorCLIOutput = z.discriminatedUnion('result', [
+	z.object({
 		result: z.literal('error'),
 		title: z.string().optional(),
 		message: z.string(),
-	})
-	.or(
-		z.object({
-			result: z.literal('warning'),
-			title: z.string().optional(),
-			message: z.string(),
+	}),
+	z.object({
+		result: z.literal('warning'),
+		title: z.string().optional(),
+		message: z.string(),
+	}),
+	z.object({
+		result: z.literal('success'),
+		payload: GcodeInfoZod,
+	}),
+	z.object({
+		result: z.literal('progress'),
+		payload: z.object({
+			percentage: z.number(),
+			eta: z.number(),
 		}),
-	)
-	.or(
-		z.object({
-			result: z.literal('success'),
-			payload: GcodeInfoZod,
-		}),
-	)
-	.or(
-		z.object({
-			result: z.literal('progress'),
-			payload: z.object({
-				percentage: z.number(),
-				eta: z.number(),
-			}),
-		}),
-	);
+	}),
+]);
 
 export type PostProcessorCLIOutput = z.infer<typeof PostProcessorCLIOutput>;
 
@@ -219,7 +216,7 @@ export const postprocessor = (program: Command) => {
 				}
 				const result = !!outputFile
 					? await processGCode(inputFile, outputFile, opts)
-					: await inspectGCode(inputFile, { ...opts, fullInspection: false }); // fullInspection default is false, just to demo.
+					: await inspectGCode(inputFile, { ...opts, fullInspection: false });
 
 				if (args.overwriteInput) {
 					fs.renameSync(outputFile, inputFile);

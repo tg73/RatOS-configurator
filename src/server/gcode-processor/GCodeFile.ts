@@ -23,6 +23,7 @@ import fastChunkString from '@shelf/fast-chunk-string';
 import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import {
 	AnalysisResult,
+	AnalysisResultKind,
 	GCodeProcessor,
 	GCodeProcessorOptions,
 	InspectionIsComplete,
@@ -158,7 +159,14 @@ export class GCodeFile {
 					} else {
 						const jsonStr = Buffer.from(base64str, 'base64').toString('utf-8');
 						// TODO: Versioning
-						gci.analysisResult = JSON.parse(jsonStr);
+						// Fix up recently-added 'kind' field. There must be a cleaner way to do this...
+						const obj = JSON.parse(jsonStr);
+
+						if (obj.kind === undefined) {
+							obj.kind = obj.minX === undefined ? AnalysisResultKind.Quick : AnalysisResultKind.Full;
+						}
+
+						gci.analysisResult = obj;
 					}
 				}
 			} else {

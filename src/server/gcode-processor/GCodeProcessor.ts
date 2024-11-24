@@ -31,7 +31,13 @@ import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor
 import * as act from '@/server/gcode-processor/Actions';
 import semver, { SemVer } from 'semver';
 
+export enum AnalysisResultKind {
+	Full = 'full',
+	Quick = 'quick',
+}
+
 export interface FullAnalysisResult {
+	readonly kind: AnalysisResultKind;
 	readonly extruderTemps?: string[];
 	readonly toolChangeCount: number;
 	readonly firstMoveX?: string;
@@ -47,7 +53,10 @@ export interface FullAnalysisResult {
 
 export type AnalysisResult =
 	| FullAnalysisResult
-	| Pick<FullAnalysisResult, 'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'>;
+	| Pick<
+			FullAnalysisResult,
+			'kind' | 'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'
+	  >;
 
 export class InspectionIsComplete extends Error {}
 
@@ -227,6 +236,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		if (s.kQuickInpsectionOnly) {
 			// Populate only known-complete data.
 			s.gcodeInfo.analysisResult = {
+				kind: AnalysisResultKind.Quick,
 				extruderTemps: s.extruderTemps,
 				firstMoveX: s.firstMoveX,
 				firstMoveY: s.firstMoveY,
@@ -235,6 +245,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			};
 		} else {
 			s.gcodeInfo.analysisResult = {
+				kind: AnalysisResultKind.Full,
 				extruderTemps: s.extruderTemps,
 				toolChangeCount: s.toolChangeCount,
 				firstMoveX: s.firstMoveX,
