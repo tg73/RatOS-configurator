@@ -65,7 +65,7 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 	const gcfOptions = {
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
-		quickInspectionOnly: false,
+		quickInspectionOnly: !options.fullInspection,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
 	};
