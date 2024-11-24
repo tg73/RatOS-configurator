@@ -36,8 +36,12 @@ export enum AnalysisResultKind {
 	Quick = 'quick',
 }
 
-export interface FullAnalysisResult {
-	readonly kind: AnalysisResultKind;
+export interface BaseAnalysisResult {
+	kind: AnalysisResultKind;
+}
+
+export interface FullAnalysisResult extends BaseAnalysisResult {
+	readonly kind: AnalysisResultKind.Full;
 	readonly extruderTemps?: string[];
 	readonly toolChangeCount: number;
 	readonly firstMoveX?: string;
@@ -51,12 +55,13 @@ export interface FullAnalysisResult {
 	};
 }
 
-export type AnalysisResult =
-	| FullAnalysisResult
-	| Pick<
-			FullAnalysisResult,
-			'kind' | 'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'
-	  >;
+export interface QuickAnalysisResult
+	extends BaseAnalysisResult,
+		Pick<FullAnalysisResult, 'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'> {
+	readonly kind: AnalysisResultKind.Quick;
+}
+
+export type AnalysisResult = FullAnalysisResult | QuickAnalysisResult;
 
 export class InspectionIsComplete extends Error {}
 
