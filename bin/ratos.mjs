@@ -100059,43 +100059,44 @@ var GcodeInfoZod = z.object({
   processedByRatOSVersion: z.string().optional(),
   processedByRatOSTimestamp: z.string().optional()
 });
-var PostProcessorCLIOutput = z.object({
-  result: z.literal("error"),
-  title: z.string().optional(),
-  message: z.string()
-}).or(
+var PostProcessorCLIOutput = z.discriminatedUnion("result", [
+  z.object({
+    result: z.literal("error"),
+    title: z.string().optional(),
+    message: z.string()
+  }),
   z.object({
     result: z.literal("warning"),
     title: z.string().optional(),
     message: z.string()
-  })
-).or(
+  }),
   z.object({
     result: z.literal("success"),
-    payload: z.object({
-      extruderTemps: z.array(z.string()).optional(),
-      toolChangeCount: z.number(),
-      firstMoveX: z.string().optional(),
-      firstMoveY: z.string().optional(),
-      minX: z.number(),
-      maxX: z.number(),
-      hasPurgeTower: z.boolean().optional(),
-      configSection: z.record(z.string(), z.string()).optional(),
-      usedTools: z.array(z.string()),
-      gcodeInfo: GcodeInfoZod
-    }).or(
+    payload: z.discriminatedUnion("wasAlreadyProcessed", [
+      z.object({
+        extruderTemps: z.array(z.string()).optional(),
+        toolChangeCount: z.number(),
+        firstMoveX: z.string().optional(),
+        firstMoveY: z.string().optional(),
+        minX: z.number(),
+        maxX: z.number(),
+        hasPurgeTower: z.boolean().optional(),
+        configSection: z.record(z.string(), z.string()).optional(),
+        usedTools: z.array(z.string()),
+        gcodeInfo: GcodeInfoZod,
+        wasAlreadyProcessed: z.literal(false)
+      }),
       z.object({
         extruderTemps: z.array(z.string()).optional(),
         firstMoveX: z.string().optional(),
         firstMoveY: z.string().optional(),
         hasPurgeTower: z.boolean().optional(),
         configSection: z.record(z.string(), z.string()).optional(),
-        wasAlreadyProcessed: z.boolean(),
+        wasAlreadyProcessed: z.literal(true),
         gcodeInfo: GcodeInfoZod
       })
-    )
-  })
-).or(
+    ])
+  }),
   z.object({
     result: z.literal("progress"),
     payload: z.object({
@@ -100103,7 +100104,7 @@ var PostProcessorCLIOutput = z.object({
       eta: z.number()
     })
   })
-);
+]);
 var toPostProcessorCLIOutput = (obj) => {
   try {
     echo2(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
@@ -100127,7 +100128,7 @@ ${formatZodError(e, obj).message}`
 };
 var postprocessor = (program3) => {
   program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit for inspection only)").action(async (inputFile, outputFile, args) => {
-    await loadEnvironment();
+    loadEnvironment();
     let onProgress = void 0;
     let rerender = void 0;
     let lastProgressPercentage = -1;

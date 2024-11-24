@@ -32,9 +32,8 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "build/types/**/*.ts"
+    "build/types/**/*.ts",
+	"**/*.d.ts"
   ],
   "exclude": [
     "cli/**/*"
