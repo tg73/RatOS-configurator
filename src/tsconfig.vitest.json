@@ -1,5 +1,7 @@
 {
 	"extends": "./tsconfig.json",
+    "module": "esnext",
+    "moduleResolution": "bundler",
 	"compilerOptions": {
 		"jsx": "react",
 		"types": ["vitest/globals"],
