@@ -11,12 +11,12 @@ import { Status } from '@/cli/components/status.jsx';
 import { readPackageUp } from 'read-package-up';
 import { $, echo, which } from 'zx';
 import { existsSync } from 'node:fs';
-import { ensureSudo, getRealPath, renderApiResults, renderError, errorColor, loadEnvironment } from '@/cli/util.tsx';
-import { InstallProgressUI, InstallStep } from '@/cli/components/install-progress.tsx';
-import { createSignal } from '@/app/_helpers/signal.ts';
-import { getLogger } from '@/cli/logger.ts';
-import { frontend } from '@/cli/commands/frontend.tsx';
-import { postprocessor } from '@/cli/commands/postprocessor.tsx';
+import { ensureSudo, getRealPath, renderApiResults, renderError, errorColor, loadEnvironment } from '@/cli/util';
+import { InstallProgressUI, InstallStep } from '@/cli/components/install-progress';
+import { createSignal } from '@/app/_helpers/signal';
+import { getLogger } from '@/cli/logger';
+import { frontend } from '@/cli/commands/frontend';
+import { postprocessor } from '@/cli/commands/postprocessor';
 
 const program = new commander.Command()
 	.name('ratos')
