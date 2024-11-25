@@ -1,14 +1,14 @@
-import { createSignal } from '@/app/_helpers/signal.ts';
+import { createSignal } from '@/app/_helpers/signal';
 import { serverSchema } from '@/env/schema.mjs';
-import { findSection } from '@/server/helpers/config-parsing.ts';
+import { findSection } from '@/server/helpers/config-parsing';
 import { Command, Argument } from 'commander';
 import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { render } from 'ink';
 import { $ } from 'zx';
-import { InstallProgressUI, InstallStep } from '@/cli/components/install-progress.tsx';
-import { getLogger } from '@/cli/logger.ts';
-import { ensureSudo, renderError } from '@/cli/util.tsx';
+import { InstallProgressUI, InstallStep } from '@/cli/components/install-progress';
+import { getLogger } from '@/cli/logger';
+import { ensureSudo, renderError } from '@/cli/util';
 import dotenv from 'dotenv';
 import React from 'react';
 

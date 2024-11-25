@@ -49,7 +49,7 @@ jobs:
         uses: actions/setup-node@v4.0.1
         with:
           # Version Spec of the version to use. Examples: 12.x, 10.15.1, >=10.15.0.
-          node-version: 18.x
+          node-version: 20.x # Tests currently require node 20
 
       - uses: pnpm/action-setup@v4
         name: Install pnpm

@@ -4,19 +4,19 @@ import {
 	inspectGCode,
 	processGCode,
 	PROGRESS_STREAM_SPEED_STABILIZATION_TIME,
-} from '@/server/gcode-processor/gcode-processor.ts';
+} from '@/server/gcode-processor/gcode-processor';
 import { echo, fs, tmpfile } from 'zx';
 import { ProgressBar, StatusMessage } from '@inkjs/ui';
 import { Box, render, Text } from 'ink';
 import React from 'react';
-import { Container } from '@/cli/components/container.tsx';
+import { Container } from '@/cli/components/container';
 import { Duration, DurationLikeObject } from 'luxon';
 import path from 'path';
 import { z, ZodError } from 'zod';
-import { getLogger } from '@/cli/logger.ts';
-import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions.ts';
-import { loadEnvironment } from '@/cli/util.tsx';
-import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors.ts';
+import { getLogger } from '@/cli/logger';
+import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions';
+import { loadEnvironment } from '@/cli/util';
+import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
 
 const ProgressReportUI: React.FC<{
@@ -67,57 +67,52 @@ const GcodeInfoZod = z.object({
 	processedByRatOSTimestamp: z.string().optional(),
 });
 
-export const PostProcessorCLIOutput = z
-	.object({
+export const PostProcessorCLIOutput = z.discriminatedUnion('result', [
+	z.object({
 		result: z.literal('error'),
 		title: z.string().optional(),
 		message: z.string(),
-	})
-	.or(
-		z.object({
-			result: z.literal('warning'),
-			title: z.string().optional(),
-			message: z.string(),
-		}),
-	)
-	.or(
-		z.object({
-			result: z.literal('success'),
-			payload: z
-				.object({
-					extruderTemps: z.array(z.string()).optional(),
-					toolChangeCount: z.number(),
-					firstMoveX: z.string().optional(),
-					firstMoveY: z.string().optional(),
-					minX: z.number(),
-					maxX: z.number(),
-					hasPurgeTower: z.boolean().optional(),
-					configSection: z.record(z.string(), z.string()).optional(),
-					usedTools: z.array(z.string()),
-					gcodeInfo: GcodeInfoZod,
-				})
-				.or(
-					z.object({
-						extruderTemps: z.array(z.string()).optional(),
-						firstMoveX: z.string().optional(),
-						firstMoveY: z.string().optional(),
-						hasPurgeTower: z.boolean().optional(),
-						configSection: z.record(z.string(), z.string()).optional(),
-						wasAlreadyProcessed: z.boolean(),
-						gcodeInfo: GcodeInfoZod,
-					}),
-				),
-		}),
-	)
-	.or(
-		z.object({
-			result: z.literal('progress'),
-			payload: z.object({
-				percentage: z.number(),
-				eta: z.number(),
+	}),
+	z.object({
+		result: z.literal('warning'),
+		title: z.string().optional(),
+		message: z.string(),
+	}),
+	z.object({
+		result: z.literal('success'),
+		payload: z.discriminatedUnion('wasAlreadyProcessed', [
+			z.object({
+				extruderTemps: z.array(z.string()).optional(),
+				toolChangeCount: z.number(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				minX: z.number(),
+				maxX: z.number(),
+				hasPurgeTower: z.boolean().optional(),
+				configSection: z.record(z.string(), z.string()).optional(),
+				usedTools: z.array(z.string()),
+				gcodeInfo: GcodeInfoZod,
+				wasAlreadyProcessed: z.literal(false),
 			}),
+			z.object({
+				extruderTemps: z.array(z.string()).optional(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				hasPurgeTower: z.boolean().optional(),
+				configSection: z.record(z.string(), z.string()).optional(),
+				wasAlreadyProcessed: z.literal(true),
+				gcodeInfo: GcodeInfoZod,
+			}),
+		]),
+	}),
+	z.object({
+		result: z.literal('progress'),
+		payload: z.object({
+			percentage: z.number(),
+			eta: z.number(),
 		}),
-	);
+	}),
+]);
 
 export type PostProcessorCLIOutput = z.infer<typeof PostProcessorCLIOutput>;
 
@@ -154,7 +149,7 @@ export const postprocessor = (program: Command) => {
 		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
 			// load env variables
-			await loadEnvironment();
+			loadEnvironment();
 			let onProgress: ((report: Progress) => void) | undefined = undefined;
 			let rerender: ((element: React.ReactNode) => void) | undefined = undefined;
 			let lastProgressPercentage: number = -1;
