@@ -54,7 +54,7 @@ jobs:
         name: Setup Next.js cache
         with:
           path: |
-            ${{ github.workspace }}/src/.next/cache
+            ${{ github.workspace }}/src/build/cache
           # Generate a new cache whenever packages or source files change.
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
           # If source files changed but packages didn't, rebuild from a prior cache.
