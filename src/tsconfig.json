@@ -45,9 +45,9 @@
   "include": [
     "next-env.d.ts",
     "build/types/**/*.ts",
-	"**/*.d.ts",
-	"**/*.ts",
-	"**/*.tsx",
+    "**/*.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
   ],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
