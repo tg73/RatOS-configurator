@@ -118,8 +118,23 @@ describe('tryParseHeader', async () => {
 	});
 
 	test('getProcessedByRatosHeader', async () => {
-		const header = GCodeFile.getProcessedByRatosHeader(new SemVer('1.2.3'), new Date(0xbadbabe), 0xdecafbad);
-		expect(header).toEqual('; processed by RatOS 1.2.3 on 1970-01-03 at 06:25:34 UTC v:2 m:decafbad');
+		let header = GCodeFile.getProcessedByRatosHeader({
+			currentCodeVersion: new SemVer('1.2.3'),
+			timestamp: new Date(0xbadbabe),
+			ratosMetaFileOffset: 0xdecafbad,
+			processedForIdex: false,
+		});
+		expect(header).toEqual('; processed by RatOS.PostProcessor 1.2.3 on 1970-01-03 at 06:25:34 UTC v:3 m:decafbad');
+
+		header = GCodeFile.getProcessedByRatosHeader({
+			currentCodeVersion: new SemVer('1.2.3'),
+			timestamp: new Date(0xbadbabe),
+			ratosMetaFileOffset: 0xdecafbad,
+			processedForIdex: true,
+		});
+		expect(header).toEqual(
+			'; processed by RatOS.PostProcessor 1.2.3 on 1970-01-03 at 06:25:34 UTC v:3 m:decafbad idex',
+		);
 	});
 });
 
@@ -149,7 +164,7 @@ describe('fromFile', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-10-31T03:29:37.000Z'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.60'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toEqual(new SemVer('1.0.0-legacy'));
+		expect(parsed!.processedByRatOSVersion).toEqual(new SemVer('0.1.0-legacy'));
 		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
 	});
 

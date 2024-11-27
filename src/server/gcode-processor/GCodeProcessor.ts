@@ -26,42 +26,12 @@ import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-p
 import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
 import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { State } from '@/server/gcode-processor/State';
-import { exactlyOneBitSet, getConfiguratorVersion } from '@/server/gcode-processor/helpers';
+import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
 import semver, { SemVer } from 'semver';
-
-export enum AnalysisResultKind {
-	Full = 'full',
-	Quick = 'quick',
-}
-
-export interface BaseAnalysisResult {
-	kind: AnalysisResultKind;
-}
-
-export interface FullAnalysisResult extends BaseAnalysisResult {
-	readonly kind: AnalysisResultKind.Full;
-	readonly extruderTemps?: string[];
-	readonly toolChangeCount: number;
-	readonly firstMoveX?: string;
-	readonly firstMoveY?: string;
-	readonly minX: number;
-	readonly maxX: number;
-	readonly hasPurgeTower?: boolean;
-	readonly usedTools: string[];
-	readonly configSection?: {
-		[key: string]: string;
-	};
-}
-
-export interface QuickAnalysisResult
-	extends BaseAnalysisResult,
-		Pick<FullAnalysisResult, 'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'> {
-	readonly kind: AnalysisResultKind.Quick;
-}
-
-export type AnalysisResult = FullAnalysisResult | QuickAnalysisResult;
+import { ANALYSIS_RESULT_VERSION, AnalysisResultKind } from '@/server/gcode-processor/AnalysisResult';
+import { getPostProcessorVersion } from '@/server/gcode-processor/Version';
 
 export class InspectionIsComplete extends Error {}
 
@@ -232,15 +202,16 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 
 		s.processingHasBeenFinalized = true;
 
-		const currentCodeVersion = await getConfiguratorVersion();
+		const currentPPVersion = await getPostProcessorVersion();
 		const now = new Date();
 
-		s.gcodeInfo.processedByRatOSVersion = currentCodeVersion;
+		s.gcodeInfo.processedByRatOSVersion = currentPPVersion;
 		s.gcodeInfo.processedByRatOSTimestamp = now;
 
 		if (s.kQuickInpsectionOnly) {
 			// Populate only known-complete data.
 			s.gcodeInfo.analysisResult = {
+				version: ANALYSIS_RESULT_VERSION,
 				kind: AnalysisResultKind.Quick,
 				extruderTemps: s.extruderTemps,
 				firstMoveX: s.firstMoveX,
@@ -250,6 +221,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			};
 		} else {
 			s.gcodeInfo.analysisResult = {
+				version: ANALYSIS_RESULT_VERSION,
 				kind: AnalysisResultKind.Full,
 				extruderTemps: s.extruderTemps,
 				toolChangeCount: s.toolChangeCount,
@@ -271,7 +243,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		if (s.firstLine) {
 			await options.replaceLine(
 				options.bookmarks.getBookmark(s.firstLine.bookmark),
-				options.getProcessedByRatosHeader(currentCodeVersion, now) + '\n' + s.firstLine.line.trimEnd(),
+				options.getProcessedByRatosHeader(currentPPVersion, now) + '\n' + s.firstLine.line.trimEnd(),
 			);
 		}
 

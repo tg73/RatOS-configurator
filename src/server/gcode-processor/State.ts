@@ -14,7 +14,7 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { InternalError } from '@/server/gcode-processor/errors';
 import { BookmarkKey } from '@/server/gcode-processor/Bookmark';
 import { CommonGCodeCommand } from '@/server/gcode-processor/CommonGCodeCommand';
@@ -70,24 +70,24 @@ export class State {
 		this._cmd = undefined;
 	}
 
-	#gcodeInfo?: GCodeInfo;
+	#gcodeInfo?: MutableGCodeInfo;
 
 	/**
 	 * `gcodeInfo` is always set near the start of processing and is accessed frequently
 	 * so provide a non-optional accessor for convenience.
 	 */
-	get gcodeInfo(): GCodeInfo {
+	get gcodeInfo(): MutableGCodeInfo {
 		if (!this.#gcodeInfo) {
 			throw new InternalError('gcodeInfo has not been set yet.');
 		}
 		return this.#gcodeInfo;
 	}
 
-	set gcodeInfo(value: GCodeInfo) {
+	set gcodeInfo(value: MutableGCodeInfo) {
 		this.#gcodeInfo = value;
 	}
 
-	get gcodeInfoOrUndefined(): GCodeInfo | undefined {
+	get gcodeInfoOrUndefined(): MutableGCodeInfo | undefined {
 		return this.#gcodeInfo;
 	}
 

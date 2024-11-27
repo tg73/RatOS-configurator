@@ -15,19 +15,13 @@
  */
 
 import semver, { SemVer } from 'semver';
-import { GCodeError, GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
+import { GCodeError, InternalError, SlicerIdentificationNotFound } from '@/server/gcode-processor/errors';
 import date2 from 'date-and-time';
 import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
 import fastChunkString from '@shelf/fast-chunk-string';
-import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import {
-	AnalysisResult,
-	AnalysisResultKind,
-	GCodeProcessor,
-	GCodeProcessorOptions,
-	InspectionIsComplete,
-} from '@/server/gcode-processor/GCodeProcessor';
+import { GCodeFlavour, GCodeInfo, MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeProcessor, GCodeProcessorOptions, InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
 import { Readable, Transform, Writable } from 'stream';
 import { FileHandle, open } from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
@@ -37,6 +31,16 @@ import {
 	BookmarkingBufferEncoder,
 	replaceBookmarkedGcodeLine,
 } from '@/server/gcode-processor/BookmarkingBufferEncoder';
+import { getPostProcessorVersion } from '@/server/gcode-processor/Version';
+import { validateGenerator } from '@/server/gcode-processor/Actions';
+import { AssertionError } from 'node:assert';
+import { AnalysisResult, AnalysisResultKind, AnalysisResultSchema } from '@/server/gcode-processor/AnalysisResult';
+
+function assert(condition: any, message?: string): asserts condition {
+	if (!condition) {
+		throw new AssertionError({ message });
+	}
+}
 
 /**
  * GCode File Metadata
@@ -67,7 +71,7 @@ export type TransformOptions = { progressTransform?: Transform } & Pick<
 	'abortSignal' | 'allowUnsupportedSlicerVersions' | 'onWarning' | 'printerHasIdex'
 >;
 export type AnalyseOptions = { progressTransform?: Transform } & GCodeProcessorOptions;
-export type InspectOptions = Pick<GCodeProcessorOptions, 'onWarning'>;
+export type InspectOptions = Pick<GCodeProcessorOptions, 'onWarning' | 'allowUnsupportedSlicerVersions'>;
 
 const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
 
@@ -85,8 +89,11 @@ const rxRatosMeta = /(?:^; ratos_meta begin (\d+)\n(.*))?\n; ratos_meta end (\d+
 const rxGeneratorHeader =
 	/^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im;
 
-const rxProcessedByRatosHeader =
-	/^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d(?:Z| UTC))(?: v:(?<V>2) m:(?<M>[\da-fA-F]+))?$/im;
+const rxProcessedByRatosHeaderPreV3 =
+	/^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d(?:Z| UTC))/im;
+
+const rxProcessedByRatosHeaderV3 =
+	/^; processed by RatOS\.PostProcessor (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d(?:Z| UTC))(?: v:(?<V>3) m:(?<M>[\da-fA-F]+)(?<IDEX> idex)?)?(?:$|\s)/im;
 
 function coerceSemVerOrThrow(version: string | undefined, message: string): SemVer | undefined {
 	if (version === undefined) {
@@ -105,15 +112,67 @@ class NullSink extends Writable {
 	}
 }
 
+/**
+ * Describes how a gcode file is printable or not. {@link Printability} is not concerned with the method of reprocessing:
+ * it might be possible to de-process then re-process an existing processed file (see {@link GCodeFile.canDeprocess}), or it
+ * might be necessary for the user to supply the unprocessed file to be processed again.
+ */
+export enum Printability {
+	/** The file is not supported: (re)processing won't help. For example, an unsupported slicer version, an obsolete or future file layout. When applicable, see {@link GCodeFile.printabilityReasons}. */
+	NOT_SUPPORTED = 'NOT_SUPPORTED',
+	/** The file is not processed yet, and must be processed before it can be printed. */
+	MUST_PROCESS = 'MUST_PROCESS',
+	/** The file can be printed as-is. There would be no benefit to reprocessing. */
+	READY = 'READY',
+	/** The already-processed file can be printed as-is, but there could be some benefit to reprocessing. */
+	COULD_REPROCESS = 'COULD_REPROCESS',
+	/** The already-processed file cannot be printed as-is, and must be reprocessed. */
+	MUST_REPROCESS = 'MUST_REPROCESS',
+}
+
 export class GCodeFile {
+	private static readonly FILE_FORMAT_VERSION = 3;
+
 	/** The placeholder version used to represent files transformed by the legacy ratos.py post processor. */
-	public static readonly LEGACY_RATOS_VERSION = new SemVer('1.0.0-legacy');
+	public static readonly LEGACY_RATOS_VERSION = new SemVer('0.1.0-legacy');
+
+	private constructor(
+		public readonly path: string,
+		public readonly info: GCodeInfo,
+		public readonly printability: Printability,
+		/** Can the file be deprocessed, which would allow reprocessing without re-uploading? Only defined for files that are already processed. */
+		public readonly canDeprocess?: boolean,
+		/** When available, one or more reasons explaining {@link printability}. */
+		public readonly printabilityReasons?: string[],
+	) {}
 
 	private static getRatosMetaFooter(analysisResult: AnalysisResult): string {
 		const b64 = Buffer.from(JSON.stringify(analysisResult)).toString('base64');
 		const chunks = fastChunkString(b64, { size: 78, unicodeAware: false });
 		return `\n; ratos_meta begin ${b64.length}\n; ${chunks.join('\n; ')}\n; ratos_meta end ${chunks.length}`;
 	}
+
+	/**
+	 * invalid: no valid 'generated by' header found, can't inspect (aka, not a gcode file)
+	 * unsupported: 'processed by' header found, but the fileFormatVersion is not supported.
+	 *   Could be a future layout version or an old file layout that is no longer supported in current code.
+	 *
+	 * what to do about changes to the shape of AnalysisResult?
+	 *
+	 * 1. Give its own version, use Zod for validation and transformation. Force printability -> mustReprocess if Zod can't parse.
+	 * or
+	 * 2. Bump fileFormatVersion if AnalysisResult changes.
+	 *
+	 * I prefer 1. actual changes to file layout or encoding, as represented by "pure" fileFormatVersion, typically need to be handled by explicit code branching.
+	 * Serialized object validation and transformation can be expressed declaritively using Zod. Keep the two things separate.
+	 *
+	 * isProcessed:
+	 * 		true
+	 * 			printability: ready, mustReprocess, couldReprocess
+	 * 			canReprocess: true, false
+	 * 		false
+	 *
+	 */
 
 	/** Factory. Returns GCodeFile with valid `info` or throws if the file header can't be parsed etc. */
 	public static async inspect(path: string, options: InspectOptions): Promise<GCodeFile> {
@@ -122,12 +181,78 @@ export class GCodeFile {
 		const gci = GCodeFile.tryParseHeader(header);
 
 		if (!gci) {
-			throw new GCodeProcessorError('No valid G-Code file headers were found, the file cannot be inspected.');
+			throw new SlicerIdentificationNotFound();
 		}
 
-		if (gci.fileLayoutVersion === 2) {
-			// NB: gci.ratosMetaFileOffset is set but not used yet. The code below is transitional and will be replaced.
+		if (gci.fileFormatVersion === undefined) {
+			const tail = await fsReaderGetLines(path, -3);
+			if (/^; processed by RatOS($|\s)/im.test(tail)) {
+				gci.processedByRatOSVersion = GCodeFile.LEGACY_RATOS_VERSION;
+				gci.fileFormatVersion = 0;
+			}
+		}
 
+		const reasons: string[] = [];
+
+		if (!options.allowUnsupportedSlicerVersions) {
+			try {
+				validateGenerator(gci, false);
+			} catch (e) {
+				if (e instanceof Error) {
+					reasons.push(e.message);
+				}
+			}
+		}
+
+		if (gci.fileFormatVersion) {
+			// NB: In the future, we might make more effort to read older file layouts. For now, we don't.
+			if (gci.fileFormatVersion < GCodeFile.FILE_FORMAT_VERSION) {
+				reasons.push(
+					'The file format is from an old version of RatOS which is no longer supported. The original file must be re-uploaded or re-sliced.',
+				);
+			} else if (gci.fileFormatVersion > GCodeFile.FILE_FORMAT_VERSION) {
+				reasons.push(
+					'The file format is from a newer version of RatOS. Update RatOS, or re-upload or re-slice the original file.',
+				);
+			}
+		}
+
+		if (reasons.length > 0) {
+			return new GCodeFile(path, gci, Printability.NOT_SUPPORTED, undefined, reasons);
+		}
+
+		const currentVersion = await getPostProcessorVersion();
+		let printability: Printability | undefined;
+
+		if (gci.isProcessed) {
+			assert(gci.processedByRatOSVersion);
+			if (semver.eq(currentVersion, gci.processedByRatOSVersion)) {
+				printability = Printability.READY;
+			} else if (semver.lt(currentVersion, gci.processedByRatOSVersion)) {
+				reasons.push(
+					'The file was processed by a more recent version of RatOS than the installed version. Either update RatOS, or the file must be reprocessed.',
+				);
+				printability = Printability.MUST_REPROCESS;
+			} else if (currentVersion.major > gci.processedByRatOSVersion.major) {
+				reasons.push(
+					'There have been significant incompatible changes to RatOS gcode handling since the file was last processed.',
+				);
+				printability = Printability.MUST_REPROCESS;
+			} else {
+				reasons.push(
+					currentVersion.minor === gci.processedByRatOSVersion.minor
+						? 'There have been enhancements and/or bug fixes since the file was last processed.'
+						: 'There have been bug fixes since the file was last processed.',
+				);
+				printability = Printability.COULD_REPROCESS;
+			}
+		} else {
+			printability = Printability.MUST_PROCESS;
+		}
+
+		// NB: gci.ratosMetaFileOffset is set but not used yet. The code below is transitional and will be replaced.
+
+		if (gci.isProcessed) {
 			var tail = await fsReaderGetLines(path, -100);
 
 			rxRatosMeta.lastIndex = 0;
@@ -166,23 +291,18 @@ export class GCodeFile {
 							obj.kind = obj.minX === undefined ? AnalysisResultKind.Quick : AnalysisResultKind.Full;
 						}
 
-						gci.analysisResult = obj;
+						gci.analysisResult = AnalysisResultSchema.parse(obj);
 					}
 				}
 			} else {
 				onWarning?.(GCODEFILE_WARNING_CODES.INVALID_METADATA, 'The ratos_meta block was not found.');
 			}
-		} else if (gci.fileLayoutVersion === 0) {
-			const tail = await fsReaderGetLines(path, -3);
-			if (/^; processed by RatOS($|\s)/im.test(tail)) {
-				gci.processedByRatOSVersion = GCodeFile.LEGACY_RATOS_VERSION;
-			}
 		}
 
-		return new GCodeFile(path, gci);
+		return new GCodeFile(path, gci, printability, gci.isProcessed ? false : undefined, reasons);
 	}
 
-	/** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be unprocessed on the fly (if already processed) and (re)transformed. */
+	/** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be deprocessed on the fly (if already processed) and (re)transformed. */
 	public async transform(outputFile: string, options: TransformOptions): Promise<GCodeInfo> {
 		let fh: FileHandle | undefined;
 		const gcodeProcessor = new GCodeProcessor(options);
@@ -221,7 +341,12 @@ export class GCodeFile {
 				bookmarks: encoder,
 				replaceLine: (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line),
 				getProcessedByRatosHeader: (currentCodeVersion, timestamp) =>
-					GCodeFile.getProcessedByRatosHeader(currentCodeVersion, timestamp, s.size),
+					GCodeFile.getProcessedByRatosHeader({
+						currentCodeVersion,
+						timestamp,
+						ratosMetaFileOffset: s.size,
+						processedForIdex: !!options.printerHasIdex,
+					}),
 			});
 
 			if (!gci.analysisResult) {
@@ -263,13 +388,8 @@ export class GCodeFile {
 		return await gcodeProcessor.finalizeProcessing();
 	}
 
-	private constructor(
-		private readonly path: string,
-		public readonly info: GCodeInfo,
-	) {}
-
 	/** Reads the file line by line. If the file has already been processed, it will be de-processed on the fly. */
-	private readUnprocessedLines(progress?: Transform): Readable {
+	private readDeprocessedLines(progress?: Transform): Readable {
 		throw 'todo';
 	}
 
@@ -277,7 +397,7 @@ export class GCodeFile {
 	 * Parses header (top of file) comments. This method will not detect files already processed by the legacy Python-based post processor.
 	 * @param header One or more newline-separated lines from the start of a gcode file. Normally, at least the first three lines should be provided.
 	 */
-	static tryParseHeader(header: string): GCodeInfo | null {
+	static tryParseHeader(header: string): MutableGCodeInfo | null {
 		rxGeneratorHeader.lastIndex = 0;
 		let match = rxGeneratorHeader.exec(header);
 
@@ -305,11 +425,12 @@ export class GCodeFile {
 
 			let pbrVersion: SemVer | undefined;
 			let pbrTimestamp: Date | undefined;
-			let pbrFileLayoutVersion: number = 0;
+			let pbrFileFormatVersion: number | undefined;
 			let pbrRatosMetaFileOffset: number | undefined;
+			let pbrIdex: boolean | undefined;
 
-			rxProcessedByRatosHeader.lastIndex = 0;
-			const pbrMatch = rxProcessedByRatosHeader.exec(header);
+			rxProcessedByRatosHeaderV3.lastIndex = 0;
+			const pbrMatch = rxProcessedByRatosHeaderV3.exec(header);
 
 			if (pbrMatch) {
 				pbrVersion = coerceSemVerOrThrow(
@@ -317,12 +438,26 @@ export class GCodeFile {
 					'The processed by RatOS version is not a valid SemVer.',
 				);
 				pbrTimestamp = new Date(pbrMatch.groups?.DATE + ' ' + pbrMatch.groups?.TIME);
-				pbrFileLayoutVersion = pbrMatch.groups?.V ? Number(pbrMatch.groups?.V) : 1;
+				pbrFileFormatVersion = pbrMatch.groups?.V ? Number(pbrMatch.groups?.V) : 1;
 				pbrRatosMetaFileOffset = pbrMatch.groups?.M ? parseInt(pbrMatch.groups?.M, 16) : undefined;
+				pbrIdex = pbrMatch.groups?.V ? !!pbrMatch.groups?.IDEX : undefined;
+			} else {
+				// Match files processed during initial development prior to firming up format V3. Such files will always be
+				// treated as unsupported.
+				rxProcessedByRatosHeaderPreV3.lastIndex = 0;
+				const pbrMatch = rxProcessedByRatosHeaderPreV3.exec(header);
+
+				if (pbrMatch) {
+					pbrVersion = coerceSemVerOrThrow(
+						pbrMatch?.groups?.VERSION,
+						'The processed by RatOS version is not a valid SemVer.',
+					);
+					pbrTimestamp = new Date(pbrMatch.groups?.DATE + ' ' + pbrMatch.groups?.TIME);
+					pbrFileFormatVersion = 1;
+				}
 			}
 
-			return new GCodeInfo(
-				pbrFileLayoutVersion,
+			return new MutableGCodeInfo(
 				match.groups?.GENERATOR!,
 				coerceSemVerOrThrow(match.groups?.VERSION!, 'The generator version is not a valid SemVer.')!,
 				flavour,
@@ -331,7 +466,9 @@ export class GCodeFile {
 				pbrVersion,
 				pbrTimestamp,
 				undefined,
+				pbrFileFormatVersion,
 				pbrRatosMetaFileOffset,
+				pbrIdex,
 			);
 		}
 
@@ -339,11 +476,12 @@ export class GCodeFile {
 	}
 
 	/** Gets the 'Processed by RatOS' header for the current code version. */
-	public static getProcessedByRatosHeader(
-		currentCodeVersion: semver.SemVer,
-		timestamp: Date,
-		ratosMetaFileOffset: number,
-	): string {
-		return `; processed by RatOS ${currentCodeVersion.toString()} on ${date2.format(timestamp, 'YYYY-MM-DD [at] HH:mm:ss [UTC]', true)} v:2 m:${ratosMetaFileOffset.toString(16)}`;
+	public static getProcessedByRatosHeader(args: {
+		currentCodeVersion: semver.SemVer;
+		timestamp: Date;
+		ratosMetaFileOffset: number;
+		processedForIdex: boolean;
+	}): string {
+		return `; processed by RatOS.PostProcessor ${args.currentCodeVersion.toString()} on ${date2.format(args.timestamp, 'YYYY-MM-DD [at] HH:mm:ss [UTC]', true)} v:${GCodeFile.FILE_FORMAT_VERSION} m:${args.ratosMetaFileOffset.toString(16)}${args.processedForIdex ? ' idex' : ''}`;
 	}
 }

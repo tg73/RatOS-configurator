@@ -18,7 +18,6 @@
  * NOTE: Incomplete, API requirements to be determined.
  */
 
-import { AnalysisResult } from '@/server/gcode-processor/GCodeProcessor';
 import { existsSync } from 'node:fs';
 import { access, constants, stat } from 'node:fs/promises';
 import path from 'node:path';

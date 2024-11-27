@@ -16,14 +16,10 @@
 
 /* eslint-disable no-console */
 
-import {
-	BookmarkingBufferEncoder,
-	replaceBookmarkedGcodeLine,
-} from '@/server/gcode-processor/BookmarkingBufferEncoder';
-import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { BookmarkingBufferEncoder } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { GCodeProcessor } from '@/server/gcode-processor/GCodeProcessor';
 import { glob } from 'glob';
-import { createReadStream, createWriteStream } from 'node:fs';
+import { createReadStream } from 'node:fs';
 import fs, { FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { Writable } from 'node:stream';
@@ -190,6 +186,13 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 			};
 
 			const gcf = await GCodeFile.inspect(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile), gcfOptions);
+
+			expect(gotWarnings).to.equal(
+				false,
+				'One or more warnings were raised during inspection, check console output for details. Correct tests must not produce warnings.',
+			);
+
+			gotWarnings = false;
 
 			await gcf.transform(outputPath, gcfOptions);
 

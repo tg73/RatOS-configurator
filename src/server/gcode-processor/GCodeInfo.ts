@@ -17,7 +17,8 @@
 import { SemVer } from 'semver';
 import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
-import { AnalysisResult } from '@/server/gcode-processor/GCodeProcessor';
+import { AnalysisResult } from '@/server/gcode-processor/AnalysisResult';
+import { InternalError } from '@/server/gcode-processor/errors';
 
 /** A known flavour of G-code. */
 export enum GCodeFlavour {
@@ -48,11 +49,11 @@ export interface SerializedGcodeInfo {
 	analysisResult?: AnalysisResult;
 }
 
+export type GCodeInfo = Readonly<MutableGCodeInfo>;
+
 /** Characteristics of a G-code file, typically determined from the header lines of the file. */
-export class GCodeInfo {
+export class MutableGCodeInfo {
 	constructor(
-		/** 0 = no PBR header, 1 = pre-release, 2 = beta transitional version pending de-processing support (current) */
-		public fileLayoutVersion: number,
 		public generator: string,
 		public generatorVersion: SemVer,
 		public flavour: GCodeFlavour,
@@ -61,26 +62,24 @@ export class GCodeInfo {
 		public processedByRatOSVersion?: SemVer,
 		public processedByRatOSTimestamp?: Date,
 		public analysisResult?: AnalysisResult,
+		/** undefined = unprocessed or partially initialized, 0 = legacy PBR footer, 1 = pre-release, 2 = beta transitional version, 3 = adds 'kind' for better zod handling */
+		public fileFormatVersion?: number,
 		public ratosMetaFileOffset?: number,
+		public processedForIdex?: boolean,
 	) {}
+
+	public get isProcessed(): boolean {
+		if (this.fileFormatVersion === undefined && this.processedByRatOSVersion === undefined) {
+			return false;
+		} else if (this.fileFormatVersion !== undefined && this.processedByRatOSVersion !== undefined) {
+			return true;
+		} else {
+			throw new InternalError('The fields defining isProcessed are inconsistent.');
+		}
+	}
 
 	public toJSON(): string {
 		return JSON.stringify(this.serialize());
-	}
-
-	public clone(): GCodeInfo {
-		return new GCodeInfo(
-			this.fileLayoutVersion,
-			this.generator,
-			new SemVer(this.generatorVersion),
-			this.flavour,
-			this.generatorTimestamp,
-			this.ratosDialectVersion ? new SemVer(this.ratosDialectVersion) : undefined,
-			this.processedByRatOSVersion ? new SemVer(this.processedByRatOSVersion) : undefined,
-			this.processedByRatOSTimestamp,
-			this.analysisResult,
-			this.ratosMetaFileOffset,
-		);
 	}
 
 	public serialize(): SerializedGcodeInfo {

@@ -86,6 +86,65 @@ export function newGCodeError(message: string, ctx: ProcessLineContext, state: S
 // 	(c, s) => {},
 // ];
 
+export function validateGenerator(
+	gcodeInfo: GCodeInfo,
+	allowUnsupportedSlicerVersions: boolean,
+	onWarning?: (code: string, message: string) => void,
+) {
+	try {
+		switch (gcodeInfo.flavour) {
+			case GCodeFlavour.Unknown:
+				throw new SlicerNotSupported(
+					`Slicer '${gcodeInfo.generator}' is not supported, and RatOS dialect conformance was not declared.`,
+					{ cause: gcodeInfo },
+				);
+			case GCodeFlavour.PrusaSlicer:
+				if (!semver.satisfies(gcodeInfo.generatorVersion, '2.8.0 || 2.8.1')) {
+					throw new SlicerNotSupported(
+						`Only versions 2.8.0 and 2.8.1 of PrusaSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+						{ cause: gcodeInfo },
+					);
+				}
+				break;
+			case GCodeFlavour.OrcaSlicer:
+				if (!semver.satisfies(gcodeInfo.generatorVersion, '2.1.1 || 2.2.0')) {
+					throw new SlicerNotSupported(
+						`Only versions 2.1.1 and 2.2.0 of OrcasSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+						{ cause: gcodeInfo },
+					);
+				}
+				break;
+			case GCodeFlavour.SuperSlicer:
+				if (!semver.satisfies(gcodeInfo.generatorVersion, '2.5.59 || 2.5.60')) {
+					throw new SlicerNotSupported(
+						`Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+						{ cause: gcodeInfo },
+					);
+				}
+				break;
+			case GCodeFlavour.RatOS:
+				if (semver.neq('0.1', gcodeInfo.generatorVersion)) {
+					throw new SlicerNotSupported(
+						`Only version 0.1 of the RatOS G-code dialect is supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+						{ cause: gcodeInfo },
+					);
+				}
+				break;
+			default:
+				throw new InternalError('unexpected state'); // should never happen
+		}
+	} catch (ex) {
+		if (allowUnsupportedSlicerVersions && onWarning && ex instanceof SlicerNotSupported) {
+			onWarning(
+				ACTION_WARNING_CODES.UNSUPPORTED_SLICER_VERSION,
+				ex.message + ' This may result in print defects and incorrect operation of the printer.',
+			);
+		} else {
+			throw ex;
+		}
+	}
+}
+
 export const getGcodeInfo: Action = (c, s) => {
 	const parsed = GCodeFile.tryParseHeader(
 		c.line + '\n' + c.getLineOrUndefined(1)?.line + '\n' + c.getLineOrUndefined(2)?.line + '\n',
@@ -97,58 +156,7 @@ export const getGcodeInfo: Action = (c, s) => {
 			throw new AlreadyProcessedError(parsed);
 		}
 		s.gcodeInfo = parsed;
-		try {
-			switch (parsed.flavour) {
-				case GCodeFlavour.Unknown:
-					throw new SlicerNotSupported(
-						`Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
-						{ cause: parsed },
-					);
-				case GCodeFlavour.PrusaSlicer:
-					if (!semver.satisfies(parsed.generatorVersion, '2.8.0 || 2.8.1')) {
-						throw new SlicerNotSupported(
-							`Only versions 2.8.0 and 2.8.1 of PrusaSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
-							{ cause: parsed },
-						);
-					}
-					break;
-				case GCodeFlavour.OrcaSlicer:
-					if (!semver.satisfies(parsed.generatorVersion, '2.1.1 || 2.2.0')) {
-						throw new SlicerNotSupported(
-							`Only versions 2.1.1 and 2.2.0 of OrcasSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
-							{ cause: parsed },
-						);
-					}
-					break;
-				case GCodeFlavour.SuperSlicer:
-					if (!semver.satisfies(parsed.generatorVersion, '2.5.59 || 2.5.60')) {
-						throw new SlicerNotSupported(
-							`Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
-							{ cause: parsed },
-						);
-					}
-					break;
-				case GCodeFlavour.RatOS:
-					if (semver.neq('0.1', parsed.generatorVersion)) {
-						throw new SlicerNotSupported(
-							`Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported.`,
-							{ cause: parsed },
-						);
-					}
-					break;
-				default:
-					throw new InternalError('unexpected state'); // should never happen
-			}
-		} catch (ex) {
-			if (s.kAllowUnsupportedSlicerVersions && s.onWarning && ex instanceof SlicerNotSupported) {
-				s.onWarning(
-					ACTION_WARNING_CODES.UNSUPPORTED_SLICER_VERSION,
-					ex.message + ' This may result in print defects and incorrect operation of the printer.',
-				);
-			} else {
-				throw ex;
-			}
-		}
+		validateGenerator(s.gcodeInfo, s.kAllowUnsupportedSlicerVersions, s.onWarning);
 	}
 	c.line = c.line.padEnd(c.line.length + 100);
 	c.bookmarkKey = Symbol('first line');
