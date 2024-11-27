@@ -19840,7 +19840,7 @@ var require_signal_exit = __commonJS({
         };
       };
     } else {
-      assert = __require("assert");
+      assert2 = __require("assert");
       signals = require_signals();
       isWin = /^win/i.test(process15.platform);
       EE = __require("events");
@@ -19863,7 +19863,7 @@ var require_signal_exit = __commonJS({
           return function() {
           };
         }
-        assert.equal(typeof cb, "function", "a callback must be provided for exit handler");
+        assert2.equal(typeof cb, "function", "a callback must be provided for exit handler");
         if (loaded === false) {
           load();
         }
@@ -19969,7 +19969,7 @@ var require_signal_exit = __commonJS({
         }
       };
     }
-    var assert;
+    var assert2;
     var signals;
     var isWin;
     var EE;
@@ -69581,7 +69581,7 @@ var require_thread_stream = __commonJS({
       READ_INDEX
     } = require_indexes();
     var buffer = __require("buffer");
-    var assert = __require("assert");
+    var assert2 = __require("assert");
     var kImpl = Symbol("kImpl");
     var MAX_STRING = buffer.constants.MAX_STRING_LENGTH;
     var FakeWeakRef = class {
@@ -69631,7 +69631,7 @@ var require_thread_stream = __commonJS({
       return worker;
     }
     function drain(stream) {
-      assert(!stream[kImpl].sync);
+      assert2(!stream[kImpl].sync);
       if (stream[kImpl].needDrain) {
         stream[kImpl].needDrain = false;
         stream.emit("drain");
@@ -91483,7 +91483,6 @@ import util3 from "node:util";
 
 // ../server/gcode-processor/GCodeInfo.ts
 init_cjs_shim();
-var import_semver = __toESM(require_semver2());
 var import_fs_reader = __toESM(require_fs_reader());
 import util2 from "node:util";
 var GCodeFlavour = /* @__PURE__ */ ((GCodeFlavour2) => {
@@ -91496,9 +91495,8 @@ var GCodeFlavour = /* @__PURE__ */ ((GCodeFlavour2) => {
   return GCodeFlavour2;
 })(GCodeFlavour || {});
 var fsReaderGetLines = util2.promisify(import_fs_reader.default);
-var GCodeInfo = class _GCodeInfo {
-  constructor(fileLayoutVersion, generator, generatorVersion, flavour, generatorTimestamp, ratosDialectVersion, processedByRatOSVersion, processedByRatOSTimestamp, analysisResult, ratosMetaFileOffset) {
-    this.fileLayoutVersion = fileLayoutVersion;
+var MutableGCodeInfo = class {
+  constructor(generator, generatorVersion, flavour, generatorTimestamp, ratosDialectVersion, processedByRatOSVersion, processedByRatOSTimestamp, analysisResult, fileFormatVersion, ratosMetaFileOffset, processedForIdex) {
     this.generator = generator;
     this.generatorVersion = generatorVersion;
     this.flavour = flavour;
@@ -91507,24 +91505,21 @@ var GCodeInfo = class _GCodeInfo {
     this.processedByRatOSVersion = processedByRatOSVersion;
     this.processedByRatOSTimestamp = processedByRatOSTimestamp;
     this.analysisResult = analysisResult;
+    this.fileFormatVersion = fileFormatVersion;
     this.ratosMetaFileOffset = ratosMetaFileOffset;
+    this.processedForIdex = processedForIdex;
+  }
+  get isProcessed() {
+    if (this.fileFormatVersion === void 0 && this.processedByRatOSVersion === void 0) {
+      return false;
+    } else if (this.fileFormatVersion !== void 0 && this.processedByRatOSVersion !== void 0) {
+      return true;
+    } else {
+      throw new InternalError("The fields defining isProcessed are inconsistent.");
+    }
   }
   toJSON() {
     return JSON.stringify(this.serialize());
-  }
-  clone() {
-    return new _GCodeInfo(
-      this.fileLayoutVersion,
-      this.generator,
-      new import_semver.SemVer(this.generatorVersion),
-      this.flavour,
-      this.generatorTimestamp,
-      this.ratosDialectVersion ? new import_semver.SemVer(this.ratosDialectVersion) : void 0,
-      this.processedByRatOSVersion ? new import_semver.SemVer(this.processedByRatOSVersion) : void 0,
-      this.processedByRatOSTimestamp,
-      this.analysisResult,
-      this.ratosMetaFileOffset
-    );
   }
   serialize() {
     return {
@@ -91869,49 +91864,20 @@ var State = class {
 
 // ../server/gcode-processor/helpers.ts
 init_cjs_shim();
-var import_semver2 = __toESM(require_semver2());
-import { promisify } from "node:util";
-import { exec as exec2 } from "child_process";
+var import_semver = __toESM(require_semver2());
 
 // ../server/helpers/logger.ts
 init_cjs_shim();
 var import_pino2 = __toESM(require_pino());
-var logger2 = null;
-var getLogger2 = () => {
-  if (logger2 != null) {
-    return logger2;
-  }
-  const environment = serverSchema.parse(process.env);
-  const transportOption = process.env.NODE_ENV === "development" ? void 0 : {
-    target: "pino/file",
-    options: { destination: environment.LOG_FILE, append: true }
-  };
-  logger2 = (0, import_pino2.default)({ ...globalPinoOpts, transport: transportOption });
-  return logger2;
-};
 
 // ../server/gcode-processor/helpers.ts
-var parsedVersion = null;
-async function getConfiguratorVersion() {
-  let v = "__not_set__";
-  try {
-    v = await promisify(exec2)("git describe --tags --always", {
-      cwd: process.env.RATOS_SCRIPT_DIR
-    }).then(({ stdout }) => stdout.trim());
-    parsedVersion = new import_semver2.SemVer(v);
-  } catch (e) {
-    getLogger2().error("Failed to get RatOS-configurator version", { versionString: v, error: e });
-    return new import_semver2.SemVer("2.0.2");
-  }
-  return parsedVersion;
-}
 function exactlyOneBitSet(integer) {
   return integer != 0 && (integer & integer - 1) == 0;
 }
 
 // ../server/gcode-processor/Actions.ts
 init_cjs_shim();
-var import_semver3 = __toESM(require_semver2());
+var import_semver2 = __toESM(require_semver2());
 
 // ../server/gcode-processor/CommonGCodeCommand.ts
 init_cjs_shim();
@@ -91963,6 +91929,60 @@ var REMOVED_BY_RATOS = "; Removed by RatOS post processor: ";
 function newGCodeError(message, ctx, state) {
   return new GCodeError(message, ctx.line, state.currentLineNumber);
 }
+function validateGenerator(gcodeInfo, allowUnsupportedSlicerVersions, onWarning) {
+  try {
+    switch (gcodeInfo.flavour) {
+      case 0 /* Unknown */:
+        throw new SlicerNotSupported(
+          `Slicer '${gcodeInfo.generator}' is not supported, and RatOS dialect conformance was not declared.`,
+          { cause: gcodeInfo }
+        );
+      case 1 /* PrusaSlicer */:
+        if (!import_semver2.default.satisfies(gcodeInfo.generatorVersion, "2.8.0 || 2.8.1")) {
+          throw new SlicerNotSupported(
+            `Only versions 2.8.0 and 2.8.1 of PrusaSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+            { cause: gcodeInfo }
+          );
+        }
+        break;
+      case 2 /* OrcaSlicer */:
+        if (!import_semver2.default.satisfies(gcodeInfo.generatorVersion, "2.1.1 || 2.2.0")) {
+          throw new SlicerNotSupported(
+            `Only versions 2.1.1 and 2.2.0 of OrcasSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+            { cause: gcodeInfo }
+          );
+        }
+        break;
+      case 4 /* SuperSlicer */:
+        if (!import_semver2.default.satisfies(gcodeInfo.generatorVersion, "2.5.59 || 2.5.60")) {
+          throw new SlicerNotSupported(
+            `Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+            { cause: gcodeInfo }
+          );
+        }
+        break;
+      case 8 /* RatOS */:
+        if (import_semver2.default.neq("0.1", gcodeInfo.generatorVersion)) {
+          throw new SlicerNotSupported(
+            `Only version 0.1 of the RatOS G-code dialect is supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+            { cause: gcodeInfo }
+          );
+        }
+        break;
+      default:
+        throw new InternalError("unexpected state");
+    }
+  } catch (ex) {
+    if (allowUnsupportedSlicerVersions && onWarning && ex instanceof SlicerNotSupported) {
+      onWarning(
+        "UNSUPPORTED_SLICER_VERSION" /* UNSUPPORTED_SLICER_VERSION */,
+        ex.message + " This may result in print defects and incorrect operation of the printer."
+      );
+    } else {
+      throw ex;
+    }
+  }
+}
 var getGcodeInfo = (c, s2) => {
   const parsed = GCodeFile.tryParseHeader(
     c.line + "\n" + c.getLineOrUndefined(1)?.line + "\n" + c.getLineOrUndefined(2)?.line + "\n"
@@ -91974,58 +91994,7 @@ var getGcodeInfo = (c, s2) => {
       throw new AlreadyProcessedError(parsed);
     }
     s2.gcodeInfo = parsed;
-    try {
-      switch (parsed.flavour) {
-        case 0 /* Unknown */:
-          throw new SlicerNotSupported(
-            `Slicer '${parsed.generator}' is not supported, and RatOS dialect conformance was not declared.`,
-            { cause: parsed }
-          );
-        case 1 /* PrusaSlicer */:
-          if (!import_semver3.default.satisfies(parsed.generatorVersion, "2.8.0 || 2.8.1")) {
-            throw new SlicerNotSupported(
-              `Only versions 2.8.0 and 2.8.1 of PrusaSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
-              { cause: parsed }
-            );
-          }
-          break;
-        case 2 /* OrcaSlicer */:
-          if (!import_semver3.default.satisfies(parsed.generatorVersion, "2.1.1 || 2.2.0")) {
-            throw new SlicerNotSupported(
-              `Only versions 2.1.1 and 2.2.0 of OrcasSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
-              { cause: parsed }
-            );
-          }
-          break;
-        case 4 /* SuperSlicer */:
-          if (!import_semver3.default.satisfies(parsed.generatorVersion, "2.5.59 || 2.5.60")) {
-            throw new SlicerNotSupported(
-              `Only versions 2.5.59 and 2.5.60 of SuperSlicer are supported. Version ${parsed.generatorVersion} is not supported.`,
-              { cause: parsed }
-            );
-          }
-          break;
-        case 8 /* RatOS */:
-          if (import_semver3.default.neq("0.1", parsed.generatorVersion)) {
-            throw new SlicerNotSupported(
-              `Only version 0.1 of the RatOS G-code dialect is supported. Version ${parsed.generatorVersion} is not supported.`,
-              { cause: parsed }
-            );
-          }
-          break;
-        default:
-          throw new InternalError("unexpected state");
-      }
-    } catch (ex) {
-      if (s2.kAllowUnsupportedSlicerVersions && s2.onWarning && ex instanceof SlicerNotSupported) {
-        s2.onWarning(
-          "UNSUPPORTED_SLICER_VERSION" /* UNSUPPORTED_SLICER_VERSION */,
-          ex.message + " This may result in print defects and incorrect operation of the printer."
-        );
-      } else {
-        throw ex;
-      }
-    }
+    validateGenerator(s2.gcodeInfo, s2.kAllowUnsupportedSlicerVersions, s2.onWarning);
   }
   c.line = c.line.padEnd(c.line.length + 100);
   c.bookmarkKey = Symbol("first line");
@@ -92259,6 +92228,42 @@ var captureConfigSection = (c, s2) => {
 
 // ../server/gcode-processor/GCodeProcessor.ts
 var import_semver4 = __toESM(require_semver2());
+
+// ../server/gcode-processor/AnalysisResult.ts
+init_cjs_shim();
+var ANALYSIS_RESULT_VERSION = 1;
+var AnalysisResultSchema = z.discriminatedUnion("kind", [
+  z.object({
+    version: z.literal(ANALYSIS_RESULT_VERSION),
+    kind: z.literal("full" /* Full */),
+    extruderTemps: z.array(z.string()).optional(),
+    toolChangeCount: z.number(),
+    firstMoveX: z.string().optional(),
+    firstMoveY: z.string().optional(),
+    minX: z.number(),
+    maxX: z.number(),
+    hasPurgeTower: z.boolean().optional(),
+    configSection: z.record(z.string(), z.string()).optional(),
+    usedTools: z.array(z.string())
+  }),
+  z.object({
+    version: z.literal(ANALYSIS_RESULT_VERSION),
+    kind: z.literal("quick" /* Quick */),
+    extruderTemps: z.array(z.string()).optional(),
+    firstMoveX: z.string().optional(),
+    firstMoveY: z.string().optional(),
+    hasPurgeTower: z.boolean().optional()
+  })
+]);
+
+// ../server/gcode-processor/Version.ts
+init_cjs_shim();
+var import_semver3 = __toESM(require_semver2());
+async function getPostProcessorVersion() {
+  return new import_semver3.SemVer("1.0.0");
+}
+
+// ../server/gcode-processor/GCodeProcessor.ts
 var InspectionIsComplete = class extends Error {
 };
 var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
@@ -92364,12 +92369,13 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
       );
     }
     s2.processingHasBeenFinalized = true;
-    const currentCodeVersion = await getConfiguratorVersion();
+    const currentPPVersion = await getPostProcessorVersion();
     const now2 = /* @__PURE__ */ new Date();
-    s2.gcodeInfo.processedByRatOSVersion = currentCodeVersion;
+    s2.gcodeInfo.processedByRatOSVersion = currentPPVersion;
     s2.gcodeInfo.processedByRatOSTimestamp = now2;
     if (s2.kQuickInpsectionOnly) {
       s2.gcodeInfo.analysisResult = {
+        version: ANALYSIS_RESULT_VERSION,
         kind: "quick" /* Quick */,
         extruderTemps: s2.extruderTemps,
         firstMoveX: s2.firstMoveX,
@@ -92379,6 +92385,7 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
       };
     } else {
       s2.gcodeInfo.analysisResult = {
+        version: ANALYSIS_RESULT_VERSION,
         kind: "full" /* Full */,
         extruderTemps: s2.extruderTemps,
         toolChangeCount: s2.toolChangeCount,
@@ -92397,7 +92404,7 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
     if (s2.firstLine) {
       await options.replaceLine(
         options.bookmarks.getBookmark(s2.firstLine.bookmark),
-        options.getProcessedByRatosHeader(currentCodeVersion, now2) + "\n" + s2.firstLine.line.trimEnd()
+        options.getProcessedByRatosHeader(currentPPVersion, now2) + "\n" + s2.firstLine.line.trimEnd()
       );
     }
     if (s2.startPrintLine) {
@@ -92517,10 +92524,17 @@ async function replaceBookmarkedGcodeLine(fh, bookmark, replacementLine) {
 }
 
 // ../server/gcode-processor/GCodeFile.ts
+import { AssertionError } from "node:assert";
+function assert(condition, message) {
+  if (!condition) {
+    throw new AssertionError({ message });
+  }
+}
 var fsReaderGetLines2 = util3.promisify(import_fs_reader2.default);
 var rxRatosMeta = /(?:^; ratos_meta begin (\d+)\n(.*))?\n; ratos_meta end (\d+)$/ms;
 var rxGeneratorHeader = /^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im;
-var rxProcessedByRatosHeader = /^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d(?:Z| UTC))(?: v:(?<V>2) m:(?<M>[\da-fA-F]+))?$/im;
+var rxProcessedByRatosHeaderPreV3 = /^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d(?:Z| UTC))/im;
+var rxProcessedByRatosHeaderV3 = /^; processed by RatOS\.PostProcessor (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>\d\d:\d\d:\d\d(?:Z| UTC))(?: v:(?<V>3) m:(?<M>[\da-fA-F]+)(?<IDEX> idex)?)?(?:$|\s)/im;
 function coerceSemVerOrThrow(version, message) {
   if (version === void 0) {
     return void 0;
@@ -92537,13 +92551,19 @@ var NullSink = class extends Writable {
   }
 };
 var GCodeFile = class _GCodeFile {
-  constructor(path9, info) {
+  constructor(path9, info, printability, canDeprocess, printabilityReasons) {
     this.path = path9;
     this.info = info;
+    this.printability = printability;
+    this.canDeprocess = canDeprocess;
+    this.printabilityReasons = printabilityReasons;
+  }
+  static {
+    this.FILE_FORMAT_VERSION = 3;
   }
   static {
     /** The placeholder version used to represent files transformed by the legacy ratos.py post processor. */
-    this.LEGACY_RATOS_VERSION = new import_semver5.SemVer("1.0.0-legacy");
+    this.LEGACY_RATOS_VERSION = new import_semver5.SemVer("0.1.0-legacy");
   }
   static getRatosMetaFooter(analysisResult) {
     const b64 = Buffer.from(JSON.stringify(analysisResult)).toString("base64");
@@ -92553,15 +92573,92 @@ var GCodeFile = class _GCodeFile {
 ; ${chunks.join("\n; ")}
 ; ratos_meta end ${chunks.length}`;
   }
+  /**
+   * invalid: no valid 'generated by' header found, can't inspect (aka, not a gcode file)
+   * unsupported: 'processed by' header found, but the fileFormatVersion is not supported.
+   *   Could be a future layout version or an old file layout that is no longer supported in current code.
+   *
+   * what to do about changes to the shape of AnalysisResult?
+   *
+   * 1. Give its own version, use Zod for validation and transformation. Force printability -> mustReprocess if Zod can't parse.
+   * or
+   * 2. Bump fileFormatVersion if AnalysisResult changes.
+   *
+   * I prefer 1. actual changes to file layout or encoding, as represented by "pure" fileFormatVersion, typically need to be handled by explicit code branching.
+   * Serialized object validation and transformation can be expressed declaritively using Zod. Keep the two things separate.
+   *
+   * isProcessed:
+   * 		true
+   * 			printability: ready, mustReprocess, couldReprocess
+   * 			canReprocess: true, false
+   * 		false
+   *
+   */
   /** Factory. Returns GCodeFile with valid `info` or throws if the file header can't be parsed etc. */
   static async inspect(path9, options) {
     const onWarning = options?.onWarning;
     const header = await fsReaderGetLines2(path9, 4);
     const gci = _GCodeFile.tryParseHeader(header);
     if (!gci) {
-      throw new GCodeProcessorError("No valid G-Code file headers were found, the file cannot be inspected.");
+      throw new SlicerIdentificationNotFound();
     }
-    if (gci.fileLayoutVersion === 2) {
+    if (gci.fileFormatVersion === void 0) {
+      const tail2 = await fsReaderGetLines2(path9, -3);
+      if (/^; processed by RatOS($|\s)/im.test(tail2)) {
+        gci.processedByRatOSVersion = _GCodeFile.LEGACY_RATOS_VERSION;
+        gci.fileFormatVersion = 0;
+      }
+    }
+    const reasons = [];
+    if (!options.allowUnsupportedSlicerVersions) {
+      try {
+        validateGenerator(gci, false);
+      } catch (e) {
+        if (e instanceof Error) {
+          reasons.push(e.message);
+        }
+      }
+    }
+    if (gci.fileFormatVersion) {
+      if (gci.fileFormatVersion < _GCodeFile.FILE_FORMAT_VERSION) {
+        reasons.push(
+          "The file format is from an old version of RatOS which is no longer supported. The original file must be re-uploaded or re-sliced."
+        );
+      } else if (gci.fileFormatVersion > _GCodeFile.FILE_FORMAT_VERSION) {
+        reasons.push(
+          "The file format is from a newer version of RatOS. Update RatOS, or re-upload or re-slice the original file."
+        );
+      }
+    }
+    if (reasons.length > 0) {
+      return new _GCodeFile(path9, gci, "NOT_SUPPORTED" /* NOT_SUPPORTED */, void 0, reasons);
+    }
+    const currentVersion = await getPostProcessorVersion();
+    let printability;
+    if (gci.isProcessed) {
+      assert(gci.processedByRatOSVersion);
+      if (import_semver5.default.eq(currentVersion, gci.processedByRatOSVersion)) {
+        printability = "READY" /* READY */;
+      } else if (import_semver5.default.lt(currentVersion, gci.processedByRatOSVersion)) {
+        reasons.push(
+          "The file was processed by a more recent version of RatOS than the installed version. Either update RatOS, or the file must be reprocessed."
+        );
+        printability = "MUST_REPROCESS" /* MUST_REPROCESS */;
+      } else if (currentVersion.major > gci.processedByRatOSVersion.major) {
+        reasons.push(
+          "There have been significant incompatible changes to RatOS gcode handling since the file was last processed."
+        );
+        printability = "MUST_REPROCESS" /* MUST_REPROCESS */;
+      } else {
+        reasons.push(
+          currentVersion.minor === gci.processedByRatOSVersion.minor ? "There have been enhancements and/or bug fixes since the file was last processed." : "There have been bug fixes since the file was last processed."
+        );
+        printability = "COULD_REPROCESS" /* COULD_REPROCESS */;
+      }
+    } else {
+      printability = "MUST_PROCESS" /* MUST_PROCESS */;
+    }
+    if (gci.isProcessed) {
       var tail = await fsReaderGetLines2(path9, -100);
       rxRatosMeta.lastIndex = 0;
       var match2 = rxRatosMeta.exec(tail);
@@ -92590,21 +92687,16 @@ var GCodeFile = class _GCodeFile {
             if (obj.kind === void 0) {
               obj.kind = obj.minX === void 0 ? "quick" /* Quick */ : "full" /* Full */;
             }
-            gci.analysisResult = obj;
+            gci.analysisResult = AnalysisResultSchema.parse(obj);
           }
         }
       } else {
         onWarning?.("INVALID_METADATA" /* INVALID_METADATA */, "The ratos_meta block was not found.");
       }
-    } else if (gci.fileLayoutVersion === 0) {
-      const tail2 = await fsReaderGetLines2(path9, -3);
-      if (/^; processed by RatOS($|\s)/im.test(tail2)) {
-        gci.processedByRatOSVersion = _GCodeFile.LEGACY_RATOS_VERSION;
-      }
     }
-    return new _GCodeFile(path9, gci);
+    return new _GCodeFile(path9, gci, printability, gci.isProcessed ? false : void 0, reasons);
   }
-  /** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be unprocessed on the fly (if already processed) and (re)transformed. */
+  /** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be deprocessed on the fly (if already processed) and (re)transformed. */
   async transform(outputFile, options) {
     let fh;
     const gcodeProcessor = new GCodeProcessor(options);
@@ -92639,7 +92731,12 @@ var GCodeFile = class _GCodeFile {
       const gci = await gcodeProcessor.finalizeProcessing({
         bookmarks: encoder,
         replaceLine: (bm, line) => replaceBookmarkedGcodeLine(fh, bm, line),
-        getProcessedByRatosHeader: (currentCodeVersion, timestamp) => _GCodeFile.getProcessedByRatosHeader(currentCodeVersion, timestamp, s2.size)
+        getProcessedByRatosHeader: (currentCodeVersion, timestamp) => _GCodeFile.getProcessedByRatosHeader({
+          currentCodeVersion,
+          timestamp,
+          ratosMetaFileOffset: s2.size,
+          processedForIdex: !!options.printerHasIdex
+        })
       });
       if (!gci.analysisResult) {
         throw new InternalError("finalizeProcessing did not set analysisResult.");
@@ -92676,7 +92773,7 @@ var GCodeFile = class _GCodeFile {
     return await gcodeProcessor.finalizeProcessing();
   }
   /** Reads the file line by line. If the file has already been processed, it will be de-processed on the fly. */
-  readUnprocessedLines(progress2) {
+  readDeprocessedLines(progress2) {
     throw "todo";
   }
   /**
@@ -92708,21 +92805,33 @@ var GCodeFile = class _GCodeFile {
       }
       let pbrVersion;
       let pbrTimestamp;
-      let pbrFileLayoutVersion = 0;
+      let pbrFileFormatVersion;
       let pbrRatosMetaFileOffset;
-      rxProcessedByRatosHeader.lastIndex = 0;
-      const pbrMatch = rxProcessedByRatosHeader.exec(header);
+      let pbrIdex;
+      rxProcessedByRatosHeaderV3.lastIndex = 0;
+      const pbrMatch = rxProcessedByRatosHeaderV3.exec(header);
       if (pbrMatch) {
         pbrVersion = coerceSemVerOrThrow(
           pbrMatch?.groups?.VERSION,
           "The processed by RatOS version is not a valid SemVer."
         );
         pbrTimestamp = /* @__PURE__ */ new Date(pbrMatch.groups?.DATE + " " + pbrMatch.groups?.TIME);
-        pbrFileLayoutVersion = pbrMatch.groups?.V ? Number(pbrMatch.groups?.V) : 1;
+        pbrFileFormatVersion = pbrMatch.groups?.V ? Number(pbrMatch.groups?.V) : 1;
         pbrRatosMetaFileOffset = pbrMatch.groups?.M ? parseInt(pbrMatch.groups?.M, 16) : void 0;
+        pbrIdex = pbrMatch.groups?.V ? !!pbrMatch.groups?.IDEX : void 0;
+      } else {
+        rxProcessedByRatosHeaderPreV3.lastIndex = 0;
+        const pbrMatch2 = rxProcessedByRatosHeaderPreV3.exec(header);
+        if (pbrMatch2) {
+          pbrVersion = coerceSemVerOrThrow(
+            pbrMatch2?.groups?.VERSION,
+            "The processed by RatOS version is not a valid SemVer."
+          );
+          pbrTimestamp = /* @__PURE__ */ new Date(pbrMatch2.groups?.DATE + " " + pbrMatch2.groups?.TIME);
+          pbrFileFormatVersion = 1;
+        }
       }
-      return new GCodeInfo(
-        pbrFileLayoutVersion,
+      return new MutableGCodeInfo(
         match2.groups?.GENERATOR,
         coerceSemVerOrThrow(match2.groups?.VERSION, "The generator version is not a valid SemVer."),
         flavour,
@@ -92731,14 +92840,16 @@ var GCodeFile = class _GCodeFile {
         pbrVersion,
         pbrTimestamp,
         void 0,
-        pbrRatosMetaFileOffset
+        pbrFileFormatVersion,
+        pbrRatosMetaFileOffset,
+        pbrIdex
       );
     }
     return null;
   }
   /** Gets the 'Processed by RatOS' header for the current code version. */
-  static getProcessedByRatosHeader(currentCodeVersion, timestamp, ratosMetaFileOffset) {
-    return `; processed by RatOS ${currentCodeVersion.toString()} on ${date$1.format(timestamp, "YYYY-MM-DD [at] HH:mm:ss [UTC]", true)} v:2 m:${ratosMetaFileOffset.toString(16)}`;
+  static getProcessedByRatosHeader(args) {
+    return `; processed by RatOS.PostProcessor ${args.currentCodeVersion.toString()} on ${date$1.format(args.timestamp, "YYYY-MM-DD [at] HH:mm:ss [UTC]", true)} v:${_GCodeFile.FILE_FORMAT_VERSION} m:${args.ratosMetaFileOffset.toString(16)}${args.processedForIdex ? " idex" : ""}`;
   }
 };
 
@@ -101164,6 +101275,36 @@ await program2.parseAsync();
  *
  * @author Tom Glastonbury <t@tg73.net>
  * @author Portions originally ported from Python code authored by Helge Keck <helgekeck@hotmail.com>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/**
+ * @file AnalysisResult.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/**
+ * @file Version.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
  * @license MIT
  * @copyright 2024
  *
