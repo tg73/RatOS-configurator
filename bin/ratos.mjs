@@ -91496,40 +91496,37 @@ var GCodeFlavour = /* @__PURE__ */ ((GCodeFlavour2) => {
 })(GCodeFlavour || {});
 var fsReaderGetLines = util2.promisify(import_fs_reader.default);
 var MutableGCodeInfo = class {
-  constructor(generator, generatorVersion, flavour, generatorTimestamp, ratosDialectVersion, processedByRatOSVersion, processedByRatOSTimestamp, analysisResult, fileFormatVersion, ratosMetaFileOffset, processedForIdex) {
+  constructor(generator, generatorVersion, flavour, generatorTimestamp, ratosDialectVersion, postProcessorVersion, postProcessorTimestamp, analysisResult, fileFormatVersion, ratosMetaFileOffset, processedForIdex) {
     this.generator = generator;
     this.generatorVersion = generatorVersion;
     this.flavour = flavour;
     this.generatorTimestamp = generatorTimestamp;
     this.ratosDialectVersion = ratosDialectVersion;
-    this.processedByRatOSVersion = processedByRatOSVersion;
-    this.processedByRatOSTimestamp = processedByRatOSTimestamp;
+    this.postProcessorVersion = postProcessorVersion;
+    this.postProcessorTimestamp = postProcessorTimestamp;
     this.analysisResult = analysisResult;
     this.fileFormatVersion = fileFormatVersion;
     this.ratosMetaFileOffset = ratosMetaFileOffset;
     this.processedForIdex = processedForIdex;
   }
+  /** True when the current {@link MutableGCodeInfo} is associated with a file that has been transformed. */
   get isProcessed() {
-    if (this.fileFormatVersion === void 0 && this.processedByRatOSVersion === void 0) {
-      return false;
-    } else if (this.fileFormatVersion !== void 0 && this.processedByRatOSVersion !== void 0) {
-      return true;
-    } else {
-      throw new InternalError("The fields defining isProcessed are inconsistent.");
-    }
+    return this.fileFormatVersion !== void 0 && this.postProcessorVersion !== void 0;
   }
   toJSON() {
     return JSON.stringify(this.serialize());
   }
   serialize() {
     return {
+      isProcessed: this.isProcessed,
       generator: this.generator,
       generatorVersion: this.generatorVersion.toString(),
       flavour: GCodeFlavour[this.flavour],
       generatorTimestamp: this.generatorTimestamp.toISOString(),
       ratosDialectVersion: this.ratosDialectVersion?.toString(),
-      processedByRatOSVersion: this.processedByRatOSVersion?.toString(),
-      processedByRatOSTimestamp: this.processedByRatOSTimestamp?.toISOString(),
+      postProcessorVersion: this.postProcessorVersion?.toString(),
+      postProcessorTimestamp: this.postProcessorTimestamp?.toISOString(),
+      processedForIdex: this.processedForIdex ?? (this.postProcessorVersion ? "unknown" : void 0),
       analysisResult: this.analysisResult
     };
   }
@@ -91990,7 +91987,7 @@ var getGcodeInfo = (c, s2) => {
   if (!parsed) {
     throw new SlicerIdentificationNotFound();
   } else {
-    if (parsed.processedByRatOSVersion) {
+    if (parsed.postProcessorVersion) {
       throw new AlreadyProcessedError(parsed);
     }
     s2.gcodeInfo = parsed;
@@ -92275,17 +92272,25 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
       !!opts.allowUnsupportedSlicerVersions,
       opts.onWarning
     );
+    this.#actions = !!opts.printerHasIdex ? [
+      getGcodeInfo,
+      getStartPrint,
+      // NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
+      subSequence(whenCommonCommandDoThenStop, [findFirstMoveXY, findMinMaxX, processToolchange]),
+      fixOtherLayerTemperature,
+      captureConfigSection
+    ] : [
+      getGcodeInfo,
+      getStartPrint,
+      // NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
+      subSequence(whenCommonCommandDoThenStop, [findFirstMoveXY]),
+      fixOtherLayerTemperature,
+      captureConfigSection
+    ];
   }
   #state;
   // NB: The order of actions is significant.
-  #actions = [
-    getGcodeInfo,
-    getStartPrint,
-    // NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
-    subSequence(whenCommonCommandDoThenStop, [findFirstMoveXY, findMinMaxX, processToolchange]),
-    fixOtherLayerTemperature,
-    captureConfigSection
-  ];
+  #actions;
   _processLine(ctx) {
     if (this.#state.processingHasBeenFinalized) {
       throw new InternalError("_processLine was called after processing has been finalized.");
@@ -92371,8 +92376,8 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
     s2.processingHasBeenFinalized = true;
     const currentPPVersion = await getPostProcessorVersion();
     const now2 = /* @__PURE__ */ new Date();
-    s2.gcodeInfo.processedByRatOSVersion = currentPPVersion;
-    s2.gcodeInfo.processedByRatOSTimestamp = now2;
+    s2.gcodeInfo.postProcessorVersion = currentPPVersion;
+    s2.gcodeInfo.postProcessorTimestamp = now2;
     if (s2.kQuickInpsectionOnly) {
       s2.gcodeInfo.analysisResult = {
         version: ANALYSIS_RESULT_VERSION,
@@ -92605,7 +92610,7 @@ var GCodeFile = class _GCodeFile {
     if (gci.fileFormatVersion === void 0) {
       const tail2 = await fsReaderGetLines2(path9, -3);
       if (/^; processed by RatOS($|\s)/im.test(tail2)) {
-        gci.processedByRatOSVersion = _GCodeFile.LEGACY_RATOS_VERSION;
+        gci.postProcessorVersion = _GCodeFile.LEGACY_RATOS_VERSION;
         gci.fileFormatVersion = 0;
       }
     }
@@ -92619,7 +92624,7 @@ var GCodeFile = class _GCodeFile {
         }
       }
     }
-    if (gci.fileFormatVersion) {
+    if (gci.fileFormatVersion !== void 0) {
       if (gci.fileFormatVersion < _GCodeFile.FILE_FORMAT_VERSION) {
         reasons.push(
           "The file format is from an old version of RatOS which is no longer supported. The original file must be re-uploaded or re-sliced."
@@ -92636,24 +92641,39 @@ var GCodeFile = class _GCodeFile {
     const currentVersion = await getPostProcessorVersion();
     let printability;
     if (gci.isProcessed) {
-      assert(gci.processedByRatOSVersion);
-      if (import_semver5.default.eq(currentVersion, gci.processedByRatOSVersion)) {
-        printability = "READY" /* READY */;
-      } else if (import_semver5.default.lt(currentVersion, gci.processedByRatOSVersion)) {
-        reasons.push(
-          "The file was processed by a more recent version of RatOS than the installed version. Either update RatOS, or the file must be reprocessed."
-        );
-        printability = "MUST_REPROCESS" /* MUST_REPROCESS */;
-      } else if (currentVersion.major > gci.processedByRatOSVersion.major) {
-        reasons.push(
-          "There have been significant incompatible changes to RatOS gcode handling since the file was last processed."
-        );
+      if (gci.processedForIdex !== !!options.printerHasIdex) {
+        switch (gci.processedForIdex) {
+          case true:
+            reasons.push("The file was processed for a printer with IDEX, but the current printer does not have IDEX.");
+            break;
+          case false:
+            reasons.push("The file was processed for a printer without IDEX, but the current printer has IDEX.");
+            break;
+          default:
+            reasons.push("It cannot be determined if the file was processed for a printer with IDEX or not.");
+            break;
+        }
         printability = "MUST_REPROCESS" /* MUST_REPROCESS */;
       } else {
-        reasons.push(
-          currentVersion.minor === gci.processedByRatOSVersion.minor ? "There have been enhancements and/or bug fixes since the file was last processed." : "There have been bug fixes since the file was last processed."
-        );
-        printability = "COULD_REPROCESS" /* COULD_REPROCESS */;
+        assert(gci.postProcessorVersion);
+        if (import_semver5.default.eq(currentVersion, gci.postProcessorVersion)) {
+          printability = "READY" /* READY */;
+        } else if (import_semver5.default.lt(currentVersion, gci.postProcessorVersion)) {
+          reasons.push(
+            "The file was processed by a more recent version of RatOS than the installed version. Either update RatOS, or the file must be reprocessed."
+          );
+          printability = "MUST_REPROCESS" /* MUST_REPROCESS */;
+        } else if (currentVersion.major > gci.postProcessorVersion.major) {
+          reasons.push(
+            "There have been significant incompatible changes to RatOS gcode handling since the file was last processed."
+          );
+          printability = "MUST_REPROCESS" /* MUST_REPROCESS */;
+        } else {
+          reasons.push(
+            currentVersion.minor === gci.postProcessorVersion.minor ? "There have been enhancements and/or bug fixes since the file was last processed." : "There have been bug fixes since the file was last processed."
+          );
+          printability = "COULD_REPROCESS" /* COULD_REPROCESS */;
+        }
       }
     } else {
       printability = "MUST_PROCESS" /* MUST_PROCESS */;
@@ -92742,6 +92762,8 @@ var GCodeFile = class _GCodeFile {
         throw new InternalError("finalizeProcessing did not set analysisResult.");
       }
       await fh.write(_GCodeFile.getRatosMetaFooter(gci.analysisResult));
+      gci.processedForIdex = !!options.printerHasIdex;
+      gci.fileFormatVersion = _GCodeFile.FILE_FORMAT_VERSION;
       return gci;
     } finally {
       try {
@@ -92770,7 +92792,12 @@ var GCodeFile = class _GCodeFile {
         throw e;
       }
     }
-    return await gcodeProcessor.finalizeProcessing();
+    const gci = await gcodeProcessor.finalizeProcessing();
+    if (!gci.analysisResult) {
+      throw new InternalError("finalizeProcessing did not set analysisResult.");
+    }
+    gci.processedForIdex = !!options.printerHasIdex;
+    return gci;
   }
   /** Reads the file line by line. If the file has already been processed, it will be de-processed on the fly. */
   readDeprocessedLines(progress2) {
@@ -92868,10 +92895,13 @@ async function inspectGCode(inputFile, options) {
     onWarning: options.onWarning
   };
   const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
-  if (gcf.info.processedByRatOSVersion) {
+  if (gcf.info.isProcessed) {
     return {
       ...gcf.info.serialize(),
-      wasAlreadyProcessed: true
+      wasAlreadyProcessed: true,
+      printability: gcf.printability,
+      printabilityReasons: gcf.printabilityReasons,
+      canDeprocess: gcf.canDeprocess
     };
   }
   let progressStream;
@@ -92881,7 +92911,10 @@ async function inspectGCode(inputFile, options) {
   }
   return {
     ...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
-    wasAlreadyProcessed: false
+    wasAlreadyProcessed: false,
+    printability: gcf.printability,
+    printabilityReasons: gcf.printabilityReasons,
+    canDeprocess: gcf.canDeprocess
   };
 }
 async function processGCode(inputFile, outputFile, options) {
@@ -92897,10 +92930,13 @@ async function processGCode(inputFile, outputFile, options) {
     throw new Error(`${inputFile} is not a file`);
   }
   const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
-  if (gcf?.info.processedByRatOSVersion) {
+  if (gcf?.info.isProcessed) {
     return {
       ...gcf.info.serialize(),
-      wasAlreadyProcessed: true
+      wasAlreadyProcessed: true,
+      printability: gcf.printability,
+      printabilityReasons: gcf.printabilityReasons,
+      canDeprocess: gcf.canDeprocess
     };
   }
   try {
@@ -92918,7 +92954,10 @@ async function processGCode(inputFile, outputFile, options) {
   }
   return {
     ...(await gcf.transform(outputFile, { progressTransform: progressStream, ...gcfOptions })).serialize(),
-    wasAlreadyProcessed: false
+    wasAlreadyProcessed: false,
+    printability: gcf.printability,
+    printabilityReasons: gcf.printabilityReasons,
+    canDeprocess: gcf.canDeprocess
   };
 }
 
@@ -100585,9 +100624,14 @@ var GcodeInfoZod = z.object({
   flavour: z.string(),
   generatorTimestamp: z.string(),
   ratosDialectVersion: z.string().optional(),
-  processedByRatOSVersion: z.string().optional(),
-  processedByRatOSTimestamp: z.string().optional(),
+  postProcessorVersion: z.string().optional(),
+  postProcessorTimestamp: z.string().optional(),
+  processedForIdex: z.union([z.boolean(), z.literal("unknown")]).optional(),
+  isProcessed: z.boolean(),
   wasAlreadyProcessed: z.boolean(),
+  printability: z.string(),
+  printabilityReasons: z.array(z.string()).optional(),
+  canDeprocess: z.boolean().optional(),
   analysisResult: z.discriminatedUnion("kind", [
     z.object({
       kind: z.literal("full"),
