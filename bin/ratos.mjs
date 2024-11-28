@@ -92676,7 +92676,7 @@ var GCodeFile = class _GCodeFile {
         }
       }
     } else {
-      printability = "MUST_PROCESS" /* MUST_PROCESS */;
+      printability = !!options.printerHasIdex ? "MUST_PROCESS" /* MUST_PROCESS */ : "READY" /* READY */;
     }
     if (gci.isProcessed) {
       var tail = await fsReaderGetLines2(path9, -100);
