@@ -23,26 +23,15 @@ import {
 import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
-import { InternalError } from '@/server/gcode-processor/errors';
-import { GCodeFlavour, GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { SerializedState, State } from '@/server/gcode-processor/State';
+import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
+import { GCodeFlavour, GCodeInfo, MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
 import * as act from '@/server/gcode-processor/Actions';
-import semver from 'semver';
-
-/**
- * Force all output other than 'processed by ratos' headers to match the legacy python implementation
- * Remove this ASAP after merging the rewrite.
- * */
-const LEGACY_MODE = true;
-
-export type AnalysisResult =
-	| SerializedState
-	| ({ gcodeInfo: SerializedGcodeInfo } & Pick<
-			SerializedState,
-			'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'
-	  >);
+import semver, { SemVer } from 'semver';
+import { ANALYSIS_RESULT_VERSION, AnalysisResultKind } from '@/server/gcode-processor/AnalysisResult';
+import { getPostProcessorVersion } from '@/server/gcode-processor/Version';
 
 export class InspectionIsComplete extends Error {}
 
@@ -52,6 +41,12 @@ export interface GCodeProcessorOptions {
 	allowUnsupportedSlicerVersions?: boolean;
 	onWarning?: (code: string, message: string) => void;
 	abortSignal?: AbortSignal;
+}
+
+export interface FinalizeProcessingOptions {
+	bookmarks: BookmarkCollection;
+	replaceLine: (bookmark: Bookmark, line: string) => Promise<void>;
+	getProcessedByRatosHeader: (currentCodeVersion: SemVer, timestamp: Date) => string;
 }
 
 /**
@@ -73,22 +68,38 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			!!opts.allowUnsupportedSlicerVersions,
 			opts.onWarning,
 		);
+
+		// NB: The order of actions is significant.
+		this.#actions = !!opts.printerHasIdex
+			? [
+					act.getGcodeInfo,
+					// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
+					act.getStartPrint,
+					// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
+					subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
+					act.fixOtherLayerTemperature,
+					act.captureConfigSection,
+				]
+			: [
+					act.getGcodeInfo,
+					// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
+					act.getStartPrint,
+					// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
+					subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY]),
+					act.fixOtherLayerTemperature,
+					act.captureConfigSection,
+				];
 	}
 
 	#state: State;
 
 	// NB: The order of actions is significant.
-	#actions: ActionSequence<Action> = [
-		act.getGcodeInfo,
-		// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
-		act.getStartPrint,
-		// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
-		subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
-		act.fixOtherLayerTemperature,
-		act.captureConfigSection,
-	];
+	#actions: ActionSequence<Action>;
 
 	_processLine(ctx: ProcessLineContext) {
+		if (this.#state.processingHasBeenFinalized) {
+			throw new InternalError('_processLine was called after processing has been finalized.');
+		}
 		this.#state.resetIterationState();
 		++this.#state.currentLineNumber;
 
@@ -179,19 +190,73 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	/**
 	 * Applies all the retrospective changes required after analysing the whole file/stream.
 	 */
-	async processBookmarks(
-		bookmarks: BookmarkCollection,
-		replaceLine: (bookmark: Bookmark, line: string) => Promise<void>,
-	) {
+	async finalizeProcessing(options?: FinalizeProcessingOptions): Promise<MutableGCodeInfo> {
 		const s = this.#state;
-		// TODO: apply boookmarks. If a file is only being inspected, BookmarkingBufferEncoder won't
-		// be in the pipeline, and it would be pointless to call this method. This is also expressed
-		// via State.kInspectionOnly: most processing code will behave the same regardless, but this
-		// flag can be used to skip some expensive mutation that won't end up being used anyhow.
+
+		if (s.processingHasBeenFinalized) {
+			throw new GCodeProcessorError('Processing has already been finalized.');
+		}
+
+		if (!s.gcodeInfoOrUndefined) {
+			// This is essentially an internal error as it indicates a program logic problem with the caller.
+			// This exception will be thrown in the following scenarios:
+			// 1. No data has passed through the GCodeProcessor yet.
+			// 2. The header indicated that the stream is already processed. This will currently throw an
+			//    AlreadyProcessedError, which has a gcodeInfo property for the gcodeInfo parsed from the header.
+			//    At present, the higher-level code in gcode-processor.ts only deals with files - no "process during
+			//    upload" yet. gcode-processor code only invokes a GCodeProcessor for unprocessed files, so GCodeProcessor
+			//    is currently ok to bail when it is given a processed file. However, this will need to be reconsidered
+			//    when we implement process during upload.
+			// 3. Processing threw an error before the file header was parsed, but the caller still tries to finalize processing.
+			throw new GCodeProcessorError(
+				'Processing is incomplete and cannot be finalized (the file headers have not been parsed successfully).',
+			);
+		}
+
+		s.processingHasBeenFinalized = true;
+
+		const currentPPVersion = await getPostProcessorVersion();
+		const now = new Date();
+
+		s.gcodeInfo.postProcessorVersion = currentPPVersion;
+		s.gcodeInfo.postProcessorTimestamp = now;
+
+		if (s.kQuickInpsectionOnly) {
+			// Populate only known-complete data.
+			s.gcodeInfo.analysisResult = {
+				version: ANALYSIS_RESULT_VERSION,
+				kind: AnalysisResultKind.Quick,
+				extruderTemps: s.extruderTemps,
+				firstMoveX: s.firstMoveX,
+				firstMoveY: s.firstMoveY,
+				hasPurgeTower: s.hasPurgeTower,
+				configSection: s.configSectionAsObject,
+			};
+		} else {
+			s.gcodeInfo.analysisResult = {
+				version: ANALYSIS_RESULT_VERSION,
+				kind: AnalysisResultKind.Full,
+				extruderTemps: s.extruderTemps,
+				toolChangeCount: s.toolChangeCount,
+				firstMoveX: s.firstMoveX,
+				firstMoveY: s.firstMoveY,
+				minX: s.minX,
+				maxX: s.maxX,
+				hasPurgeTower: s.hasPurgeTower,
+				configSection: s.configSectionAsObject,
+				usedTools: s.usedTools,
+			};
+		}
+
+		if (!options) {
+			// Skip bookmark processing, we're only inspecting.
+			return s.gcodeInfo;
+		}
+
 		if (s.firstLine) {
-			await replaceLine(
-				bookmarks.getBookmark(s.firstLine.bookmark),
-				(await GCodeInfo.getProcessedByRatosHeader()) + '\n' + s.firstLine.line.trimEnd(),
+			await options.replaceLine(
+				options.bookmarks.getBookmark(s.firstLine.bookmark),
+				options.getProcessedByRatosHeader(currentPPVersion, now) + '\n' + s.firstLine.line.trimEnd(),
 			);
 		}
 
@@ -215,7 +280,10 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			}
 
 			if (toAdd) {
-				await replaceLine(bookmarks.getBookmark(s.startPrintLine.bookmark), s.startPrintLine.line.trimEnd() + toAdd);
+				await options.replaceLine(
+					options.bookmarks.getBookmark(s.startPrintLine.bookmark),
+					s.startPrintLine.line.trimEnd() + toAdd,
+				);
 			}
 
 			toAdd = '';
@@ -225,45 +293,22 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 					toAdd += `\nM104 S${s.extruderTemps[Number(tool)]} T${tool}`;
 				}
 
-				await replaceLine(
-					bookmarks.getBookmark(s.onLayerChange2Line.bookmark),
+				await options.replaceLine(
+					options.bookmarks.getBookmark(s.onLayerChange2Line.bookmark),
 					s.onLayerChange2Line.line.trimEnd() + toAdd,
 				);
 
 				if (s.extruderTempLines) {
 					for (let bmLine of s.extruderTempLines) {
-						await replaceLine(bookmarks.getBookmark(bmLine.bookmark), REMOVED_BY_RATOS + bmLine.line.trimEnd());
+						await options.replaceLine(
+							options.bookmarks.getBookmark(bmLine.bookmark),
+							REMOVED_BY_RATOS + bmLine.line.trimEnd(),
+						);
 					}
 				}
 			}
 		}
-	}
 
-	getAnalysisResult(): AnalysisResult {
-		const s = this.#state.serialize();
-		if (this.#state.kQuickInpsectionOnly) {
-			// Only return known-complete data.
-			return {
-				extruderTemps: s.extruderTemps,
-				firstMoveX: s.firstMoveX,
-				firstMoveY: s.firstMoveY,
-				hasPurgeTower: s.hasPurgeTower,
-				configSection: s.configSection,
-				gcodeInfo: s.gcodeInfo,
-			};
-		} else {
-			return {
-				extruderTemps: s.extruderTemps,
-				toolChangeCount: s.toolChangeCount,
-				firstMoveX: s.firstMoveX,
-				firstMoveY: s.firstMoveY,
-				minX: s.minX,
-				maxX: s.maxX,
-				hasPurgeTower: s.hasPurgeTower,
-				configSection: s.configSection,
-				usedTools: s.usedTools,
-				gcodeInfo: s.gcodeInfo,
-			};
-		}
+		return s.gcodeInfo;
 	}
 }

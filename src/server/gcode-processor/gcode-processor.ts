@@ -18,30 +18,21 @@
  * NOTE: Incomplete, API requirements to be determined.
  */
 
-import { AnalysisResult, GCodeProcessor, InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';
-import { createReadStream, createWriteStream, existsSync } from 'node:fs';
-import { FileHandle, access, constants, stat, open } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { access, constants, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
 import progress from 'progress-stream';
-import split from 'split2';
-import {
-	BookmarkingBufferEncoder,
-	replaceBookmarkedGcodeLine,
-} from '@/server/gcode-processor/BookmarkingBufferEncoder';
-import { Writable } from 'node:stream';
-import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { Transform } from 'node:stream';
+import { SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFile, Printability } from '@/server/gcode-processor/GCodeFile';
 
 export const PROGRESS_STREAM_SPEED_STABILIZATION_TIME = 3;
 
-class NullSink extends Writable {
-	_write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
-		callback();
-	}
-}
-
-type ProcessorResult = AnalysisResult & {
+type ProcessorResult = SerializedGcodeInfo & {
 	wasAlreadyProcessed: boolean;
+	printability: Printability;
+	printabilityReasons?: string[];
+	canDeprocess?: boolean;
 };
 
 interface CommonOptions {
@@ -68,50 +59,44 @@ interface InspectOptions extends CommonOptions {
 
 export async function inspectGCode(inputFile: string, options: InspectOptions): Promise<ProcessorResult> {
 	const inputStat = await stat(path.resolve(inputFile));
+
 	if (!inputStat.isFile()) {
 		throw new Error(`${inputFile} is not a file`);
 	}
 
-	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
-
-	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
-		return {
-			gcodeInfo: gcInfoBeforeProcessing.serialize(),
-			wasAlreadyProcessed: true,
-		};
-	}
-
-	const gcodeProcessor = new GCodeProcessor({
+	const gcfOptions = {
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
 		quickInspectionOnly: !options.fullInspection,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
-	});
-	const progressStream = progress({ length: inputStat.size });
+	};
+
+	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+
+	if (gcf.info.isProcessed) {
+		return {
+			...gcf.info.serialize(),
+			wasAlreadyProcessed: true,
+			printability: gcf.printability,
+			printabilityReasons: gcf.printabilityReasons,
+			canDeprocess: gcf.canDeprocess,
+		};
+	}
+
+	let progressStream: Transform | undefined;
+
 	if (options.onProgress) {
+		progressStream = progress({ length: inputStat.size });
 		progressStream.on('progress', options.onProgress);
 	}
-	try {
-		await pipeline(
-			createReadStream(inputFile),
-			progressStream,
-			split(),
-			gcodeProcessor,
-			new NullSink({ objectMode: true }),
-		);
-	} catch (e) {
-		if (e instanceof InspectionIsComplete) {
-			return {
-				...gcodeProcessor.getAnalysisResult(),
-				wasAlreadyProcessed: false,
-			};
-		}
-		throw e;
-	}
+
 	return {
-		...gcodeProcessor.getAnalysisResult(),
+		...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
 		wasAlreadyProcessed: false,
+		printability: gcf.printability,
+		printabilityReasons: gcf.printabilityReasons,
+		canDeprocess: gcf.canDeprocess,
 	};
 }
 
@@ -120,19 +105,28 @@ export async function processGCode(
 	outputFile: string,
 	options: ProcessOptions,
 ): Promise<ProcessorResult> {
-	let fh: FileHandle | undefined = undefined;
+	const gcfOptions = {
+		printerHasIdex: options.idex,
+		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+		abortSignal: options.abortSignal,
+		onWarning: options.onWarning,
+	};
+
 	const inputStat = await stat(path.resolve(inputFile));
 	const outPath = path.resolve(path.dirname(outputFile));
 	if (!inputStat.isFile()) {
 		throw new Error(`${inputFile} is not a file`);
 	}
 
-	const gcInfoBeforeProcessing = await GCodeInfo.fromFile(inputFile);
+	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 
-	if (gcInfoBeforeProcessing?.processedByRatOSVersion) {
+	if (gcf?.info.isProcessed) {
 		return {
-			gcodeInfo: gcInfoBeforeProcessing.serialize(),
+			...gcf.info.serialize(),
 			wasAlreadyProcessed: true,
+			printability: gcf.printability,
+			printabilityReasons: gcf.printabilityReasons,
+			canDeprocess: gcf.canDeprocess,
 		};
 	}
 
@@ -144,38 +138,19 @@ export async function processGCode(
 	if (existsSync(path.resolve(outputFile)) && !options.overwrite) {
 		throw new Error(`${outputFile} already exists`);
 	}
-	try {
-		fh = await open(outputFile, 'w');
-		const gcodeProcessor = new GCodeProcessor({
-			printerHasIdex: options.idex,
-			allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
-			quickInspectionOnly: false,
-			abortSignal: options.abortSignal,
-			onWarning: options.onWarning,
-		});
-		const encoder = new BookmarkingBufferEncoder(undefined, undefined, options.abortSignal);
-		const progressStream = progress({ length: inputStat.size, speed: PROGRESS_STREAM_SPEED_STABILIZATION_TIME });
-		if (options.onProgress) {
-			progressStream.on('progress', options.onProgress);
-		}
-		await pipeline(
-			createReadStream(inputFile),
-			progressStream,
-			split(),
-			gcodeProcessor,
-			encoder,
-			createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
-		);
 
-		await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
+	let progressStream: Transform | undefined;
 
-		return {
-			...gcodeProcessor.getAnalysisResult(),
-			wasAlreadyProcessed: false,
-		};
-	} finally {
-		try {
-			await fh?.close();
-		} catch {}
+	if (options.onProgress) {
+		progressStream = progress({ length: inputStat.size, speed: PROGRESS_STREAM_SPEED_STABILIZATION_TIME });
+		progressStream.on('progress', options.onProgress);
 	}
+
+	return {
+		...(await gcf.transform(outputFile, { progressTransform: progressStream, ...gcfOptions })).serialize(),
+		wasAlreadyProcessed: false,
+		printability: gcf.printability,
+		printabilityReasons: gcf.printabilityReasons,
+		canDeprocess: gcf.canDeprocess,
+	};
 }

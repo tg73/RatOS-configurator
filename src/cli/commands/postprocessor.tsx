@@ -14,7 +14,7 @@ import { Duration, DurationLikeObject } from 'luxon';
 import path from 'path';
 import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger';
-import { ACTION_ERROR_CODES } from '@/server/gcode-processor/Actions';
+import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions';
 import { loadEnvironment } from '@/cli/util';
 import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
@@ -60,11 +60,41 @@ const ProgressReportUI: React.FC<{
 const GcodeInfoZod = z.object({
 	generator: z.string(),
 	generatorVersion: z.string(),
-	flavour: z.number(),
+	flavour: z.string(),
 	generatorTimestamp: z.string(),
 	ratosDialectVersion: z.string().optional(),
-	processedByRatOSVersion: z.string().optional(),
-	processedByRatOSTimestamp: z.string().optional(),
+	postProcessorVersion: z.string().optional(),
+	postProcessorTimestamp: z.string().optional(),
+	processedForIdex: z.union([z.boolean(), z.literal('unknown')]).optional(),
+	isProcessed: z.boolean(),
+	wasAlreadyProcessed: z.boolean(),
+	printability: z.string(),
+	printabilityReasons: z.array(z.string()).optional(),
+	canDeprocess: z.boolean().optional(),
+	analysisResult: z
+		.discriminatedUnion('kind', [
+			z.object({
+				kind: z.literal('full'),
+				extruderTemps: z.array(z.string()).optional(),
+				toolChangeCount: z.number(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				minX: z.number(),
+				maxX: z.number(),
+				hasPurgeTower: z.boolean().optional(),
+				configSection: z.record(z.string(), z.string()).optional(),
+				usedTools: z.array(z.string()),
+			}),
+
+			z.object({
+				kind: z.literal('quick'),
+				extruderTemps: z.array(z.string()).optional(),
+				firstMoveX: z.string().optional(),
+				firstMoveY: z.string().optional(),
+				hasPurgeTower: z.boolean().optional(),
+			}),
+		])
+		.optional(),
 });
 
 export const PostProcessorCLIOutput = z.discriminatedUnion('result', [
@@ -80,30 +110,7 @@ export const PostProcessorCLIOutput = z.discriminatedUnion('result', [
 	}),
 	z.object({
 		result: z.literal('success'),
-		payload: z.discriminatedUnion('wasAlreadyProcessed', [
-			z.object({
-				extruderTemps: z.array(z.string()).optional(),
-				toolChangeCount: z.number(),
-				firstMoveX: z.string().optional(),
-				firstMoveY: z.string().optional(),
-				minX: z.number(),
-				maxX: z.number(),
-				hasPurgeTower: z.boolean().optional(),
-				configSection: z.record(z.string(), z.string()).optional(),
-				usedTools: z.array(z.string()),
-				gcodeInfo: GcodeInfoZod,
-				wasAlreadyProcessed: z.literal(false),
-			}),
-			z.object({
-				extruderTemps: z.array(z.string()).optional(),
-				firstMoveX: z.string().optional(),
-				firstMoveY: z.string().optional(),
-				hasPurgeTower: z.boolean().optional(),
-				configSection: z.record(z.string(), z.string()).optional(),
-				wasAlreadyProcessed: z.literal(true),
-				gcodeInfo: GcodeInfoZod,
-			}),
-		]),
+		payload: GcodeInfoZod,
 	}),
 	z.object({
 		result: z.literal('progress'),
@@ -182,14 +189,14 @@ export const postprocessor = (program: Command) => {
 				onWarning: (code: string, message: string) => {
 					getLogger().trace(code, 'Warning during processing: ' + message);
 					switch (code) {
-						case ACTION_ERROR_CODES.UNSUPPORTED_SLICER_VERSION:
+						case ACTION_WARNING_CODES.UNSUPPORTED_SLICER_VERSION:
 							toPostProcessorCLIOutput({
 								result: 'warning',
 								title: 'Unsupported slicer version',
 								message: message,
 							});
 							break;
-						case ACTION_ERROR_CODES.HEURISTIC_SMELL:
+						case ACTION_WARNING_CODES.HEURISTIC_SMELL:
 							toPostProcessorCLIOutput({
 								result: 'warning',
 								title: 'Unexpected g-code sequence',
@@ -214,7 +221,7 @@ export const postprocessor = (program: Command) => {
 				}
 				const result = !!outputFile
 					? await processGCode(inputFile, outputFile, opts)
-					: await inspectGCode(inputFile, { ...opts, fullInspection: false }); // fullInspection default is false, just to demo.
+					: await inspectGCode(inputFile, { ...opts, fullInspection: false });
 
 				if (args.overwriteInput) {
 					fs.renameSync(outputFile, inputFile);

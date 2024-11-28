@@ -16,14 +16,10 @@
 
 /* eslint-disable no-console */
 
-import {
-	BookmarkingBufferEncoder,
-	replaceBookmarkedGcodeLine,
-} from '@/server/gcode-processor/BookmarkingBufferEncoder';
-import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { BookmarkingBufferEncoder } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { GCodeProcessor } from '@/server/gcode-processor/GCodeProcessor';
 import { glob } from 'glob';
-import { createReadStream, createWriteStream } from 'node:fs';
+import { createReadStream } from 'node:fs';
 import fs, { FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import { Writable } from 'node:stream';
@@ -31,6 +27,7 @@ import { pipeline } from 'node:stream/promises';
 import split from 'split2';
 import { describe, test, expect, chai } from 'vitest';
 import semver from 'semver';
+import { GCodeFile, TransformOptions } from '@/server/gcode-processor/GCodeFile';
 
 chai.use(require('chai-string'));
 
@@ -93,16 +90,16 @@ async function processedGCodeFilesAreEquivalent(expectedPath: string, actualPath
 		const expectedHeader = await readLines(iterExpected, 3);
 		const actualHeader = await readLines(iterActual, 3);
 
-		const gciExpected = GCodeInfo.tryParseHeader(expectedHeader.lines);
-		const gciActual = GCodeInfo.tryParseHeader(actualHeader.lines);
+		const gciExpected = GCodeFile.tryParseHeader(expectedHeader.lines);
+		const gciActual = GCodeFile.tryParseHeader(actualHeader.lines);
 
 		expect(gciExpected, ' (could not parse expected file header)').not.toBeNull;
 		expect(gciActual, ' (could not parse actual file header)').not.toBeNull;
 
-		expect(gciExpected!.processedByRatOSVersion).toBeTruthy();
-		expect(gciExpected!.processedByRatOSTimestamp).toBeTruthy();
-		expect(gciActual!.processedByRatOSVersion).toBeTruthy();
-		expect(gciActual!.processedByRatOSTimestamp).toBeTruthy();
+		expect(gciExpected!.postProcessorVersion).toBeTruthy();
+		expect(gciExpected!.postProcessorTimestamp).toBeTruthy();
+		expect(gciActual!.postProcessorVersion).toBeTruthy();
+		expect(gciActual!.postProcessorTimestamp).toBeTruthy();
 		expect(gciActual!.flavour).to.equal(gciExpected!.flavour, ' while comparing headers');
 		expect(gciActual!.generator).to.equal(gciExpected!.generator, ' while comparing headers');
 		expect(semver.eq(gciActual!.generatorVersion, gciExpected!.generatorVersion)).toBeTruthy();
@@ -119,6 +116,11 @@ async function processedGCodeFilesAreEquivalent(expectedPath: string, actualPath
 			++lineNumber;
 
 			expect(actual.done).toStrictEqual(expected.done);
+
+			if (actual.value.startsWith('; ratos_meta begin ') && expected.value.startsWith('; ratos_meta begin ')) {
+				// Stop comparing. We can't meaningfully compare ratos_meta blocks. This is handled by other tests.
+				break;
+			}
 
 			if (actual.done) {
 				break;
@@ -170,38 +172,29 @@ describe('output equivalence', { timeout: 60000 }, async () => {
 			await fs.mkdir(outputDir, { recursive: true });
 
 			console.log(`   input: ${fixtureFile}\n  output: ${outputPath}`);
+
 			let gotWarnings = false;
-			let fh: FileHandle | undefined = undefined;
-			try {
-				fh = await fs.open(outputPath, 'w');
-				const gcodeProcessor = new GCodeProcessor({
-					printerHasIdex: true,
-					quickInspectionOnly: false,
-					allowUnsupportedSlicerVersions: false,
-					onWarning: (c, m) => {
-						// If some specific warning is acceptable during this test, add logic here to ignore it.
-						// Generally, we don't want to encounter warnings in tests.
-						console.warn(`  Warning: ${m} (${c})`);
-						gotWarnings = true;
-					},
-				});
+			const gcfOptions: TransformOptions = {
+				printerHasIdex: true,
+				allowUnsupportedSlicerVersions: false,
+				onWarning: (c, m) => {
+					// If some specific warning is acceptable during this test, add logic here to ignore it.
+					// Generally, we don't want to encounter warnings in tests.
+					console.warn(`  Warning: ${m} (${c})`);
+					gotWarnings = true;
+				},
+			};
 
-				const encoder = new BookmarkingBufferEncoder();
+			const gcf = await GCodeFile.inspect(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile), gcfOptions);
 
-				await pipeline(
-					createReadStream(path.join(__dirname, 'fixtures', 'slicer_output', fixtureFile)),
-					split(),
-					gcodeProcessor,
-					encoder,
-					createWriteStream('|notused|', { fd: fh.fd, highWaterMark: 256 * 1024, autoClose: false }),
-				);
+			expect(gotWarnings).to.equal(
+				false,
+				'One or more warnings were raised during inspection, check console output for details. Correct tests must not produce warnings.',
+			);
 
-				await gcodeProcessor.processBookmarks(encoder, (bm, line) => replaceBookmarkedGcodeLine(fh!, bm, line));
-			} finally {
-				try {
-					await fh?.close();
-				} catch {}
-			}
+			gotWarnings = false;
+
+			await gcf.transform(outputPath, gcfOptions);
 
 			expect(gotWarnings).to.equal(
 				false,

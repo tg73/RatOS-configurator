@@ -14,7 +14,7 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { GCodeInfo, SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { InternalError } from '@/server/gcode-processor/errors';
 import { BookmarkKey } from '@/server/gcode-processor/Bookmark';
 import { CommonGCodeCommand } from '@/server/gcode-processor/CommonGCodeCommand';
@@ -24,21 +24,6 @@ export class BookmarkedLine {
 		public readonly line: string,
 		public readonly bookmark: BookmarkKey,
 	) {}
-}
-
-export interface SerializedState {
-	readonly extruderTemps?: string[];
-	readonly toolChangeCount: number;
-	readonly firstMoveX?: string;
-	readonly firstMoveY?: string;
-	readonly minX: number;
-	readonly maxX: number;
-	readonly hasPurgeTower?: boolean;
-	readonly usedTools: string[];
-	readonly gcodeInfo: SerializedGcodeInfo;
-	readonly configSection?: {
-		[key: string]: string;
-	};
 }
 
 /**
@@ -70,6 +55,7 @@ export class State {
 	public maxX = Number.MIN_VALUE;
 	public hasPurgeTower?: boolean;
 	public configSection?: Map<string, string>;
+	public processingHasBeenFinalized = false;
 
 	/** Used tools, in order of first use. */
 	public usedTools: string[] = [];
@@ -84,34 +70,33 @@ export class State {
 		this._cmd = undefined;
 	}
 
-	#gcodeInfo?: GCodeInfo;
+	#gcodeInfo?: MutableGCodeInfo;
 
 	/**
 	 * `gcodeInfo` is always set near the start of processing and is accessed frequently
 	 * so provide a non-optional accessor for convenience.
 	 */
-	get gcodeInfo(): GCodeInfo {
+	get gcodeInfo(): MutableGCodeInfo {
 		if (!this.#gcodeInfo) {
 			throw new InternalError('gcodeInfo has not been set yet.');
 		}
 		return this.#gcodeInfo;
 	}
 
-	set gcodeInfo(value: GCodeInfo) {
+	set gcodeInfo(value: MutableGCodeInfo) {
 		this.#gcodeInfo = value;
 	}
 
-	get gcodeInfoOrUndefined(): GCodeInfo | undefined {
+	get gcodeInfoOrUndefined(): MutableGCodeInfo | undefined {
 		return this.#gcodeInfo;
 	}
 
-	public serialize(): SerializedState {
+	get configSectionAsObject():
+		| {
+				[key: string]: string;
+		  }
+		| undefined {
 		const configSectionEntries = this.configSection?.entries();
-		const configSection = configSectionEntries ? Object.fromEntries(configSectionEntries) : undefined;
-		return {
-			...this,
-			configSection,
-			gcodeInfo: this.gcodeInfo.serialize(),
-		};
+		return configSectionEntries ? Object.fromEntries(configSectionEntries) : undefined;
 	}
 }

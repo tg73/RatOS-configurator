@@ -14,12 +14,10 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { getConfiguratorVersion } from '@/server/gcode-processor/helpers';
-import semver, { SemVer } from 'semver';
-import { GCodeError } from '@/server/gcode-processor/errors';
-import date2 from 'date-and-time';
+import { SemVer } from 'semver';
 import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
+import { AnalysisResult } from '@/server/gcode-processor/AnalysisResult';
 
 /** A known flavour of G-code. */
 export enum GCodeFlavour {
@@ -39,125 +37,45 @@ const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: numbe
 
 /** Serialized characteristics of a G-code file, typically determined from the header lines of the file. */
 export interface SerializedGcodeInfo {
+	isProcessed: boolean;
 	generator: string;
 	generatorVersion: string;
-	flavour: GCodeFlavour;
+	flavour: string;
 	generatorTimestamp: string;
 	ratosDialectVersion?: string;
-	processedByRatOSVersion?: string;
-	processedByRatOSTimestamp?: string;
+	postProcessorVersion?: string;
+	postProcessorTimestamp?: string;
+	processedForIdex?: boolean | 'unknown';
+	/** If a file has been processed, by a compatible version, the result of analysing the file. */
+	analysisResult?: AnalysisResult;
 }
 
+export type GCodeInfo = Readonly<MutableGCodeInfo>;
+
 /** Characteristics of a G-code file, typically determined from the header lines of the file. */
-export class GCodeInfo {
-	/** The placeholder version used to represent files transformed by the legacy ratos.py post processor. */
-	static readonly LEGACY_RATOS_VERSION = new SemVer('1.0.0-legacy');
-	/**
-	 * Parses header information from the specified file. This method will also detect files already processed by the legacy Python-based post processor.
-	 * */
-	static async fromFile(path: string): Promise<GCodeInfo | null> {
-		const tail = await fsReaderGetLines(path, -3);
-		const isAlreadyLegacyProcessed = /^; processed by RatOS($|\s)/im.test(tail);
-
-		const header = await fsReaderGetLines(path, 4);
-		return GCodeInfo.#tryParseHeader(header, isAlreadyLegacyProcessed);
-	}
-
-	/**
-	 * Parses header (top of file) comments. This method will not detect files already processed by the legacy Python-based post processor.
-	 * @param header One or more newline-separated lines from the start of a gcode file. Normally, at least the first three lines should be provided.
-	 */
-	static tryParseHeader(header: string): GCodeInfo | null {
-		return GCodeInfo.#tryParseHeader(header);
-	}
-
-	static #tryParseHeader(header: string, isAlreadyLegacyProcessed: boolean = false): GCodeInfo | null {
-		let match =
-			/^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(
-				header,
-			);
-
-		if (match) {
-			let flavour = GCodeFlavour.Unknown;
-			let ratosDialectVersion: string | undefined = undefined;
-
-			switch (match.groups?.GENERATOR?.toLowerCase()) {
-				case 'prusaslicer':
-					flavour = GCodeFlavour.PrusaSlicer;
-					break;
-				case 'orcaslicer':
-					flavour = GCodeFlavour.OrcaSlicer;
-					break;
-				case 'superslicer':
-					flavour = GCodeFlavour.SuperSlicer;
-					break;
-				default:
-					if (match.groups?.RATOS_DIALECT_VERSION) {
-						flavour = GCodeFlavour.RatOS;
-						ratosDialectVersion = match.groups?.RATOS_DIALECT_VERSION;
-					}
-					break;
-			}
-
-			let processedByRatOSVersion: SemVer | undefined = undefined;
-			let processedByRatOSTimestamp: Date | undefined = undefined;
-
-			if (isAlreadyLegacyProcessed) {
-				processedByRatOSVersion = GCodeInfo.LEGACY_RATOS_VERSION;
-			} else {
-				let processedByRatosMatch =
-					/^; processed by RatOS (?<VERSION>[^\s]+) on (?<DATE>[^\s]+) at (?<TIME>.*)$/im.exec(header);
-
-				if (processedByRatosMatch) {
-					processedByRatOSVersion = GCodeInfo.#coerceSemVerOrThrow(
-						processedByRatosMatch?.groups?.VERSION,
-						'The processed by RatOS version is not a valid SemVer.',
-					);
-					processedByRatOSTimestamp = new Date(
-						processedByRatosMatch.groups?.DATE + ' ' + processedByRatosMatch.groups?.TIME,
-					);
-				}
-			}
-			return new GCodeInfo(
-				match.groups?.GENERATOR!,
-				GCodeInfo.#coerceSemVerOrThrow(match.groups?.VERSION!, 'The generator version is not a valid SemVer.')!,
-				flavour,
-				new Date(match.groups?.DATE + ' ' + match.groups?.TIME),
-				GCodeInfo.#coerceSemVerOrThrow(ratosDialectVersion, 'The RatOS dialect version is not a valid SemVer.'),
-				processedByRatOSVersion,
-				processedByRatOSTimestamp,
-			);
-		}
-
-		return null;
-	}
-
-	static #coerceSemVerOrThrow(version: string | undefined, message: string): SemVer | undefined {
-		if (version === undefined) {
-			return undefined;
-		}
-		const sv = semver.coerce(version);
-		if (sv === null) {
-			throw new GCodeError(message);
-		}
-		return sv;
-	}
-
-	static async getProcessedByRatosHeader(): Promise<string> {
-		const currentCodeVersion = await getConfiguratorVersion();
-		const now = new Date();
-		return `; processed by RatOS ${currentCodeVersion.toString()} on ${date2.format(now, 'YYYY-MM-DD [at] HH:mm:ss [UTC]', true)}`;
-	}
-
+export class MutableGCodeInfo {
 	constructor(
-		public readonly generator: string,
-		public readonly generatorVersion: SemVer,
-		public readonly flavour: GCodeFlavour,
-		public readonly generatorTimestamp: Date,
-		public readonly ratosDialectVersion?: SemVer,
-		public readonly processedByRatOSVersion?: SemVer,
-		public readonly processedByRatOSTimestamp?: Date,
+		public generator: string,
+		public generatorVersion: SemVer,
+		public flavour: GCodeFlavour,
+		public generatorTimestamp: Date,
+		public ratosDialectVersion?: SemVer,
+		public postProcessorVersion?: SemVer,
+		public postProcessorTimestamp?: Date,
+		public analysisResult?: AnalysisResult,
+		/** undefined = unprocessed or partially initialized, 0 = legacy PBR footer, 1 = pre-release, 2 = beta transitional version, 3 = adds 'kind' for better zod handling */
+		public fileFormatVersion?: number,
+		public ratosMetaFileOffset?: number,
+		public processedForIdex?: boolean,
 	) {}
+
+	/** True when the current {@link MutableGCodeInfo} is associated with a file that has been transformed. */
+	public get isProcessed(): boolean {
+		// Note:
+		// fileFormatVersion is set when parsed from the header of a transformed file,
+		// or in GCodeFile.transform when at the end of successful transformation.
+		return this.fileFormatVersion !== undefined && this.postProcessorVersion !== undefined;
+	}
 
 	public toJSON(): string {
 		return JSON.stringify(this.serialize());
@@ -165,13 +83,16 @@ export class GCodeInfo {
 
 	public serialize(): SerializedGcodeInfo {
 		return {
+			isProcessed: this.isProcessed,
 			generator: this.generator,
 			generatorVersion: this.generatorVersion.toString(),
-			flavour: this.flavour,
+			flavour: GCodeFlavour[this.flavour],
 			generatorTimestamp: this.generatorTimestamp.toISOString(),
 			ratosDialectVersion: this.ratosDialectVersion?.toString(),
-			processedByRatOSVersion: this.processedByRatOSVersion?.toString(),
-			processedByRatOSTimestamp: this.processedByRatOSTimestamp?.toISOString(),
+			postProcessorVersion: this.postProcessorVersion?.toString(),
+			postProcessorTimestamp: this.postProcessorTimestamp?.toISOString(),
+			processedForIdex: this.processedForIdex ?? (this.postProcessorVersion ? 'unknown' : undefined),
+			analysisResult: this.analysisResult,
 		};
 	}
 }

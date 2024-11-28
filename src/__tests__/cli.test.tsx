@@ -188,10 +188,10 @@ describe('RatOS CLI', async () => {
 			if (parsed.data.result !== 'success') {
 				throw new Error('Postprocess command did not return success');
 			}
-			expect(parsed.data.payload.gcodeInfo.generator).toBe('PrusaSlicer');
-			expect(parsed.data.payload.gcodeInfo.generatorVersion).toBe('2.8.1');
-			expect(parsed.data.payload.gcodeInfo.flavour).toBe(1);
-			expect(parsed.data.payload.gcodeInfo.generatorTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+			expect(parsed.data.payload.generator).toBe('PrusaSlicer');
+			expect(parsed.data.payload.generatorVersion).toBe('2.8.1');
+			expect(parsed.data.payload.flavour).toBe('PrusaSlicer');
+			expect(parsed.data.payload.generatorTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 		});
 	});
 });
