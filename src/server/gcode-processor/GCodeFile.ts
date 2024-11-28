@@ -125,7 +125,7 @@ export enum Printability {
 	NOT_SUPPORTED = 'NOT_SUPPORTED',
 	/** The file is not processed yet, and must be processed before it can be printed. */
 	MUST_PROCESS = 'MUST_PROCESS',
-	/** The file can be printed as-is. There would be no benefit to reprocessing. */
+	/** The file can be printed as-is. There would be no benefit to (re)processing. */
 	READY = 'READY',
 	/** The already-processed file can be printed as-is, but there could be some benefit to reprocessing. */
 	COULD_REPROCESS = 'COULD_REPROCESS',
@@ -265,7 +265,8 @@ export class GCodeFile {
 				}
 			}
 		} else {
-			printability = Printability.MUST_PROCESS;
+			// Currently we only need to transform for IDEX.
+			printability = !!options.printerHasIdex ? Printability.MUST_PROCESS : Printability.READY;
 		}
 
 		// NB: gci.ratosMetaFileOffset is set but not used yet. The code below is transitional and will be replaced.
