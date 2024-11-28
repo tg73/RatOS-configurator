@@ -24,12 +24,15 @@ import path from 'node:path';
 import progress from 'progress-stream';
 import { Transform } from 'node:stream';
 import { SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { GCodeFile } from '@/server/gcode-processor/GCodeFile';
+import { GCodeFile, Printability } from '@/server/gcode-processor/GCodeFile';
 
 export const PROGRESS_STREAM_SPEED_STABILIZATION_TIME = 3;
 
 type ProcessorResult = SerializedGcodeInfo & {
 	wasAlreadyProcessed: boolean;
+	printability: Printability;
+	printabilityReasons?: string[];
+	canDeprocess?: boolean;
 };
 
 interface CommonOptions {
@@ -71,10 +74,13 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 
 	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 
-	if (gcf.info.processedByRatOSVersion) {
+	if (gcf.info.isProcessed) {
 		return {
 			...gcf.info.serialize(),
 			wasAlreadyProcessed: true,
+			printability: gcf.printability,
+			printabilityReasons: gcf.printabilityReasons,
+			canDeprocess: gcf.canDeprocess,
 		};
 	}
 
@@ -88,6 +94,9 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 	return {
 		...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
 		wasAlreadyProcessed: false,
+		printability: gcf.printability,
+		printabilityReasons: gcf.printabilityReasons,
+		canDeprocess: gcf.canDeprocess,
 	};
 }
 
@@ -111,10 +120,13 @@ export async function processGCode(
 
 	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 
-	if (gcf?.info.processedByRatOSVersion) {
+	if (gcf?.info.isProcessed) {
 		return {
 			...gcf.info.serialize(),
 			wasAlreadyProcessed: true,
+			printability: gcf.printability,
+			printabilityReasons: gcf.printabilityReasons,
+			canDeprocess: gcf.canDeprocess,
 		};
 	}
 
@@ -137,5 +149,8 @@ export async function processGCode(
 	return {
 		...(await gcf.transform(outputFile, { progressTransform: progressStream, ...gcfOptions })).serialize(),
 		wasAlreadyProcessed: false,
+		printability: gcf.printability,
+		printabilityReasons: gcf.printabilityReasons,
+		canDeprocess: gcf.canDeprocess,
 	};
 }

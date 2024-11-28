@@ -152,7 +152,7 @@ export const getGcodeInfo: Action = (c, s) => {
 	if (!parsed) {
 		throw new SlicerIdentificationNotFound();
 	} else {
-		if (parsed.processedByRatOSVersion) {
+		if (parsed.postProcessorVersion) {
 			throw new AlreadyProcessedError(parsed);
 		}
 		s.gcodeInfo = parsed;

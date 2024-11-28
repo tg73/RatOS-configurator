@@ -63,9 +63,14 @@ const GcodeInfoZod = z.object({
 	flavour: z.string(),
 	generatorTimestamp: z.string(),
 	ratosDialectVersion: z.string().optional(),
-	processedByRatOSVersion: z.string().optional(),
-	processedByRatOSTimestamp: z.string().optional(),
+	postProcessorVersion: z.string().optional(),
+	postProcessorTimestamp: z.string().optional(),
+	processedForIdex: z.union([z.boolean(), z.literal('unknown')]).optional(),
+	isProcessed: z.boolean(),
 	wasAlreadyProcessed: z.boolean(),
+	printability: z.string(),
+	printabilityReasons: z.array(z.string()).optional(),
+	canDeprocess: z.boolean().optional(),
 	analysisResult: z
 		.discriminatedUnion('kind', [
 			z.object({

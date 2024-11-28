@@ -32,8 +32,8 @@ describe('tryParseHeader', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-06 08:32:07 UTC'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.8.0+win64'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+		expect(parsed!.postProcessorVersion).toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).toBeUndefined();
 	});
 
 	test('SuperSlicer 2.5.59.13', async () => {
@@ -46,8 +46,8 @@ describe('tryParseHeader', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-14 09:35:09 UTC'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.59.13'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+		expect(parsed!.postProcessorVersion).toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).toBeUndefined();
 	});
 
 	test('OrcaSlicer 2.1.1', async () => {
@@ -64,8 +64,8 @@ describe('tryParseHeader', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-12 14:57:24'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.1.1'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+		expect(parsed!.postProcessorVersion).toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).toBeUndefined();
 	});
 
 	test('CustomGenerator in RatOS dialect', async () => {
@@ -78,8 +78,8 @@ describe('tryParseHeader', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2025-01-01 08:32:07 UTC'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('0.1-alpha'));
 		expect(parsed!.ratosDialectVersion).toEqual(semver.coerce('0.1'));
-		expect(parsed!.processedByRatOSVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+		expect(parsed!.postProcessorVersion).toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).toBeUndefined();
 	});
 
 	test('CustomGenerator without RatOS dialect', async () => {
@@ -92,8 +92,8 @@ describe('tryParseHeader', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2025-01-01 08:32:07 UTC'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('0.1-alpha'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+		expect(parsed!.postProcessorVersion).toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).toBeUndefined();
 	});
 
 	test('already processed v1', async () => {
@@ -108,8 +108,8 @@ describe('tryParseHeader', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-09-06 08:32:07 UTC'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.8.0+win64'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toEqual(semver.coerce('2.0.2-518-g4ffef464'));
-		expect(parsed!.processedByRatOSTimestamp).toEqual(new Date('2025-01-01 08:30:00Z'));
+		expect(parsed!.postProcessorVersion).toEqual(semver.coerce('2.0.2-518-g4ffef464'));
+		expect(parsed!.postProcessorTimestamp).toEqual(new Date('2025-01-01 08:30:00Z'));
 	});
 
 	test('no match', async () => {
@@ -151,8 +151,8 @@ describe('fromFile', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-10-31T03:29:37.000Z'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.60'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+		expect(parsed!.postProcessorVersion).toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).toBeUndefined();
 	});
 
 	test('legacy processed', async () => {
@@ -164,8 +164,8 @@ describe('fromFile', async () => {
 		expect(parsed!.generatorTimestamp).toEqual(new Date('2024-10-31T03:29:37.000Z'));
 		expect(parsed!.generatorVersion).toEqual(semver.coerce('2.5.60'));
 		expect(parsed!.ratosDialectVersion).toBeUndefined();
-		expect(parsed!.processedByRatOSVersion).toEqual(new SemVer('0.1.0-legacy'));
-		expect(parsed!.processedByRatOSTimestamp).toBeUndefined();
+		expect(parsed!.postProcessorVersion).toEqual(new SemVer('0.1.0-legacy'));
+		expect(parsed!.postProcessorTimestamp).toBeUndefined();
 	});
 
 	test('v2 without ratos_meta block', async () => {
@@ -179,8 +179,8 @@ describe('fromFile', async () => {
 		});
 		const parsed = gcf.info;
 		expect(parsed).not.toBeNull();
-		expect(parsed!.processedByRatOSVersion).not.toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).not.toBeUndefined();
+		expect(parsed!.postProcessorVersion).not.toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).not.toBeUndefined();
 		expect(warnings).toHaveLength(1);
 		expect(warnings[0]).toEqual('INVALID_METADATA: The ratos_meta block was not found.');
 	});
@@ -196,8 +196,8 @@ describe('fromFile', async () => {
 		});
 		const parsed = gcf.info;
 		expect(parsed).not.toBeNull();
-		expect(parsed!.processedByRatOSVersion).not.toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).not.toBeUndefined();
+		expect(parsed!.postProcessorVersion).not.toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).not.toBeUndefined();
 		expect(warnings).toHaveLength(1);
 		expect(warnings[0]).toEqual('INVALID_METADATA: Failed to parse ratos_meta block: the begin marker was not found.');
 	});
@@ -216,8 +216,8 @@ describe('fromFile', async () => {
 		);
 		const parsed = gcf.info;
 		expect(parsed).not.toBeNull();
-		expect(parsed!.processedByRatOSVersion).not.toBeUndefined();
-		expect(parsed!.processedByRatOSTimestamp).not.toBeUndefined();
+		expect(parsed!.postProcessorVersion).not.toBeUndefined();
+		expect(parsed!.postProcessorTimestamp).not.toBeUndefined();
 		expect(warnings).toHaveLength(1);
 		expect(warnings[0]).toEqual(
 			'INVALID_METADATA: Failed to parse ratos_meta block: expected 999 base64 characters, but found 34.',

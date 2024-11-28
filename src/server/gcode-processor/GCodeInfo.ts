@@ -18,7 +18,6 @@ import { SemVer } from 'semver';
 import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
 import { AnalysisResult } from '@/server/gcode-processor/AnalysisResult';
-import { InternalError } from '@/server/gcode-processor/errors';
 
 /** A known flavour of G-code. */
 export enum GCodeFlavour {
@@ -38,13 +37,15 @@ const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: numbe
 
 /** Serialized characteristics of a G-code file, typically determined from the header lines of the file. */
 export interface SerializedGcodeInfo {
+	isProcessed: boolean;
 	generator: string;
 	generatorVersion: string;
 	flavour: string;
 	generatorTimestamp: string;
 	ratosDialectVersion?: string;
-	processedByRatOSVersion?: string;
-	processedByRatOSTimestamp?: string;
+	postProcessorVersion?: string;
+	postProcessorTimestamp?: string;
+	processedForIdex?: boolean | 'unknown';
 	/** If a file has been processed, by a compatible version, the result of analysing the file. */
 	analysisResult?: AnalysisResult;
 }
@@ -59,8 +60,8 @@ export class MutableGCodeInfo {
 		public flavour: GCodeFlavour,
 		public generatorTimestamp: Date,
 		public ratosDialectVersion?: SemVer,
-		public processedByRatOSVersion?: SemVer,
-		public processedByRatOSTimestamp?: Date,
+		public postProcessorVersion?: SemVer,
+		public postProcessorTimestamp?: Date,
 		public analysisResult?: AnalysisResult,
 		/** undefined = unprocessed or partially initialized, 0 = legacy PBR footer, 1 = pre-release, 2 = beta transitional version, 3 = adds 'kind' for better zod handling */
 		public fileFormatVersion?: number,
@@ -68,14 +69,12 @@ export class MutableGCodeInfo {
 		public processedForIdex?: boolean,
 	) {}
 
+	/** True when the current {@link MutableGCodeInfo} is associated with a file that has been transformed. */
 	public get isProcessed(): boolean {
-		if (this.fileFormatVersion === undefined && this.processedByRatOSVersion === undefined) {
-			return false;
-		} else if (this.fileFormatVersion !== undefined && this.processedByRatOSVersion !== undefined) {
-			return true;
-		} else {
-			throw new InternalError('The fields defining isProcessed are inconsistent.');
-		}
+		// Note:
+		// fileFormatVersion is set when parsed from the header of a transformed file,
+		// or in GCodeFile.transform when at the end of successful transformation.
+		return this.fileFormatVersion !== undefined && this.postProcessorVersion !== undefined;
 	}
 
 	public toJSON(): string {
@@ -84,13 +83,15 @@ export class MutableGCodeInfo {
 
 	public serialize(): SerializedGcodeInfo {
 		return {
+			isProcessed: this.isProcessed,
 			generator: this.generator,
 			generatorVersion: this.generatorVersion.toString(),
 			flavour: GCodeFlavour[this.flavour],
 			generatorTimestamp: this.generatorTimestamp.toISOString(),
 			ratosDialectVersion: this.ratosDialectVersion?.toString(),
-			processedByRatOSVersion: this.processedByRatOSVersion?.toString(),
-			processedByRatOSTimestamp: this.processedByRatOSTimestamp?.toISOString(),
+			postProcessorVersion: this.postProcessorVersion?.toString(),
+			postProcessorTimestamp: this.postProcessorTimestamp?.toISOString(),
+			processedForIdex: this.processedForIdex ?? (this.postProcessorVersion ? 'unknown' : undefined),
 			analysisResult: this.analysisResult,
 		};
 	}

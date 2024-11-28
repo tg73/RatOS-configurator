@@ -71,7 +71,10 @@ export type TransformOptions = { progressTransform?: Transform } & Pick<
 	'abortSignal' | 'allowUnsupportedSlicerVersions' | 'onWarning' | 'printerHasIdex'
 >;
 export type AnalyseOptions = { progressTransform?: Transform } & GCodeProcessorOptions;
-export type InspectOptions = Pick<GCodeProcessorOptions, 'onWarning' | 'allowUnsupportedSlicerVersions'>;
+export type InspectOptions = Pick<
+	GCodeProcessorOptions,
+	'onWarning' | 'allowUnsupportedSlicerVersions' | 'printerHasIdex'
+>;
 
 const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
 
@@ -187,7 +190,7 @@ export class GCodeFile {
 		if (gci.fileFormatVersion === undefined) {
 			const tail = await fsReaderGetLines(path, -3);
 			if (/^; processed by RatOS($|\s)/im.test(tail)) {
-				gci.processedByRatOSVersion = GCodeFile.LEGACY_RATOS_VERSION;
+				gci.postProcessorVersion = GCodeFile.LEGACY_RATOS_VERSION;
 				gci.fileFormatVersion = 0;
 			}
 		}
@@ -204,7 +207,7 @@ export class GCodeFile {
 			}
 		}
 
-		if (gci.fileFormatVersion) {
+		if (gci.fileFormatVersion !== undefined) {
 			// NB: In the future, we might make more effort to read older file layouts. For now, we don't.
 			if (gci.fileFormatVersion < GCodeFile.FILE_FORMAT_VERSION) {
 				reasons.push(
@@ -225,26 +228,41 @@ export class GCodeFile {
 		let printability: Printability | undefined;
 
 		if (gci.isProcessed) {
-			assert(gci.processedByRatOSVersion);
-			if (semver.eq(currentVersion, gci.processedByRatOSVersion)) {
-				printability = Printability.READY;
-			} else if (semver.lt(currentVersion, gci.processedByRatOSVersion)) {
-				reasons.push(
-					'The file was processed by a more recent version of RatOS than the installed version. Either update RatOS, or the file must be reprocessed.',
-				);
-				printability = Printability.MUST_REPROCESS;
-			} else if (currentVersion.major > gci.processedByRatOSVersion.major) {
-				reasons.push(
-					'There have been significant incompatible changes to RatOS gcode handling since the file was last processed.',
-				);
+			if (gci.processedForIdex !== !!options.printerHasIdex) {
+				switch (gci.processedForIdex) {
+					case true:
+						reasons.push('The file was processed for a printer with IDEX, but the current printer does not have IDEX.');
+						break;
+					case false:
+						reasons.push('The file was processed for a printer without IDEX, but the current printer has IDEX.');
+						break;
+					default:
+						reasons.push('It cannot be determined if the file was processed for a printer with IDEX or not.');
+						break;
+				}
 				printability = Printability.MUST_REPROCESS;
 			} else {
-				reasons.push(
-					currentVersion.minor === gci.processedByRatOSVersion.minor
-						? 'There have been enhancements and/or bug fixes since the file was last processed.'
-						: 'There have been bug fixes since the file was last processed.',
-				);
-				printability = Printability.COULD_REPROCESS;
+				assert(gci.postProcessorVersion);
+				if (semver.eq(currentVersion, gci.postProcessorVersion)) {
+					printability = Printability.READY;
+				} else if (semver.lt(currentVersion, gci.postProcessorVersion)) {
+					reasons.push(
+						'The file was processed by a more recent version of RatOS than the installed version. Either update RatOS, or the file must be reprocessed.',
+					);
+					printability = Printability.MUST_REPROCESS;
+				} else if (currentVersion.major > gci.postProcessorVersion.major) {
+					reasons.push(
+						'There have been significant incompatible changes to RatOS gcode handling since the file was last processed.',
+					);
+					printability = Printability.MUST_REPROCESS;
+				} else {
+					reasons.push(
+						currentVersion.minor === gci.postProcessorVersion.minor
+							? 'There have been enhancements and/or bug fixes since the file was last processed.'
+							: 'There have been bug fixes since the file was last processed.',
+					);
+					printability = Printability.COULD_REPROCESS;
+				}
 			}
 		} else {
 			printability = Printability.MUST_PROCESS;
@@ -355,6 +373,9 @@ export class GCodeFile {
 
 			await fh!.write(GCodeFile.getRatosMetaFooter(gci.analysisResult));
 
+			gci.processedForIdex = !!options.printerHasIdex;
+			gci.fileFormatVersion = GCodeFile.FILE_FORMAT_VERSION;
+
 			return gci;
 		} finally {
 			try {
@@ -385,7 +406,15 @@ export class GCodeFile {
 			}
 		}
 
-		return await gcodeProcessor.finalizeProcessing();
+		const gci = await gcodeProcessor.finalizeProcessing();
+
+		if (!gci.analysisResult) {
+			throw new InternalError('finalizeProcessing did not set analysisResult.');
+		}
+
+		gci.processedForIdex = !!options.printerHasIdex;
+
+		return gci;
 	}
 
 	/** Reads the file line by line. If the file has already been processed, it will be de-processed on the fly. */

@@ -96,10 +96,10 @@ async function processedGCodeFilesAreEquivalent(expectedPath: string, actualPath
 		expect(gciExpected, ' (could not parse expected file header)').not.toBeNull;
 		expect(gciActual, ' (could not parse actual file header)').not.toBeNull;
 
-		expect(gciExpected!.processedByRatOSVersion).toBeTruthy();
-		expect(gciExpected!.processedByRatOSTimestamp).toBeTruthy();
-		expect(gciActual!.processedByRatOSVersion).toBeTruthy();
-		expect(gciActual!.processedByRatOSTimestamp).toBeTruthy();
+		expect(gciExpected!.postProcessorVersion).toBeTruthy();
+		expect(gciExpected!.postProcessorTimestamp).toBeTruthy();
+		expect(gciActual!.postProcessorVersion).toBeTruthy();
+		expect(gciActual!.postProcessorTimestamp).toBeTruthy();
 		expect(gciActual!.flavour).to.equal(gciExpected!.flavour, ' while comparing headers');
 		expect(gciActual!.generator).to.equal(gciExpected!.generator, ' while comparing headers');
 		expect(semver.eq(gciActual!.generatorVersion, gciExpected!.generatorVersion)).toBeTruthy();

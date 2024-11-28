@@ -24,7 +24,7 @@ import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEn
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
-import { GCodeFlavour, GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFlavour, GCodeInfo, MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';
@@ -68,20 +68,33 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			!!opts.allowUnsupportedSlicerVersions,
 			opts.onWarning,
 		);
+
+		// NB: The order of actions is significant.
+		this.#actions = !!opts.printerHasIdex
+			? [
+					act.getGcodeInfo,
+					// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
+					act.getStartPrint,
+					// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
+					subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
+					act.fixOtherLayerTemperature,
+					act.captureConfigSection,
+				]
+			: [
+					act.getGcodeInfo,
+					// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
+					act.getStartPrint,
+					// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
+					subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY]),
+					act.fixOtherLayerTemperature,
+					act.captureConfigSection,
+				];
 	}
 
 	#state: State;
 
 	// NB: The order of actions is significant.
-	#actions: ActionSequence<Action> = [
-		act.getGcodeInfo,
-		// NB: sequence won't execute past getStartPrint until the START_PRINT line is found.
-		act.getStartPrint,
-		// NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
-		subSequence(act.whenCommonCommandDoThenStop, [act.findFirstMoveXY, act.findMinMaxX, act.processToolchange]),
-		act.fixOtherLayerTemperature,
-		act.captureConfigSection,
-	];
+	#actions: ActionSequence<Action>;
 
 	_processLine(ctx: ProcessLineContext) {
 		if (this.#state.processingHasBeenFinalized) {
@@ -177,7 +190,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 	/**
 	 * Applies all the retrospective changes required after analysing the whole file/stream.
 	 */
-	async finalizeProcessing(options?: FinalizeProcessingOptions): Promise<GCodeInfo> {
+	async finalizeProcessing(options?: FinalizeProcessingOptions): Promise<MutableGCodeInfo> {
 		const s = this.#state;
 
 		if (s.processingHasBeenFinalized) {
@@ -205,8 +218,8 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 		const currentPPVersion = await getPostProcessorVersion();
 		const now = new Date();
 
-		s.gcodeInfo.processedByRatOSVersion = currentPPVersion;
-		s.gcodeInfo.processedByRatOSTimestamp = now;
+		s.gcodeInfo.postProcessorVersion = currentPPVersion;
+		s.gcodeInfo.postProcessorTimestamp = now;
 
 		if (s.kQuickInpsectionOnly) {
 			// Populate only known-complete data.
