@@ -437,7 +437,7 @@ log
 		if (options.lines) {
 			flags.push(`-n${options.lines}`);
 		}
-		const logFile = (await loadEnvironment()).LOG_FILE;
+		const logFile = loadEnvironment().LOG_FILE;
 		const whichPretty = await which('pino-pretty');
 		if (whichPretty.trim() === '') {
 			echo('pino-pretty not found, installing (requires sudo permissions)...');
@@ -481,7 +481,7 @@ const doctor = program
 			/>,
 		);
 
-		await $$`sudo ${(await loadEnvironment()).RATOS_SCRIPT_DIR}/update.sh`;
+		await $$`sudo ${loadEnvironment().RATOS_SCRIPT_DIR}/update.sh`;
 		steps.push({ name: 'Repaired RatOS configurator', status: 'success' });
 		rerender(
 			<InstallProgressUI
@@ -493,6 +493,7 @@ const doctor = program
 			/>,
 		);
 		await $$`sudo systemctl restart ratos-configurator`;
+		await $$`sleep 1 && curl -s -o /dev/null --retry 20 --retry-all-errors --retry-delay 1 --retry-max-time 60 "http://localhost:3000/configure" &> /dev/null`;
 		steps.push({ name: 'Restarted RatOS configurator', status: 'success' });
 		rerender(
 			<InstallProgressUI
@@ -503,7 +504,7 @@ const doctor = program
 				steps={steps}
 			/>,
 		);
-		await $$`sudo ${(await loadEnvironment()).RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
+		await $$`sudo ${loadEnvironment().RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
 		steps.push({ name: 'Repaired RatOS configuration', status: 'success' });
 		rerender(
 			<InstallProgressUI
