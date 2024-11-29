@@ -18,6 +18,7 @@ import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions';
 import { loadEnvironment } from '@/cli/util';
 import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
+import { Printability } from '@/server/gcode-processor/GCodeFile';
 
 const ProgressReportUI: React.FC<{
 	report?: Progress;
@@ -68,7 +69,7 @@ const GcodeInfoZod = z.object({
 	processedForIdex: z.union([z.boolean(), z.literal('unknown')]).optional(),
 	isProcessed: z.boolean(),
 	wasAlreadyProcessed: z.boolean(),
-	printability: z.string(),
+	printability: z.nativeEnum(Printability),
 	printabilityReasons: z.array(z.string()).optional(),
 	canDeprocess: z.boolean().optional(),
 	analysisResult: z
