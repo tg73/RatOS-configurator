@@ -142,11 +142,13 @@ register_z_offset_probe()
 }
 
 register_ratos_kinematics() {
+	echo "Registering ratos-kinematics extension..."
 	if ratos extensions list | grep "ratos-kinematics" &>/dev/null; then
+		echo "Unregistering old ratos-kinematics extension..."
 		ratos extensions unregister klipper -k ratos_hybrid_corexy
 	fi
 	if [ -e "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics" ]; then
-		report_status "Removing old ratos-kinematics directory..."
+		echo "Removing old ratos-kinematics directory..."
 		rm -rf "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics"
 	fi
     EXT_NAME="ratos_hybrid_corexy"
@@ -156,6 +158,7 @@ register_ratos_kinematics() {
 
 register_ratos()
 {
+	echo "Registering ratos extension..."
     EXT_NAME="ratos_extension"
     EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
     EXT_FILE="ratos.py"
@@ -166,8 +169,9 @@ register_ratos()
 remove_old_postprocessor()
 {
 	if [ -L "${KLIPPER_DIR}/klippy/extras/ratos_post_processor.py" ]; then
-		report_status "Removing old postprocessor.py..."
+		report_status "Removing legacy post-processor..."
 		rm "${KLIPPER_DIR}/klippy/extras/ratos_post_processor.py"
+		echo "Legacy post-processor removed!"
 	fi
 }
 
@@ -190,8 +194,8 @@ install_hooks()
 
 ensure_service_permission()
 {
-	report_status "Updating service permissions"
 	if ! grep "klipper_mcu" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" &>/dev/null || ! grep "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" &>/dev/null; then
+		report_status "Updating service permissions"
 		cat << EOF > "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
 klipper_mcu
 webcamd
@@ -223,11 +227,8 @@ patch_klipperscreen_service_restarts()
 
 ensure_sudo_command_whitelisting()
 {
-	sudo="sudo"
-	if [ "$1" = "root" ]
-	then
-		sudo=""
-	fi
+	sudo=""
+	[ "$EUID" -ne 0 ] && sudo="sudo"
     report_status "Updating whitelisted commands"
 	# Whitelist RatOS git hook scripts
 	if [[ -e /etc/sudoers.d/030-ratos-githooks ]]
@@ -245,5 +246,7 @@ EOF
 	$sudo chown root:root /tmp/030-ratos-githooks
 	$sudo chmod 440 /tmp/030-ratos-githooks
 	$sudo cp --preserve=mode /tmp/030-ratos-githooks /etc/sudoers.d/030-ratos-githooks
+
+	echo "RatOS git hooks has successfully been whitelisted!"
 }
 

@@ -44,7 +44,7 @@ install_udev_rules
 install_beacon
 install_hooks
 install_dependencies
-ensure_sudo_command_whitelisting sudo
+ensure_sudo_command_whitelisting
 register_gcode_shell_command
 register_ratos_homing
 register_z_offset_probe

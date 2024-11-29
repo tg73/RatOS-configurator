@@ -97,9 +97,10 @@ ensure_service_permission()
 install_hooks()
 {
     report_status "Installing git hooks"
-	if [ ! -L "$GIT_DIR/hooks/post-merge" ]; then
- 	   ln -s "$SCRIPT_DIR/post-merge.sh" "$GIT_DIR/hooks/post-merge"
+	if [ -L "$GIT_DIR/hooks/post-merge" ]; then
+ 	   rm "$GIT_DIR/hooks/post-merge"
 	fi
+	ln -s "$SCRIPT_DIR/post-merge.sh" "$GIT_DIR/hooks/post-merge"
 }
 
 install_logrotation() {
@@ -157,21 +158,24 @@ symlink_configuration() {
 		$sudo ln -s "$BASE_DIR/configuration" "$target" || { echo "Failed to create symlink" >&2; return 1; }
 		$sudo chown -R "${RATOS_USERNAME}:${RATOS_USERGROUP}" "$target" || { echo "Failed to change ownership of configuration" >&2; return 1; }
 		echo "Configuration symlink created successfully"
+	else
+		echo "Configuration already linked, skipping..."
 	fi
 }
 
 install_cli()
 {
-	report_status "Installing RatOS CLI"
-
 	sudo=""
 	[ "$EUID" -ne 0 ] && sudo="sudo"
 	
 	target="/usr/local/bin/ratos"
 	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$SRC_DIR/bin/ratos" ]; then
+		report_status "Installing RatOS CLI"
 		$sudo rm "$target"
 		$sudo ln -s "$SRC_DIR/bin/ratos" "$target"
 		$sudo chmod a+x "$target"
+	else
+		echo "RatOS CLI already installed, skipping..."
 	fi
 }
 
@@ -193,11 +197,13 @@ install_udev_rule()
 		report_status "Installing RatOS udev rule"
 		$sudo rm -f /etc/udev/rules.d/97-ratos.rules
 		$sudo ln -s "$SCRIPT_DIR/ratos.rules" /etc/udev/rules.d/97-ratos.rules
+		echo "RatOS udev rule installed!"
 	fi
 	if [ ! -L /etc/udev/rules.d/97-vaoc.rules ]; then
 		report_status "Installing VAOC udev rule"
 		$sudo rm -f /etc/udev/rules.d/97-vaoc.rules
 		$sudo ln -s "$SCRIPT_DIR/vaoc.rules" /etc/udev/rules.d/97-vaoc.rules
+		echo "VAOC udev rule installed!"
 	fi
 }
 
@@ -222,6 +228,8 @@ __EOF
 	$sudo chmod 440 /tmp/030-ratos-configurator-githooks
 	$sudo cp --preserve=mode /tmp/030-ratos-configurator-githooks /etc/sudoers.d/030-ratos-configurator-githooks
 
+	echo "RatOS configurator git hooks has successfully been whitelisted!"
+
 	# Whitelist configurator scripts
 	if [[ -e /etc/sudoers.d/030-ratos-configurator-scripts ]]
 	then
@@ -241,6 +249,8 @@ __EOF
 	$sudo chmod 440 /tmp/031-ratos-configurator-scripts
 	$sudo cp --preserve=mode /tmp/031-ratos-configurator-scripts /etc/sudoers.d/031-ratos-configurator-scripts
 
+	echo "RatOS configurator scripts has successfully been whitelisted!"
+
 	# Whitelist configurator commands
 	if [[ -e /etc/sudoers.d/031-ratos-configurator-wifi ]]
 	then
@@ -256,4 +266,5 @@ __EOF
 	$sudo chmod 440 /tmp/031-ratos-configurator-wifi
 	$sudo cp --preserve=mode /tmp/031-ratos-configurator-wifi /etc/sudoers.d/031-ratos-configurator-wifi
 
+	echo "RatOS configurator commands has successfully been whitelisted!"
 }
