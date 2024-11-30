@@ -142,23 +142,21 @@ register_z_offset_probe()
 }
 
 register_ratos_kinematics() {
-	echo "Registering ratos-kinematics extension..."
 	if ratos extensions list | grep "ratos-kinematics" &>/dev/null; then
-		echo "Unregistering old ratos-kinematics extension..."
+		report_status "Unregistering old ratos-kinematics extension..."
 		ratos extensions unregister klipper -k ratos_hybrid_corexy
 	fi
 	if [ -e "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics" ]; then
-		echo "Removing old ratos-kinematics directory..."
+		report_status "Removing old ratos-kinematics directory..."
 		rm -rf "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics"
 	fi
     EXT_NAME="ratos_hybrid_corexy"
     EXT_PATH=$(realpath "${SCRIPT_DIR}/../klippy/kinematics/ratos_hybrid_corexy.py")
-    ratos extensions register klipper -k $EXT_NAME "$EXT_PATH"
+    _register_klippy_extension $EXT_NAME "$EXT_PATH" "ratos_hybrid_corexy.py"
 }
 
 register_ratos()
 {
-	echo "Registering ratos extension..."
     EXT_NAME="ratos_extension"
     EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
     EXT_FILE="ratos.py"
@@ -177,25 +175,32 @@ remove_old_postprocessor()
 
 install_hooks()
 {
-    report_status "Installing git hooks"
-	if [[ ! -L ${KLIPPER_DIR}/.git/hooks/post-merge ]]
+    report_status "Verifying git hooks are installed..."
+	if [[ ! -L "${KLIPPER_DIR}"/.git/hooks/post-merge ]] || [[ ! "$(readlink "${KLIPPER_DIR}"/.git/hooks/post-merge)" = "$SCRIPT_DIR/klipper-post-merge.sh" ]]
 	then
- 	   ln -s "$SCRIPT_DIR"/klipper-post-merge.sh "${KLIPPER_DIR}/.git/hooks/post-merge"
+		rm -f "${KLIPPER_DIR}/.git/hooks/post-merge"
+		ln -s "$SCRIPT_DIR"/klipper-post-merge.sh "${KLIPPER_DIR}/.git/hooks/post-merge"
+		echo "Klipper git hook installed!"
 	fi
-	if [[ ! -L ${MOONRAKER_DIR}/.git/hooks/post-merge ]]
+	if [[ ! -L "${MOONRAKER_DIR}"/.git/hooks/post-merge ]] || [[ ! "$(readlink "${MOONRAKER_DIR}"/.git/hooks/post-merge)" = "$SCRIPT_DIR/moonraker-post-merge.sh" ]]
 	then
- 	   ln -s "$SCRIPT_DIR"/moonraker-post-merge.sh "${MOONRAKER_DIR}/.git/hooks/post-merge"
+		rm -f "${MOONRAKER_DIR}/.git/hooks/post-merge"
+		ln -s "$SCRIPT_DIR"/moonraker-post-merge.sh "${MOONRAKER_DIR}/.git/hooks/post-merge"
+		echo "Moonraker git hook installed!"
 	fi
-	if [[ ! -L ${BEACON_DIR}/.git/hooks/post-merge ]]
+	if [[ ! -L "${BEACON_DIR}"/.git/hooks/post-merge ]] || [[ ! "$(readlink "${BEACON_DIR}"/.git/hooks/post-merge)" = "$SCRIPT_DIR/beacon-post-merge.sh" ]]
 	then
- 	   ln -s "$SCRIPT_DIR"/beacon-post-merge.sh "${BEACON_DIR}/.git/hooks/post-merge"
+		rm -f "${BEACON_DIR}/.git/hooks/post-merge"
+		ln -s "$SCRIPT_DIR"/beacon-post-merge.sh "${BEACON_DIR}/.git/hooks/post-merge"
+		echo "Beacon git hook installed!"
 	fi
+	echo "Git hooks are correctly installed!"
 }
 
 ensure_service_permission()
 {
-	if ! grep "klipper_mcu" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" &>/dev/null || ! grep "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" &>/dev/null; then
-		report_status "Updating service permissions"
+	if [ ! -e "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" ]; then
+		report_status "Fixing moonraker service permissions..."
 		cat << EOF > "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
 klipper_mcu
 webcamd
@@ -209,7 +214,7 @@ octoeverywhere
 ratos-configurator
 EOF
 
-		report_status "Configurator added to moonraker service permissions"
+		echo "Moonraker service permissions restored!"
 	fi
 }
 
@@ -221,7 +226,7 @@ patch_klipperscreen_service_restarts()
 		sudo sed -i 's/\RestartSec=1/\RestartSec=5/g' /etc/systemd/system/KlipperScreen.service
 		sudo sed -i 's/\StartLimitIntervalSec=0/\StartLimitIntervalSec=100\nStartLimitBurst=4/g' /etc/systemd/system/KlipperScreen.service
 		sudo systemctl daemon-reload
-		report_status "KlipperScreen service patched!"
+		echo "KlipperScreen service patched!"
 	fi
 }
 

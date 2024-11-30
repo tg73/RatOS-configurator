@@ -87,8 +87,8 @@ ensure_pnpm_installation() {
 
 ensure_service_permission()
 {
-	report_status "Updating service permissions"
 	if ! grep -q "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"; then
+		report_status "Updatin moonraker service permissions"
 		printf '\nratos-configurator' >> "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
 		echo "Configurator added to moonraker service permissions!"
 	fi
@@ -101,6 +101,7 @@ install_hooks()
  	   rm "$GIT_DIR/hooks/post-merge"
 	fi
 	ln -s "$SCRIPT_DIR/post-merge.sh" "$GIT_DIR/hooks/post-merge"
+	echo "Post-merge git-hook installed!"
 }
 
 install_logrotation() {

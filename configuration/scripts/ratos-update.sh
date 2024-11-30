@@ -37,8 +37,11 @@ ensure_node_18()
 fix_klippy_env_ownership()
 {
 	report_status "Ensuring klipper environment ownership"
-	if [ -n "$(find "${KLIPPER_ENV}"/lib/python3.9/site-packages/matplotlib -user "root" -print -prune -o -prune)" ]; then
+	if [ -n "$(find "${KLIPPER_ENV}" \! -user "${RATOS_USERNAME}" -o \! -group "${RATOS_USERGROUP}" -quit)" ]; then
 		chown -R "${RATOS_USERNAME}:${RATOS_USERGROUP}" "${KLIPPER_ENV}"
+		echo "Klipper environment ownership has been set to ${RATOS_USERNAME}:${RATOS_USERGROUP}."
+	else
+		echo "Klipper environment ownership already set correctly."
 	fi
 }
 
