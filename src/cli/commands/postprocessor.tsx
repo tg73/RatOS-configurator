@@ -154,8 +154,13 @@ export const postprocessor = (program: Command) => {
 		.option('-O, --overwrite-input', 'Overwrite the input file')
 		.option('-a, --allow-unsupported-slicer-versions', 'Allow unsupported slicer versions')
 		.argument('<input>', 'Path to the gcode file to postprocess')
-		.argument('[output]', 'Path to the output gcode file (omit for inspection only)')
+		.argument('[output]', 'Path to the output gcode file (omit [output] and --overwrite-input for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
+			// resolve paths
+			inputFile = path.resolve(inputFile);
+			if (outputFile) {
+				outputFile = path.resolve(outputFile);
+			}
 			// load env variables
 			loadEnvironment();
 			let onProgress: ((report: Progress) => void) | undefined = undefined;
@@ -224,10 +229,19 @@ export const postprocessor = (program: Command) => {
 					? await processGCode(inputFile, outputFile, opts)
 					: await inspectGCode(inputFile, { ...opts, fullInspection: false });
 
-				if (args.overwriteInput) {
+				if (!result.wasAlreadyProcessed && args.overwriteInput) {
 					fs.renameSync(outputFile, inputFile);
 				}
-
+				if (
+					result.wasAlreadyProcessed &&
+					result.printability === 'READY' &&
+					!args.overwriteInput &&
+					outputFile != null &&
+					outputFile.trim() !== ''
+				) {
+					// If the file was already processed, output file is provided and the printability is READY, copy the file to the output location
+					fs.copyFileSync(inputFile, outputFile);
+				}
 				if (rerender && isInteractive) {
 					rerender(<ProgressReportUI fileName={path.basename(inputFile)} done={true} />);
 				} else {
