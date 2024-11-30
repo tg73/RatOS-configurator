@@ -189,6 +189,8 @@ register_ratos()
     _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
 }
 
+
+
 remove_old_postprocessor()
 {
 	if [ -L "${KLIPPER_DIR}/klippy/extras/ratos_post_processor.py" ]; then
@@ -289,5 +291,116 @@ EOF
 	$sudo cp --preserve=mode /tmp/030-ratos-githooks /etc/sudoers.d/030-ratos-githooks
 
 	echo "RatOS git hooks has successfully been whitelisted!"
+}
+
+verify_registered_extensions()
+{
+    report_status "Verifying registered Klipper extensions..."
+
+    # Define expected extensions and their relative paths
+    declare -A expected_extensions=(
+        ["beacon"]="${BEACON_DIR}/beacon.py"
+        ["gcode_shell_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/gcode_shell_command.py"
+        ["ratos_homing_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_homing.py"
+		["linear_movement_analysis"]="${RATOS_PRINTER_DATA_DIR}/klipper_linear_movement_analysis/linear_movement_analysis.py"
+        ["z_offset_probe_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/z_offset_probe.py"
+        ["resonance_generator_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/resonance_generator.py"
+        ["ratos_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos.py"
+    )
+
+	declare -A kinematics_extensions=(
+		["ratos_hybrid_corexy"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos_hybrid_corexy.py"
+	)
+
+    # Track found extensions
+    declare -A found_extensions
+    declare -A found_kinematics
+
+    # Check registered extensions
+    while IFS= read -r line; do
+        # Skip empty lines and check headers
+        [[ -z "$line" ]] && continue
+        [[ "$line" == *"Registered Klipper Extensions:"* ]] && continue
+        [[ "$line" == *"Registered Moonraker"* ]] && break
+
+        # Extract extension name and filepath
+        if [[ "$line" =~ [[:space:]]*([A-Za-z0-9_]+)[[:space:]]*-\>[[:space:]]*([^[:space:]].+)[[:space:]]*$ ]]; then
+            ext_name="${BASH_REMATCH[1]}"
+            filepath="${BASH_REMATCH[2]}"
+
+            # Check if it's a kinematics extension
+            if [[ -v kinematics_extensions["$ext_name"] ]]; then
+                found_kinematics["$ext_name"]=1
+
+                # Check if filepath matches expected path
+                if [[ "$filepath" != "${kinematics_extensions[$ext_name]}" ]]; then
+                    echo "WARNING: Kinematics extension $ext_name has unexpected filepath:"
+                    echo "  Expected: ${kinematics_extensions[$ext_name]}"
+                    echo "  Found: $filepath"
+                    echo "Removing extension $ext_name..."
+                    ratos extensions unregister klipper "$ext_name"
+                    echo "Reregistering extension $ext_name..."
+                    EXT_PATH="$(dirname "${kinematics_extensions[$ext_name]}")"
+                    EXT_FILE="$(basename "${kinematics_extensions[$ext_name]}")"
+                    _register_klippy_kinematics_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+                fi
+                continue
+            fi
+
+            # Mark as found
+            found_extensions["$ext_name"]=1
+
+            # Check if extension is expected
+            if [[ ! -v expected_extensions["$ext_name"] ]]; then
+                echo "WARNING: Unexpected extension found: $ext_name. This may have been registered by a third party."
+				echo "To remove the extension, run 'ratos extensions unregister klipper $ext_name'"
+                continue
+            fi
+
+            # Check if filepath matches expected path
+            if [[ "$filepath" != "${expected_extensions[$ext_name]}" ]]; then
+                echo "WARNING: Extension $ext_name has unexpected filepath:"
+                echo "  Expected: ${expected_extensions[$ext_name]}"
+                echo "  Found: $filepath"
+				echo "Removing extension $ext_name..."
+				ratos extensions unregister klipper "$ext_name"
+				echo "Reregistering extension $ext_name..."
+				EXT_PATH="$(dirname "${expected_extensions[$ext_name]}")"
+				EXT_FILE="$(basename "${expected_extensions[$ext_name]}")"
+				_register_klippy_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+            fi
+
+            # Check if file exists
+            if [ ! -f "$filepath" ]; then
+                echo "WARNING: Extension file not found: $filepath". Please report this to RatOS maintainers.
+            fi
+        fi
+    done < <(ratos extensions list --non-interactive -k)
+
+    # Check for missing expected extensions
+    for ext_name in "${!expected_extensions[@]}"; do
+        if [[ ! -v found_extensions["$ext_name"] ]]; then
+            echo "Expected extension not registered: $ext_name"
+			echo "Registering extension $ext_name..."
+			EXT_PATH="$(dirname "${expected_extensions[$ext_name]}")"
+			EXT_FILE="$(basename "${expected_extensions[$ext_name]}")"
+			_register_klippy_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+        else
+			echo "Extension $ext_name is properly registered."
+		fi
+    done
+
+    # Check for missing kinematics extensions
+    for ext_name in "${!kinematics_extensions[@]}"; do
+        if [[ ! -v found_kinematics["$ext_name"] ]]; then
+            echo "Expected kinematics extension not registered: $ext_name"
+			echo "Registering extension $ext_name..."
+			EXT_PATH="$(dirname "${kinematics_extensions[$ext_name]}")"
+			EXT_FILE="$(basename "${kinematics_extensions[$ext_name]}")"
+			_register_klippy_kinematics_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+		else
+			echo "Kinematic extension $ext_name is properly registered."
+		fi
+    done
 }
 

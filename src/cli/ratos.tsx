@@ -85,8 +85,11 @@ const unregisterExtensions = extensions
 
 extensions
 	.command('list')
+	.option('-k, --klipper', 'Only show Klipper extensions')
+	.option('-m, --moonraker', 'Only show Moonraker extensions')
+	.option('--non-interactive', 'Output in non-interactive format')
 	.description('List all registered extensions')
-	.action(async () => {
+	.action(async (options) => {
 		const client = createTRPCProxyClient<AppRouter>({
 			links: [
 				httpBatchLink({
@@ -94,37 +97,63 @@ extensions
 				}),
 			],
 		});
+		if (options.klipper && options.moonraker) {
+			if (options.nonInteractive) {
+				echo('Cannot specify both --klipper and --moonraker');
+				process.exit(2);
+			}
+			return renderError('Cannot specify both --klipper and --moonraker', { exitCode: 2 });
+		}
 		const klippyExtensions = await client['klippy-extensions'].list.query();
 		const moonrakerExtensions = await client['moonraker-extensions'].list.query();
+		if (options.nonInteractive) {
+			if (klippyExtensions.length > 0 && !options.moonraker) {
+				echo(`${klippyExtensions.length} Registered Klipper Extensions:`);
+				for (const ext of klippyExtensions) {
+					echo(`${ext.extensionName} -> ${ext.path + ext.fileName}`);
+				}
+			}
+			if (moonrakerExtensions.length > 0 && !options.klipper) {
+				echo(`${moonrakerExtensions.length} Registered Moonraker Extensions:`);
+				for (const ext of moonrakerExtensions) {
+					echo(`${ext.extensionName} -> ${ext.path + ext.fileName}`);
+				}
+			}
+			return;
+		}
 		render(
 			<Container>
-				<Box flexDirection="column" marginBottom={1}>
-					<Text>
-						{klippyExtensions.length} Registered Klipper {klippyExtensions.length === 1 ? 'Extension' : 'Extensions'}
-						{klippyExtensions.length ? ':' : ''}
-					</Text>
-					{klippyExtensions.map((ext) => (
-						<Box key={ext.extensionName} flexDirection="row" columnGap={2}>
-							<Text color={existsSync(ext.path + ext.fileName) ? 'green' : 'red'}>
-								{ext.extensionName} {'->'} {ext.path + ext.fileName}{' '}
-							</Text>
-						</Box>
-					))}
-				</Box>
-				<Box flexDirection="column">
-					<Text>
-						{moonrakerExtensions.length} Registered Moonraker{' '}
-						{moonrakerExtensions.length === 1 ? 'Extension' : 'Extensions'}
-						{moonrakerExtensions.length ? ':' : ''}
-					</Text>
-					{moonrakerExtensions.map((ext) => (
-						<Box key={ext.extensionName} flexDirection="row" columnGap={2}>
-							<Text color={existsSync(ext.path + ext.fileName) ? 'green' : 'red'}>
-								{ext.extensionName} {'->'} {ext.path + ext.fileName}{' '}
-							</Text>
-						</Box>
-					))}
-				</Box>
+				{klippyExtensions.length > 0 && !options.moonraker && (
+					<Box flexDirection="column" marginBottom={1}>
+						<Text>
+							{klippyExtensions.length} Registered Klipper {klippyExtensions.length === 1 ? 'Extension' : 'Extensions'}
+							{klippyExtensions.length ? ':' : ''}
+						</Text>
+						{klippyExtensions.map((ext) => (
+							<Box key={ext.extensionName} flexDirection="row" columnGap={2}>
+								<Text color={existsSync(ext.path + ext.fileName) ? 'green' : 'red'}>
+									{ext.extensionName} {'->'} {ext.path + ext.fileName}{' '}
+								</Text>
+							</Box>
+						))}
+					</Box>
+				)}
+				{moonrakerExtensions.length > 0 && !options.klipper && (
+					<Box flexDirection="column">
+						<Text>
+							{moonrakerExtensions.length} Registered Moonraker{' '}
+							{moonrakerExtensions.length === 1 ? 'Extension' : 'Extensions'}
+							{moonrakerExtensions.length ? ':' : ''}
+						</Text>
+						{moonrakerExtensions.map((ext) => (
+							<Box key={ext.extensionName} flexDirection="row" columnGap={2}>
+								<Text color={existsSync(ext.path + ext.fileName) ? 'green' : 'red'}>
+									{ext.extensionName} {'->'} {ext.path + ext.fileName}{' '}
+								</Text>
+							</Box>
+						))}
+					</Box>
+				)}
 			</Container>,
 		);
 	});
