@@ -192,9 +192,9 @@ class RatOS:
 					self.bed_mesh.z_mesh.build_mesh(new_points)
 					self.bed_mesh.save_profile(profile_name)
 					self.bed_mesh.set_mesh(self.bed_mesh.z_mesh)
-					self.gcode.run_script_from_command("CONSOLE_ECHO TYPE=debug TITLE='Beacon scan compensation' MSG='Mesh scan profile " + str(profile_name) + " compensated with contact profile " + str(profile) + "'")
+					self.console_echo("Beacon scan compensation", "debug", "Mesh scan profile %s compensated with contact profile %s" % (str(profile_name), str(profile)))
 		except BedMesh.BedMeshError as e:
-			self.gcode.run_script_from_command("CONSOLE_ECHO TYPE=error TITLE='Beacon scan compensation error' MSG='" + str(e) + "'")
+			self.console_echo("Beacon scan compensation error", "error", str(e))
 
 	def process_gcode_file(self, filename, enable_post_processing):
 		try:
@@ -378,7 +378,7 @@ class RatOS:
 		else:
 			_msg = ''
 
-		self.gcode.respond_raw(_title + _msg)
+		self.gcode.respond_raw('<div>' + _title + _msg + '</div>')
 
 	def get_is_graph_files(self):
 		try:
