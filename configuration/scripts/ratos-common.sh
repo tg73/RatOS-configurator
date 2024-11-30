@@ -92,6 +92,28 @@ _register_klippy_extension() {
     fi
 }
 
+_register_klippy_kinematics_extension() {
+	EXT_NAME=$1
+    EXT_PATH=$2
+    EXT_FILE=$3
+	ERROR_IF_EXISTS=$4
+	[[ "$ERROR_IF_EXISTS" == "false" ]] && ERROR_IF_EXISTS="" || ERROR_IF_EXISTS="-e "
+
+    report_status "Registering klipper kinematics extension '$EXT_NAME' with the RatOS Configurator..."
+    if [ ! -e "$EXT_PATH/$EXT_FILE" ]
+    then
+        echo "ERROR: The file you're trying to register does not exist"
+        exit 1
+    fi
+
+    # shellcheck disable=SC2086
+    if ! ratos extensions register klipper -k $ERROR_IF_EXISTS"$EXT_NAME" "$EXT_PATH"/"$EXT_FILE"
+    then
+        echo "ERROR: Failed to register $EXT_NAME. Is the RatOS configurator running?"
+        exit 1
+    fi
+}
+
 regenerate_config() {
     report_status "Regenerating RatOS configuration via RatOS Configurator..."
 
@@ -155,7 +177,7 @@ register_ratos_kinematics() {
     EXT_NAME="ratos_hybrid_corexy"
     EXT_PATH=$(realpath "${SCRIPT_DIR}/../klippy/kinematics")
     EXT_FILE="ratos_hybrid_corexy.py"
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
+    _register_klippy_kinematics_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
 }
 
 register_ratos()
