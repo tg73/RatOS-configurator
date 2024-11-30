@@ -146,13 +146,16 @@ register_ratos_kinematics() {
 		report_status "Unregistering old ratos-kinematics extension..."
 		ratos extensions unregister klipper -k ratos_hybrid_corexy
 	fi
-	if [ -e "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics" ]; then
+	
+	RATOS_USER_HOME=$(getent passwd "${RATOS_USERNAME}" | cut -d: -f6)
+	if [ -e "${RATOS_USER_HOME}/config/RatOS/klippy/kinematics/ratos-kinematics" ]; then
 		report_status "Removing old ratos-kinematics directory..."
-		rm -rf "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos-kinematics"
+		rm -rf "${RATOS_USER_HOME}/config/RatOS/klippy/kinematics/ratos-kinematics"
 	fi
     EXT_NAME="ratos_hybrid_corexy"
-    EXT_PATH=$(realpath "${SCRIPT_DIR}/../klippy/kinematics/ratos_hybrid_corexy.py")
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" "ratos_hybrid_corexy.py"
+    EXT_PATH=$(realpath "${SCRIPT_DIR}/../klippy/kinematics")
+    EXT_FILE="ratos_hybrid_corexy.py"
+    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE
 }
 
 register_ratos()
