@@ -154,10 +154,10 @@ symlink_configuration() {
 	[ "$EUID" -ne 0 ] && sudo="sudo"
 	
 	target="${RATOS_PRINTER_DATA_DIR}/config/RatOS"
-	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$BASE_DIR/configuration" ]; then
+	source="$BASE_DIR/configuration"
+	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$source" ]; then
 		$sudo rm -rf "$target" || { echo "Failed to remove old configuration" >&2; return 1; }
-		$sudo ln -s "$BASE_DIR/configuration" "$target" || { echo "Failed to create symlink" >&2; return 1; }
-		$sudo chown -R "${RATOS_USERNAME}:${RATOS_USERGROUP}" "$target" || { echo "Failed to change ownership of configuration" >&2; return 1; }
+		$sudo ln -s "$source" "$target" || { echo "Failed to create symlink" >&2; return 1; }
 		echo "Configuration symlink created successfully"
 	else
 		echo "Configuration already linked, skipping..."
@@ -170,10 +170,11 @@ install_cli()
 	[ "$EUID" -ne 0 ] && sudo="sudo"
 	
 	target="/usr/local/bin/ratos"
-	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$SRC_DIR/bin/ratos" ]; then
+	source="$SRC_DIR/bin/ratos"
+	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$source" ]; then
 		report_status "Installing RatOS CLI"
 		$sudo rm "$target"
-		$sudo ln -s "$SRC_DIR/bin/ratos" "$target"
+		$sudo ln -s "$source" "$target"
 		$sudo chmod a+x "$target"
 	else
 		echo "RatOS CLI already installed, skipping..."
@@ -194,16 +195,29 @@ install_udev_rule()
 	sudo=""
 	[ "$EUID" -ne 0 ] && sudo="sudo"
 
-	if [ ! -L /etc/udev/rules.d/97-ratos.rules ]; then
+	ratos_source="$SCRIPT_DIR/ratos.rules"
+	ratos_target="/etc/udev/rules.d/97-ratos.rules"
+	if [ ! -f "$ratos_source" ]; then
+		echo "Error: RatOS udev rules source file not found at $ratos_source" >&2
+		return 1
+	fi
+	if [ ! -L "$ratos_target" ] || [ ! "$(readlink "$ratos_target")" = "$ratos_source" ]; then
 		report_status "Installing RatOS udev rule"
-		$sudo rm -f /etc/udev/rules.d/97-ratos.rules
-		$sudo ln -s "$SCRIPT_DIR/ratos.rules" /etc/udev/rules.d/97-ratos.rules
+		$sudo rm -f "$ratos_target"
+		$sudo ln -s "$ratos_source" "$ratos_target"
 		echo "RatOS udev rule installed!"
 	fi
-	if [ ! -L /etc/udev/rules.d/97-vaoc.rules ]; then
+
+	vaoc_source="$SCRIPT_DIR/vaoc.rules" 
+	vaoc_target="/etc/udev/rules.d/97-vaoc.rules"
+	if [ ! -f "$vaoc_source" ]; then
+		echo "Error: VAOC udev rules source file not found at $vaoc_source" >&2
+		return 1
+	fi
+	if [ ! -L "$vaoc_target" ] || [ ! "$(readlink "$vaoc_target")" = "$vaoc_source" ]; then
 		report_status "Installing VAOC udev rule"
-		$sudo rm -f /etc/udev/rules.d/97-vaoc.rules
-		$sudo ln -s "$SCRIPT_DIR/vaoc.rules" /etc/udev/rules.d/97-vaoc.rules
+		$sudo rm -f "$vaoc_target"
+		$sudo ln -s "$vaoc_source" "$vaoc_target"
 		echo "VAOC udev rule installed!"
 	fi
 }

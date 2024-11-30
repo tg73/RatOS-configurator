@@ -12,10 +12,31 @@ source "$SCRIPT_DIR"/moonraker-ensure-policykit-rules.sh
 
 update_symlinks()
 {
-  report_status "Updating RatOS device symlinks.."
-  rm /etc/udev/rules.d/98-*.rules
-  ln -s "${RATOS_PRINTER_DATA_DIR}"/config/RatOS/boards/*/*.rules /etc/udev/rules.d/
-  echo "RatOS device symlinks updated!"
+  report_status "Updating RatOS device symlinks..."
+  
+  # Get list of board rule files
+  board_rules=("${RATOS_PRINTER_DATA_DIR}"/config/RatOS/boards/*/*.rules)
+  
+  # Check each board rule file
+  for source in "${board_rules[@]}"; do
+    if [ ! -f "$source" ]; then
+      continue
+    fi
+    
+    filename=$(basename "$source")
+    target="/etc/udev/rules.d/98-${filename}"
+    
+    # Check if symlink exists and points to correct source
+    if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$source" ]; then
+      rm -f "$target"
+      ln -s "$source" "$target"
+      echo "Updated symlink for ${filename}"
+    else
+      echo "Symlink for ${filename} already correct"
+    fi
+  done
+  
+  echo "RatOS device symlinks are up to date!"
 }
 
 ensure_node_18()

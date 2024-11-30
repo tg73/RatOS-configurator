@@ -176,22 +176,33 @@ remove_old_postprocessor()
 install_hooks()
 {
     report_status "Verifying git hooks are installed..."
-	if [[ ! -L "${KLIPPER_DIR}"/.git/hooks/post-merge ]] || [[ ! "$(readlink "${KLIPPER_DIR}"/.git/hooks/post-merge)" = "$SCRIPT_DIR/klipper-post-merge.sh" ]]
+	# Klipper hook
+	klipper_source="$SCRIPT_DIR/klipper-post-merge.sh"
+	klipper_target="${KLIPPER_DIR}/.git/hooks/post-merge"
+	if [[ ! -L "$klipper_target" ]] || [[ ! "$(readlink "$klipper_target")" = "$klipper_source" ]]
 	then
-		rm -f "${KLIPPER_DIR}/.git/hooks/post-merge"
-		ln -s "$SCRIPT_DIR"/klipper-post-merge.sh "${KLIPPER_DIR}/.git/hooks/post-merge"
+		rm -f "$klipper_target"
+		ln -s "$klipper_source" "$klipper_target"
 		echo "Klipper git hook installed!"
 	fi
-	if [[ ! -L "${MOONRAKER_DIR}"/.git/hooks/post-merge ]] || [[ ! "$(readlink "${MOONRAKER_DIR}"/.git/hooks/post-merge)" = "$SCRIPT_DIR/moonraker-post-merge.sh" ]]
+
+	# Moonraker hook
+	moonraker_source="$SCRIPT_DIR/moonraker-post-merge.sh"
+	moonraker_target="${MOONRAKER_DIR}/.git/hooks/post-merge"
+	if [[ ! -L "$moonraker_target" ]] || [[ ! "$(readlink "$moonraker_target")" = "$moonraker_source" ]]
 	then
-		rm -f "${MOONRAKER_DIR}/.git/hooks/post-merge"
-		ln -s "$SCRIPT_DIR"/moonraker-post-merge.sh "${MOONRAKER_DIR}/.git/hooks/post-merge"
+		rm -f "$moonraker_target"
+		ln -s "$moonraker_source" "$moonraker_target"
 		echo "Moonraker git hook installed!"
 	fi
-	if [[ ! -L "${BEACON_DIR}"/.git/hooks/post-merge ]] || [[ ! "$(readlink "${BEACON_DIR}"/.git/hooks/post-merge)" = "$SCRIPT_DIR/beacon-post-merge.sh" ]]
+
+	# Beacon hook
+	beacon_source="$SCRIPT_DIR/beacon-post-merge.sh"
+	beacon_target="${BEACON_DIR}/.git/hooks/post-merge"
+	if [[ ! -L "$beacon_target" ]] || [[ ! "$(readlink "$beacon_target")" = "$beacon_source" ]]
 	then
-		rm -f "${BEACON_DIR}/.git/hooks/post-merge"
-		ln -s "$SCRIPT_DIR"/beacon-post-merge.sh "${BEACON_DIR}/.git/hooks/post-merge"
+		rm -f "$beacon_target"
+		ln -s "$beacon_source" "$beacon_target"
 		echo "Beacon git hook installed!"
 	fi
 	echo "Git hooks are correctly installed!"
