@@ -90,7 +90,7 @@ ensure_service_permission()
 	if ! grep -q "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"; then
 		report_status "Updatin moonraker service permissions"
 		printf '\nratos-configurator' >> "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
-		echo "Configurator added to moonraker service permissions!"
+		echo "RatOS added to moonraker service permissions!"
 	fi
 }
 
