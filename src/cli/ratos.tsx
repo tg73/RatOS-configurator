@@ -164,7 +164,7 @@ registerExtensions
 	.option('-k, --kinematics', 'Register as a kinematics extension')
 	.option('-e, --error-if-exists', 'Throw error if the extension already exists')
 	.argument('<name>', 'Name of the extension')
-	.argument('<file>', 'The extension itself')
+	.argument('<file>', 'The path to the extension itself')
 	.showHelpAfterError()
 	.action(async (extName, extFile, options) => {
 		const client = createTRPCProxyClient<AppRouter>({
@@ -276,7 +276,6 @@ unregisterExtensions
 	.description('Unlink and unregister a Klipper extension managed by the RatOS Configurator')
 	.argument('<name>', 'Name of the extension')
 	.showHelpAfterError()
-	.option('-k, --kinematics', 'Register as a kinematics extension')
 	.option('-e, --error-if-not-exists', "Throw error if the extension doesn't exist")
 	.action(async (extName, options) => {
 		const client = createTRPCProxyClient<AppRouter>({

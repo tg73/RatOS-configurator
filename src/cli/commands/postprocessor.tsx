@@ -15,7 +15,7 @@ import path from 'path';
 import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger';
 import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions';
-import { loadEnvironment } from '@/cli/util';
+import { getRealPath, loadEnvironment } from '@/cli/util';
 import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
 import { Printability } from '@/server/gcode-processor/GCodeFile';
@@ -157,9 +157,9 @@ export const postprocessor = (program: Command) => {
 		.argument('[output]', 'Path to the output gcode file (omit [output] and --overwrite-input for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
 			// resolve paths
-			inputFile = path.resolve(inputFile);
+			inputFile = await getRealPath(program, inputFile);
 			if (outputFile) {
-				outputFile = path.resolve(outputFile);
+				outputFile = await getRealPath(program, outputFile);
 			}
 			// load env variables
 			loadEnvironment();

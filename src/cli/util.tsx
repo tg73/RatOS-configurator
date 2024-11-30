@@ -162,11 +162,16 @@ export function errorColor(str: string) {
 
 export async function getRealPath(program: Command, p: string) {
 	if (process.env.RATOS_BIN_CWD == null && program.getOptionValue('cwd') == null) {
-		renderError(
-			`--cwd was not passed and RATOS_BIN_CWD environment variable is not set. 
-			Either the --cwd option or the RATOS_BIN_CWD environment variable is required to run this command.`,
-			{ exitCode: 1 },
-		);
+		if (program.getOptionValue('nonInteractive')) {
+			echo(`--cwd was not passed and RATOS_BIN_CWD environment variable is not set.`);
+			process.exit(1);
+		} else {
+			renderError(
+				`--cwd was not passed and RATOS_BIN_CWD environment variable is not set. 
+				Either the --cwd option or the RATOS_BIN_CWD environment variable is required to run this command.`,
+				{ exitCode: 1 },
+			);
+		}
 	}
 	return await realpath(path.resolve(process.env.RATOS_BIN_CWD ?? program.getOptionValue('cwd'), p));
 }

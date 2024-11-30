@@ -340,9 +340,8 @@ verify_registered_extensions()
                     echo "Removing extension $ext_name..."
                     ratos extensions unregister klipper "$ext_name"
                     echo "Reregistering extension $ext_name..."
-                    EXT_PATH="$(dirname "${kinematics_extensions[$ext_name]}")"
-                    EXT_FILE="$(basename "${kinematics_extensions[$ext_name]}")"
-                    _register_klippy_kinematics_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+                    EXT_PATH="${kinematics_extensions[$ext_name]}"
+                    ratos extensions register klipper -k "$ext_name" "$EXT_PATH" "$EXT_FILE"
                 fi
                 continue
             fi
@@ -365,14 +364,15 @@ verify_registered_extensions()
 				echo "Removing extension $ext_name..."
 				ratos extensions unregister klipper "$ext_name"
 				echo "Reregistering extension $ext_name..."
-				EXT_PATH="$(dirname "${expected_extensions[$ext_name]}")"
-				EXT_FILE="$(basename "${expected_extensions[$ext_name]}")"
-				_register_klippy_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+				EXT_PATH="${expected_extensions[$ext_name]}"
+				ratos extensions register klipper "$ext_name" "$EXT_PATH"
             fi
 
             # Check if file exists
             if [ ! -f "$filepath" ]; then
-                echo "WARNING: Extension file not found: $filepath". Please report this to RatOS maintainers.
+                echo "WARNING: Extension file not found: $filepath. If you keep seeing this message, please report it to RatOS maintainers."
+				echo "Unregistering extension $ext_name..."
+				ratos extensions unregister klipper "$ext_name"
             fi
         fi
     done < <(ratos extensions list --non-interactive -k)
@@ -382,9 +382,8 @@ verify_registered_extensions()
         if [[ ! -v found_extensions["$ext_name"] ]]; then
             echo "Expected extension not registered: $ext_name"
 			echo "Registering extension $ext_name..."
-			EXT_PATH="$(dirname "${expected_extensions[$ext_name]}")"
-			EXT_FILE="$(basename "${expected_extensions[$ext_name]}")"
-			_register_klippy_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+			EXT_PATH="${expected_extensions[$ext_name]}"
+			ratos extensions register klipper "$ext_name" "$EXT_PATH"
         else
 			echo "Extension $ext_name is properly registered."
 		fi
@@ -395,9 +394,8 @@ verify_registered_extensions()
         if [[ ! -v found_kinematics["$ext_name"] ]]; then
             echo "Expected kinematics extension not registered: $ext_name"
 			echo "Registering extension $ext_name..."
-			EXT_PATH="$(dirname "${kinematics_extensions[$ext_name]}")"
-			EXT_FILE="$(basename "${kinematics_extensions[$ext_name]}")"
-			_register_klippy_kinematics_extension "$ext_name" "$EXT_PATH" "$EXT_FILE"
+			EXT_PATH="${kinematics_extensions[$ext_name]}"
+			ratos extensions register klipper -k "$ext_name" "$EXT_PATH"
 		else
 			echo "Kinematic extension $ext_name is properly registered."
 		fi
