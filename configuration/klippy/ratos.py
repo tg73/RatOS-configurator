@@ -391,7 +391,7 @@ class RatOS:
 	
 	def get_ratos_version(self):
 		version = '?'
-		path = pathlib.Path('/home/pi/printer_data/config/RatOS/.git')
+		path = pathlib.Path('/home/pi/ratos-configurator/.git')
 		gitdir = os.path.join(path, '..')
 		prog_desc = ('git', '-C', gitdir, 'describe', '--always',
 					'--tags', '--long', '--dirty')
