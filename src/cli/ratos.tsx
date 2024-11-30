@@ -476,6 +476,7 @@ const doctor = program
 			<InstallProgressUI
 				status="Fixing potential RatOS issues..."
 				stepText="Repairing RatOS configurator..."
+				isLoading={true}
 				cmdSignal={cmdSignal}
 				steps={steps}
 			/>,
