@@ -94,9 +94,9 @@ class RatOS:
 		url = "https://os.ratrig.com/"
 		img = "../server/files/config/RatOS/Logo-white.png"
 		ratos_version = self.get_ratos_version().split('-')
-		_title = '<b><p style="font-weight: bold; margin:0; margin-bottom:0px; color:white">Welcome to RatOS ' +  ratos_version[0] + '</p></b>'
-		_sub_title = '<p style="margin:0; color: rgba(255, 255, 255, 0.7)">' + '-'.join(ratos_version) + '</p>'
-		_info = '<p style="margin:0; color: rgba(255, 255, 255, 0.7)">\nClick image to open documentation.</p>'
+		_title = '<p style="font-weight: bold; margin:0; color:white">Welcome to RatOS ' +  ratos_version[0] + '</p>'
+		_sub_title = '<div style="margin:0; padding:0; color: rgba(255, 255, 255, 0.7)">' + '-'.join(ratos_version) + '</div>'
+		_info = '<div style="margin:0; padding:0; color: rgba(255, 255, 255, 0.7)">\nClick image to open documentation.</div>'
 		_img = '\n<a href="' + url + '" target="_blank" ><img style="margin-top:6px;" src="' + img + '" width="258px"></a>'
 		self.gcode.respond_raw('<div>' + _title + _sub_title + _img + _info + '</div>')
 
