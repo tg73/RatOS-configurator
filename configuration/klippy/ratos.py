@@ -337,6 +337,21 @@ class RatOS:
 				raise
 			return False
 
+
+	def get_gcode_file_info(self, filename):
+		files = self.v_sd.get_file_list(True)
+		flist = [f[0] for f in files]
+		files_by_lower = { filepath.lower(): [filepath, fsize] for filepath, fsize in files }
+		filepath = filename
+		try:
+			if filepath not in flist:
+				filepath = files_by_lower[filepath.lower()]
+				return filepath
+			fullpath = os.path.join(self.sdcard_dirname, filepath);
+			return [fullpath, os.path.getsize(fullpath)]
+		except:
+			raise self.printer.command_error("Can not get path for file " + filename)
+
 	#####
 	# Helper
 	#####
