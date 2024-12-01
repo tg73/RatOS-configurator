@@ -45,9 +45,4 @@ install_beacon
 install_hooks
 install_dependencies
 ensure_sudo_command_whitelisting
-register_gcode_shell_command
-register_ratos_homing
-register_z_offset_probe
-register_ratos
-register_resonance_generator
-register_ratos_kinematics
+verify_registered_extensions

@@ -64,54 +64,7 @@ install_beacon()
 	echo "beacon: installing python requirements to env."
 	"${KLIPPER_ENV}"/bin/pip install -r "${BEACON_DIR}"/requirements.txt
 
-	# update link to beacon.py
-	echo "beacon: registering beacon with the configurator."
-	_register_klippy_extension "beacon" "$BEACON_DIR" "beacon.py"
-
-}
-
-_register_klippy_extension() {
-	EXT_NAME=$1
-    EXT_PATH=$2
-    EXT_FILE=$3
-	ERROR_IF_EXISTS=$4
-	[[ "$ERROR_IF_EXISTS" == "false" ]] && ERROR_IF_EXISTS="" || ERROR_IF_EXISTS="-e "
-
-    report_status "Registering klippy extension '$EXT_NAME' with the RatOS Configurator..."
-    if [ ! -e "$EXT_PATH/$EXT_FILE" ]
-    then
-        echo "ERROR: The file you're trying to register does not exist"
-        exit 1
-    fi
-
-    # shellcheck disable=SC2086
-    if ! ratos extensions register klipper $ERROR_IF_EXISTS"$EXT_NAME" "$EXT_PATH"/"$EXT_FILE"
-    then
-        echo "ERROR: Failed to register $EXT_NAME. Is the RatOS configurator running?"
-        exit 1
-    fi
-}
-
-_register_klippy_kinematics_extension() {
-	EXT_NAME=$1
-    EXT_PATH=$2
-    EXT_FILE=$3
-	ERROR_IF_EXISTS=$4
-	[[ "$ERROR_IF_EXISTS" == "false" ]] && ERROR_IF_EXISTS="" || ERROR_IF_EXISTS="-e "
-
-    report_status "Registering klipper kinematics extension '$EXT_NAME' with the RatOS Configurator..."
-    if [ ! -e "$EXT_PATH/$EXT_FILE" ]
-    then
-        echo "ERROR: The file you're trying to register does not exist"
-        exit 1
-    fi
-
-    # shellcheck disable=SC2086
-    if ! ratos extensions register klipper -k $ERROR_IF_EXISTS"$EXT_NAME" "$EXT_PATH"/"$EXT_FILE"
-    then
-        echo "ERROR: Failed to register $EXT_NAME. Is the RatOS configurator running?"
-        exit 1
-    fi
+	# Beacon extension will be registered in verify_registered_extensions
 }
 
 regenerate_config() {
@@ -119,77 +72,6 @@ regenerate_config() {
 
     ratos config regenerate
 }
-
-register_gcode_shell_command()
-{
-    EXT_NAME="gcode_shell_extension"
-    EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
-    EXT_FILE="gcode_shell_command.py"
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE
-}
-
-register_ratos_homing()
-{
-    EXT_NAME="ratos_homing_extension"
-    EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
-    EXT_FILE="ratos_homing.py"
-	# Don't error if extension is already registered
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
-}
-
-register_resonance_generator()
-{
-    EXT_NAME="resonance_generator_extension"
-    EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
-    EXT_FILE="resonance_generator.py"
-	# Don't error if extension is already registered
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
-}
-
-unregister_vaoc_led()
-{
-	if ratos extensions list | grep "vaoc_led" &>/dev/null; then
-		report_status "Unregistering experimental vaoc_led extension..."
-		ratos extensions unregister klipper vaoc_led
-	fi
-}
-
-register_z_offset_probe()
-{
-    EXT_NAME="z_offset_probe_extension"
-    EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
-    EXT_FILE="z_offset_probe.py"
-	# Don't error if extension is already registered
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
-}
-
-register_ratos_kinematics() {
-	if ratos extensions list | grep "ratos-kinematics" &>/dev/null; then
-		report_status "Unregistering old ratos-kinematics extension..."
-		ratos extensions unregister klipper -k ratos_hybrid_corexy
-	fi
-	
-	RATOS_USER_HOME=$(getent passwd "${RATOS_USERNAME}" | cut -d: -f6)
-	if [ -e "${RATOS_USER_HOME}/config/RatOS/klippy/kinematics/ratos-kinematics" ]; then
-		report_status "Removing old ratos-kinematics directory..."
-		rm -rf "${RATOS_USER_HOME}/config/RatOS/klippy/kinematics/ratos-kinematics"
-	fi
-    EXT_NAME="ratos_hybrid_corexy"
-    EXT_PATH=$(realpath "${SCRIPT_DIR}/../klippy/kinematics")
-    EXT_FILE="ratos_hybrid_corexy.py"
-    _register_klippy_kinematics_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
-}
-
-register_ratos()
-{
-    EXT_NAME="ratos_extension"
-    EXT_PATH=$(realpath "$SCRIPT_DIR"/../klippy)
-    EXT_FILE="ratos.py"
-	# Don't error if extension is already registered
-    _register_klippy_extension $EXT_NAME "$EXT_PATH" $EXT_FILE "false"
-}
-
-
 
 remove_old_postprocessor()
 {
