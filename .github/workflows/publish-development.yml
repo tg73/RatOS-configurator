@@ -97,13 +97,18 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           branch: development
 
+      - name: Get commit count
+        id: commit-count
+        run: |
+          echo "COMMIT_COUNT=$(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-hash }}..$GITHUB_SHA)" >> $GITHUB_OUTPUT
+
       - name: Publish to dev-deployment
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .
           commit-message: |
-            Updates from ${{ steps.last-successful-commit.outputs.commit-hash }} to ${{ github.sha }}
-            See complete list of commits here:
+            Deployed ${{ steps.commit-count.outputs.COMMIT_COUNT }} commit${{ steps.commit-count.outputs.COMMIT_COUNT == 1 && '' || 's' }}.
+            
             https://github.com/Rat-OS/RatOS-configurator/compare/${{ steps.last-successful-commit.outputs.commit-hash }}...${{ github.sha }}
           git-config-name: Mikkel Schmidt
           git-config-email: mikkel.schmidt@gmail.com
