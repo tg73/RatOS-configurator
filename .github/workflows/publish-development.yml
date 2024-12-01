@@ -20,10 +20,31 @@ jobs:
         run: |
           echo "CI step didn't pass, exiting"
           exit 1
+      - name: Set variables
+        id: variables
+        run: |
+          echo "TARGET_BRANC=dev-deployment" >> $GITHUB_OUTPUT
+          echo "SRC_BRANCH=development" >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
         with:
-          ref: development
+          ref: ${{ steps.variables.outputs.SRC_BRANCH }}
+    
+      - name: Unshallow repository
+        run: git fetch --unshallow origin ${{ steps.variables.outputs.SRC_BRANCH }}
+
+      - name: Get last successful commit
+        id: last-successful-commit
+        uses: tylermilner/last-successful-commit-hash-action@v1
+        with:
+          workflow-id: publish-development.yml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.variables.outputs.SRC_BRANCH }}
+
+      - name: Get commit count
+        id: commit-count
+        run: |
+          echo "COMMIT_COUNT=$(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-hash }}..${{ github.sha }})" >> $GITHUB_OUTPUT
 
       - uses: actions/setup-node@v3
         with:
@@ -89,20 +110,7 @@ jobs:
         working-directory: ./
         run: mv src app
 
-      - name: Get last successful commit
-        id: last-successful-commit
-        uses: tylermilner/last-successful-commit-hash-action@v1
-        with:
-          workflow-id: publish-development.yml
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: development
-
-      - name: Get commit count
-        id: commit-count
-        run: |
-          echo "COMMIT_COUNT=$(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-hash }}..$GITHUB_SHA)" >> $GITHUB_OUTPUT
-
-      - name: Publish to dev-deployment
+      - name: Publish to ${{ steps.variables.outputs.TARGET_BRANCH }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .
@@ -112,4 +120,4 @@ jobs:
             https://github.com/Rat-OS/RatOS-configurator/compare/${{ steps.last-successful-commit.outputs.commit-hash }}...${{ github.sha }}
           git-config-name: Mikkel Schmidt
           git-config-email: mikkel.schmidt@gmail.com
-          branch: dev-deployment # The branch name where you want to push the assets
+          branch: ${{ steps.variables.outputs.TARGET_BRANCH }} # The branch name where you want to push the assets
