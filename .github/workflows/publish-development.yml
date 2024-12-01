@@ -87,10 +87,21 @@ jobs:
         working-directory: ./src
         run: mv src app
 
+      - name: Get last successful commit
+        id: last-successful-commit
+        uses: tylermilner/last-successful-commit-hash-action@v1
+        with:
+          workflow-id: ci.yml
+          branch: main
+
       - name: Publish to dev-deployment
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .
+          commit-message: |
+            Updates from ${{ steps.last-successful-commit.outputs.commit-hash }} to ${{ github.sha }}
+            See complete list of commits here:
+            https://github.com/Rat-OS/RatOS-configurator/compare/${{ steps.last-successful-commit.outputs.commit-hash }}...${{ github.sha }}
           git-config-name: Mikkel Schmidt
           git-config-email: mikkel.schmidt@gmail.com
           branch: dev-deployment # The branch name where you want to push the assets
