@@ -1,26 +1,24 @@
+# next.js
+/src/.next/
+/src/out/
+/src/build/
 
-# dependencies
-node_modules
-.pnp
-.pnp.js
+# Bin build
+/src/bin/*.js
+/src/bin/*.mjs
+/src/bin/*.wasm
 
-# testing
-coverage
+# misc
+.DS_Store
+*.pem
+.DS_Store
+*:Zone.Identifier
 
-# local env files
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-
-# cache
-build/cache/*
-
-# vscode (should use parent dir folder)
-.vscode
+# SciChart data
+src/public/scichart*
+src/public/tfjs*
