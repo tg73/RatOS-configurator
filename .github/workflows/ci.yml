@@ -28,11 +28,6 @@ jobs:
   checkout_dependencies:
     name: Lint, Typecheck and Tests
     runs-on: ubuntu-latest
-    outputs:
-      STORE_PATH: ${{ steps.generate-keys.outputs.STORE_PATH }}
-      CACHE_KEY: ${{ steps.generate-keys.outputs.STORE_PATH }}
-      bin_dest: ${{ steps.pnpm-install.outputs.bin_dest }}
-      dest: ${{ steps.pnpm-install.outputs.dest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,22 +53,19 @@ jobs:
           run_install: false
           version: 9.1
 
-      - name: Generate keys
-        id: generate-keys
+      - name: Get pnpm store directory
+        id: pnpm-cache
         shell: bash
-        env:
-          cache_key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml', '**/.git/refs/heads/*') }}
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-          echo "CACHE_KEY=$cache_key" >> $GITHUB_OUTPUT
-
+  
       - uses: actions/cache@v3
-        name: pnpm cache
-        id: cache
+        name: Setup pnpm cache
         with:
-          path: |
-            ${{ steps.generate-keys.outputs.STORE_PATH }}
-          key: ${{ steps.generate-keys.outputs.CACHE_KEY }}
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Dependencies
         working-directory: ratos-configurator/src
