@@ -246,13 +246,12 @@ class RatOS:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=" + str(analysis_result['firstMoveX']))
 					if 'firstMoveY' in analysis_result:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=" + str(analysis_result['firstMoveY']))
-					else:
-						self.console_echo(
-							'Post-processing completed', 'success',
-							f'Slicer: {data["payload"]["generator"]} v{data["payload"]["generatorVersion"]} ' +
-							f'_N_Used tools: T{", T".join(analysis_result["usedTools"])}' if "usedTools" in analysis_result else "" +
-							f'_N_Toolshifts: {analysis_result["toolChangeCount"]}' if "toolChangeCount" in analysis_result else ""
-						)
+					self.console_echo(
+						'Post-processing completed', 'success',
+						f'Slicer: {data["payload"]["generator"]} v{data["payload"]["generatorVersion"]} ' +
+						f'_N_Used tools: T{", T".join(analysis_result["usedTools"])}' if "usedTools" in analysis_result else "" +
+						f'_N_Toolshifts: {analysis_result["toolChangeCount"]}' if "toolChangeCount" in analysis_result else ""
+					)
 				if data['result'] == 'progress':
 					eta_secs = data['payload']['eta']
 					if eta_secs < 60:
