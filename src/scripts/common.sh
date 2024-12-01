@@ -130,7 +130,7 @@ ${LOGFILE} {
     maxsize 10M
 }
 __EOF
-    sudo chmod 644 ${LOGROTATE_FILE}
+    sudo chmod 644 "$LOGROTATE_FILE"
 }
 
 patch_log_rotation() {
