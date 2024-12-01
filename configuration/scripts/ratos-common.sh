@@ -301,21 +301,21 @@ verify_registered_extensions()
 
     # Define expected extensions and their relative paths
     declare -A expected_extensions=(
-        ["beacon"]="${BEACON_DIR}/beacon.py"
-        ["gcode_shell_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/gcode_shell_command.py"
-        ["ratos_homing_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_homing.py"
-		["linear_movement_analysis"]="${RATOS_PRINTER_DATA_DIR}/klipper_linear_movement_analysis/linear_movement_vibrations.py"
-        ["z_offset_probe_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/z_offset_probe.py"
-        ["resonance_generator_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/resonance_generator.py"
-        ["ratos_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos.py"
+        ["beacon"]=$(realpath "${BEACON_DIR}/beacon.py")
+        ["gcode_shell_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/gcode_shell_command.py")
+        ["ratos_homing_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_homing.py")
+		["linear_movement_analysis"]=$(realpath "${RATOS_USER_HOME}/klipper_linear_movement_analysis/linear_movement_vibrations.py")
+        ["z_offset_probe_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/z_offset_probe.py")
+        ["resonance_generator_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/resonance_generator.py")
+        ["ratos_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos.py")
     )
 
 	declare -A kinematics_extensions=(
-		["ratos_hybrid_corexy"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos_hybrid_corexy.py"
+		["ratos_hybrid_corexy"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos_hybrid_corexy.py")
 	)
 
 	declare -A expected_moonraker_extensions=(
-		["timelapse"]="${RATOS_USER_HOME}/moonraker-timelapse/component/timelapse.py"
+		["timelapse"]=$(realpath "${RATOS_USER_HOME}/moonraker-timelapse/component/timelapse.py")
 	)
 
     # Track found extensions
@@ -362,7 +362,12 @@ verify_registered_extensions()
 			fi
 
 			# Mark as found
-			found_extensions["$ext_name"]=1
+			if [[ "$extension_type" == "klipper" ]]; then
+				found_extensions["$ext_name"]=1
+			fi
+			if [[ "$extension_type" == "moonraker" ]]; then
+				found_moonraker_extensions["$ext_name"]=1
+			fi
 
 			# Check if extension is expected
 			if [[ ! -v expected_extensions["$ext_name"] ]] && [[ ! -v expected_moonraker_extensions["$ext_name"] ]]; then
