@@ -22,16 +22,17 @@ jobs:
           exit 1
       - name: Set variables
         id: variables
+        shell: bash
         run: |
-          echo "TARGET_BRANC=dev-deployment" >> $GITHUB_OUTPUT
-          echo "SRC_BRANCH=development" >> $GITHUB_OUTPUT
+          echo "target-branch=dev-deployment" >> "$GITHUB_OUTPUT"
+          echo "src-branch=development" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v3
         with:
-          ref: ${{ steps.variables.outputs.SRC_BRANCH }}
+          ref: ${{ steps.variables.outputs.src-branch }}
     
       - name: Unshallow repository
-        run: git fetch --unshallow origin ${{ steps.variables.outputs.SRC_BRANCH }}
+        run: git fetch --unshallow origin ${{ steps.variables.outputs.src-branch }}
 
       - name: Get last successful commit
         id: last-successful-commit
@@ -39,12 +40,14 @@ jobs:
         with:
           workflow-id: publish-development.yml
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.variables.outputs.SRC_BRANCH }}
+          branch: ${{ steps.variables.outputs.src-branch }}
 
       - name: Get commit count
         id: commit-count
+        shell: bash
         run: |
-          echo "COMMIT_COUNT=$(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-hash }}..${{ github.sha }})" >> $GITHUB_OUTPUT
+          echo "Deploying $(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-hash }}..${{ github.sha }})) commits!"
+          echo "commit-count=$(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-hash }}..${{ github.sha }})" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v3
         with:
@@ -61,12 +64,12 @@ jobs:
         id: pnpm-cache
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+          echo "store_path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v3
         name: Setup pnpm cache
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          path: ${{ steps.pnpm-cache.outputs.store_path }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
@@ -110,14 +113,14 @@ jobs:
         working-directory: ./
         run: mv src app
 
-      - name: Publish to ${{ steps.variables.outputs.TARGET_BRANCH }}
+      - name: Publish to ${{ steps.variables.outputs.target-branch }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .
           commit-message: |
-            Deployed ${{ steps.commit-count.outputs.COMMIT_COUNT }} commit${{ steps.commit-count.outputs.COMMIT_COUNT == 1 && '' || 's' }}.
+            Deployed ${{ steps.commit-count.outputs.commit-count }} commit${{ steps.commit-count.outputs.commit-count == 1 && '' || 's' }}.
             
             https://github.com/Rat-OS/RatOS-configurator/compare/${{ steps.last-successful-commit.outputs.commit-hash }}...${{ github.sha }}
           git-config-name: Mikkel Schmidt
           git-config-email: mikkel.schmidt@gmail.com
-          branch: ${{ steps.variables.outputs.TARGET_BRANCH }} # The branch name where you want to push the assets
+          branch: ${{ steps.variables.outputs.target-branch }} # The branch name where you want to push the assets
