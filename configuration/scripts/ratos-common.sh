@@ -297,12 +297,14 @@ verify_registered_extensions()
 {
     report_status "Verifying registered Klipper extensions..."
 
+	RATOS_USER_HOME=$(getent passwd "${RATOS_USERNAME}" | cut -d: -f6)
+
     # Define expected extensions and their relative paths
     declare -A expected_extensions=(
         ["beacon"]="${BEACON_DIR}/beacon.py"
         ["gcode_shell_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/gcode_shell_command.py"
         ["ratos_homing_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_homing.py"
-		["linear_movement_analysis"]="${RATOS_PRINTER_DATA_DIR}/klipper_linear_movement_analysis/linear_movement_analysis.py"
+		["linear_movement_analysis"]="${RATOS_PRINTER_DATA_DIR}/klipper_linear_movement_analysis/linear_movement_vibrations.py"
         ["z_offset_probe_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/z_offset_probe.py"
         ["resonance_generator_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/resonance_generator.py"
         ["ratos_extension"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos.py"
@@ -312,92 +314,117 @@ verify_registered_extensions()
 		["ratos_hybrid_corexy"]="${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/kinematics/ratos_hybrid_corexy.py"
 	)
 
+	declare -A expected_moonraker_extensions=(
+		["timelapse"]="${RATOS_USER_HOME}/moonraker-timelapse/component/timelapse.py"
+	)
+
     # Track found extensions
     declare -A found_extensions
     declare -A found_kinematics
+	declare -A found_moonraker_extensions
+    
+	declare extension_type="klipper"
 
-    # Check registered extensions
+	# Check registered extensions
     while IFS= read -r line; do
         # Skip empty lines and check headers
         [[ -z "$line" ]] && continue
-        [[ "$line" == *"Registered Klipper Extensions:"* ]] && continue
-        [[ "$line" == *"Registered Moonraker"* ]] && break
+        if [[ "$line" == *"Registered Klipper Extensions:"* ]]; then
+			extension_type="klipper"
+			continue
+		fi
+        if [[ "$line" == *"Registered Moonraker"* ]]; then
+			extension_type="moonraker"
+			continue
+		fi
 
         # Extract extension name and filepath
         if [[ "$line" =~ [[:space:]]*([A-Za-z0-9_]+)[[:space:]]*-\>[[:space:]]*([^[:space:]].+)[[:space:]]*$ ]]; then
             ext_name="${BASH_REMATCH[1]}"
             filepath="${BASH_REMATCH[2]}"
 
-            # Check if it's a kinematics extension
-            if [[ -v kinematics_extensions["$ext_name"] ]]; then
-                found_kinematics["$ext_name"]=1
+			# Check if it's a kinematics extension
+			if [[ -v kinematics_extensions["$ext_name"] ]]; then
+				found_kinematics["$ext_name"]=1
 
-                # Check if filepath matches expected path
-                if [[ "$filepath" != "${kinematics_extensions[$ext_name]}" ]]; then
-                    echo "WARNING: Kinematics extension $ext_name has unexpected filepath:"
-                    echo "  Expected: ${kinematics_extensions[$ext_name]}"
-                    echo "  Found: $filepath"
-                    echo "Removing extension $ext_name..."
-                    ratos extensions unregister klipper "$ext_name"
-                    echo "Reregistering extension $ext_name..."
-                    EXT_PATH="${kinematics_extensions[$ext_name]}"
-                    ratos extensions register klipper -k "$ext_name" "$EXT_PATH" "$EXT_FILE"
-                fi
-                continue
-            fi
+				# Check if filepath matches expected path
+				if [[ "$filepath" != "${kinematics_extensions[$ext_name]}" ]]; then
+					echo "WARNING: Kinematics extension $ext_name has unexpected filepath:"
+					echo "  Expected: ${kinematics_extensions[$ext_name]}"
+					echo "  Found: $filepath"
+					echo "Removing extension $ext_name..."
+					ratos extensions unregister klipper "$ext_name"
+					echo "Reregistering extension $ext_name..."
+					EXT_PATH="${kinematics_extensions[$ext_name]}"
+					ratos extensions register klipper -k "$ext_name" "$EXT_PATH" "$EXT_FILE"
+				fi
+				continue
+			fi
 
-            # Mark as found
-            found_extensions["$ext_name"]=1
+			# Mark as found
+			found_extensions["$ext_name"]=1
 
-            # Check if extension is expected
-            if [[ ! -v expected_extensions["$ext_name"] ]]; then
-                echo "WARNING: Unexpected extension found: $ext_name. This may have been registered by a third party."
-				echo "To remove the extension, run 'ratos extensions unregister klipper $ext_name'"
-                continue
-            fi
+			# Check if extension is expected
+			if [[ ! -v expected_extensions["$ext_name"] ]] && [[ ! -v expected_moonraker_extensions["$ext_name"] ]]; then
+				echo "WARNING: Unexpected $extension_type extension found: $ext_name. This may have been registered by a third party."
+				echo "To remove the extension, run 'ratos extensions unregister $extension_type $ext_name'"
+				continue
+			fi
 
-            # Check if filepath matches expected path
-            if [[ "$filepath" != "${expected_extensions[$ext_name]}" ]]; then
-                echo "WARNING: Extension $ext_name has unexpected filepath:"
-                echo "  Expected: ${expected_extensions[$ext_name]}"
-                echo "  Found: $filepath"
-				echo "Removing extension $ext_name..."
-				ratos extensions unregister klipper "$ext_name"
-				echo "Reregistering extension $ext_name..."
+			# Check if filepath matches expected path
+			if [[ "$filepath" != "${expected_extensions[$ext_name]}" ]] && [[ "$filepath" != "${expected_moonraker_extensions[$ext_name]}" ]]; then
+				echo "WARNING: Extension $ext_name has unexpected filepath:"
+				echo "  Expected: ${expected_extensions[$ext_name]}"
+				echo "  Found: $filepath"
+				echo "Removing $extension_type extension $ext_name..."
+				ratos extensions unregister "$extension_type" "$ext_name"
+				echo "Reregistering $extension_type extension $ext_name..."
 				EXT_PATH="${expected_extensions[$ext_name]}"
-				ratos extensions register klipper "$ext_name" "$EXT_PATH"
-            fi
+				ratos extensions register "$extension_type" "$ext_name" "$EXT_PATH"
+			fi
 
-            # Check if file exists
-            if [ ! -f "$filepath" ]; then
-                echo "WARNING: Extension file not found: $filepath. If you keep seeing this message, please report it to RatOS maintainers."
-				echo "Unregistering extension $ext_name..."
-				ratos extensions unregister klipper "$ext_name"
-            fi
+			# Check if file exists
+			if [ ! -f "$filepath" ]; then
+				echo "WARNING: Extension file not found: $filepath. If you keep seeing this message, please report it to RatOS maintainers."
+				echo "Unregistering $extension_type extension $ext_name..."
+				ratos extensions unregister "$extension_type" "$ext_name"
+			fi
         fi
-    done < <(ratos extensions list --non-interactive -k)
+    done < <(ratos extensions list --non-interactive)
 
     # Check for missing expected extensions
     for ext_name in "${!expected_extensions[@]}"; do
         if [[ ! -v found_extensions["$ext_name"] ]]; then
-            echo "Expected extension not registered: $ext_name"
+            echo "Expected klipper extension not registered: $ext_name"
 			echo "Registering extension $ext_name..."
 			EXT_PATH="${expected_extensions[$ext_name]}"
 			ratos extensions register klipper "$ext_name" "$EXT_PATH"
         else
-			echo "Extension $ext_name is properly registered."
+			echo "Klipper extension $ext_name is properly registered."
 		fi
     done
+
+	# Check for missing moonraker extensions
+	for ext_name in "${!expected_moonraker_extensions[@]}"; do
+		if [[ ! -v found_moonraker_extensions["$ext_name"] ]]; then
+			echo "Expected moonraker extension not registered: $ext_name"
+			echo "Registering extension $ext_name..."
+			EXT_PATH="${expected_moonraker_extensions[$ext_name]}"
+			ratos extensions register moonraker "$ext_name" "$EXT_PATH"
+		else
+			echo "Moonraker extension $ext_name is properly registered."
+		fi
+	done
 
     # Check for missing kinematics extensions
     for ext_name in "${!kinematics_extensions[@]}"; do
         if [[ ! -v found_kinematics["$ext_name"] ]]; then
-            echo "Expected kinematics extension not registered: $ext_name"
-			echo "Registering extension $ext_name..."
+            echo "Expected klipper kinematics extension not registered: $ext_name"
+			echo "Registering klipper kinematics extension $ext_name..."
 			EXT_PATH="${kinematics_extensions[$ext_name]}"
 			ratos extensions register klipper -k "$ext_name" "$EXT_PATH"
 		else
-			echo "Kinematic extension $ext_name is properly registered."
+			echo "Klipper kinematics extension $ext_name is properly registered."
 		fi
     done
 }
