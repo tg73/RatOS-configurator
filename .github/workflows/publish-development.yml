@@ -57,7 +57,9 @@ jobs:
           path: |
             ${{ github.workspace }}/src/build/cache
           # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('src/**/*.js', 'src/**/*.jsx', 'src/**/*.ts', 'src/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
 
       - name: Install all dependencies
         working-directory: ./src
@@ -91,8 +93,9 @@ jobs:
         id: last-successful-commit
         uses: tylermilner/last-successful-commit-hash-action@v1
         with:
-          workflow-id: ci.yml
-          branch: main
+          workflow-id: publish-development.yml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          branch: development
 
       - name: Publish to dev-deployment
         uses: JamesIves/github-pages-deploy-action@v4
