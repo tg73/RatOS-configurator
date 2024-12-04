@@ -153,8 +153,8 @@ export const toPostProcessorCLIOutput = (obj: PostProcessorCLIOutput): void => {
 };
 
 class FileStillBeingWrittenError extends Error {
-	constructor(filePath: string) {
-		super(`Input file ${filePath} appears to still be being written to`);
+	constructor(filePath: string, maxWaitTime: number) {
+		super(`Input file ${filePath} appears to still be being written to after ${maxWaitTime}ms`);
 	}
 }
 
@@ -196,9 +196,7 @@ const waitForFileToBeWritten = async (filePath: string, maxWaitTime: number = 10
 	}
 
 	if (attempts === maxAttempts) {
-		throw new FileStillBeingWrittenError(
-			`Input file ${filePath} appears to still be being written to after ${maxAttempts} seconds`,
-		);
+		throw new FileStillBeingWrittenError(filePath, maxWaitTime);
 	}
 };
 
@@ -223,12 +221,28 @@ export const postprocessor = (program: Command) => {
 			try {
 				await waitForFileToBeWritten(inputFile);
 			} catch (e) {
-				toPostProcessorCLIOutput({
-					result: 'error',
-					title: 'Input file is still being written to',
-					message: `The input file ${inputFile} appears to still be being written to. Please wait for the file to finish being written and try again.`,
-				});
-				process.exit(1);
+				if (e instanceof FileStillBeingWrittenError) {
+					toPostProcessorCLIOutput({
+						result: 'error',
+						title: 'Input file is still being written to',
+						message: e.message,
+					});
+					process.exit(1);
+				} else if (e instanceof Error && 'code' in e && e.code === 'ENOENT' && 'path' in e) {
+					toPostProcessorCLIOutput({
+						result: 'error',
+						title: 'Input file not found',
+						message: e.message,
+					});
+					process.exit(1);
+				} else {
+					toPostProcessorCLIOutput({
+						result: 'error',
+						title: 'An unexpected error occurred while waiting for the input file to be written',
+						message: 'Please download a debug-zip and report this issue.',
+					});
+					throw e;
+				}
 			}
 
 			// load env variables
