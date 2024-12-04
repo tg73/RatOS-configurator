@@ -209,6 +209,7 @@ class RatOS:
 			if self.allow_unsupported_slicer_versions:
 				args.append('--allow-unsupported-slicer-versions')
 			args.append(path)
+			logging.info('Post-processing started via RatOS CLI: ' + str(args))
 			self.console_echo('Post-processing started', 'info',  'Processing %s (%.2f mb)...' % (filename, size / 1024 / 1024));
 			process = subprocess.Popen(
 				args,
