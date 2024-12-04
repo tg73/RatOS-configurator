@@ -270,6 +270,8 @@ class RatOS:
 						self.console_echo(f"Post-processing ({data['payload']['percentage']}%)... {eta_str} remaining", 'info')
 					else:
 						self.console_echo(f"Post-processing ({data['payload']['percentage']}%)...", 'info')
+				if data['result'] == 'waiting':
+					self.console_echo('Post-processing waiting', 'info', 'Waiting for input file to finish being written...')
 
 			def _process_output(eventtime):
 				if process.stdout is None:

@@ -100723,8 +100723,8 @@ ${formatZodError(e, obj).message}`
   }
 };
 var FileStillBeingWrittenError = class extends Error {
-  constructor(filePath) {
-    super(`Input file ${filePath} appears to still be being written to`);
+  constructor(filePath, maxWaitTime) {
+    super(`Input file ${filePath} appears to still be being written to after ${maxWaitTime}ms`);
   }
 };
 var waitForFileToBeWritten = async (filePath, maxWaitTime = 1e4) => {
@@ -100746,9 +100746,7 @@ var waitForFileToBeWritten = async (filePath, maxWaitTime = 1e4) => {
     }
   }
   if (attempts === maxAttempts) {
-    throw new FileStillBeingWrittenError(
-      `Input file ${filePath} appears to still be being written to after ${maxAttempts} seconds`
-    );
+    throw new FileStillBeingWrittenError(filePath, maxWaitTime);
   }
 };
 var postprocessor = (program3) => {
@@ -100760,12 +100758,28 @@ var postprocessor = (program3) => {
     try {
       await waitForFileToBeWritten(inputFile);
     } catch (e) {
-      toPostProcessorCLIOutput({
-        result: "error",
-        title: "Input file is still being written to",
-        message: `The input file ${inputFile} appears to still be being written to. Please wait for the file to finish being written and try again.`
-      });
-      process.exit(1);
+      if (e instanceof FileStillBeingWrittenError) {
+        toPostProcessorCLIOutput({
+          result: "error",
+          title: "Input file is still being written to",
+          message: e.message
+        });
+        process.exit(1);
+      } else if (e instanceof Error && "code" in e && e.code === "ENOENT" && "path" in e) {
+        toPostProcessorCLIOutput({
+          result: "error",
+          title: "Input file not found",
+          message: e.message
+        });
+        process.exit(1);
+      } else {
+        toPostProcessorCLIOutput({
+          result: "error",
+          title: "An unexpected error occurred while waiting for the input file to be written",
+          message: "Please download a debug-zip and report this issue."
+        });
+        throw e;
+      }
     }
     loadEnvironment();
     let onProgress = void 0;
