@@ -173,7 +173,18 @@ export async function getRealPath(program: Command, p: string) {
 			);
 		}
 	}
-	return await realpath(path.resolve(process.env.RATOS_BIN_CWD ?? program.getOptionValue('cwd'), p));
+	try {
+		return await realpath(path.resolve(process.env.RATOS_BIN_CWD ?? program.getOptionValue('cwd'), p));
+	} catch (e) {
+		if (e instanceof Error && 'code' in e && e.code === 'ENOENT' && 'path' in e) {
+			return (
+				(await realpath(path.resolve(process.env.RATOS_BIN_CWD ?? program.getOptionValue('cwd'), path.dirname(p)))) +
+				path.sep +
+				path.basename(p)
+			);
+		}
+		throw e;
+	}
 }
 
 let alreadyLoaded = false;
