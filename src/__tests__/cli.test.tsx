@@ -6,6 +6,7 @@ import { Command } from 'commander';
 import { PostProcessorCLIOutput } from '@/cli/commands/postprocessor';
 import { render as mockedRender } from 'ink';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
+import { program } from '@/cli/commands';
 
 // Mock dependencies
 vi.mock('@trpc/client');
@@ -90,8 +91,7 @@ describe('RatOS CLI', async () => {
 			mockTrpcClient.ipAddress.query.mockResolvedValue('192.168.1.100');
 
 			// Execute command
-			process.argv = ['node', 'ratos', 'info'];
-			await import('@/cli/ratos');
+			await program.parseAsync(['node', 'ratos', 'info']);
 
 			// Verify render was called with correct component
 			expect(mockedRender).toHaveBeenCalled();
@@ -107,10 +107,8 @@ describe('RatOS CLI', async () => {
 			mockTrpcClient['moonraker-extensions'].list.query.mockResolvedValue([]);
 
 			// Execute command
-			process.argv = ['node', 'ratos', 'extensions', 'list'];
-			await import('@/cli/ratos');
+			await program.parseAsync(['node', 'ratos', 'extensions', 'list']);
 
-			// Verify render was called
 			expect(mockedRender).toHaveBeenCalled();
 		});
 
@@ -120,8 +118,8 @@ describe('RatOS CLI', async () => {
 				result: 'success',
 			});
 
-			process.argv = ['node', 'ratos', 'extensions', 'register', 'klipper', 'test', './test.py'];
-			await import('@/cli/ratos');
+			await program.parseAsync(['node', 'ratos', 'extensions', 'register', 'klipper', 'test', './test.py']);
+
 			expect(mockTrpcClient['klippy-extensions'].register.mutate).toHaveBeenCalled();
 		});
 	});
@@ -132,8 +130,7 @@ describe('RatOS CLI', async () => {
 				{ action: 'created', fileName: 'printer.cfg' },
 			]);
 
-			process.argv = ['node', 'ratos', 'config', 'regenerate'];
-			await import('@/cli/ratos');
+			await program.parseAsync(['node', 'ratos', 'config', 'regenerate']);
 
 			expect(mockTrpcClient.printer.regenerateConfiguration.mutate).toHaveBeenCalled();
 		});
@@ -144,8 +141,7 @@ describe('RatOS CLI', async () => {
 			const mockExec = vi.fn().mockResolvedValue({ stdout: '', stderr: '' });
 			($ as unknown as Mock).mockReturnValue(mockExec);
 
-			process.argv = ['node', 'ratos', 'doctor'];
-			await import('@/cli/ratos');
+			await program.parseAsync(['node', 'ratos', 'doctor']);
 
 			expect(mockExec).toHaveBeenCalled();
 		});
@@ -156,7 +152,7 @@ describe('RatOS CLI', async () => {
 			const zx = await vi.importActual('zx');
 			const realPath = zx.path as typeof path;
 			const realTmpfile = zx.tmpfile as typeof tmpfile;
-			process.argv = [
+			await program.parseAsync([
 				'node',
 				'ratos',
 				'postprocess',
@@ -169,8 +165,7 @@ describe('RatOS CLI', async () => {
 					'server/gcode-processor/fixtures/slicer_output/002/IDEX_MultiColor/PS_2.8.1_PurgeTower.gcode',
 				),
 				realTmpfile(),
-			];
-			await import('@/cli/ratos');
+			]);
 
 			expect(mockedRender).not.toHaveBeenCalled();
 			expect(echo).toHaveBeenCalled();

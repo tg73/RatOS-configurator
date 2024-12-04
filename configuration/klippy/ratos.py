@@ -209,6 +209,7 @@ class RatOS:
 			if self.allow_unsupported_slicer_versions:
 				args.append('--allow-unsupported-slicer-versions')
 			args.append(path)
+			logging.info('Post-processing started via RatOS CLI: ' + str(args))
 			self.console_echo('Post-processing started', 'info',  'Processing %s (%.2f mb)...' % (filename, size / 1024 / 1024));
 			process = subprocess.Popen(
 				args,
@@ -269,6 +270,8 @@ class RatOS:
 						self.console_echo(f"Post-processing ({data['payload']['percentage']}%)... {eta_str} remaining", 'info')
 					else:
 						self.console_echo(f"Post-processing ({data['payload']['percentage']}%)...", 'info')
+				if data['result'] == 'waiting':
+					self.console_echo('Post-processing waiting', 'info', 'Waiting for input file to finish being written...')
 
 			def _process_output(eventtime):
 				if process.stdout is None:
