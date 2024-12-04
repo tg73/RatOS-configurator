@@ -76364,6 +76364,9 @@ var require_cjs2 = __commonJS({
 // ratos.tsx
 init_cjs_shim();
 
+// commands.tsx
+init_cjs_shim();
+
 // ../node_modules/.pnpm/commander@11.1.0/node_modules/commander/esm.mjs
 init_cjs_shim();
 var import_index = __toESM(require_commander(), 1);
@@ -81357,9 +81360,9 @@ var proxyClient = createTRPCProxyClient({
   ]
 });
 
-// ratos.tsx
+// commands.tsx
 var import_react65 = __toESM(require_react(), 1);
-import { stat as stat2 } from "node:fs/promises";
+import { stat as stat3 } from "node:fs/promises";
 import path8 from "path";
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/index.js
@@ -86347,7 +86350,7 @@ async function readPackageUp(options) {
   };
 }
 
-// ratos.tsx
+// commands.tsx
 import { $ as $3, echo as echo3, which } from "zx";
 import { existsSync as existsSync6 } from "node:fs";
 
@@ -100623,6 +100626,8 @@ function formatZodError(error, input) {
 }
 
 // commands/postprocessor.tsx
+import { promisify } from "util";
+import { stat as stat2 } from "fs/promises";
 var ProgressReportUI = ({ report, fileName, done, error }) => {
   const eta = report ? report.eta / 60 : 0;
   const percentage = report?.percentage ?? 0;
@@ -100688,6 +100693,12 @@ var PostProcessorCLIOutput = z.discriminatedUnion("result", [
       percentage: z.number(),
       eta: z.number()
     })
+  }),
+  z.object({
+    result: z.literal("waiting"),
+    payload: z.object({
+      fileName: z.string()
+    })
   })
 ]);
 var toPostProcessorCLIOutput = (obj) => {
@@ -100711,11 +100722,50 @@ ${formatZodError(e, obj).message}`
     }
   }
 };
+var FileStillBeingWrittenError = class extends Error {
+  constructor(filePath) {
+    super(`Input file ${filePath} appears to still be being written to`);
+  }
+};
+var waitForFileToBeWritten = async (filePath, maxWaitTime = 1e4) => {
+  let lastSize = -1;
+  let currentSize = 0;
+  let attempts = 0;
+  const maxAttempts = 10;
+  const waitTime = 100;
+  while (attempts * waitTime < maxWaitTime) {
+    const stats = await stat2(filePath);
+    currentSize = stats.size;
+    if (currentSize === lastSize) {
+      break;
+    }
+    lastSize = currentSize;
+    attempts++;
+    if (attempts * waitTime < maxWaitTime) {
+      await promisify(setTimeout)(waitTime);
+    }
+  }
+  if (attempts === maxAttempts) {
+    throw new FileStillBeingWrittenError(
+      `Input file ${filePath} appears to still be being written to after ${maxAttempts} seconds`
+    );
+  }
+};
 var postprocessor = (program3) => {
   program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit [output] and --overwrite-input for inspection only)").action(async (inputFile, outputFile, args) => {
     inputFile = await getRealPath(program3, inputFile);
     if (outputFile) {
       outputFile = await getRealPath(program3, outputFile);
+    }
+    try {
+      await waitForFileToBeWritten(inputFile);
+    } catch (e) {
+      toPostProcessorCLIOutput({
+        result: "error",
+        title: "Input file is still being written to",
+        message: `The input file ${inputFile} appears to still be being written to. Please wait for the file to finish being written and try again.`
+      });
+      process.exit(1);
     }
     loadEnvironment();
     let onProgress = void 0;
@@ -100831,9 +100881,12 @@ Line ${e.lineNumber}: ${e.line}`;
   });
 };
 
-// ratos.tsx
+// commands.tsx
 var program2 = new Command().name("ratos").version((await readPackageUp())?.packageJson.version ?? "unknown").description("RatOS CLI for interacting with the RatOS Configurator").option("-cwd, --cwd <path>", "Set the current working directory").configureOutput({
-  outputError: (str, write) => write(errorColor(str))
+  outputError: (str, write) => {
+    getLogger().error(str);
+    write(errorColor(str));
+  }
 }).showSuggestionAfterError(true);
 program2.command("info").description("Print info about this RatOS installation").action(async () => {
   const client = createTRPCProxyClient({
@@ -100903,7 +100956,7 @@ registerExtensions.command("klipper").description("Register a Klipper extension 
   let realPath = "";
   try {
     realPath = await getRealPath(program2, extFile);
-    if (!(await stat2(realPath)).isFile() || !realPath.endsWith(".py")) {
+    if (!(await stat3(realPath)).isFile() || !realPath.endsWith(".py")) {
       return renderError(`${realPath} is not a python file`, { exitCode: 2 });
     }
   } catch (e) {
@@ -100952,7 +101005,7 @@ registerExtensions.command("moonraker").description("Register a Moonraker extens
   let realPath = "";
   try {
     realPath = await getRealPath(program2, extFile);
-    if (!(await stat2(realPath)).isFile() || !realPath.endsWith(".py")) {
+    if (!(await stat3(realPath)).isFile() || !realPath.endsWith(".py")) {
       return renderError(`${realPath} is not a python file`, { exitCode: 2 });
     }
   } catch (e) {
@@ -101235,8 +101288,22 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
     )
   );
 });
+
+// ratos.tsx
 loadEnvironment();
-await program2.parseAsync();
+try {
+  program2.command("test-error").action(async () => {
+    throw new Error("Test error");
+  });
+  await program2.parseAsync();
+} catch (e) {
+  if (e instanceof Error) {
+    getLogger().error(e, e.message);
+    program2.error("Error: " + e.message, { exitCode: 1 });
+  }
+  getLogger().error(e);
+  program2.error("An unexpected error occurred", { exitCode: 1 });
+}
 /**
  * @file errors.ts
  * @description Common error classes for the G-code processor.
