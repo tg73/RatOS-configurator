@@ -306,6 +306,11 @@ export const postprocessor = (program: Command) => {
 				},
 			};
 
+			getLogger().info(
+				{ ...opts, inputFile, outputFile: outputFile ?? 'No output file specified' },
+				'postprocessor options',
+			);
+
 			try {
 				if (args.overwriteInput) {
 					outputFile = tmpfile();
@@ -314,7 +319,10 @@ export const postprocessor = (program: Command) => {
 					? await processGCode(inputFile, outputFile, opts)
 					: await inspectGCode(inputFile, { ...opts, fullInspection: false });
 
+				getLogger().info(result, 'postprocessor result');
+
 				if (!result.wasAlreadyProcessed && args.overwriteInput) {
+					getLogger().info({ outputFile, inputFile }, 'renaming output file to input file');
 					fs.renameSync(outputFile, inputFile);
 				}
 				if (
@@ -324,6 +332,10 @@ export const postprocessor = (program: Command) => {
 					outputFile != null &&
 					outputFile.trim() !== ''
 				) {
+					getLogger().info(
+						{ outputFile, inputFile },
+						'Input file already processed. Copying input file to output file',
+					);
 					// If the file was already processed, output file is provided and the printability is READY, copy the file to the output location
 					fs.copyFileSync(inputFile, outputFile);
 				}
