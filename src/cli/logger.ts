@@ -3,6 +3,7 @@ import { serverSchema } from '@/env/schema.mjs';
 import { globalPinoOpts } from '@/helpers/logger.js';
 import dotenv from 'dotenv';
 import { existsSync, readFileSync } from 'fs';
+import { echo } from 'zx';
 
 let logger: pino.Logger | null = null;
 const envFile = existsSync('./.env.local') ? readFileSync('.env.local') : readFileSync('.env');
@@ -11,6 +12,7 @@ export const getLogger = () => {
 		return logger;
 	}
 	const environment = serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
+	echo('environment', environment);
 	const transportOption: pino.LoggerOptions['transport'] =
 		process.env.NODE_ENV === 'development'
 			? {
