@@ -74,10 +74,10 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 
 	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 
-	if (gcf.info.isProcessed) {
+	if (gcf.printability !== Printability.MUST_PROCESS) {
 		return {
 			...gcf.info.serialize(),
-			wasAlreadyProcessed: true,
+			wasAlreadyProcessed: gcf.info.isProcessed,
 			printability: gcf.printability,
 			printabilityReasons: gcf.printabilityReasons,
 			canDeprocess: gcf.canDeprocess,
@@ -120,10 +120,10 @@ export async function processGCode(
 
 	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 
-	if (gcf?.info.isProcessed) {
+	if (gcf.printability !== Printability.MUST_PROCESS) {
 		return {
 			...gcf.info.serialize(),
-			wasAlreadyProcessed: true,
+			wasAlreadyProcessed: gcf.info.isProcessed,
 			printability: gcf.printability,
 			printabilityReasons: gcf.printabilityReasons,
 			canDeprocess: gcf.canDeprocess,
@@ -149,8 +149,6 @@ export async function processGCode(
 	return {
 		...(await gcf.transform(outputFile, { progressTransform: progressStream, ...gcfOptions })).serialize(),
 		wasAlreadyProcessed: false,
-		printability: gcf.printability,
-		printabilityReasons: gcf.printabilityReasons,
-		canDeprocess: gcf.canDeprocess,
+		printability: Printability.READY,
 	};
 }
