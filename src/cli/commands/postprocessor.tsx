@@ -338,7 +338,7 @@ export const postprocessor = (program: Command) => {
 				}
 				if (
 					result.wasAlreadyProcessed &&
-					result.printability === 'READY' &&
+					result.printability === Printability.READY &&
 					!args.overwriteInput &&
 					outputFile != null &&
 					outputFile.trim() !== ''
