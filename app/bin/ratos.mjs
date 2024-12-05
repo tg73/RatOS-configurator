@@ -86351,7 +86351,7 @@ async function readPackageUp(options) {
 }
 
 // commands.tsx
-import { $ as $3, echo as echo3, which } from "zx";
+import { $ as $3, echo as echo4, which } from "zx";
 import { existsSync as existsSync6 } from "node:fs";
 
 // util.tsx
@@ -90275,7 +90275,14 @@ async function getRealPath(program3, p) {
       );
     }
   }
-  return await realpath(path5.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), p));
+  try {
+    return await realpath(path5.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), p));
+  } catch (e) {
+    if (e instanceof Error && "code" in e && e.code === "ENOENT" && "path" in e) {
+      return await realpath(path5.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), path5.dirname(p))) + path5.sep + path5.basename(p);
+    }
+    throw e;
+  }
 }
 var alreadyLoaded = false;
 function loadEnvironment() {
@@ -90366,6 +90373,7 @@ var globalPinoOpts = {
 // logger.ts
 var import_dotenv2 = __toESM(require_main(), 1);
 import { existsSync as existsSync3, readFileSync as readFileSync3 } from "fs";
+import { echo as echo2 } from "zx";
 var logger = null;
 var envFile = existsSync3("./.env.local") ? readFileSync3(".env.local") : readFileSync3(".env");
 var getLogger = () => {
@@ -90373,6 +90381,7 @@ var getLogger = () => {
     return logger;
   }
   const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv2.default.parse(envFile) });
+  echo2("environment", environment);
   const transportOption = process.env.NODE_ENV === "development" ? {
     target: "pino/pretty",
     options: { colorize: true }
@@ -92978,7 +92987,7 @@ async function processGCode(inputFile, outputFile, options) {
 }
 
 // commands/postprocessor.tsx
-import { echo as echo2, fs as fs2, tmpfile } from "zx";
+import { echo as echo3, fs as fs2, tmpfile } from "zx";
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/index.js
 init_cjs_shim();
@@ -100703,12 +100712,12 @@ var PostProcessorCLIOutput = z.discriminatedUnion("result", [
 ]);
 var toPostProcessorCLIOutput = (obj) => {
   try {
-    echo2(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
+    echo3(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
   } catch (e) {
     getLogger().error(e, "An error occurred while serializing postprocessor output");
     if (e instanceof ZodError) {
       getLogger().trace(obj, "Invalid data passed to toPostProcessorCLIOutput");
-      echo2(
+      echo3(
         JSON.stringify({
           result: "error",
           title: "An error occurred while serializing postprocessor output",
@@ -100933,7 +100942,7 @@ extensions.command("list").option("-k, --klipper", "Only show Klipper extensions
   });
   if (options.klipper && options.moonraker) {
     if (options.nonInteractive) {
-      echo3("Cannot specify both --klipper and --moonraker");
+      echo4("Cannot specify both --klipper and --moonraker");
       process.exit(2);
     }
     return renderError("Cannot specify both --klipper and --moonraker", { exitCode: 2 });
@@ -100942,15 +100951,15 @@ extensions.command("list").option("-k, --klipper", "Only show Klipper extensions
   const moonrakerExtensions = await client["moonraker-extensions"].list.query();
   if (options.nonInteractive) {
     if (klippyExtensions.length > 0 && !options.moonraker) {
-      echo3(`${klippyExtensions.length} Registered Klipper Extensions:`);
+      echo4(`${klippyExtensions.length} Registered Klipper Extensions:`);
       for (const ext of klippyExtensions) {
-        echo3(`${ext.extensionName} -> ${ext.path + ext.fileName}`);
+        echo4(`${ext.extensionName} -> ${ext.path + ext.fileName}`);
       }
     }
     if (moonrakerExtensions.length > 0 && !options.klipper) {
-      echo3(`${moonrakerExtensions.length} Registered Moonraker Extensions:`);
+      echo4(`${moonrakerExtensions.length} Registered Moonraker Extensions:`);
       for (const ext of moonrakerExtensions) {
-        echo3(`${ext.extensionName} -> ${ext.path + ext.fileName}`);
+        echo4(`${ext.extensionName} -> ${ext.path + ext.fileName}`);
       }
     }
     return;
@@ -101196,7 +101205,7 @@ log.command("tail").option("-f, --follow", "Follow the log").option("-n, --lines
   const logFile = loadEnvironment().LOG_FILE;
   const whichPretty = await which("pino-pretty");
   if (whichPretty.trim() === "") {
-    echo3("pino-pretty not found, installing (requires sudo permissions)...");
+    echo4("pino-pretty not found, installing (requires sudo permissions)...");
     await $$`sudo npm install -g pino-pretty`;
   }
   $$`tail ${flags} ${logFile} | pino-pretty --colorize`;
