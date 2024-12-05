@@ -315,9 +315,20 @@ export const postprocessor = (program: Command) => {
 				if (args.overwriteInput) {
 					outputFile = tmpfile();
 				}
-				const result = !!outputFile
-					? await processGCode(inputFile, outputFile, opts)
-					: await inspectGCode(inputFile, { ...opts, fullInspection: false });
+
+				// TODO: At a later date, when the post-processor can deprocess a file,
+				// we should check if the file was already processed by inspecting the file.
+				// In case of `MUST_PROCESS`, we can immediately process the file,
+				// in case of `READY`, we can skip processing the file, but should still run analysis to get the full file result.
+				// In all other situations the consumer can then prompt the user based on the input file's printability.
+				// NOTE by tg73: There's fuzzyness around the knowledge re non-idex not needing to be transformed.
+				// My current opinion: rather overprocess than underprocess. Specific situations where skipping processing is OK
+				// can be handled in fancy ways later - i need to see that it's worth the complexity first.
+
+				const result =
+					outputFile != null && outputFile.trim() !== ''
+						? await processGCode(inputFile, outputFile, opts)
+						: await inspectGCode(inputFile, { ...opts, fullInspection: false });
 
 				getLogger().info(result, 'postprocessor result');
 
@@ -327,7 +338,7 @@ export const postprocessor = (program: Command) => {
 				}
 				if (
 					result.wasAlreadyProcessed &&
-					result.printability === 'READY' &&
+					result.printability === Printability.READY &&
 					!args.overwriteInput &&
 					outputFile != null &&
 					outputFile.trim() !== ''

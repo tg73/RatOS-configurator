@@ -99021,8 +99021,6 @@ var getLogger = () => {
     return logger;
   }
   const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv2.default.parse(envFile) });
-  console.log("cli logger environment", environment);
-  console.log("node env: ", process.env.NODE_ENV);
   const logDirExists = existsSync3(path6.dirname(environment.LOG_FILE));
   const logFile = logDirExists ? environment.LOG_FILE : "/var/log/ratos-cli.log";
   if (!logDirExists) {
@@ -101219,13 +101217,13 @@ var NullSink = class extends Writable {
     callback();
   }
 };
-var Printability = /* @__PURE__ */ ((Printability3) => {
-  Printability3["NOT_SUPPORTED"] = "NOT_SUPPORTED";
-  Printability3["MUST_PROCESS"] = "MUST_PROCESS";
-  Printability3["READY"] = "READY";
-  Printability3["COULD_REPROCESS"] = "COULD_REPROCESS";
-  Printability3["MUST_REPROCESS"] = "MUST_REPROCESS";
-  return Printability3;
+var Printability = /* @__PURE__ */ ((Printability2) => {
+  Printability2["NOT_SUPPORTED"] = "NOT_SUPPORTED";
+  Printability2["MUST_PROCESS"] = "MUST_PROCESS";
+  Printability2["READY"] = "READY";
+  Printability2["COULD_REPROCESS"] = "COULD_REPROCESS";
+  Printability2["MUST_REPROCESS"] = "MUST_REPROCESS";
+  return Printability2;
 })(Printability || {});
 var GCodeFile = class _GCodeFile {
   constructor(path10, info, printability, canDeprocess, printabilityReasons) {
@@ -101567,10 +101565,10 @@ async function inspectGCode(inputFile, options) {
     onWarning: options.onWarning
   };
   const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
-  if (gcf.info.isProcessed) {
+  if (gcf.printability !== "MUST_PROCESS" /* MUST_PROCESS */) {
     return {
       ...gcf.info.serialize(),
-      wasAlreadyProcessed: true,
+      wasAlreadyProcessed: gcf.info.isProcessed,
       printability: gcf.printability,
       printabilityReasons: gcf.printabilityReasons,
       canDeprocess: gcf.canDeprocess
@@ -101602,10 +101600,10 @@ async function processGCode(inputFile, outputFile, options) {
     throw new Error(`${inputFile} is not a file`);
   }
   const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
-  if (gcf?.info.isProcessed) {
+  if (gcf.printability !== "MUST_PROCESS" /* MUST_PROCESS */) {
     return {
       ...gcf.info.serialize(),
-      wasAlreadyProcessed: true,
+      wasAlreadyProcessed: gcf.info.isProcessed,
       printability: gcf.printability,
       printabilityReasons: gcf.printabilityReasons,
       canDeprocess: gcf.canDeprocess
@@ -101627,9 +101625,7 @@ async function processGCode(inputFile, outputFile, options) {
   return {
     ...(await gcf.transform(outputFile, { progressTransform: progressStream, ...gcfOptions })).serialize(),
     wasAlreadyProcessed: false,
-    printability: gcf.printability,
-    printabilityReasons: gcf.printabilityReasons,
-    canDeprocess: gcf.canDeprocess
+    printability: "READY" /* READY */
   };
 }
 
@@ -109501,13 +109497,13 @@ var postprocessor = (program3) => {
       if (args.overwriteInput) {
         outputFile = tmpfile();
       }
-      const result = !!outputFile ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
+      const result = outputFile != null && outputFile.trim() !== "" ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
       getLogger().info(result, "postprocessor result");
       if (!result.wasAlreadyProcessed && args.overwriteInput) {
         getLogger().info({ outputFile, inputFile }, "renaming output file to input file");
         fs2.renameSync(outputFile, inputFile);
       }
-      if (result.wasAlreadyProcessed && result.printability === "READY" && !args.overwriteInput && outputFile != null && outputFile.trim() !== "") {
+      if (result.wasAlreadyProcessed && result.printability === "READY" /* READY */ && !args.overwriteInput && outputFile != null && outputFile.trim() !== "") {
         getLogger().info(
           { outputFile, inputFile },
           "Input file already processed. Copying input file to output file"
