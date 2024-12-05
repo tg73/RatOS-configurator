@@ -11,6 +11,7 @@ export const getLogger = () => {
 		return logger;
 	}
 	const environment = serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
+	// eslint-disable-next-line no-console
 	console.log('cli logger environment', environment);
 	const transportOption: pino.LoggerOptions['transport'] =
 		process.env.NODE_ENV === 'development'
