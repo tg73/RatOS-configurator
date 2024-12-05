@@ -19,10 +19,6 @@ export const getLogger = () => {
 		return logger;
 	}
 	const environment = serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
-	// eslint-disable-next-line no-console
-	console.log('cli logger environment', environment);
-	// eslint-disable-next-line no-console
-	console.log('node env: ', process.env.NODE_ENV);
 	const logDirExists = existsSync(path.dirname(environment.LOG_FILE));
 	const logFile = logDirExists ? environment.LOG_FILE : '/var/log/ratos-cli.log';
 	if (!logDirExists) {
