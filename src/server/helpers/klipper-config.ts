@@ -657,6 +657,8 @@ export const constructKlipperConfigHelpers = async (
 				const marginMax = rail.axis !== PrinterAxis.y ? config.printer.bedMargin.x[1] : config.printer.bedMargin.y[1];
 				Object.entries(typeof limits == 'function' ? limits({ min: marginMin, max: marginMax }) : limits).forEach(
 					([key, value]) => {
+						// Make sure that position_min is at least -5 to allow for probe calibration (and componensation functions).
+						// Very much dislike that this is necessary.
 						section.push(
 							`position_${key}: ${rail.axis === PrinterAxis.z && key === 'min' ? Math.min(value, -5) : value}`,
 						);
@@ -785,15 +787,15 @@ export const constructKlipperConfigHelpers = async (
 		},
 		renderSpeedLimits() {
 			const limits =
-				config.performanceMode && config.printer.speedLimits.performance
+				config.performanceMode && config.printer.speedLimits.performance && !config.stealthchop
 					? config.printer.speedLimits.performance
 					: config.printer.speedLimits.basic;
 			return [
 				`[printer]`,
-				`max_velocity: ${config.stealthchop ? '135' : limits.velocity}`,
+				`max_velocity: ${config.stealthchop ? 135 : limits.velocity}`,
 				`max_accel: ${limits.accel / (config.stealthchop ? 2 : 1)}`,
 				`minimum_cruise_ratio: ${config.stealthchop ? 0.25 : 0.5}`,
-				`max_z_velocity: ${limits.z_velocity}`,
+				`max_z_velocity: ${config.stealthchop ? 10 : limits.z_velocity}`,
 				`max_z_accel: ${limits.z_accel}`,
 				`square_corner_velocity: ${limits.square_corner_velocity}`,
 				``,
@@ -1072,31 +1074,6 @@ export const constructKlipperConfigHelpers = async (
 		},
 		renderSaveVariables(options?: VAOCControlPoints) {
 			return extrasGenerator.generateSaveVariables(options).join('\n');
-		},
-		renderUserMacroVariableOverrides(size?: number) {
-			const result: string[] = [
-				`variable_macro_travel_speed: ${this.getMacroTravelSpeed()}`,
-				`variable_macro_travel_accel: ${this.getMacroTravelAccel()}`,
-			];
-			const toolheads = utils.getToolheads();
-			const isIdex = toolheads.some((th) => th.getMotionAxis() === PrinterAxis.dual_carriage);
-			if (isIdex) {
-				result.push(`variable_toolchange_travel_speed: ${this.getMacroTravelSpeed()}     # parking travel speed`);
-				result.push(`variable_toolchange_travel_accel: ${this.getMacroTravelAccel()}     # parking travel accel`);
-				result.push(
-					`variable_shaper_x_freq: [0, 0, 0, 0]                    # shaper frequency [T0, T1, COPY, MIRROR]`,
-				);
-				result.push(
-					`variable_shaper_y_freq: [0, 0, 0, 0]                    # shaper frequency [T0, T1, COPY, MIRROR]`,
-				);
-				result.push(
-					`variable_shaper_x_type: ["mzv", "mzv", "mzv", "mzv"]    # shaper frequency algorythm [T0, T1, COPY, MIRROR]`,
-				);
-				result.push(
-					`variable_shaper_y_type: ["mzv", "mzv", "mzv", "mzv"]    # shaper frequency algorythm [T0, T1, COPY, MIRROR]`,
-				);
-			}
-			return utils.formatInlineComments(result).join('\n');
 		},
 		renderControllerFan() {
 			let result: string[] = [];
