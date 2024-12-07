@@ -99222,7 +99222,8 @@ var frontend = (program3) => {
 type: web
 repo: Rat-OS/fluidd
 path: ~/fluidd
-${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}`;
+${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}info_tags:
+	desc: Experimental: Fluidd Web Interface (RatOS Fork)`;
       moonrakerConfigContents += fluiddUpdateSection;
       steps.push({ name: `New Fluidd update manager entry added (channel: ${channel})`, status: "success" });
       const fluiddThemeSection = findSection("update_manager FluiddTheme", moonrakerConfigContents);
@@ -99267,7 +99268,8 @@ path: ~/printer_data/config/.fluidd-theme
 primary_branch: main
 origin: https://github.com/Rat-OS/fluidd-theme
 is_system_service: false
-`;
+info_tags:
+	desc: Experimental: RatOS Fluidd Theme`;
       moonrakerConfigContents += fluiddThemeUpdateSection;
       steps.push({ name: "New Fluidd Theme update manager entry added", status: "success" });
       if (!existsSync4("/etc/nginx/sites-available/fluidd")) {

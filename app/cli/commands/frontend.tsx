@@ -156,7 +156,7 @@ export const frontend = (program: Command) => {
 						stepText="Adding moonraker entry for RatOS Fluidd fork"
 					/>,
 				);
-				const fluiddUpdateSection = `\n[update_manager Fluidd]\ntype: web\nrepo: Rat-OS/fluidd\npath: ~/fluidd\n${channel === 'beta' ? 'channel: beta\n' : 'channel: stable\n'}`;
+				const fluiddUpdateSection = `\n[update_manager Fluidd]\ntype: web\nrepo: Rat-OS/fluidd\npath: ~/fluidd\n${channel === 'beta' ? 'channel: beta\n' : 'channel: stable\n'}info_tags:\n\tdesc: Experimental: Fluidd Web Interface (RatOS Fork)`;
 				moonrakerConfigContents += fluiddUpdateSection;
 				steps.push({ name: `New Fluidd update manager entry added (channel: ${channel})`, status: 'success' });
 
@@ -195,7 +195,7 @@ export const frontend = (program: Command) => {
 						stepText="Adding moonraker entry for RatOS Fluidd theme"
 					/>,
 				);
-				const fluiddThemeUpdateSection = `\n[update_manager FluiddTheme]\ntype: git_repo\npath: ~/printer_data/config/.fluidd-theme\nprimary_branch: main\norigin: https://github.com/Rat-OS/fluidd-theme\nis_system_service: false\n`;
+				const fluiddThemeUpdateSection = `\n[update_manager FluiddTheme]\ntype: git_repo\npath: ~/printer_data/config/.fluidd-theme\nprimary_branch: main\norigin: https://github.com/Rat-OS/fluidd-theme\nis_system_service: false\ninfo_tags:\n\tdesc: Experimental: RatOS Fluidd Theme`;
 				moonrakerConfigContents += fluiddThemeUpdateSection;
 				steps.push({ name: 'New Fluidd Theme update manager entry added', status: 'success' });
 
