@@ -128,7 +128,9 @@ class RatOS:
 						break
 			self.old_is_graph_files = []
 		except Exception as exc:
-			self.debug_echo("SHOW_IS_GRAPH_FILES", "Something went wrong. " + str(exc))
+			self.console_echo("Error showing IS graph files", "error", "Please report this issue on discord or GitHub and attach a debug-zip from the configurator.")
+			logging.error(exc)
+			self.debug_echo("SHOW_IS_GRAPH_FILES", str(exc))
 
 	desc_CACHE_IS_GRAPH_FILES = "Caches the current is graph files"
 	def cmd_CACHE_IS_GRAPH_FILES(self, gcmd):
