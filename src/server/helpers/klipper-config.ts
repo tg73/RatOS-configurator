@@ -1039,8 +1039,8 @@ export const constructKlipperConfigHelpers = async (
 				result.push(
 					`variable_default_toolhead: ${probeTool}                             # the toolhead with the z-probe, 0=left 1=right toolhead`,
 				);
-				const firstADXL = utils.getToolhead(0).getXAccelerometerName();
-				const secondADXL = utils.getToolhead(1).getXAccelerometerName();
+				const firstADXL = `${utils.getToolhead(0).getXAccelerometer()?.accelerometerType ?? 'adxl345'} ${utils.getToolhead(0).getYAccelerometerName()}`;
+				const secondADXL = `${utils.getToolhead(1).getXAccelerometer()?.accelerometerType ?? 'adxl345'} ${utils.getToolhead(1).getYAccelerometerName()}`;
 				result.push(`variable_adxl_chip: ["${firstADXL}", "${secondADXL}"]           # toolheads adxl chip names`);
 				result.push(`variable_toolchange_travel_speed: ${this.getMacroTravelSpeed()}     # parking travel speed`);
 				result.push(`variable_toolchange_travel_accel: ${this.getMacroTravelAccel()}     # parking travel accel`);
