@@ -99021,8 +99021,6 @@ var getLogger = () => {
     return logger;
   }
   const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv2.default.parse(envFile) });
-  console.log("cli logger environment", environment);
-  console.log("node env: ", process.env.NODE_ENV);
   const logDirExists = existsSync3(path6.dirname(environment.LOG_FILE));
   const logFile = logDirExists ? environment.LOG_FILE : "/var/log/ratos-cli.log";
   if (!logDirExists) {
@@ -99224,7 +99222,8 @@ var frontend = (program3) => {
 type: web
 repo: Rat-OS/fluidd
 path: ~/fluidd
-${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}`;
+${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}info_tags:
+	desc: Experimental: Fluidd Web Interface (RatOS Fork)`;
       moonrakerConfigContents += fluiddUpdateSection;
       steps.push({ name: `New Fluidd update manager entry added (channel: ${channel})`, status: "success" });
       const fluiddThemeSection = findSection("update_manager FluiddTheme", moonrakerConfigContents);
@@ -99269,7 +99268,8 @@ path: ~/printer_data/config/.fluidd-theme
 primary_branch: main
 origin: https://github.com/Rat-OS/fluidd-theme
 is_system_service: false
-`;
+info_tags:
+	desc: Experimental: RatOS Fluidd Theme`;
       moonrakerConfigContents += fluiddThemeUpdateSection;
       steps.push({ name: "New Fluidd Theme update manager entry added", status: "success" });
       if (!existsSync4("/etc/nginx/sites-available/fluidd")) {
@@ -109499,7 +109499,7 @@ var postprocessor = (program3) => {
       if (args.overwriteInput) {
         outputFile = tmpfile();
       }
-      const result = !!outputFile ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
+      const result = outputFile != null && outputFile.trim() !== "" ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
       getLogger().info(result, "postprocessor result");
       if (!result.wasAlreadyProcessed && args.overwriteInput) {
         getLogger().info({ outputFile, inputFile }, "renaming output file to input file");

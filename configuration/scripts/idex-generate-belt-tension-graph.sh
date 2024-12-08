@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )
 # shellcheck source=./configuration/scripts/ratos-common.sh
 source "$SCRIPT_DIR"/ratos-common.sh
 
@@ -15,7 +16,7 @@ then
 	DISABLE_X=1
 fi
 
-outdir="${SCRIPT_DIR}"/../../input_shaper
+outdir="${RATOS_PRINTER_DATA_DIR}"/config/input_shaper
 if [ ! -d "${outdir}" ]
 then
     mkdir "${outdir}"
