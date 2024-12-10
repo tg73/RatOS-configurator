@@ -74,7 +74,22 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 
 	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 
-	if (gcf.printability !== Printability.MUST_PROCESS) {
+	if (gcf.printability === Printability.READY && !gcf.info.analysisResult) {
+		let progressStream: Transform | undefined;
+
+		if (options.onProgress) {
+			progressStream = progress({ length: inputStat.size });
+			progressStream.on('progress', options.onProgress);
+		}
+
+		return {
+			...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
+			wasAlreadyProcessed: false,
+			printability: gcf.printability,
+			printabilityReasons: gcf.printabilityReasons,
+			canDeprocess: gcf.canDeprocess,
+		};
+	} else {
 		return {
 			...gcf.info.serialize(),
 			wasAlreadyProcessed: gcf.info.isProcessed,
@@ -83,21 +98,6 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 			canDeprocess: gcf.canDeprocess,
 		};
 	}
-
-	let progressStream: Transform | undefined;
-
-	if (options.onProgress) {
-		progressStream = progress({ length: inputStat.size });
-		progressStream.on('progress', options.onProgress);
-	}
-
-	return {
-		...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
-		wasAlreadyProcessed: false,
-		printability: gcf.printability,
-		printabilityReasons: gcf.printabilityReasons,
-		canDeprocess: gcf.canDeprocess,
-	};
 }
 
 export async function processGCode(

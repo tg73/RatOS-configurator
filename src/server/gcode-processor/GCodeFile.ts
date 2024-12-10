@@ -119,6 +119,11 @@ class NullSink extends Writable {
  * Describes how a gcode file is printable or not. {@link Printability} is not concerned with the method of reprocessing:
  * it might be possible to de-process then re-process an existing processed file (see {@link GCodeFile.canDeprocess}), or it
  * might be necessary for the user to supply the unprocessed file to be processed again.
+ *
+ * NOTE: Printability does not concern itself with a "must analyse" concept: when inspecting for non-IDEX printing,
+ * we know that *transformation* (aka, processing) is not required. The file can be used as-is, and so is READY. However,
+ * if the consumer wants to know some info like the first XY position, they should check if {@link GCodeFile.info.analysisResult}
+ * is defined, and invoke {@link GCodeFile.analyse} if required.
  */
 export enum Printability {
 	/** The file is not supported: (re)processing won't help. For example, an unsupported slicer version, an obsolete or future file layout. When applicable, see {@link GCodeFile.printabilityReasons}. */
