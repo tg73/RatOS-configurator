@@ -16,7 +16,8 @@
 
 import { describe, test, expect, should } from 'vitest';
 import { GCodeProcessor } from '@/server/gcode-processor/GCodeProcessor';
-import { GCodeFlavour, GCodeInfo, MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeInfo, MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFlavour } from '@/server/gcode-processor/GCodeFlavour';
 import semver from 'semver';
 import { InternalError } from '@/server/gcode-processor/errors';
 import { ActionResult } from '@/server/gcode-processor/ActionSequence';

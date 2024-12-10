@@ -18,7 +18,7 @@ import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions';
 import { getRealPath, loadEnvironment } from '@/cli/util';
 import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
-import { Printability } from '@/server/gcode-processor/GCodeFile';
+import { Printability } from '@/server/gcode-processor/Printability';
 import { promisify } from 'util';
 import { stat } from 'fs/promises';
 

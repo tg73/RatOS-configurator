@@ -25,7 +25,8 @@ import {
 	AlreadyProcessedError,
 	SlicerNotSupported,
 } from '@/server/gcode-processor/errors';
-import { GCodeInfo, GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFlavour } from '@/server/gcode-processor/GCodeFlavour';
 import { State, BookmarkedLine } from '@/server/gcode-processor/State';
 import { CommonGCodeCommand, parseCommonGCodeCommandLine } from '@/server/gcode-processor/CommonGCodeCommand';
 import { InspectionIsComplete } from '@/server/gcode-processor/GCodeProcessor';

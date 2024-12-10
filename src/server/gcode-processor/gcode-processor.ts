@@ -24,7 +24,8 @@ import path from 'node:path';
 import progress from 'progress-stream';
 import { Transform } from 'node:stream';
 import { SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { GCodeFile, Printability } from '@/server/gcode-processor/GCodeFile';
+import { GCodeFile } from '@/server/gcode-processor/GCodeFile';
+import { Printability } from '@/server/gcode-processor/Printability';
 
 export const PROGRESS_STREAM_SPEED_STABILIZATION_TIME = 3;
 

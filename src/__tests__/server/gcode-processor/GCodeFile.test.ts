@@ -16,10 +16,11 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { GCodeFlavour } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFlavour } from '@/server/gcode-processor/GCodeFlavour';
 import semver, { SemVer } from 'semver';
 import path from 'path';
-import { GCodeFile, Printability } from '@/server/gcode-processor/GCodeFile';
+import { GCodeFile } from '@/server/gcode-processor/GCodeFile';
+import { Printability } from '@/server/gcode-processor/Printability';
 
 const defaultExpectedInfo = {
 	ratosDialectVersion: undefined,
