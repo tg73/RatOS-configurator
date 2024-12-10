@@ -52,20 +52,22 @@ interface CommonOptions {
 	 * will return a result with printability 'UNKNOWN'.
 	 */
 	allowUnknownGenerator?: boolean;
+	/**
+	 * If true, the whole file is examined, and a full {@link AnalysisResult} is built. Otherwise,
+	 * a quick analysis is performed, and at most the `gcodeInfo`, `firstMoveX` and `firstMoveY`
+	 * fields will be populated.
+	 *
+	 * Note: this option has no effect when transformation is performed. It only applies when
+	 * non-transformative analysis is performed.
+	 */
+	fullAnalysis?: boolean;
 }
 
 interface ProcessOptions extends CommonOptions {
 	overwrite?: boolean;
 }
 
-interface InspectOptions extends CommonOptions {
-	/**
-	 * If true, the whole file is examined, and a full {@link AnalysisResult} is built. Otherwise,
-	 * a quick inspection is performed, and at most the `gcodeInfo`, `firstMoveX` and `firstMoveY`
-	 * fields will be populated.
-	 */
-	fullInspection?: boolean;
-}
+interface InspectOptions extends CommonOptions {}
 
 export async function inspectGCode(inputFile: string, options: InspectOptions): Promise<ProcessorResult> {
 	const inputStat = await stat(path.resolve(inputFile));
@@ -78,7 +80,7 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
 		allowUnknownGenerator: options.allowUnknownGenerator,
-		quickInspectionOnly: !options.fullInspection,
+		quickInspectionOnly: !options.fullAnalysis,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
 	};
@@ -144,6 +146,7 @@ export async function processGCode(
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
 		allowUnknownGenerator: options.allowUnknownGenerator,
+		quickInspectionOnly: !options.fullAnalysis,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
 	};
@@ -180,7 +183,22 @@ export async function processGCode(
 		}
 	}
 
-	if (gcf.printability !== Printability.MUST_PROCESS) {
+	if (gcf.printability === Printability.READY && !gcf.info.analysisResult) {
+		let progressStream: Transform | undefined;
+
+		if (options.onProgress) {
+			progressStream = progress({ length: inputStat.size });
+			progressStream.on('progress', options.onProgress);
+		}
+
+		return {
+			...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
+			wasAlreadyProcessed: false,
+			printability: gcf.printability,
+			printabilityReasons: gcf.printabilityReasons,
+			canDeprocess: gcf.canDeprocess,
+		};
+	} else if (gcf.printability !== Printability.MUST_PROCESS) {
 		return {
 			...gcf.info.serialize(),
 			wasAlreadyProcessed: gcf.info.isProcessed,
