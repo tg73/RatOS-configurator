@@ -34,6 +34,7 @@ import {
 } from '@/server/gcode-processor/BookmarkingBufferEncoder';
 import { getPostProcessorVersion } from '@/server/gcode-processor/Version';
 import { validateGenerator } from '@/server/gcode-processor/Actions';
+import { WarningCodes } from '@/server/gcode-processor/WarningCodes';
 import { AssertionError } from 'node:assert';
 import { AnalysisResult, AnalysisResultKind, AnalysisResultSchema } from '@/server/gcode-processor/AnalysisResult';
 import { Printability } from '@/server/gcode-processor/Printability';
@@ -64,10 +65,6 @@ function assert(condition: any, message?: string): asserts condition {
  *    a GCodeInfo object. This data is considered authoritative.
  *
  */
-
-export enum GCODEFILE_WARNING_CODES {
-	INVALID_METADATA = 'INVALID_METADATA',
-}
 
 export type TransformOptions = { progressTransform?: Transform } & Pick<
 	GCodeProcessorOptions,
@@ -246,7 +243,7 @@ export class GCodeFile {
 			if (match) {
 				if (match[3] && !match[1]) {
 					onWarning?.(
-						GCODEFILE_WARNING_CODES.INVALID_METADATA,
+						WarningCodes.INVALID_METADATA,
 						'Failed to parse ratos_meta block: the begin marker was not found.',
 					);
 				} else {
@@ -254,7 +251,7 @@ export class GCodeFile {
 					const base64str = match[2].replaceAll(/[;\s]/g, '');
 					if (base64str.length != expectedBase64CharCount) {
 						onWarning?.(
-							GCODEFILE_WARNING_CODES.INVALID_METADATA,
+							WarningCodes.INVALID_METADATA,
 							`Failed to parse ratos_meta block: expected ${expectedBase64CharCount} base64 characters, but found ${base64str.length}.`,
 						);
 					} else {
@@ -271,7 +268,7 @@ export class GCodeFile {
 					}
 				}
 			} else {
-				onWarning?.(GCODEFILE_WARNING_CODES.INVALID_METADATA, 'The ratos_meta block was not found.');
+				onWarning?.(WarningCodes.INVALID_METADATA, 'The ratos_meta block was not found.');
 			}
 		}
 
