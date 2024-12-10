@@ -24,7 +24,11 @@ import path from 'node:path';
 import progress from 'progress-stream';
 import { Transform } from 'node:stream';
 import { SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
-import { GCodeFile, Printability } from '@/server/gcode-processor/GCodeFile';
+import { GCodeFile } from '@/server/gcode-processor/GCodeFile';
+import { Printability } from '@/server/gcode-processor/Printability';
+import { GeneratorIdentificationNotFound } from '@/server/gcode-processor/errors';
+import { GCodeFlavour } from '@/server/gcode-processor/GCodeFlavour';
+import { WarningCodes } from '@/server/gcode-processor/WarningCodes';
 
 export const PROGRESS_STREAM_SPEED_STABILIZATION_TIME = 3;
 
@@ -42,6 +46,12 @@ interface CommonOptions {
 	onProgress?: (report: progress.Progress) => void;
 	onWarning?: (code: string, message: string) => void;
 	abortSignal?: AbortSignal;
+	/**
+	 * If false, GCode files without a recognised header will raise an error. If true, and if
+	 * {@link CommonOptions.onWarning} is specified, GCode files without a recognised header
+	 * will return a result with printability 'UNKNOWN'.
+	 */
+	allowUnknownGenerator?: boolean;
 }
 
 interface ProcessOptions extends CommonOptions {
@@ -67,12 +77,37 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 	const gcfOptions = {
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+		allowUnknownGenerator: options.allowUnknownGenerator,
 		quickInspectionOnly: !options.fullInspection,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
 	};
 
-	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+	let gcf: GCodeFile;
+
+	try {
+		gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+	} catch (e) {
+		if (e instanceof GeneratorIdentificationNotFound && !!options.allowUnknownGenerator && options.onWarning) {
+			options.onWarning(
+				WarningCodes.UNKNOWN_GCODE_GENERATOR,
+				`The file was not produced by a recognised G-Code generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`,
+			);
+			return {
+				flavour: GCodeFlavour[GCodeFlavour.Unknown],
+				generator: 'unknown',
+				generatorTimestamp: '',
+				generatorVersion: '',
+				isProcessed: false,
+				printability: Printability.UNKNOWN,
+				wasAlreadyProcessed: false,
+				canDeprocess: false,
+				printabilityReasons: [e.message],
+			};
+		} else {
+			throw e;
+		}
+	}
 
 	if (gcf.printability === Printability.READY && !gcf.info.analysisResult) {
 		let progressStream: Transform | undefined;
@@ -108,6 +143,7 @@ export async function processGCode(
 	const gcfOptions = {
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+		allowUnknownGenerator: options.allowUnknownGenerator,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
 	};
@@ -118,7 +154,31 @@ export async function processGCode(
 		throw new Error(`${inputFile} is not a file`);
 	}
 
-	const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+	let gcf: GCodeFile;
+
+	try {
+		gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+	} catch (e) {
+		if (e instanceof GeneratorIdentificationNotFound && !!options.allowUnknownGenerator && options.onWarning) {
+			options.onWarning(
+				WarningCodes.UNKNOWN_GCODE_GENERATOR,
+				`The file was not produced by a recognised G-Code generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`,
+			);
+			return {
+				flavour: GCodeFlavour[GCodeFlavour.Unknown],
+				generator: 'unknown',
+				generatorTimestamp: '',
+				generatorVersion: '',
+				isProcessed: false,
+				printability: Printability.UNKNOWN,
+				wasAlreadyProcessed: false,
+				canDeprocess: false,
+				printabilityReasons: [e.message],
+			};
+		} else {
+			throw e;
+		}
+	}
 
 	if (gcf.printability !== Printability.MUST_PROCESS) {
 		return {

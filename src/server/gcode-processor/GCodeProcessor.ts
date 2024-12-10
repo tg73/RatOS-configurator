@@ -24,7 +24,8 @@ import { BookmarkCollection } from '@/server/gcode-processor/BookmarkingBufferEn
 import { Bookmark } from '@/server/gcode-processor/Bookmark';
 import { ProcessLineContext, SlidingWindowLineProcessor } from '@/server/gcode-processor/SlidingWindowLineProcessor';
 import { GCodeProcessorError, InternalError } from '@/server/gcode-processor/errors';
-import { GCodeFlavour, GCodeInfo, MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeInfo, MutableGCodeInfo } from '@/server/gcode-processor/GCodeInfo';
+import { GCodeFlavour } from '@/server/gcode-processor/GCodeFlavour';
 import { State } from '@/server/gcode-processor/State';
 import { exactlyOneBitSet } from '@/server/gcode-processor/helpers';
 import { Action, ActionFilter, REMOVED_BY_RATOS } from '@/server/gcode-processor/Actions';

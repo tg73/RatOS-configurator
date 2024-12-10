@@ -18,20 +18,7 @@ import { SemVer } from 'semver';
 import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
 import { AnalysisResult } from '@/server/gcode-processor/AnalysisResult';
-
-/** A known flavour of G-code. */
-export enum GCodeFlavour {
-	Unknown = 0,
-
-	PrusaSlicer = 1 << 0,
-	OrcaSlicer = 1 << 1,
-	SuperSlicer = 1 << 2,
-
-	/** Custom-generated G-code, may declare conformance with the RatOS dialect. This is yet to be defined. */
-	RatOS = 1 << 3,
-
-	Any = 0xffff,
-}
+import { GCodeFlavour } from '@/server/gcode-processor/GCodeFlavour';
 
 const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
 
