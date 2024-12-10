@@ -100948,7 +100948,6 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
       getStartPrint,
       // NB: sequence won't continue past whenCommonCommandDoThenStop when the current line matches a common command (Tn/G0/G1).
       subSequence(whenCommonCommandDoThenStop, [findFirstMoveXY]),
-      fixOtherLayerTemperature,
       captureConfigSection
     ];
   }
@@ -101567,7 +101566,20 @@ async function inspectGCode(inputFile, options) {
     onWarning: options.onWarning
   };
   const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
-  if (gcf.printability !== "MUST_PROCESS" /* MUST_PROCESS */) {
+  if (gcf.printability === "READY" /* READY */ && !gcf.info.analysisResult) {
+    let progressStream;
+    if (options.onProgress) {
+      progressStream = (0, import_progress_stream.default)({ length: inputStat.size });
+      progressStream.on("progress", options.onProgress);
+    }
+    return {
+      ...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
+      wasAlreadyProcessed: false,
+      printability: gcf.printability,
+      printabilityReasons: gcf.printabilityReasons,
+      canDeprocess: gcf.canDeprocess
+    };
+  } else {
     return {
       ...gcf.info.serialize(),
       wasAlreadyProcessed: gcf.info.isProcessed,
@@ -101576,18 +101588,6 @@ async function inspectGCode(inputFile, options) {
       canDeprocess: gcf.canDeprocess
     };
   }
-  let progressStream;
-  if (options.onProgress) {
-    progressStream = (0, import_progress_stream.default)({ length: inputStat.size });
-    progressStream.on("progress", options.onProgress);
-  }
-  return {
-    ...(await gcf.analyse({ progressTransform: progressStream, ...gcfOptions })).serialize(),
-    wasAlreadyProcessed: false,
-    printability: gcf.printability,
-    printabilityReasons: gcf.printabilityReasons,
-    canDeprocess: gcf.canDeprocess
-  };
 }
 async function processGCode(inputFile, outputFile, options) {
   const gcfOptions = {
