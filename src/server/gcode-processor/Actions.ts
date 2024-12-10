@@ -21,7 +21,7 @@ import semver from 'semver';
 import {
 	InternalError,
 	GCodeError,
-	SlicerIdentificationNotFound,
+	GeneratorIdentificationNotFound,
 	AlreadyProcessedError,
 	SlicerNotSupported,
 } from '@/server/gcode-processor/errors';
@@ -147,7 +147,7 @@ export const getGcodeInfo: Action = (c, s) => {
 		c.line + '\n' + c.getLineOrUndefined(1)?.line + '\n' + c.getLineOrUndefined(2)?.line + '\n',
 	);
 	if (!parsed) {
-		throw new SlicerIdentificationNotFound();
+		throw new GeneratorIdentificationNotFound();
 	} else {
 		if (parsed.postProcessorVersion) {
 			throw new AlreadyProcessedError(parsed);

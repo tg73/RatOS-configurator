@@ -15,7 +15,7 @@
  */
 
 import semver, { SemVer } from 'semver';
-import { GCodeError, InternalError, SlicerIdentificationNotFound } from '@/server/gcode-processor/errors';
+import { GCodeError, InternalError, GeneratorIdentificationNotFound } from '@/server/gcode-processor/errors';
 import date2 from 'date-and-time';
 import fsReader from '@/server/helpers/fs-reader.js';
 import util from 'node:util';
@@ -138,7 +138,7 @@ export class GCodeFile {
 		const gci = GCodeFile.tryParseHeader(header);
 
 		if (!gci) {
-			throw new SlicerIdentificationNotFound();
+			throw new GeneratorIdentificationNotFound();
 		}
 
 		if (gci.fileFormatVersion === undefined) {

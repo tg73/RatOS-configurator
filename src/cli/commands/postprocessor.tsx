@@ -209,7 +209,10 @@ export const postprocessor = (program: Command) => {
 		.option('-o, --overwrite', 'Overwrite the output file if it exists')
 		.option('-O, --overwrite-input', 'Overwrite the input file')
 		.option('-a, --allow-unsupported-slicer-versions', 'Allow unsupported slicer versions')
-		.option('-u, --allow-unknown-gcode', 'Allow gcode from generators that cannot be identified by the postprocessor')
+		.option(
+			'-u, --allow-unknown-generator',
+			'Allow gcode from generators that cannot be identified by the postprocessor',
+		)
 		.argument('<input>', 'Path to the gcode file to postprocess')
 		.argument('[output]', 'Path to the output gcode file (omit [output] and --overwrite-input for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
@@ -277,7 +280,7 @@ export const postprocessor = (program: Command) => {
 				idex: args.idex,
 				overwrite: args.overwrite || args.overwriteInput,
 				allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
-				allowUnknownGCode: args.allowUnknownGcode,
+				allowUnknownGenerator: args.allowUnknownGenerator,
 				onProgress,
 				onWarning: (code: string, message: string) => {
 					getLogger().trace(code, 'Warning during processing: ' + message);
@@ -299,7 +302,7 @@ export const postprocessor = (program: Command) => {
 						case WarningCodes.UNKNOWN_GCODE_GENERATOR:
 							toPostProcessorCLIOutput({
 								result: 'warning',
-								title: 'Unknown slicer',
+								title: 'Unknown g-code generator',
 								message: message,
 							});
 							break;

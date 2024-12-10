@@ -26,7 +26,7 @@ import { Transform } from 'node:stream';
 import { SerializedGcodeInfo } from '@/server/gcode-processor/GCodeInfo';
 import { GCodeFile } from '@/server/gcode-processor/GCodeFile';
 import { Printability } from '@/server/gcode-processor/Printability';
-import { SlicerIdentificationNotFound } from '@/server/gcode-processor/errors';
+import { GeneratorIdentificationNotFound } from '@/server/gcode-processor/errors';
 import { GCodeFlavour } from '@/server/gcode-processor/GCodeFlavour';
 import { WarningCodes } from '@/server/gcode-processor/WarningCodes';
 
@@ -51,7 +51,7 @@ interface CommonOptions {
 	 * {@link CommonOptions.onWarning} is specified, GCode files without a recognised header
 	 * will return a result with printability 'UNKNOWN'.
 	 */
-	allowUnknownGCode?: boolean;
+	allowUnknownGenerator?: boolean;
 }
 
 interface ProcessOptions extends CommonOptions {
@@ -77,7 +77,7 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 	const gcfOptions = {
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
-		allowUnknownGCode: options.allowUnknownGCode,
+		allowUnknownGenerator: options.allowUnknownGenerator,
 		quickInspectionOnly: !options.fullInspection,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
@@ -88,10 +88,10 @@ export async function inspectGCode(inputFile: string, options: InspectOptions): 
 	try {
 		gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 	} catch (e) {
-		if (e instanceof SlicerIdentificationNotFound && !!options.allowUnknownGCode && options.onWarning) {
+		if (e instanceof GeneratorIdentificationNotFound && !!options.allowUnknownGenerator && options.onWarning) {
 			options.onWarning(
 				WarningCodes.UNKNOWN_GCODE_GENERATOR,
-				`The file was not produced by a recognised slicer or generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`,
+				`The file was not produced by a recognised G-Code generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`,
 			);
 			return {
 				flavour: GCodeFlavour[GCodeFlavour.Unknown],
@@ -143,7 +143,7 @@ export async function processGCode(
 	const gcfOptions = {
 		printerHasIdex: options.idex,
 		allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
-		allowUnknownGCode: options.allowUnknownGCode,
+		allowUnknownGenerator: options.allowUnknownGenerator,
 		abortSignal: options.abortSignal,
 		onWarning: options.onWarning,
 	};
@@ -159,10 +159,10 @@ export async function processGCode(
 	try {
 		gcf = await GCodeFile.inspect(inputFile, gcfOptions);
 	} catch (e) {
-		if (e instanceof SlicerIdentificationNotFound && !!options.allowUnknownGCode && options.onWarning) {
+		if (e instanceof GeneratorIdentificationNotFound && !!options.allowUnknownGenerator && options.onWarning) {
 			options.onWarning(
 				WarningCodes.UNKNOWN_GCODE_GENERATOR,
-				`${inputFile} was not produced by a recognised slicer or generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`,
+				`The file was not produced by a recognised G-Code generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`,
 			);
 			return {
 				flavour: GCodeFlavour[GCodeFlavour.Unknown],

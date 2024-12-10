@@ -27,9 +27,9 @@ export class AlreadyProcessedError extends GCodeProcessorError {
 	}
 }
 
-export class SlicerIdentificationNotFound extends GCodeProcessorError {
+export class GeneratorIdentificationNotFound extends GCodeProcessorError {
 	constructor(message?: string) {
-		super(message ?? 'Valid slicer identification was not found.');
+		super(message ?? 'Valid G-Code generator identification was not found.');
 	}
 }
 
