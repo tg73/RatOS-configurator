@@ -39,6 +39,7 @@ import { AssertionError } from 'node:assert';
 import { AnalysisResult, AnalysisResultKind, AnalysisResultSchema } from '@/server/gcode-processor/AnalysisResult';
 import { Printability } from '@/server/gcode-processor/Printability';
 import { NullSink } from '@/server/gcode-processor/NullSink';
+import { PartialToNullableRequired, strictWithDefaults } from '@/utils/object-manipulation';
 
 function assert(condition: any, message?: string): asserts condition {
 	if (!condition) {
@@ -70,11 +71,36 @@ export type TransformOptions = { progressTransform?: Transform } & Pick<
 	GCodeProcessorOptions,
 	'abortSignal' | 'allowUnsupportedSlicerVersions' | 'onWarning' | 'printerHasIdex'
 >;
+
 export type AnalyseOptions = { progressTransform?: Transform } & GCodeProcessorOptions;
+
 export type InspectOptions = Pick<
 	GCodeProcessorOptions,
 	'onWarning' | 'allowUnsupportedSlicerVersions' | 'printerHasIdex'
 >;
+
+const defaultTransformOptions: PartialToNullableRequired<TransformOptions> = {
+	abortSignal: null,
+	progressTransform: null,
+	allowUnsupportedSlicerVersions: null,
+	onWarning: null,
+	printerHasIdex: null,
+};
+
+const defaultAnalyseOptions: PartialToNullableRequired<AnalyseOptions> = {
+	abortSignal: null,
+	progressTransform: null,
+	allowUnsupportedSlicerVersions: null,
+	onWarning: null,
+	printerHasIdex: null,
+	quickInspectionOnly: null,
+};
+
+const defaultInspectOptions: PartialToNullableRequired<InspectOptions> = {
+	allowUnsupportedSlicerVersions: null,
+	onWarning: null,
+	printerHasIdex: null,
+};
 
 const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
 
@@ -133,6 +159,8 @@ export class GCodeFile {
 
 	/** Factory. Returns GCodeFile with valid `info` or throws if the file header can't be parsed etc. */
 	public static async inspect(path: string, options: InspectOptions): Promise<GCodeFile> {
+		// Sanitise options to remove any extra properties that might be present at runtime.
+		options = strictWithDefaults(options, defaultInspectOptions);
 		const onWarning = options?.onWarning;
 		const header = await fsReaderGetLines(path, 4);
 		const gci = GCodeFile.tryParseHeader(header);
@@ -277,6 +305,8 @@ export class GCodeFile {
 
 	/** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be deprocessed on the fly (if already processed) and (re)transformed. */
 	public async transform(outputFile: string, options: TransformOptions): Promise<GCodeInfo> {
+		// Sanitise options to remove any extra properties that might be present at runtime.
+		options = strictWithDefaults(options, defaultTransformOptions);
 		let fh: FileHandle | undefined;
 		const gcodeProcessor = new GCodeProcessor(options);
 		const encoder = new BookmarkingBufferEncoder(undefined, undefined, options.abortSignal);
@@ -341,6 +371,8 @@ export class GCodeFile {
 
 	/** If the current file is already processed by the current GCodeHandling version, returns inputFile.info; otherwise, inputFile will be unprocessed on the fly (if already processed) and (re)analysed. */
 	public async analyse(options: AnalyseOptions): Promise<GCodeInfo> {
+		// Sanitise options to remove any extra properties that might be present at runtime.
+		options = strictWithDefaults(options, defaultAnalyseOptions);
 		const gcodeProcessor = new GCodeProcessor(options);
 
 		try {

@@ -337,14 +337,17 @@ export const postprocessor = (program: Command) => {
 				// My current opinion: rather overprocess than underprocess. Specific situations where skipping processing is OK
 				// can be handled in fancy ways later - i need to see that it's worth the complexity first.
 
+				// NOTE: processGCode is blind as to whether the input file requires transformation to be ready to print. Notably,
+				// in the --overwrite-input and not --idex scenario, the processGCode call will not actually lead to transformation,
+				// but only analysis. The fullAnalysis option applies only is this non-transformative scenario.
 				const result =
 					outputFile != null && outputFile.trim() !== ''
-						? await processGCode(inputFile, outputFile, opts)
-						: await inspectGCode(inputFile, { ...opts, fullInspection: false });
+						? await processGCode(inputFile, outputFile, { ...opts, fullAnalysis: false })
+						: await inspectGCode(inputFile, { ...opts, fullAnalysis: false });
 
 				getLogger().info(result, 'postprocessor result');
 
-				if (!result.wasAlreadyProcessed && args.overwriteInput) {
+				if (!result.wasAlreadyProcessed && args.overwriteInput && result.isProcessed) {
 					getLogger().info({ outputFile, inputFile }, 'renaming output file to input file');
 					fs.renameSync(outputFile, inputFile);
 				}
