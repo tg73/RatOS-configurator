@@ -39,6 +39,7 @@ import { AssertionError } from 'node:assert';
 import { AnalysisResult, AnalysisResultKind, AnalysisResultSchema } from '@/server/gcode-processor/AnalysisResult';
 import { Printability } from '@/server/gcode-processor/Printability';
 import { NullSink } from '@/server/gcode-processor/NullSink';
+import { PartialToNullableRequired, strictWithDefaults } from '@/utils/object-manipulation';
 
 function assert(condition: any, message?: string): asserts condition {
 	if (!condition) {
@@ -66,9 +67,6 @@ function assert(condition: any, message?: string): asserts condition {
  *
  */
 
-type static_assert<T extends true> = never;
-type AssertTypesAreEqual<T, U> = [T] extends [U] ? ([U] extends [T] ? true : false) : false;
-
 export type TransformOptions = { progressTransform?: Transform } & Pick<
 	GCodeProcessorOptions,
 	'abortSignal' | 'allowUnsupportedSlicerVersions' | 'onWarning' | 'printerHasIdex'
@@ -81,71 +79,28 @@ export type InspectOptions = Pick<
 	'onWarning' | 'allowUnsupportedSlicerVersions' | 'printerHasIdex'
 >;
 
-class TransformOptionsImpl implements TransformOptions {
-	private constructor(
-		public progressTransform?: Transform,
-		public abortSignal?: AbortSignal,
-		public allowUnsupportedSlicerVersions?: boolean,
-		public onWarning?: (code: string, message: string) => void,
-		public printerHasIdex?: boolean,
-	) {}
+const defaultTransformOptions: PartialToNullableRequired<TransformOptions> = {
+	abortSignal: null,
+	progressTransform: null,
+	allowUnsupportedSlicerVersions: null,
+	onWarning: null,
+	printerHasIdex: null,
+};
 
-	public static from(opts: TransformOptions): TransformOptions {
-		return new TransformOptionsImpl(
-			opts.progressTransform,
-			opts.abortSignal,
-			opts.allowUnsupportedSlicerVersions,
-			opts.onWarning,
-			opts.printerHasIdex,
-		);
-	}
-}
+const defaultAnalyseOptions: PartialToNullableRequired<AnalyseOptions> = {
+	abortSignal: null,
+	progressTransform: null,
+	allowUnsupportedSlicerVersions: null,
+	onWarning: null,
+	printerHasIdex: null,
+	quickInspectionOnly: null,
+};
 
-type checkTransformOptionsImplIsFresh = static_assert<
-	AssertTypesAreEqual<Required<TransformOptions>, Required<TransformOptionsImpl>>
->;
-
-class AnalyseOptionsImpl implements AnalyseOptions {
-	private constructor(
-		public progressTransform?: Transform,
-		public printerHasIdex?: boolean,
-		public quickInspectionOnly?: boolean,
-		public allowUnsupportedSlicerVersions?: boolean,
-		public onWarning?: (code: string, message: string) => void,
-		public abortSignal?: AbortSignal,
-	) {}
-
-	public static from(opts: AnalyseOptions) {
-		return new AnalyseOptionsImpl(
-			opts.progressTransform,
-			opts.printerHasIdex,
-			opts.quickInspectionOnly,
-			opts.allowUnsupportedSlicerVersions,
-			opts.onWarning,
-			opts.abortSignal,
-		);
-	}
-}
-
-type checkAnalyseOptionsImplIsFresh = static_assert<
-	AssertTypesAreEqual<Required<AnalyseOptions>, Required<AnalyseOptionsImpl>>
->;
-
-class InspectOptionsImpl implements InspectOptions {
-	private constructor(
-		public allowUnsupportedSlicerVersions?: boolean,
-		public onWarning?: (code: string, message: string) => void,
-		public printerHasIdex?: boolean,
-	) {}
-
-	public static from(opts: InspectOptions) {
-		return new InspectOptionsImpl(opts.allowUnsupportedSlicerVersions, opts.onWarning, opts.printerHasIdex);
-	}
-}
-
-type checkInspectOptionsImplIsFresh = static_assert<
-	AssertTypesAreEqual<Required<InspectOptions>, Required<InspectOptionsImpl>>
->;
+const defaultInspectOptions: PartialToNullableRequired<InspectOptions> = {
+	allowUnsupportedSlicerVersions: null,
+	onWarning: null,
+	printerHasIdex: null,
+};
 
 const fsReaderGetLines = util.promisify(fsReader) as (path: string, lines: number) => Promise<string>;
 
@@ -205,7 +160,7 @@ export class GCodeFile {
 	/** Factory. Returns GCodeFile with valid `info` or throws if the file header can't be parsed etc. */
 	public static async inspect(path: string, options: InspectOptions): Promise<GCodeFile> {
 		// Sanitise options to remove any extra properties that might be present at runtime.
-		options = InspectOptionsImpl.from(options);
+		options = strictWithDefaults(options, defaultInspectOptions);
 		const onWarning = options?.onWarning;
 		const header = await fsReaderGetLines(path, 4);
 		const gci = GCodeFile.tryParseHeader(header);
@@ -351,7 +306,7 @@ export class GCodeFile {
 	/** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be deprocessed on the fly (if already processed) and (re)transformed. */
 	public async transform(outputFile: string, options: TransformOptions): Promise<GCodeInfo> {
 		// Sanitise options to remove any extra properties that might be present at runtime.
-		options = TransformOptionsImpl.from(options);
+		options = strictWithDefaults(options, defaultTransformOptions);
 		let fh: FileHandle | undefined;
 		const gcodeProcessor = new GCodeProcessor(options);
 		const encoder = new BookmarkingBufferEncoder(undefined, undefined, options.abortSignal);
@@ -417,7 +372,7 @@ export class GCodeFile {
 	/** If the current file is already processed by the current GCodeHandling version, returns inputFile.info; otherwise, inputFile will be unprocessed on the fly (if already processed) and (re)analysed. */
 	public async analyse(options: AnalyseOptions): Promise<GCodeInfo> {
 		// Sanitise options to remove any extra properties that might be present at runtime.
-		options = AnalyseOptionsImpl.from(options);
+		options = strictWithDefaults(options, defaultAnalyseOptions);
 		const gcodeProcessor = new GCodeProcessor(options);
 
 		try {
