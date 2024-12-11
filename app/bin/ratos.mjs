@@ -101222,12 +101222,51 @@ var NullSink = class extends Writable {
   }
 };
 
+// ../utils/object-manipulation.ts
+init_cjs_shim();
+var removeNulledProperties = (opts) => {
+  const result = { ...opts };
+  Object.keys(opts).forEach((opt) => {
+    if (result[opt] === null) {
+      delete result[opt];
+    }
+  });
+  return result;
+};
+var strictWithDefaults = (opts, structure) => {
+  return removeNulledProperties(
+    Object.fromEntries(
+      Object.keys(structure).map((k) => [k, opts[k] ?? null])
+    )
+  );
+};
+
 // ../server/gcode-processor/GCodeFile.ts
 function assert(condition, message) {
   if (!condition) {
     throw new AssertionError({ message });
   }
 }
+var defaultTransformOptions = {
+  abortSignal: null,
+  progressTransform: null,
+  allowUnsupportedSlicerVersions: null,
+  onWarning: null,
+  printerHasIdex: null
+};
+var defaultAnalyseOptions = {
+  abortSignal: null,
+  progressTransform: null,
+  allowUnsupportedSlicerVersions: null,
+  onWarning: null,
+  printerHasIdex: null,
+  quickInspectionOnly: null
+};
+var defaultInspectOptions = {
+  allowUnsupportedSlicerVersions: null,
+  onWarning: null,
+  printerHasIdex: null
+};
 var fsReaderGetLines2 = util3.promisify(import_fs_reader2.default);
 var rxRatosMeta = /(?:^; ratos_meta begin (\d+)\n(.*))?\n; ratos_meta end (\d+)$/ms;
 var rxGeneratorHeader = /^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im;
@@ -101268,6 +101307,7 @@ var GCodeFile = class _GCodeFile {
   }
   /** Factory. Returns GCodeFile with valid `info` or throws if the file header can't be parsed etc. */
   static async inspect(path10, options) {
+    options = strictWithDefaults(options, defaultInspectOptions);
     const onWarning = options?.onWarning;
     const header = await fsReaderGetLines2(path10, 4);
     const gci = _GCodeFile.tryParseHeader(header);
@@ -101385,6 +101425,7 @@ var GCodeFile = class _GCodeFile {
   }
   /** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be deprocessed on the fly (if already processed) and (re)transformed. */
   async transform(outputFile, options) {
+    options = strictWithDefaults(options, defaultTransformOptions);
     let fh;
     const gcodeProcessor = new GCodeProcessor(options);
     const encoder = new BookmarkingBufferEncoder(void 0, void 0, options.abortSignal);
@@ -101441,6 +101482,7 @@ var GCodeFile = class _GCodeFile {
   }
   /** If the current file is already processed by the current GCodeHandling version, returns inputFile.info; otherwise, inputFile will be unprocessed on the fly (if already processed) and (re)analysed. */
   async analyse(options) {
+    options = strictWithDefaults(options, defaultAnalyseOptions);
     const gcodeProcessor = new GCodeProcessor(options);
     try {
       if (options.progressTransform) {
@@ -101558,7 +101600,7 @@ async function inspectGCode(inputFile, options) {
     printerHasIdex: options.idex,
     allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
     allowUnknownGenerator: options.allowUnknownGenerator,
-    quickInspectionOnly: !options.fullInspection,
+    quickInspectionOnly: !options.fullAnalysis,
     abortSignal: options.abortSignal,
     onWarning: options.onWarning
   };
@@ -101614,6 +101656,7 @@ async function processGCode(inputFile, outputFile, options) {
     printerHasIdex: options.idex,
     allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
     allowUnknownGenerator: options.allowUnknownGenerator,
+    quickInspectionOnly: !options.fullAnalysis,
     abortSignal: options.abortSignal,
     onWarning: options.onWarning
   };
@@ -101646,7 +101689,20 @@ async function processGCode(inputFile, outputFile, options) {
       throw e;
     }
   }
-  if (gcf.printability !== "MUST_PROCESS" /* MUST_PROCESS */) {
+  if (gcf.printability === "READY" /* READY */ && !gcf.info.analysisResult) {
+    let progressStream2;
+    if (options.onProgress) {
+      progressStream2 = (0, import_progress_stream.default)({ length: inputStat.size });
+      progressStream2.on("progress", options.onProgress);
+    }
+    return {
+      ...(await gcf.analyse({ progressTransform: progressStream2, ...gcfOptions })).serialize(),
+      wasAlreadyProcessed: false,
+      printability: gcf.printability,
+      printabilityReasons: gcf.printabilityReasons,
+      canDeprocess: gcf.canDeprocess
+    };
+  } else if (gcf.printability !== "MUST_PROCESS" /* MUST_PROCESS */) {
     return {
       ...gcf.info.serialize(),
       wasAlreadyProcessed: gcf.info.isProcessed,
@@ -109554,9 +109610,9 @@ var postprocessor = (program3) => {
       if (args.overwriteInput) {
         outputFile = tmpfile();
       }
-      const result = outputFile != null && outputFile.trim() !== "" ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
+      const result = outputFile != null && outputFile.trim() !== "" ? await processGCode(inputFile, outputFile, { ...opts, fullAnalysis: false }) : await inspectGCode(inputFile, { ...opts, fullAnalysis: false });
       getLogger().info(result, "postprocessor result");
-      if (!result.wasAlreadyProcessed && args.overwriteInput) {
+      if (!result.wasAlreadyProcessed && args.overwriteInput && result.isProcessed) {
         getLogger().info({ outputFile, inputFile }, "renaming output file to input file");
         fs2.renameSync(outputFile, inputFile);
       }
