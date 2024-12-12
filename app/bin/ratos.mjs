@@ -101377,7 +101377,7 @@ var GCodeFile = class _GCodeFile {
           printability = "MUST_REPROCESS" /* MUST_REPROCESS */;
         } else {
           reasons.push(
-            currentVersion.minor === gci.postProcessorVersion.minor ? "There have been enhancements and/or bug fixes since the file was last processed." : "There have been bug fixes since the file was last processed."
+            currentVersion.minor === gci.postProcessorVersion.minor ? "There have been bug fixes since the file was last processed." : "There have been enhancements and/or bug fixes since the file was last processed."
           );
           printability = "COULD_REPROCESS" /* COULD_REPROCESS */;
         }
