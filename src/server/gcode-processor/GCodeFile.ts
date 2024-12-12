@@ -240,8 +240,8 @@ export class GCodeFile {
 				} else {
 					reasons.push(
 						currentVersion.minor === gci.postProcessorVersion.minor
-							? 'There have been enhancements and/or bug fixes since the file was last processed.'
-							: 'There have been bug fixes since the file was last processed.',
+							? 'There have been bug fixes since the file was last processed.'
+							: 'There have been enhancements and/or bug fixes since the file was last processed.',
 					);
 					printability = Printability.COULD_REPROCESS;
 				}
