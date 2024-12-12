@@ -3,7 +3,9 @@ name: Publish to dev-deployment
 on:
   workflow_run:
     workflows: ["CI"] # runs after CI workflow
-    branches: ["development"]
+    branches:
+      - "development"
+      - "**/devpub/**"
     types:
       - completed
 
@@ -20,13 +22,20 @@ jobs:
         run: |
           echo "CI step didn't pass, exiting"
           exit 1
-      - name: Set variables
+      - if: github.ref_name == 'development'
+        name: Set variables for development
         id: variables
         shell: bash
         run: |
           echo "target-branch=dev-deployment" >> "$GITHUB_OUTPUT"
           echo "src-branch=development" >> "$GITHUB_OUTPUT"
-
+      - if: github.ref_name != 'development'
+        name: Set variables (not for development)
+        id: variables_not_development
+        shell: bash
+        run: |
+          echo "target-branch=${{github.ref_name}}-deployment" >> "$GITHUB_OUTPUT"
+          echo "src-branch=${{github.ref_name}}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v3
         with:
           ref: ${{ steps.variables.outputs.src-branch }}
