@@ -14,6 +14,7 @@ on:
       - "development"
       - "v2.1.x"
       - "monorepo"
+      - "**/devpub/**"
   pull_request:
     branches:
       - "**"
@@ -73,7 +74,7 @@ jobs:
 
       - name: Checkout RatOS Configuration
         uses: actions/checkout@v4
-        if: github.ref_name != 'monorepo'
+        if: github.ref_name != 'monorepo' && !contains(github.ref_name, '/devpub/')
         with:
           repository: Rat-OS/RatOS-configuration
           path: "ratos-configuration"
