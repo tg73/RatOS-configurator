@@ -18,5 +18,5 @@ import { SemVer } from 'semver';
 
 // TODO: implement
 export async function getPostProcessorVersion(): Promise<SemVer> {
-	return new SemVer('1.0.0');
+	return new SemVer('1.1.0');
 }
