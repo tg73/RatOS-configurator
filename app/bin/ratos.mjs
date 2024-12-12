@@ -43332,7 +43332,7 @@ var require_websocket = __commonJS({
     var net = __require("net");
     var tls = __require("tls");
     var { randomBytes, createHash } = __require("crypto");
-    var { Duplex, Readable: Readable2 } = __require("stream");
+    var { Duplex, Readable } = __require("stream");
     var { URL: URL2 } = __require("url");
     var PerMessageDeflate = require_permessage_deflate();
     var Receiver2 = require_receiver();
@@ -75144,10 +75144,10 @@ var require_from = __commonJS({
     var { PromisePrototypeThen, SymbolAsyncIterator, SymbolIterator } = require_primordials();
     var { Buffer: Buffer2 } = __require("buffer");
     var { ERR_INVALID_ARG_TYPE, ERR_STREAM_NULL_VALUES } = require_errors().codes;
-    function from(Readable2, iterable, opts) {
+    function from(Readable, iterable, opts) {
       let iterator;
       if (typeof iterable === "string" || iterable instanceof Buffer2) {
-        return new Readable2({
+        return new Readable({
           objectMode: true,
           ...opts,
           read() {
@@ -75166,7 +75166,7 @@ var require_from = __commonJS({
       } else {
         throw new ERR_INVALID_ARG_TYPE("iterable", ["Iterable"], iterable);
       }
-      const readable = new Readable2({
+      const readable = new Readable({
         objectMode: true,
         highWaterMark: 1,
         // TODO(ronag): What options should be allowed?
@@ -75249,8 +75249,8 @@ var require_readable = __commonJS({
       SymbolAsyncIterator,
       Symbol: Symbol2
     } = require_primordials();
-    module.exports = Readable2;
-    Readable2.ReadableState = ReadableState;
+    module.exports = Readable;
+    Readable.ReadableState = ReadableState;
     var { EventEmitter: EE } = __require("events");
     var { Stream: Stream2, prependListener } = require_legacy();
     var { Buffer: Buffer2 } = __require("buffer");
@@ -75276,8 +75276,8 @@ var require_readable = __commonJS({
     var kPaused = Symbol2("kPaused");
     var { StringDecoder } = __require("string_decoder");
     var from = require_from();
-    ObjectSetPrototypeOf(Readable2.prototype, Stream2.prototype);
-    ObjectSetPrototypeOf(Readable2, Stream2);
+    ObjectSetPrototypeOf(Readable.prototype, Stream2.prototype);
+    ObjectSetPrototypeOf(Readable, Stream2);
     var nop = () => {
     };
     var { errorOrDestroy } = destroyImpl;
@@ -75321,9 +75321,9 @@ var require_readable = __commonJS({
         this.encoding = options.encoding;
       }
     }
-    function Readable2(options) {
-      if (!(this instanceof Readable2))
-        return new Readable2(options);
+    function Readable(options) {
+      if (!(this instanceof Readable))
+        return new Readable(options);
       const isDuplex = this instanceof require_duplex();
       this._readableState = new ReadableState(options, this, isDuplex);
       if (options) {
@@ -75343,18 +75343,18 @@ var require_readable = __commonJS({
         }
       });
     }
-    Readable2.prototype.destroy = destroyImpl.destroy;
-    Readable2.prototype._undestroy = destroyImpl.undestroy;
-    Readable2.prototype._destroy = function(err, cb) {
+    Readable.prototype.destroy = destroyImpl.destroy;
+    Readable.prototype._undestroy = destroyImpl.undestroy;
+    Readable.prototype._destroy = function(err, cb) {
       cb(err);
     };
-    Readable2.prototype[EE.captureRejectionSymbol] = function(err) {
+    Readable.prototype[EE.captureRejectionSymbol] = function(err) {
       this.destroy(err);
     };
-    Readable2.prototype.push = function(chunk, encoding) {
+    Readable.prototype.push = function(chunk, encoding) {
       return readableAddChunk(this, chunk, encoding, false);
     };
-    Readable2.prototype.unshift = function(chunk, encoding) {
+    Readable.prototype.unshift = function(chunk, encoding) {
       return readableAddChunk(this, chunk, encoding, true);
     };
     function readableAddChunk(stream, chunk, encoding, addToFront) {
@@ -75436,11 +75436,11 @@ var require_readable = __commonJS({
       }
       maybeReadMore(stream, state);
     }
-    Readable2.prototype.isPaused = function() {
+    Readable.prototype.isPaused = function() {
       const state = this._readableState;
       return state[kPaused] === true || state.flowing === false;
     };
-    Readable2.prototype.setEncoding = function(enc) {
+    Readable.prototype.setEncoding = function(enc) {
       const decoder = new StringDecoder(enc);
       this._readableState.decoder = decoder;
       this._readableState.encoding = this._readableState.decoder.encoding;
@@ -75484,7 +75484,7 @@ var require_readable = __commonJS({
         return n2;
       return state.ended ? state.length : 0;
     }
-    Readable2.prototype.read = function(n2) {
+    Readable.prototype.read = function(n2) {
       debug("read", n2);
       if (n2 === void 0) {
         n2 = NaN;
@@ -75619,10 +75619,10 @@ var require_readable = __commonJS({
       }
       state.readingMore = false;
     }
-    Readable2.prototype._read = function(n2) {
+    Readable.prototype._read = function(n2) {
       throw new ERR_METHOD_NOT_IMPLEMENTED("_read()");
     };
-    Readable2.prototype.pipe = function(dest, pipeOpts) {
+    Readable.prototype.pipe = function(dest, pipeOpts) {
       const src = this;
       const state = this._readableState;
       if (state.pipes.length === 1) {
@@ -75752,7 +75752,7 @@ var require_readable = __commonJS({
         }
       };
     }
-    Readable2.prototype.unpipe = function(dest) {
+    Readable.prototype.unpipe = function(dest) {
       const state = this._readableState;
       const unpipeInfo = {
         hasUnpiped: false
@@ -75778,7 +75778,7 @@ var require_readable = __commonJS({
       dest.emit("unpipe", this, unpipeInfo);
       return this;
     };
-    Readable2.prototype.on = function(ev, fn) {
+    Readable.prototype.on = function(ev, fn) {
       const res = Stream2.prototype.on.call(this, ev, fn);
       const state = this._readableState;
       if (ev === "data") {
@@ -75800,16 +75800,16 @@ var require_readable = __commonJS({
       }
       return res;
     };
-    Readable2.prototype.addListener = Readable2.prototype.on;
-    Readable2.prototype.removeListener = function(ev, fn) {
+    Readable.prototype.addListener = Readable.prototype.on;
+    Readable.prototype.removeListener = function(ev, fn) {
       const res = Stream2.prototype.removeListener.call(this, ev, fn);
       if (ev === "readable") {
         process15.nextTick(updateReadableListening, this);
       }
       return res;
     };
-    Readable2.prototype.off = Readable2.prototype.removeListener;
-    Readable2.prototype.removeAllListeners = function(ev) {
+    Readable.prototype.off = Readable.prototype.removeListener;
+    Readable.prototype.removeAllListeners = function(ev) {
       const res = Stream2.prototype.removeAllListeners.apply(this, arguments);
       if (ev === "readable" || ev === void 0) {
         process15.nextTick(updateReadableListening, this);
@@ -75831,7 +75831,7 @@ var require_readable = __commonJS({
       debug("readable nexttick read 0");
       self2.read(0);
     }
-    Readable2.prototype.resume = function() {
+    Readable.prototype.resume = function() {
       const state = this._readableState;
       if (!state.flowing) {
         debug("resume");
@@ -75858,7 +75858,7 @@ var require_readable = __commonJS({
       if (state.flowing && !state.reading)
         stream.read(0);
     }
-    Readable2.prototype.pause = function() {
+    Readable.prototype.pause = function() {
       debug("call pause flowing=%j", this._readableState.flowing);
       if (this._readableState.flowing !== false) {
         debug("pause");
@@ -75874,7 +75874,7 @@ var require_readable = __commonJS({
       while (state.flowing && stream.read() !== null)
         ;
     }
-    Readable2.prototype.wrap = function(stream) {
+    Readable.prototype.wrap = function(stream) {
       let paused = false;
       stream.on("data", (chunk) => {
         if (!this.push(chunk) && stream.pause) {
@@ -75909,10 +75909,10 @@ var require_readable = __commonJS({
       }
       return this;
     };
-    Readable2.prototype[SymbolAsyncIterator] = function() {
+    Readable.prototype[SymbolAsyncIterator] = function() {
       return streamToAsyncIterator(this);
     };
-    Readable2.prototype.iterator = function(options) {
+    Readable.prototype.iterator = function(options) {
       if (options !== void 0) {
         validateObject(options, "options");
       }
@@ -75920,7 +75920,7 @@ var require_readable = __commonJS({
     };
     function streamToAsyncIterator(stream, options) {
       if (typeof stream.read !== "function") {
-        stream = Readable2.wrap(stream, {
+        stream = Readable.wrap(stream, {
           objectMode: true
         });
       }
@@ -75976,7 +75976,7 @@ var require_readable = __commonJS({
         }
       }
     }
-    ObjectDefineProperties(Readable2.prototype, {
+    ObjectDefineProperties(Readable.prototype, {
       readable: {
         __proto__: null,
         get() {
@@ -76103,7 +76103,7 @@ var require_readable = __commonJS({
         }
       }
     });
-    Readable2._fromList = fromList;
+    Readable._fromList = fromList;
     function fromList(n2, state) {
       if (state.length === 0)
         return null;
@@ -76155,8 +76155,8 @@ var require_readable = __commonJS({
         stream.end();
       }
     }
-    Readable2.from = function(iterable, opts) {
-      return from(Readable2, iterable, opts);
+    Readable.from = function(iterable, opts) {
+      return from(Readable, iterable, opts);
     };
     var webStreamsAdapters;
     function lazyWebStreams() {
@@ -76164,15 +76164,15 @@ var require_readable = __commonJS({
         webStreamsAdapters = {};
       return webStreamsAdapters;
     }
-    Readable2.fromWeb = function(readableStream, options) {
+    Readable.fromWeb = function(readableStream, options) {
       return lazyWebStreams().newStreamReadableFromReadableStream(readableStream, options);
     };
-    Readable2.toWeb = function(streamReadable, options) {
+    Readable.toWeb = function(streamReadable, options) {
       return lazyWebStreams().newReadableStreamFromStreamReadable(streamReadable, options);
     };
-    Readable2.wrap = function(src, options) {
+    Readable.wrap = function(src, options) {
       var _ref, _src$readableObjectMo;
-      return new Readable2({
+      return new Readable({
         objectMode: (_ref = (_src$readableObjectMo = src.readableObjectMode) !== null && _src$readableObjectMo !== void 0 ? _src$readableObjectMo : src.objectMode) !== null && _ref !== void 0 ? _ref : true,
         ...options,
         destroy(err, callback) {
@@ -76850,7 +76850,7 @@ var require_duplexify = __commonJS({
     } = require_errors();
     var { destroyer } = require_destroy();
     var Duplex = require_duplex();
-    var Readable2 = require_readable();
+    var Readable = require_readable();
     var { createDeferredPromise } = require_util();
     var from = require_from();
     var Blob = globalThis.Blob || bufferModule.Blob;
@@ -77051,7 +77051,7 @@ var require_duplexify = __commonJS({
       };
     }
     function _duplexify(pair) {
-      const r = pair.readable && typeof pair.readable.read !== "function" ? Readable2.wrap(pair.readable) : pair.readable;
+      const r = pair.readable && typeof pair.readable.read !== "function" ? Readable.wrap(pair.readable) : pair.readable;
       const w = pair.writable;
       let readable = !!isReadable(r);
       let writable = !!isWritable(w);
@@ -77175,10 +77175,10 @@ var require_duplex = __commonJS({
       ObjectSetPrototypeOf
     } = require_primordials();
     module.exports = Duplex;
-    var Readable2 = require_readable();
+    var Readable = require_readable();
     var Writable2 = require_writable();
-    ObjectSetPrototypeOf(Duplex.prototype, Readable2.prototype);
-    ObjectSetPrototypeOf(Duplex, Readable2);
+    ObjectSetPrototypeOf(Duplex.prototype, Readable.prototype);
+    ObjectSetPrototypeOf(Duplex, Readable);
     {
       const keys = ObjectKeys(Writable2.prototype);
       for (let i = 0; i < keys.length; i++) {
@@ -77190,7 +77190,7 @@ var require_duplex = __commonJS({
     function Duplex(options) {
       if (!(this instanceof Duplex))
         return new Duplex(options);
-      Readable2.call(this, options);
+      Readable.call(this, options);
       Writable2.call(this, options);
       if (options) {
         this.allowHalfOpen = options.allowHalfOpen !== false;
@@ -77290,16 +77290,16 @@ var require_transform = __commonJS({
     "use strict";
     init_cjs_shim();
     var { ObjectSetPrototypeOf, Symbol: Symbol2 } = require_primordials();
-    module.exports = Transform5;
+    module.exports = Transform4;
     var { ERR_METHOD_NOT_IMPLEMENTED } = require_errors().codes;
     var Duplex = require_duplex();
     var { getHighWaterMark } = require_state2();
-    ObjectSetPrototypeOf(Transform5.prototype, Duplex.prototype);
-    ObjectSetPrototypeOf(Transform5, Duplex);
+    ObjectSetPrototypeOf(Transform4.prototype, Duplex.prototype);
+    ObjectSetPrototypeOf(Transform4, Duplex);
     var kCallback = Symbol2("kCallback");
-    function Transform5(options) {
-      if (!(this instanceof Transform5))
-        return new Transform5(options);
+    function Transform4(options) {
+      if (!(this instanceof Transform4))
+        return new Transform4(options);
       const readableHighWaterMark = options ? getHighWaterMark(this, options, "readableHighWaterMark", true) : null;
       if (readableHighWaterMark === 0) {
         options = {
@@ -77355,11 +77355,11 @@ var require_transform = __commonJS({
         final.call(this);
       }
     }
-    Transform5.prototype._final = final;
-    Transform5.prototype._transform = function(chunk, encoding, callback) {
+    Transform4.prototype._final = final;
+    Transform4.prototype._transform = function(chunk, encoding, callback) {
       throw new ERR_METHOD_NOT_IMPLEMENTED("_transform()");
     };
-    Transform5.prototype._write = function(chunk, encoding, callback) {
+    Transform4.prototype._write = function(chunk, encoding, callback) {
       const rState = this._readableState;
       const wState = this._writableState;
       const length = rState.length;
@@ -77380,7 +77380,7 @@ var require_transform = __commonJS({
         }
       });
     };
-    Transform5.prototype._read = function() {
+    Transform4.prototype._read = function() {
       if (this[kCallback]) {
         const callback = this[kCallback];
         this[kCallback] = null;
@@ -77397,13 +77397,13 @@ var require_passthrough = __commonJS({
     init_cjs_shim();
     var { ObjectSetPrototypeOf } = require_primordials();
     module.exports = PassThrough2;
-    var Transform5 = require_transform();
-    ObjectSetPrototypeOf(PassThrough2.prototype, Transform5.prototype);
-    ObjectSetPrototypeOf(PassThrough2, Transform5);
+    var Transform4 = require_transform();
+    ObjectSetPrototypeOf(PassThrough2.prototype, Transform4.prototype);
+    ObjectSetPrototypeOf(PassThrough2, Transform4);
     function PassThrough2(options) {
       if (!(this instanceof PassThrough2))
         return new PassThrough2(options);
-      Transform5.call(this, options);
+      Transform4.call(this, options);
     }
     PassThrough2.prototype._transform = function(chunk, encoding, cb) {
       cb(null, chunk);
@@ -77436,7 +77436,7 @@ var require_pipeline = __commonJS({
     var { isIterable, isReadable, isReadableNodeStream, isNodeStream } = require_utils();
     var AbortController2 = globalThis.AbortController || require_abort_controller().AbortController;
     var PassThrough2;
-    var Readable2;
+    var Readable;
     function destroyer(stream, reading, writing) {
       let finished = false;
       stream.on("close", () => {
@@ -77475,10 +77475,10 @@ var require_pipeline = __commonJS({
       throw new ERR_INVALID_ARG_TYPE("val", ["Readable", "Iterable", "AsyncIterable"], val);
     }
     async function* fromReadable(val) {
-      if (!Readable2) {
-        Readable2 = require_readable();
+      if (!Readable) {
+        Readable = require_readable();
       }
-      yield* Readable2.prototype[SymbolAsyncIterator].call(val);
+      yield* Readable.prototype[SymbolAsyncIterator].call(val);
     }
     async function pump(iterable, writable, finish, { end }) {
       let error;
@@ -78115,7 +78115,7 @@ var require_split2 = __commonJS({
   "../node_modules/.pnpm/split2@4.2.0/node_modules/split2/index.js"(exports, module) {
     "use strict";
     init_cjs_shim();
-    var { Transform: Transform5 } = __require("stream");
+    var { Transform: Transform4 } = __require("stream");
     var { StringDecoder } = __require("string_decoder");
     var kLast = Symbol("last");
     var kDecoder = Symbol("decoder");
@@ -78195,7 +78195,7 @@ var require_split2 = __commonJS({
       options.transform = transform;
       options.flush = flush;
       options.readableObjectMode = true;
-      const stream = new Transform5(options);
+      const stream = new Transform4(options);
       stream[kLast] = "";
       stream[kDecoder] = new StringDecoder("utf8");
       stream.matcher = matcher;
@@ -80546,7 +80546,7 @@ var require_pino_pretty = __commonJS({
     init_cjs_shim();
     var { isColorSupported } = require_colorette();
     var pump = require_pump();
-    var { Transform: Transform5 } = require_ours();
+    var { Transform: Transform4 } = require_ours();
     var abstractTransport = require_pino_abstract_transport();
     var colors = require_colors();
     var {
@@ -80592,7 +80592,7 @@ var require_pino_pretty = __commonJS({
     function build(opts = {}) {
       const pretty3 = prettyFactory(opts);
       return abstractTransport(function(source) {
-        const stream = new Transform5({
+        const stream = new Transform4({
           objectMode: true,
           autoDestroy: true,
           transform(chunk, enc, cb) {
@@ -81520,9 +81520,9 @@ var require_stream_duplex = __commonJS({
     module.exports = Duplex;
     var util4 = Object.create(require_util2());
     util4.inherits = require_inherits();
-    var Readable2 = require_stream_readable();
+    var Readable = require_stream_readable();
     var Writable2 = require_stream_writable();
-    util4.inherits(Duplex, Readable2);
+    util4.inherits(Duplex, Readable);
     {
       keys = objectKeys(Writable2.prototype);
       for (v = 0; v < keys.length; v++) {
@@ -81537,7 +81537,7 @@ var require_stream_duplex = __commonJS({
     function Duplex(options) {
       if (!(this instanceof Duplex))
         return new Duplex(options);
-      Readable2.call(this, options);
+      Readable.call(this, options);
       Writable2.call(this, options);
       if (options && options.readable === false)
         this.readable = false;
@@ -81855,10 +81855,10 @@ var require_stream_readable = __commonJS({
     "use strict";
     init_cjs_shim();
     var pna = require_process_nextick_args();
-    module.exports = Readable2;
+    module.exports = Readable;
     var isArray = require_isarray();
     var Duplex;
-    Readable2.ReadableState = ReadableState;
+    Readable.ReadableState = ReadableState;
     var EE = __require("events").EventEmitter;
     var EElistenerCount = function(emitter, type) {
       return emitter.listeners(type).length;
@@ -81886,7 +81886,7 @@ var require_stream_readable = __commonJS({
     var BufferList = require_BufferList();
     var destroyImpl = require_destroy2();
     var StringDecoder;
-    util4.inherits(Readable2, Stream2);
+    util4.inherits(Readable, Stream2);
     var kProxyEvents = ["error", "close", "destroy", "pause", "resume"];
     function prependListener(emitter, event, fn) {
       if (typeof emitter.prependListener === "function")
@@ -81941,10 +81941,10 @@ var require_stream_readable = __commonJS({
         this.encoding = options.encoding;
       }
     }
-    function Readable2(options) {
+    function Readable(options) {
       Duplex = Duplex || require_stream_duplex();
-      if (!(this instanceof Readable2))
-        return new Readable2(options);
+      if (!(this instanceof Readable))
+        return new Readable(options);
       this._readableState = new ReadableState(options, this);
       this.readable = true;
       if (options) {
@@ -81955,7 +81955,7 @@ var require_stream_readable = __commonJS({
       }
       Stream2.call(this);
     }
-    Object.defineProperty(Readable2.prototype, "destroyed", {
+    Object.defineProperty(Readable.prototype, "destroyed", {
       get: function() {
         if (this._readableState === void 0) {
           return false;
@@ -81969,13 +81969,13 @@ var require_stream_readable = __commonJS({
         this._readableState.destroyed = value;
       }
     });
-    Readable2.prototype.destroy = destroyImpl.destroy;
-    Readable2.prototype._undestroy = destroyImpl.undestroy;
-    Readable2.prototype._destroy = function(err, cb) {
+    Readable.prototype.destroy = destroyImpl.destroy;
+    Readable.prototype._undestroy = destroyImpl.undestroy;
+    Readable.prototype._destroy = function(err, cb) {
       this.push(null);
       cb(err);
     };
-    Readable2.prototype.push = function(chunk, encoding) {
+    Readable.prototype.push = function(chunk, encoding) {
       var state = this._readableState;
       var skipChunkCheck;
       if (!state.objectMode) {
@@ -81992,7 +81992,7 @@ var require_stream_readable = __commonJS({
       }
       return readableAddChunk(this, chunk, encoding, false, skipChunkCheck);
     };
-    Readable2.prototype.unshift = function(chunk) {
+    Readable.prototype.unshift = function(chunk) {
       return readableAddChunk(this, chunk, null, true, false);
     };
     function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
@@ -82060,10 +82060,10 @@ var require_stream_readable = __commonJS({
     function needMoreData(state) {
       return !state.ended && (state.needReadable || state.length < state.highWaterMark || state.length === 0);
     }
-    Readable2.prototype.isPaused = function() {
+    Readable.prototype.isPaused = function() {
       return this._readableState.flowing === false;
     };
-    Readable2.prototype.setEncoding = function(enc) {
+    Readable.prototype.setEncoding = function(enc) {
       if (!StringDecoder)
         StringDecoder = require_string_decoder().StringDecoder;
       this._readableState.decoder = new StringDecoder(enc);
@@ -82106,7 +82106,7 @@ var require_stream_readable = __commonJS({
       }
       return state.length;
     }
-    Readable2.prototype.read = function(n2) {
+    Readable.prototype.read = function(n2) {
       debug("read", n2);
       n2 = parseInt(n2, 10);
       var state = this._readableState;
@@ -82216,10 +82216,10 @@ var require_stream_readable = __commonJS({
       }
       state.readingMore = false;
     }
-    Readable2.prototype._read = function(n2) {
+    Readable.prototype._read = function(n2) {
       this.emit("error", new Error("_read() is not implemented"));
     };
-    Readable2.prototype.pipe = function(dest, pipeOpts) {
+    Readable.prototype.pipe = function(dest, pipeOpts) {
       var src = this;
       var state = this._readableState;
       switch (state.pipesCount) {
@@ -82329,7 +82329,7 @@ var require_stream_readable = __commonJS({
         }
       };
     }
-    Readable2.prototype.unpipe = function(dest) {
+    Readable.prototype.unpipe = function(dest) {
       var state = this._readableState;
       var unpipeInfo = { hasUnpiped: false };
       if (state.pipesCount === 0)
@@ -82367,7 +82367,7 @@ var require_stream_readable = __commonJS({
       dest.emit("unpipe", this, unpipeInfo);
       return this;
     };
-    Readable2.prototype.on = function(ev, fn) {
+    Readable.prototype.on = function(ev, fn) {
       var res = Stream2.prototype.on.call(this, ev, fn);
       if (ev === "data") {
         if (this._readableState.flowing !== false)
@@ -82386,12 +82386,12 @@ var require_stream_readable = __commonJS({
       }
       return res;
     };
-    Readable2.prototype.addListener = Readable2.prototype.on;
+    Readable.prototype.addListener = Readable.prototype.on;
     function nReadingNextTick(self2) {
       debug("readable nexttick read 0");
       self2.read(0);
     }
-    Readable2.prototype.resume = function() {
+    Readable.prototype.resume = function() {
       var state = this._readableState;
       if (!state.flowing) {
         debug("resume");
@@ -82418,7 +82418,7 @@ var require_stream_readable = __commonJS({
       if (state.flowing && !state.reading)
         stream.read(0);
     }
-    Readable2.prototype.pause = function() {
+    Readable.prototype.pause = function() {
       debug("call pause flowing=%j", this._readableState.flowing);
       if (false !== this._readableState.flowing) {
         debug("pause");
@@ -82433,7 +82433,7 @@ var require_stream_readable = __commonJS({
       while (state.flowing && stream.read() !== null) {
       }
     }
-    Readable2.prototype.wrap = function(stream) {
+    Readable.prototype.wrap = function(stream) {
       var _this = this;
       var state = this._readableState;
       var paused = false;
@@ -82481,7 +82481,7 @@ var require_stream_readable = __commonJS({
       };
       return this;
     };
-    Object.defineProperty(Readable2.prototype, "readableHighWaterMark", {
+    Object.defineProperty(Readable.prototype, "readableHighWaterMark", {
       // making it explicit this property is not enumerable
       // because otherwise some prototype manipulation in
       // userland will fail
@@ -82490,7 +82490,7 @@ var require_stream_readable = __commonJS({
         return this._readableState.highWaterMark;
       }
     });
-    Readable2._fromList = fromList;
+    Readable._fromList = fromList;
     function fromList(n2, state) {
       if (state.length === 0)
         return null;
@@ -82613,11 +82613,11 @@ var require_stream_transform = __commonJS({
   "../node_modules/.pnpm/readable-stream@2.3.8/node_modules/readable-stream/lib/_stream_transform.js"(exports, module) {
     "use strict";
     init_cjs_shim();
-    module.exports = Transform5;
+    module.exports = Transform4;
     var Duplex = require_stream_duplex();
     var util4 = Object.create(require_util2());
     util4.inherits = require_inherits();
-    util4.inherits(Transform5, Duplex);
+    util4.inherits(Transform4, Duplex);
     function afterTransform(er, data) {
       var ts = this._transformState;
       ts.transforming = false;
@@ -82636,9 +82636,9 @@ var require_stream_transform = __commonJS({
         this._read(rs.highWaterMark);
       }
     }
-    function Transform5(options) {
-      if (!(this instanceof Transform5))
-        return new Transform5(options);
+    function Transform4(options) {
+      if (!(this instanceof Transform4))
+        return new Transform4(options);
       Duplex.call(this, options);
       this._transformState = {
         afterTransform: afterTransform.bind(this),
@@ -82668,14 +82668,14 @@ var require_stream_transform = __commonJS({
         done(this, null, null);
       }
     }
-    Transform5.prototype.push = function(chunk, encoding) {
+    Transform4.prototype.push = function(chunk, encoding) {
       this._transformState.needTransform = false;
       return Duplex.prototype.push.call(this, chunk, encoding);
     };
-    Transform5.prototype._transform = function(chunk, encoding, cb) {
+    Transform4.prototype._transform = function(chunk, encoding, cb) {
       throw new Error("_transform() is not implemented");
     };
-    Transform5.prototype._write = function(chunk, encoding, cb) {
+    Transform4.prototype._write = function(chunk, encoding, cb) {
       var ts = this._transformState;
       ts.writecb = cb;
       ts.writechunk = chunk;
@@ -82686,7 +82686,7 @@ var require_stream_transform = __commonJS({
           this._read(rs.highWaterMark);
       }
     };
-    Transform5.prototype._read = function(n2) {
+    Transform4.prototype._read = function(n2) {
       var ts = this._transformState;
       if (ts.writechunk !== null && ts.writecb && !ts.transforming) {
         ts.transforming = true;
@@ -82695,7 +82695,7 @@ var require_stream_transform = __commonJS({
         ts.needTransform = true;
       }
     };
-    Transform5.prototype._destroy = function(err, cb) {
+    Transform4.prototype._destroy = function(err, cb) {
       var _this2 = this;
       Duplex.prototype._destroy.call(this, err, function(err2) {
         cb(err2);
@@ -82722,14 +82722,14 @@ var require_stream_passthrough = __commonJS({
     "use strict";
     init_cjs_shim();
     module.exports = PassThrough2;
-    var Transform5 = require_stream_transform();
+    var Transform4 = require_stream_transform();
     var util4 = Object.create(require_util2());
     util4.inherits = require_inherits();
-    util4.inherits(PassThrough2, Transform5);
+    util4.inherits(PassThrough2, Transform4);
     function PassThrough2(options) {
       if (!(this instanceof PassThrough2))
         return new PassThrough2(options);
-      Transform5.call(this, options);
+      Transform4.call(this, options);
     }
     PassThrough2.prototype._transform = function(chunk, encoding, cb) {
       cb(null, chunk);
@@ -82788,14 +82788,14 @@ var require_immutable = __commonJS({
 var require_through2 = __commonJS({
   "../node_modules/.pnpm/through2@2.0.5/node_modules/through2/through2.js"(exports, module) {
     init_cjs_shim();
-    var Transform5 = require_readable2().Transform;
+    var Transform4 = require_readable2().Transform;
     var inherits = __require("util").inherits;
     var xtend = require_immutable();
     function DestroyableTransform(opts) {
-      Transform5.call(this, opts);
+      Transform4.call(this, opts);
       this._destroyed = false;
     }
-    inherits(DestroyableTransform, Transform5);
+    inherits(DestroyableTransform, Transform4);
     DestroyableTransform.prototype.destroy = function(err) {
       if (this._destroyed)
         return;
@@ -99711,9 +99711,9 @@ var AlreadyProcessedError = class extends GCodeProcessorError {
     this.gcodeInfo = gcodeInfo;
   }
 };
-var SlicerIdentificationNotFound = class extends GCodeProcessorError {
+var GeneratorIdentificationNotFound = class extends GCodeProcessorError {
   constructor(message) {
-    super(message ?? "Valid slicer identification was not found.");
+    super(message ?? "Valid G-Code generator identification was not found.");
   }
 };
 var SlicerNotSupported = class extends GCodeProcessorError {
@@ -100149,6 +100149,9 @@ import util3 from "node:util";
 init_cjs_shim();
 var import_fs_reader = __toESM(require_fs_reader());
 import util2 from "node:util";
+
+// ../server/gcode-processor/GCodeFlavour.ts
+init_cjs_shim();
 var GCodeFlavour = /* @__PURE__ */ ((GCodeFlavour2) => {
   GCodeFlavour2[GCodeFlavour2["Unknown"] = 0] = "Unknown";
   GCodeFlavour2[GCodeFlavour2["PrusaSlicer"] = 1] = "PrusaSlicer";
@@ -100158,6 +100161,8 @@ var GCodeFlavour = /* @__PURE__ */ ((GCodeFlavour2) => {
   GCodeFlavour2[GCodeFlavour2["Any"] = 65535] = "Any";
   return GCodeFlavour2;
 })(GCodeFlavour || {});
+
+// ../server/gcode-processor/GCodeInfo.ts
 var fsReaderGetLines = util2.promisify(import_fs_reader.default);
 var MutableGCodeInfo = class {
   constructor(generator, generatorVersion, flavour, generatorTimestamp, ratosDialectVersion, postProcessorVersion, postProcessorTimestamp, analysisResult, fileFormatVersion, ratosMetaFileOffset, processedForIdex) {
@@ -100585,6 +100590,9 @@ function parseCommonGCodeCommandLine(line) {
   return null;
 }
 
+// ../server/gcode-processor/WarningCodes.ts
+init_cjs_shim();
+
 // ../server/gcode-processor/Actions.ts
 var REMOVED_BY_RATOS = "; Removed by RatOS post processor: ";
 function newGCodeError(message, ctx, state) {
@@ -100649,7 +100657,7 @@ var getGcodeInfo = (c, s2) => {
     c.line + "\n" + c.getLineOrUndefined(1)?.line + "\n" + c.getLineOrUndefined(2)?.line + "\n"
   );
   if (!parsed) {
-    throw new SlicerIdentificationNotFound();
+    throw new GeneratorIdentificationNotFound();
   } else {
     if (parsed.postProcessorVersion) {
       throw new AlreadyProcessedError(parsed);
@@ -101121,7 +101129,6 @@ M104 S${s2.extruderTemps[Number(tool)]} T${tool}`;
 
 // ../server/gcode-processor/GCodeFile.ts
 var import_split2 = __toESM(require_split2());
-import { Writable } from "stream";
 import { open } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { createReadStream, createWriteStream } from "node:fs";
@@ -101193,11 +101200,73 @@ async function replaceBookmarkedGcodeLine(fh, bookmark, replacementLine) {
 
 // ../server/gcode-processor/GCodeFile.ts
 import { AssertionError } from "node:assert";
+
+// ../server/gcode-processor/Printability.ts
+init_cjs_shim();
+var Printability = /* @__PURE__ */ ((Printability2) => {
+  Printability2["UNKNOWN"] = "UNKNOWN";
+  Printability2["NOT_SUPPORTED"] = "NOT_SUPPORTED";
+  Printability2["MUST_PROCESS"] = "MUST_PROCESS";
+  Printability2["READY"] = "READY";
+  Printability2["COULD_REPROCESS"] = "COULD_REPROCESS";
+  Printability2["MUST_REPROCESS"] = "MUST_REPROCESS";
+  return Printability2;
+})(Printability || {});
+
+// ../server/gcode-processor/NullSink.ts
+init_cjs_shim();
+import { Writable } from "stream";
+var NullSink = class extends Writable {
+  _write(chunk, encoding, callback) {
+    callback();
+  }
+};
+
+// ../utils/object-manipulation.ts
+init_cjs_shim();
+var removeNulledProperties = (opts) => {
+  const result = { ...opts };
+  Object.keys(opts).forEach((opt) => {
+    if (result[opt] === null) {
+      delete result[opt];
+    }
+  });
+  return result;
+};
+var strictWithDefaults = (opts, structure) => {
+  return removeNulledProperties(
+    Object.fromEntries(
+      Object.keys(structure).map((k) => [k, opts[k] ?? null])
+    )
+  );
+};
+
+// ../server/gcode-processor/GCodeFile.ts
 function assert(condition, message) {
   if (!condition) {
     throw new AssertionError({ message });
   }
 }
+var defaultTransformOptions = {
+  abortSignal: null,
+  progressTransform: null,
+  allowUnsupportedSlicerVersions: null,
+  onWarning: null,
+  printerHasIdex: null
+};
+var defaultAnalyseOptions = {
+  abortSignal: null,
+  progressTransform: null,
+  allowUnsupportedSlicerVersions: null,
+  onWarning: null,
+  printerHasIdex: null,
+  quickInspectionOnly: null
+};
+var defaultInspectOptions = {
+  allowUnsupportedSlicerVersions: null,
+  onWarning: null,
+  printerHasIdex: null
+};
 var fsReaderGetLines2 = util3.promisify(import_fs_reader2.default);
 var rxRatosMeta = /(?:^; ratos_meta begin (\d+)\n(.*))?\n; ratos_meta end (\d+)$/ms;
 var rxGeneratorHeader = /^; generated (by|with) (?<GENERATOR>[^\s]+) (?<VERSION>[^\s]+) (in RatOS dialect (?<RATOS_DIALECT_VERSION>[^\s]+) )?on (?<DATE>[^\s]+) at (?<TIME>.*)$/im;
@@ -101213,19 +101282,6 @@ function coerceSemVerOrThrow(version, message) {
   }
   return sv;
 }
-var NullSink = class extends Writable {
-  _write(chunk, encoding, callback) {
-    callback();
-  }
-};
-var Printability = /* @__PURE__ */ ((Printability2) => {
-  Printability2["NOT_SUPPORTED"] = "NOT_SUPPORTED";
-  Printability2["MUST_PROCESS"] = "MUST_PROCESS";
-  Printability2["READY"] = "READY";
-  Printability2["COULD_REPROCESS"] = "COULD_REPROCESS";
-  Printability2["MUST_REPROCESS"] = "MUST_REPROCESS";
-  return Printability2;
-})(Printability || {});
 var GCodeFile = class _GCodeFile {
   constructor(path10, info, printability, canDeprocess, printabilityReasons) {
     this.path = path10;
@@ -101249,34 +101305,14 @@ var GCodeFile = class _GCodeFile {
 ; ${chunks.join("\n; ")}
 ; ratos_meta end ${chunks.length}`;
   }
-  /**
-   * invalid: no valid 'generated by' header found, can't inspect (aka, not a gcode file)
-   * unsupported: 'processed by' header found, but the fileFormatVersion is not supported.
-   *   Could be a future layout version or an old file layout that is no longer supported in current code.
-   *
-   * what to do about changes to the shape of AnalysisResult?
-   *
-   * 1. Give its own version, use Zod for validation and transformation. Force printability -> mustReprocess if Zod can't parse.
-   * or
-   * 2. Bump fileFormatVersion if AnalysisResult changes.
-   *
-   * I prefer 1. actual changes to file layout or encoding, as represented by "pure" fileFormatVersion, typically need to be handled by explicit code branching.
-   * Serialized object validation and transformation can be expressed declaritively using Zod. Keep the two things separate.
-   *
-   * isProcessed:
-   * 		true
-   * 			printability: ready, mustReprocess, couldReprocess
-   * 			canReprocess: true, false
-   * 		false
-   *
-   */
   /** Factory. Returns GCodeFile with valid `info` or throws if the file header can't be parsed etc. */
   static async inspect(path10, options) {
+    options = strictWithDefaults(options, defaultInspectOptions);
     const onWarning = options?.onWarning;
     const header = await fsReaderGetLines2(path10, 4);
     const gci = _GCodeFile.tryParseHeader(header);
     if (!gci) {
-      throw new SlicerIdentificationNotFound();
+      throw new GeneratorIdentificationNotFound();
     }
     if (gci.fileFormatVersion === void 0) {
       const tail2 = await fsReaderGetLines2(path10, -3);
@@ -101389,6 +101425,7 @@ var GCodeFile = class _GCodeFile {
   }
   /** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be deprocessed on the fly (if already processed) and (re)transformed. */
   async transform(outputFile, options) {
+    options = strictWithDefaults(options, defaultTransformOptions);
     let fh;
     const gcodeProcessor = new GCodeProcessor(options);
     const encoder = new BookmarkingBufferEncoder(void 0, void 0, options.abortSignal);
@@ -101445,6 +101482,7 @@ var GCodeFile = class _GCodeFile {
   }
   /** If the current file is already processed by the current GCodeHandling version, returns inputFile.info; otherwise, inputFile will be unprocessed on the fly (if already processed) and (re)analysed. */
   async analyse(options) {
+    options = strictWithDefaults(options, defaultAnalyseOptions);
     const gcodeProcessor = new GCodeProcessor(options);
     try {
       if (options.progressTransform) {
@@ -101561,11 +101599,35 @@ async function inspectGCode(inputFile, options) {
   const gcfOptions = {
     printerHasIdex: options.idex,
     allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
-    quickInspectionOnly: !options.fullInspection,
+    allowUnknownGenerator: options.allowUnknownGenerator,
+    quickInspectionOnly: !options.fullAnalysis,
     abortSignal: options.abortSignal,
     onWarning: options.onWarning
   };
-  const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+  let gcf;
+  try {
+    gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+  } catch (e) {
+    if (e instanceof GeneratorIdentificationNotFound && !!options.allowUnknownGenerator && options.onWarning) {
+      options.onWarning(
+        "UNKNOWN_GCODE_GENERATOR" /* UNKNOWN_GCODE_GENERATOR */,
+        `The file was not produced by a recognised G-Code generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`
+      );
+      return {
+        flavour: GCodeFlavour[0 /* Unknown */],
+        generator: "unknown",
+        generatorTimestamp: "",
+        generatorVersion: "",
+        isProcessed: false,
+        printability: "UNKNOWN" /* UNKNOWN */,
+        wasAlreadyProcessed: false,
+        canDeprocess: false,
+        printabilityReasons: [e.message]
+      };
+    } else {
+      throw e;
+    }
+  }
   if (gcf.printability === "READY" /* READY */ && !gcf.info.analysisResult) {
     let progressStream;
     if (options.onProgress) {
@@ -101593,6 +101655,8 @@ async function processGCode(inputFile, outputFile, options) {
   const gcfOptions = {
     printerHasIdex: options.idex,
     allowUnsupportedSlicerVersions: options.allowUnsupportedSlicerVersions,
+    allowUnknownGenerator: options.allowUnknownGenerator,
+    quickInspectionOnly: !options.fullAnalysis,
     abortSignal: options.abortSignal,
     onWarning: options.onWarning
   };
@@ -101601,8 +101665,44 @@ async function processGCode(inputFile, outputFile, options) {
   if (!inputStat.isFile()) {
     throw new Error(`${inputFile} is not a file`);
   }
-  const gcf = await GCodeFile.inspect(inputFile, gcfOptions);
-  if (gcf.printability !== "MUST_PROCESS" /* MUST_PROCESS */) {
+  let gcf;
+  try {
+    gcf = await GCodeFile.inspect(inputFile, gcfOptions);
+  } catch (e) {
+    if (e instanceof GeneratorIdentificationNotFound && !!options.allowUnknownGenerator && options.onWarning) {
+      options.onWarning(
+        "UNKNOWN_GCODE_GENERATOR" /* UNKNOWN_GCODE_GENERATOR */,
+        `The file was not produced by a recognised G-Code generator, therefore it cannot be post-processed or analysed, and its suitability for printing cannot be determined.`
+      );
+      return {
+        flavour: GCodeFlavour[0 /* Unknown */],
+        generator: "unknown",
+        generatorTimestamp: "",
+        generatorVersion: "",
+        isProcessed: false,
+        printability: "UNKNOWN" /* UNKNOWN */,
+        wasAlreadyProcessed: false,
+        canDeprocess: false,
+        printabilityReasons: [e.message]
+      };
+    } else {
+      throw e;
+    }
+  }
+  if (gcf.printability === "READY" /* READY */ && !gcf.info.analysisResult) {
+    let progressStream2;
+    if (options.onProgress) {
+      progressStream2 = (0, import_progress_stream.default)({ length: inputStat.size });
+      progressStream2.on("progress", options.onProgress);
+    }
+    return {
+      ...(await gcf.analyse({ progressTransform: progressStream2, ...gcfOptions })).serialize(),
+      wasAlreadyProcessed: false,
+      printability: gcf.printability,
+      printabilityReasons: gcf.printabilityReasons,
+      canDeprocess: gcf.canDeprocess
+    };
+  } else if (gcf.printability !== "MUST_PROCESS" /* MUST_PROCESS */) {
     return {
       ...gcf.info.serialize(),
       wasAlreadyProcessed: gcf.info.isProcessed,
@@ -109404,7 +109504,10 @@ var waitForFileToBeWritten = async (filePath, maxWaitTime = 1e4) => {
   }
 };
 var postprocessor = (program3) => {
-  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit [output] and --overwrite-input for inspection only)").action(async (inputFile, outputFile, args) => {
+  program3.command("postprocess").description("Postprocess a gcode file for RatOS").option("--non-interactive", "Output ndjson to stdout instead of rendering a UI").option("-i, --idex", "Postprocess for an IDEX printer").option("-o, --overwrite", "Overwrite the output file if it exists").option("-O, --overwrite-input", "Overwrite the input file").option("-a, --allow-unsupported-slicer-versions", "Allow unsupported slicer versions").option(
+    "-u, --allow-unknown-generator",
+    "Allow gcode from generators that cannot be identified by the postprocessor"
+  ).argument("<input>", "Path to the gcode file to postprocess").argument("[output]", "Path to the output gcode file (omit [output] and --overwrite-input for inspection only)").action(async (inputFile, outputFile, args) => {
     inputFile = await getRealPath(program3, inputFile);
     if (outputFile) {
       outputFile = await getRealPath(program3, outputFile);
@@ -109462,6 +109565,7 @@ var postprocessor = (program3) => {
       idex: args.idex,
       overwrite: args.overwrite || args.overwriteInput,
       allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
+      allowUnknownGenerator: args.allowUnknownGenerator,
       onProgress,
       onWarning: (code, message) => {
         getLogger().trace(code, "Warning during processing: " + message);
@@ -109477,6 +109581,13 @@ var postprocessor = (program3) => {
             toPostProcessorCLIOutput({
               result: "warning",
               title: "Unexpected g-code sequence",
+              message
+            });
+            break;
+          case "UNKNOWN_GCODE_GENERATOR" /* UNKNOWN_GCODE_GENERATOR */:
+            toPostProcessorCLIOutput({
+              result: "warning",
+              title: "Unknown g-code generator",
               message
             });
             break;
@@ -109499,9 +109610,9 @@ var postprocessor = (program3) => {
       if (args.overwriteInput) {
         outputFile = tmpfile();
       }
-      const result = outputFile != null && outputFile.trim() !== "" ? await processGCode(inputFile, outputFile, opts) : await inspectGCode(inputFile, { ...opts, fullInspection: false });
+      const result = outputFile != null && outputFile.trim() !== "" ? await processGCode(inputFile, outputFile, { ...opts, fullAnalysis: false }) : await inspectGCode(inputFile, { ...opts, fullAnalysis: false });
       getLogger().info(result, "postprocessor result");
-      if (!result.wasAlreadyProcessed && args.overwriteInput) {
+      if (!result.wasAlreadyProcessed && args.overwriteInput && result.isProcessed) {
         getLogger().info({ outputFile, inputFile }, "renaming output file to input file");
         fs2.renameSync(outputFile, inputFile);
       }
@@ -109998,6 +110109,21 @@ try {
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
+ * @file GCodeFlavour.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/**
  * @file GCodeInfo.ts
  * @description
  *
@@ -110103,6 +110229,21 @@ try {
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
+ * @file WarningCodes.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/**
  * @file Actions.ts
  * @description
  *
@@ -110165,6 +110306,36 @@ try {
  */
 /**
  * @file BookmarkingBufferEncoder.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/**
+ * @file Printablility.ts
+ * @description
+ *
+ * @author Tom Glastonbury <t@tg73.net>
+ * @license MIT
+ * @copyright 2024
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/**
+ * @file NullSink.ts
  * @description
  *
  * @author Tom Glastonbury <t@tg73.net>

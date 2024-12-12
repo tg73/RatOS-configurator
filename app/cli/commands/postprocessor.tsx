@@ -14,11 +14,11 @@ import { Duration, DurationLikeObject } from 'luxon';
 import path from 'path';
 import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger';
-import { ACTION_WARNING_CODES } from '@/server/gcode-processor/Actions';
+import { WarningCodes } from '@/server/gcode-processor/WarningCodes';
 import { getRealPath, loadEnvironment } from '@/cli/util';
 import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
-import { Printability } from '@/server/gcode-processor/GCodeFile';
+import { Printability } from '@/server/gcode-processor/Printability';
 import { promisify } from 'util';
 import { stat } from 'fs/promises';
 
@@ -209,6 +209,10 @@ export const postprocessor = (program: Command) => {
 		.option('-o, --overwrite', 'Overwrite the output file if it exists')
 		.option('-O, --overwrite-input', 'Overwrite the input file')
 		.option('-a, --allow-unsupported-slicer-versions', 'Allow unsupported slicer versions')
+		.option(
+			'-u, --allow-unknown-generator',
+			'Allow gcode from generators that cannot be identified by the postprocessor',
+		)
 		.argument('<input>', 'Path to the gcode file to postprocess')
 		.argument('[output]', 'Path to the output gcode file (omit [output] and --overwrite-input for inspection only)')
 		.action(async (inputFile, outputFile, args) => {
@@ -276,21 +280,29 @@ export const postprocessor = (program: Command) => {
 				idex: args.idex,
 				overwrite: args.overwrite || args.overwriteInput,
 				allowUnsupportedSlicerVersions: args.allowUnsupportedSlicerVersions,
+				allowUnknownGenerator: args.allowUnknownGenerator,
 				onProgress,
 				onWarning: (code: string, message: string) => {
 					getLogger().trace(code, 'Warning during processing: ' + message);
 					switch (code) {
-						case ACTION_WARNING_CODES.UNSUPPORTED_SLICER_VERSION:
+						case WarningCodes.UNSUPPORTED_SLICER_VERSION:
 							toPostProcessorCLIOutput({
 								result: 'warning',
 								title: 'Unsupported slicer version',
 								message: message,
 							});
 							break;
-						case ACTION_WARNING_CODES.HEURISTIC_SMELL:
+						case WarningCodes.HEURISTIC_SMELL:
 							toPostProcessorCLIOutput({
 								result: 'warning',
 								title: 'Unexpected g-code sequence',
+								message: message,
+							});
+							break;
+						case WarningCodes.UNKNOWN_GCODE_GENERATOR:
+							toPostProcessorCLIOutput({
+								result: 'warning',
+								title: 'Unknown g-code generator',
 								message: message,
 							});
 							break;
@@ -325,14 +337,17 @@ export const postprocessor = (program: Command) => {
 				// My current opinion: rather overprocess than underprocess. Specific situations where skipping processing is OK
 				// can be handled in fancy ways later - i need to see that it's worth the complexity first.
 
+				// NOTE: processGCode is blind as to whether the input file requires transformation to be ready to print. Notably,
+				// in the --overwrite-input and not --idex scenario, the processGCode call will not actually lead to transformation,
+				// but only analysis. The fullAnalysis option applies only is this non-transformative scenario.
 				const result =
 					outputFile != null && outputFile.trim() !== ''
-						? await processGCode(inputFile, outputFile, opts)
-						: await inspectGCode(inputFile, { ...opts, fullInspection: false });
+						? await processGCode(inputFile, outputFile, { ...opts, fullAnalysis: false })
+						: await inspectGCode(inputFile, { ...opts, fullAnalysis: false });
 
 				getLogger().info(result, 'postprocessor result');
 
-				if (!result.wasAlreadyProcessed && args.overwriteInput) {
+				if (!result.wasAlreadyProcessed && args.overwriteInput && result.isProcessed) {
 					getLogger().info({ outputFile, inputFile }, 'renaming output file to input file');
 					fs.renameSync(outputFile, inputFile);
 				}
