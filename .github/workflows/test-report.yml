@@ -26,9 +26,9 @@ jobs:
           name: test-results
           if_no_artifact_found: fail
 
-      - uses: ataylorme/eslint-annotate-action@v2
+      - uses: ataylorme/eslint-annotate-action@v3
 
-      - uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@v1.9.1
         with:
           artifact: test-results # artifact name
           name: Test Report # Name of the check run which will be created
