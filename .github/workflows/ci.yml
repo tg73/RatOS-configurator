@@ -26,8 +26,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dump_contexts:
-    runs-on: ubuntu-16.04
+  checkout_dependencies:
+    name: Lint, Typecheck and Tests
+    runs-on: ubuntu-latest
     steps:
       - name: Dump GitHub context
         env:
@@ -53,10 +54,7 @@ jobs:
         env:
           NEEDS_CONTEXT: ${{ toJson(needs) }}
         run: echo "$NEEDS_CONTEXT"	
-  checkout_dependencies:
-    name: Lint, Typecheck and Tests
-    runs-on: ubuntu-latest
-    steps:
+
       - name: Checkout
         uses: actions/checkout@v4
         with:

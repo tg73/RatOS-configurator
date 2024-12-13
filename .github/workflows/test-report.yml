@@ -15,8 +15,8 @@ permissions:
   checks: write
 
 jobs:
-  dump_contexts:
-    runs-on: ubuntu-16.04
+  report:
+    runs-on: ubuntu-latest
     steps:
       - name: Dump GitHub context
         env:
@@ -42,9 +42,7 @@ jobs:
         env:
           NEEDS_CONTEXT: ${{ toJson(needs) }}
         run: echo "$NEEDS_CONTEXT"
-  report:
-    runs-on: ubuntu-latest
-    steps:
+		
       - name: Download artifact
         id: download-artifact
         uses: dawidd6/action-download-artifact@v3
