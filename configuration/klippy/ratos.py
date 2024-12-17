@@ -19,7 +19,7 @@ class RatOS:
 		self.last_processed_file_result = None
 		self.allow_unsupported_slicer_versions = False
 		self.allow_unknown_gcode_generator = False
-		self.enable_post_processing = False
+		self.enable_gcode_transform = False
 		self.bypass_post_processing = False
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
@@ -54,7 +54,7 @@ class RatOS:
 	# Settings
 	#####
 	def load_settings(self):
-		self.enable_post_processing = True if self.config.get('enable_post_processing', "false").lower() == "true" else False
+		self.enable_gcode_transform = True if self.config.get('enable_gcode_transform', "false").lower() == "true" else False
 		self.allow_unsupported_slicer_versions = True if self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true" else False
 		self.bypass_post_processing = True if self.config.get('bypass_post_processing', "false").lower() == "true" else False
 		self.allow_unknown_gcode_generator = True if self.config.get('allow_unknown_gcode_generator', "false").lower() == "true" else False
@@ -146,18 +146,15 @@ class RatOS:
 		filename = gcmd.get('FILENAME', "")
 		if filename[0] == '/':
 			filename = filename[1:]
+		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=-1")
+		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=-1")
 		if self.bypass_post_processing:
 			self.console_echo('Bypassing post-processing', 'info', 'Configuration option `bypass_post_processing` is set to true. Bypassing post-processing...')
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 			return
-		if (self.dual_carriage == None and self.rmmu_hub == None) or not self.enable_post_processing:
-			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=-1")
-			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=-1")
-			self.process_gcode_file(filename, True)
-			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
-		else:
-			if self.process_gcode_file(filename, True):
-				self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
+		
+		self.process_gcode_file(filename, self.enable_gcode_transform)
+		self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 
 	desc_BEACON_APPLY_SCAN_COMPENSATION = "Compensates magnetic inaccuracies for beacon scan meshes."
 	def cmd_BEACON_APPLY_SCAN_COMPENSATION(self, gcmd):
@@ -201,13 +198,13 @@ class RatOS:
 		except BedMesh.BedMeshError as e:
 			self.console_echo("Beacon scan compensation error", "error", str(e))
 
-	def process_gcode_file(self, filename, enable_post_processing):
+	def process_gcode_file(self, filename, enable_gcode_transform):
 		try:
 			[path, size] = self.get_gcode_file_info(filename)
 			# Start ratos postprocess command
 			args = ['ratos', 'postprocess', '--non-interactive']
 			isIdex = self.config.has_section("dual_carriage")
-			if enable_post_processing:
+			if enable_gcode_transform:
 				args.append('--overwrite-input')
 			if isIdex:
 				args.append('--idex')
@@ -216,6 +213,12 @@ class RatOS:
 			if self.allow_unsupported_slicer_versions:
 				args.append('--allow-unsupported-slicer-versions')
 			args.append(path)
+			if not enable_gcode_transform and isIdex:
+				self.console_echo('RatOS ToolShift requires gcode transformation to be enabled', 'warning',  
+					  'Post-processing on IDEX machines without gcode transformation is not recommended._N_' + 
+					  'You can enable it by adding the following to printer.cfg._N__N_' +
+					  '[ratos]' +
+					  'enable_gcode_transform: True')
 			logging.info('Post-processing started via RatOS CLI: ' + str(args))
 			self.console_echo('Post-processing started', 'info',  'Processing %s (%.2f mb)...' % (filename, size / 1024 / 1024));
 			process = subprocess.Popen(
@@ -351,7 +354,7 @@ class RatOS:
 			return True
 
 		except Exception as e:
-			if enable_post_processing:
+			if enable_gcode_transform:
 				raise
 			return False
 
