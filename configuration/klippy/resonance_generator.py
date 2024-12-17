@@ -83,6 +83,7 @@ class ResonanceGenerator:
         self.oscillator = VibrationGenerator(config)
         tester_config = config.getsection('resonance_tester')
         self.generator = resonance_tester.SweepingVibrationsTestGenerator(tester_config)
+        self.executor = resonance_tester.ResonanceTestExecutor(tester_config)
 
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode.register_command("OSCILLATE",
