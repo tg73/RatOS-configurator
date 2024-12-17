@@ -26,6 +26,7 @@ class RatOS:
 		self.name = config.get_name()
 		self.last_processed_file_result = None
 		self.allow_unsupported_slicer_versions = False
+		self.allow_unknown_generator = False
 		self.use_legacy_post_processor = False
 		self.enable_post_processing = False
 		self.gcode = self.printer.lookup_object('gcode')
@@ -77,6 +78,11 @@ class RatOS:
 		self.gcode.register_command('PROCESS_GCODE_FILE', self.cmd_PROCESS_GCODE_FILE, desc=(self.desc_PROCESS_GCODE_FILE))
 		self.gcode.register_command('BEACON_APPLY_SCAN_COMPENSATION', self.cmd_BEACON_APPLY_SCAN_COMPENSATION, desc=(self.desc_BEACON_APPLY_SCAN_COMPENSATION))
 		self.gcode.register_command('TEST_PROCESS_GCODE_FILE', self.cmd_TEST_PROCESS_GCODE_FILE, desc=(self.desc_TEST_PROCESS_GCODE_FILE))
+		self.gcode.register_command('ALLOW_UNKNOWN_GENERATOR', self.cmd_ALLOW_UNKNOWN_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GENERATOR))
+
+	desc_ALLOW_UNKNOWN_GENERATOR = "Allow gcode from generators that cannot be identified by the postprocessor"
+	def cmd_ALLOW_UNKNOWN_GENERATOR(self, gcmd):
+		self.allow_unknown_generator = True
 
 	desc_TEST_PROCESS_GCODE_FILE = "Test the G-code post-processor for IDEX and RMMU, only for debugging purposes"
 	def cmd_TEST_PROCESS_GCODE_FILE(self, gcmd):
@@ -227,6 +233,12 @@ class RatOS:
 				if data['result'] == 'error' and 'message' in data:
 					self.last_processed_file_result = None
 					self.console_echo("Error: " + data['title'], 'alert', data['message'])
+					if data['code'] == 'UNKNOWN_GCODE_GENERATOR':
+						self.console_echo(
+							'Do you want to allow gcode from unknown generators/slicers?', 'info', 
+							'You can allow gcode from unknown generators by running ALLOW_UNKNOWN_GENERATOR in the console before starting a print._N_' +
+							'Keep in mind that this may cause unexpected behaviour, but it can be useful for calibration prints ' +
+							'such as the ones found in <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis\' Print Tuning Guide</a>.')
 				if data['result'] == 'warning' and 'message' in data:
 					self.console_echo("Warning: " + data['title'], 'warning', data['message'])
 				if data['result'] == 'success':
