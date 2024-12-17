@@ -82,7 +82,7 @@ class ResonanceGenerator:
         self.printer = config.get_printer()
         self.oscillator = VibrationGenerator(config)
         tester_config = config.getsection('resonance_tester')
-        self.generator = resonance_tester.VibrationPulseTestGenerator(tester_config)
+        self.generator = resonance_tester.SweepingVibrationsTestGenerator(tester_config)
 
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode.register_command("OSCILLATE",
@@ -124,7 +124,8 @@ class ResonanceGenerator:
                 gcmd.respond_info("Testing axis %s" % axis.get_name())
 
             # Generate moves
-            self.generator.run_test(axis, gcmd)
+            test_seq = self.generator.gen_test()
+            self.executor.run_test(test_seq, axis, gcmd)
 
     def _get_max_calibration_freq(self):
         return 1.5 * self.generator.get_max_freq()
