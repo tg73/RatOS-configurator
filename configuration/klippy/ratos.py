@@ -3,6 +3,9 @@ import logging, collections, pathlib
 import json, subprocess
 from . import bed_mesh as BedMesh
 
+class PostProcessingError(Exception):
+    pass
+
 #####
 # RatOS
 #####
@@ -205,6 +208,7 @@ class RatOS:
 					self.bed_mesh.save_profile(profile_name)
 					self.bed_mesh.set_mesh(self.bed_mesh.z_mesh)
 					self.console_echo("Beacon scan compensation", "debug", "Mesh scan profile %s compensated with contact profile %s" % (str(profile_name), str(profile)))
+					
 		except BedMesh.BedMeshError as e:
 			self.console_echo("Beacon scan compensation error", "error", str(e))
 
@@ -214,6 +218,7 @@ class RatOS:
 			# Start ratos postprocess command
 			args = ['ratos', 'postprocess', '--non-interactive']
 			isIdex = self.config.has_section("dual_carriage")
+
 			if enable_gcode_transform:
 				args.append('--overwrite-input')
 			if isIdex:
@@ -223,14 +228,17 @@ class RatOS:
 			if self.allow_unsupported_slicer_versions:
 				args.append('--allow-unsupported-slicer-versions')
 			args.append(path)
+			
 			if not enable_gcode_transform and isIdex:
 				self.console_echo('Post-processing on IDEX machines without gcode transformation is not recommended', 'warning',  
 					  'RatOS IDEX features require gcode transformation to be enabled._N_' + 
 					  'You can enable it by adding the following to printer.cfg._N__N_' +
 					  '[ratos]_N_' +
 					  'enable_gcode_transform: True_N_')
+
 			logging.info('Post-processing started via RatOS CLI: ' + str(args))
 			self.console_echo('Post-processing started', 'info',  'Processing %s (%.2f mb)...' % (filename, size / 1024 / 1024));
+
 			process = subprocess.Popen(
 				args,
 				stdout=subprocess.PIPE,
@@ -245,45 +253,58 @@ class RatOS:
 				if data['result'] == 'error' and 'message' in data:
 					self.last_processed_file_result = None
 					self.console_echo("Error: " + data['title'], 'alert', data['message'])
+					
 					if data['code'] == 'UNKNOWN_GCODE_GENERATOR':
 						self.console_echo(
 							'Do you want to allow gcode from unknown generators/slicers?', 'info', 
 							'You can allow gcode from unknown generators by running <a class="command">ALLOW_UNKNOWN_GCODE_GENERATOR</a> in the console before starting a print._N_' +
 							'Keep in mind that this may cause unexpected behaviour, but it can be useful for calibration prints ' +
 							'such as the ones found in <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis\' Print Tuning Guide</a>.')
+					raise PostProcessingError('Print aborted.')
+
 				if data['result'] == 'warning' and 'message' in data:
 					self.console_echo("Warning: " + data['title'], 'warning', data['message'])
+
 				if data['result'] == 'success':
 					self.last_processed_file_result = data['payload']
 					printability = data['payload']['printability']
+
 					if printability == 'NOT_SUPPORTED':
 						self.console_echo('Post-processing unsuccessful', 'error', 'File is not supported, aborting...')
-						raise self.printer.command_error('Print aborted.')
+						raise PostProcessingError('Print aborted.')
+						
 					if printability == 'MUST_REPROCESS':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File must be reprocessed before it can be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
-						raise self.printer.command_error('Print aborted.')
+						raise PostProcessingError('Print aborted.')
+
 					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
 						self.console_echo('Post-processing skipped', 'warning', 'File contains gcode from an unknown generator._N_Post processing skipped since you have allowed gcode from unknown generators.')
 						return
+
 					if printability != 'READY':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File is not ready to be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
-						raise self.printer.command_error('Print aborted.')
+						raise PostProcessingError('Print aborted.')
+
 					analysis_result = data['payload']['analysisResult']
 					if not analysis_result:
 						self.console_echo('Post-processing completed', 'success', 'No analysis result found, something is wrong... Please report this issue on GitHub and attach a debug-zip from the configurator, along with the file you tried to print.')
-						raise self.printer.command_error('Print aborted.')
+						raise PostProcessingError('Print aborted.')
+
 					if 'firstMoveX' in analysis_result:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=" + str(analysis_result['firstMoveX']))
 					if 'firstMoveY' in analysis_result:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=" + str(analysis_result['firstMoveY']))
+
 					self.console_echo(
 						'Post-processing completed', 'success',
 						f'Slicer: {data["payload"]["generator"]} v{data["payload"]["generatorVersion"]} ' +
 						f'_N_Used tools: T{", T".join(analysis_result["usedTools"])}' if "usedTools" in analysis_result else "" +
 						f'_N_Toolshifts: {analysis_result["toolChangeCount"]}' if "toolChangeCount" in analysis_result else ""
 					)
+
 				if data['result'] == 'progress':
 					eta_secs = data['payload']['eta']
+
 					if eta_secs < 60:
 						eta_str = f"{eta_secs}s"
 					elif eta_secs < 3600:
@@ -295,10 +316,12 @@ class RatOS:
 						mins = (eta_secs % 3600) // 60
 						secs = eta_secs % 60
 						eta_str = f"{hours}h {mins}m {secs}s"
+
 					if data['payload']['percentage'] < 100:
 						self.console_echo(f"Post-processing ({data['payload']['percentage']}%)... {eta_str} remaining", 'info')
 					else:
 						self.console_echo(f"Post-processing ({data['payload']['percentage']}%)...", 'info')
+
 				if data['result'] == 'waiting':
 					self.console_echo('Post-processing waiting', 'info', 'Waiting for input file to finish being written...')
 
@@ -364,7 +387,9 @@ class RatOS:
 			return True
 
 		except Exception as e:
-			if enable_gcode_transform:
+			if isinstance(e, PostProcessingError):
+				return False
+			else:
 				raise
 			return False
 
