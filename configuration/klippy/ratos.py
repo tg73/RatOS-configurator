@@ -144,12 +144,20 @@ class RatOS:
 	desc_PROCESS_GCODE_FILE = "G-code post-processor for IDEX and RMMU"
 	def cmd_PROCESS_GCODE_FILE(self, gcmd):
 		filename = gcmd.get('FILENAME', "")
+		isIdex = self.config.has_section("dual_carriage")
 		if filename[0] == '/':
 			filename = filename[1:]
 		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=-1")
 		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=-1")
 		if self.bypass_post_processing:
 			self.console_echo('Bypassing post-processing', 'info', 'Configuration option `bypass_post_processing` is set to true. Bypassing post-processing...')
+			if isIdex:
+				self.console_echo('Bypassing post-processing on IDEX machines is not recommended', 'warning',  
+					  'RatOS IDEX features require gcode processing and transformation to be enabled._N_' + 
+					  'You can enable it by adding the following to printer.cfg._N__N_' +
+					  '[ratos]_N_' +
+					  'bypass_post_processing: False_N_' +
+					  'enable_gcode_transform: True_N_')
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 			return
 		
@@ -214,11 +222,11 @@ class RatOS:
 				args.append('--allow-unsupported-slicer-versions')
 			args.append(path)
 			if not enable_gcode_transform and isIdex:
-				self.console_echo('RatOS ToolShift requires gcode transformation to be enabled', 'warning',  
-					  'Post-processing on IDEX machines without gcode transformation is not recommended._N_' + 
+				self.console_echo('Post-processing on IDEX machines without gcode transformation is not recommended', 'warning',  
+					  'RatOS IDEX features require gcode transformation to be enabled._N_' + 
 					  'You can enable it by adding the following to printer.cfg._N__N_' +
-					  '[ratos]' +
-					  'enable_gcode_transform: True')
+					  '[ratos]_N_' +
+					  'enable_gcode_transform: True_N_')
 			logging.info('Post-processing started via RatOS CLI: ' + str(args))
 			self.console_echo('Post-processing started', 'info',  'Processing %s (%.2f mb)...' % (filename, size / 1024 / 1024));
 			process = subprocess.Popen(
