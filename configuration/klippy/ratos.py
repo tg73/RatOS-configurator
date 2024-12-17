@@ -147,6 +147,7 @@ class RatOS:
 		if filename[0] == '/':
 			filename = filename[1:]
 		if self.bypass_post_processing:
+			self.console_echo('Bypassing post-processing', 'info', 'Configuration option `bypass_post_processing` is set to true. Bypassing post-processing...')
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 			return
 		if (self.dual_carriage == None and self.rmmu_hub == None) or not self.enable_post_processing:
