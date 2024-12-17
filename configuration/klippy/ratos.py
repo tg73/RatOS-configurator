@@ -161,8 +161,10 @@ class RatOS:
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 			return
 		
-		self.process_gcode_file(filename, self.enable_gcode_transform)
-		self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
+		if self.process_gcode_file(filename, self.enable_gcode_transform):
+			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
+		else:
+			self.console_echo('Print aborted', 'error')
 
 	desc_BEACON_APPLY_SCAN_COMPENSATION = "Compensates magnetic inaccuracies for beacon scan meshes."
 	def cmd_BEACON_APPLY_SCAN_COMPENSATION(self, gcmd):

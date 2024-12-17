@@ -153,6 +153,13 @@
       "static/chunks/main-app-97a5ed2f18129f03.js",
       "static/chunks/app/analysis/macros/[id]/edit/loading-b20040ff60ba1cf7.js"
     ],
+    "/analysis/macros/[id]/page": [
+      "static/chunks/webpack-887a02e3079448e7.js",
+      "static/chunks/fa86fe2e-e962572a02b89204.js",
+      "static/chunks/8458-94fd4fc7ee07d7b5.js",
+      "static/chunks/main-app-97a5ed2f18129f03.js",
+      "static/chunks/app/analysis/macros/[id]/page-4d933bec0da778bc.js"
+    ],
     "/analysis/macros/[id]/recordings/[runId]/page": [
       "static/chunks/webpack-887a02e3079448e7.js",
       "static/chunks/fa86fe2e-e962572a02b89204.js",
@@ -187,13 +194,6 @@
       "static/chunks/2003-6e0bf63a4a63df05.js",
       "static/css/330a6fbd834f43bd.css",
       "static/chunks/app/analysis/macros/[id]/recordings/[runId]/page-648845d454ecd50a.js"
-    ],
-    "/analysis/macros/[id]/page": [
-      "static/chunks/webpack-887a02e3079448e7.js",
-      "static/chunks/fa86fe2e-e962572a02b89204.js",
-      "static/chunks/8458-94fd4fc7ee07d7b5.js",
-      "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/analysis/macros/[id]/page-4d933bec0da778bc.js"
     ],
     "/analysis/macros/[id]/recordings/page": [
       "static/chunks/webpack-887a02e3079448e7.js",

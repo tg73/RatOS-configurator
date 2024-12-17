@@ -40,5 +40,6 @@
 	},
 	"shellcheck.useWorkspaceRootAsCwd": true,
 	"prettier.useTabs": true,
-	"editor.detectIndentation": false
+	"editor.detectIndentation": false,
+	"python.REPL.enableREPLSmartSend": false
 }
