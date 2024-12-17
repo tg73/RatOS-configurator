@@ -252,6 +252,9 @@ class RatOS:
 					if printability == 'MUST_REPROCESS':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File must be reprocessed before it can be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
 						raise self.printer.command_error('Print aborted.')
+					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_generator:
+						self.console_echo('Post-processing skipped', 'warning', 'File contains gcode from an unknown generator._N_Post processing skipped since you have allowed gcode from unknown generators.')
+						return
 					if printability != 'READY':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File is not ready to be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
 						raise self.printer.command_error('Print aborted.')
