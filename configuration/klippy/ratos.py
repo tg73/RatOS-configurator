@@ -1,19 +1,11 @@
-import os, logging, re, glob
+import os, logging, glob
 import logging, collections, pathlib
-import json, asyncio, subprocess
+import json, subprocess
 from . import bed_mesh as BedMesh
 
 #####
 # RatOS
 #####
-
-PRUSA_SLICER = "prusaslicer"
-SUPER_SLICER = "superslicer"
-ORCA_SLICER = "orcaslicer"
-UNKNOWN_SLICER = "unknown"
-
-CHANGED_BY_POST_PROCESSOR = " ; Changed by RatOS post processor: "
-REMOVED_BY_POST_PROCESSOR = "; Removed by RatOS post processor: "
 
 class RatOS:
 
@@ -26,9 +18,9 @@ class RatOS:
 		self.name = config.get_name()
 		self.last_processed_file_result = None
 		self.allow_unsupported_slicer_versions = False
-		self.allow_unknown_generator = False
-		self.use_legacy_post_processor = False
+		self.allow_unknown_gcode_generator = False
 		self.enable_post_processing = False
+		self.bypass_post_processing = False
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
 
@@ -64,7 +56,8 @@ class RatOS:
 	def load_settings(self):
 		self.enable_post_processing = True if self.config.get('enable_post_processing', "false").lower() == "true" else False
 		self.allow_unsupported_slicer_versions = True if self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true" else False
-		self.use_legacy_post_processor = True if self.config.get('use_legacy_post_processor', "false").lower() == "true" else False
+		self.bypass_post_processing = True if self.config.get('bypass_post_processing', "false").lower() == "true" else False
+		self.allow_unknown_gcode_generator = True if self.config.get('allow_unknown_gcode_generator', "false").lower() == "true" else False
 
 	#####
 	# Gcode commands
@@ -78,11 +71,11 @@ class RatOS:
 		self.gcode.register_command('PROCESS_GCODE_FILE', self.cmd_PROCESS_GCODE_FILE, desc=(self.desc_PROCESS_GCODE_FILE))
 		self.gcode.register_command('BEACON_APPLY_SCAN_COMPENSATION', self.cmd_BEACON_APPLY_SCAN_COMPENSATION, desc=(self.desc_BEACON_APPLY_SCAN_COMPENSATION))
 		self.gcode.register_command('TEST_PROCESS_GCODE_FILE', self.cmd_TEST_PROCESS_GCODE_FILE, desc=(self.desc_TEST_PROCESS_GCODE_FILE))
-		self.gcode.register_command('ALLOW_UNKNOWN_GENERATOR', self.cmd_ALLOW_UNKNOWN_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GENERATOR))
+		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
 
-	desc_ALLOW_UNKNOWN_GENERATOR = "Allow gcode from generators that cannot be identified by the postprocessor"
-	def cmd_ALLOW_UNKNOWN_GENERATOR(self, gcmd):
-		self.allow_unknown_generator = True
+	desc_ALLOW_UNKNOWN_GCODE_GENERATOR = "Temporarily allow gcode from generators that cannot be identified by the postprocessor"
+	def cmd_ALLOW_UNKNOWN_GCODE_GENERATOR(self, gcmd):
+		self.allow_unknown_gcode_generator = True
 
 	desc_TEST_PROCESS_GCODE_FILE = "Test the G-code post-processor for IDEX and RMMU, only for debugging purposes"
 	def cmd_TEST_PROCESS_GCODE_FILE(self, gcmd):
@@ -153,6 +146,9 @@ class RatOS:
 		filename = gcmd.get('FILENAME', "")
 		if filename[0] == '/':
 			filename = filename[1:]
+		if self.bypass_post_processing:
+			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
+			return
 		if (self.dual_carriage == None and self.rmmu_hub == None) or not self.enable_post_processing:
 			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=-1")
 			self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=-1")
@@ -214,7 +210,7 @@ class RatOS:
 				args.append('--overwrite-input')
 			if isIdex:
 				args.append('--idex')
-			if self.allow_unknown_generator:
+			if self.allow_unknown_gcode_generator:
 				args.append('--allow-unknown-generator')
 			if self.allow_unsupported_slicer_versions:
 				args.append('--allow-unsupported-slicer-versions')
@@ -238,7 +234,7 @@ class RatOS:
 					if data['code'] == 'UNKNOWN_GCODE_GENERATOR':
 						self.console_echo(
 							'Do you want to allow gcode from unknown generators/slicers?', 'info', 
-							'You can allow gcode from unknown generators by running <a class="command">ALLOW_UNKNOWN_GENERATOR</a> in the console before starting a print._N_' +
+							'You can allow gcode from unknown generators by running <a class="command">ALLOW_UNKNOWN_GCODE_GENERATOR</a> in the console before starting a print._N_' +
 							'Keep in mind that this may cause unexpected behaviour, but it can be useful for calibration prints ' +
 							'such as the ones found in <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis\' Print Tuning Guide</a>.')
 				if data['result'] == 'warning' and 'message' in data:
@@ -252,7 +248,7 @@ class RatOS:
 					if printability == 'MUST_REPROCESS':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File must be reprocessed before it can be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
 						raise self.printer.command_error('Print aborted.')
-					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_generator:
+					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
 						self.console_echo('Post-processing skipped', 'warning', 'File contains gcode from an unknown generator._N_Post processing skipped since you have allowed gcode from unknown generators.')
 						return
 					if printability != 'READY':
