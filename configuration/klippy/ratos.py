@@ -17,10 +17,10 @@ class RatOS:
 		self.printer = config.get_printer()
 		self.name = config.get_name()
 		self.last_processed_file_result = None
+		self.bypass_post_processing = False
+		self.enable_gcode_transform = False
 		self.allow_unsupported_slicer_versions = False
 		self.allow_unknown_gcode_generator = False
-		self.enable_gcode_transform = False
-		self.bypass_post_processing = False
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
 
@@ -54,10 +54,10 @@ class RatOS:
 	# Settings
 	#####
 	def load_settings(self):
-		self.enable_gcode_transform = self.config.get('enable_gcode_transform', "false").lower() == "true"
-		self.allow_unsupported_slicer_versions = self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true"
-		self.bypass_post_processing = self.config.get('bypass_post_processing', "false").lower() == "true"
-		self.allow_unknown_gcode_generator = self.config.get('allow_unknown_gcode_generator', "false").lower() == "true"
+		self.enable_gcode_transform = self.config.getboolean('enable_gcode_transform', False)
+		self.bypass_post_processing = self.config.getboolean('bypass_post_processing', False)
+		self.allow_unknown_gcode_generator = self.config.getboolean('allow_unknown_gcode_generator', False)
+		self.allow_unsupported_slicer_versions = self.config.getboolean('allow_unsupported_slicer_versions', False)
 
 	#####
 	# Gcode commands
@@ -80,7 +80,7 @@ class RatOS:
 	desc_TEST_PROCESS_GCODE_FILE = "Test the G-code post-processor for IDEX and RMMU, only for debugging purposes"
 	def cmd_TEST_PROCESS_GCODE_FILE(self, gcmd):
 		dual_carriage = self.dual_carriage
-		self.dual_carriage = True
+		self.dual_carriage = gcmd.get('IDEX', dual_carriage != None).lower() == "true"
 		filename = gcmd.get('FILENAME', "")
 		if filename[0] == '/':
 			filename = filename[1:]
