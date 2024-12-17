@@ -54,10 +54,10 @@ class RatOS:
 	# Settings
 	#####
 	def load_settings(self):
-		self.enable_gcode_transform = True if self.config.get('enable_gcode_transform', "false").lower() == "true" else False
-		self.allow_unsupported_slicer_versions = True if self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true" else False
-		self.bypass_post_processing = True if self.config.get('bypass_post_processing', "false").lower() == "true" else False
-		self.allow_unknown_gcode_generator = True if self.config.get('allow_unknown_gcode_generator', "false").lower() == "true" else False
+		self.enable_gcode_transform = self.config.get('enable_gcode_transform', "false").lower() == "true"
+		self.allow_unsupported_slicer_versions = self.config.get('allow_unsupported_slicer_versions', "false").lower() == "true"
+		self.bypass_post_processing = self.config.get('bypass_post_processing', "false").lower() == "true"
+		self.allow_unknown_gcode_generator = self.config.get('allow_unknown_gcode_generator', "false").lower() == "true"
 
 	#####
 	# Gcode commands
