@@ -214,6 +214,8 @@ class RatOS:
 				args.append('--overwrite-input')
 			if isIdex:
 				args.append('--idex')
+			if self.allow_unknown_generator:
+				args.append('--allow-unknown-generator')
 			if self.allow_unsupported_slicer_versions:
 				args.append('--allow-unsupported-slicer-versions')
 			args.append(path)
@@ -236,7 +238,7 @@ class RatOS:
 					if data['code'] == 'UNKNOWN_GCODE_GENERATOR':
 						self.console_echo(
 							'Do you want to allow gcode from unknown generators/slicers?', 'info', 
-							'You can allow gcode from unknown generators by running ALLOW_UNKNOWN_GENERATOR in the console before starting a print._N_' +
+							'You can allow gcode from unknown generators by running <a href="ALLOW_UNKNOWN_GENERATOR">ALLOW_UNKNOWN_GENERATOR</a> in the console before starting a print._N_' +
 							'Keep in mind that this may cause unexpected behaviour, but it can be useful for calibration prints ' +
 							'such as the ones found in <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis\' Print Tuning Guide</a>.')
 				if data['result'] == 'warning' and 'message' in data:
