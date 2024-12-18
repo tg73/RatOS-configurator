@@ -40,6 +40,7 @@ class RatOS:
 	#####
 	def register_handler(self):
 		self.printer.register_event_handler("klippy:connect", self._connect)
+		self.printer.register_event_handler("klippy:disconnect", self._disconnect)
 
 	def _connect(self):
 		self.v_sd = self.printer.lookup_object('virtual_sdcard', None)
@@ -55,6 +56,10 @@ class RatOS:
 
 		# Register overrides.
 		self.register_command_overrides()
+
+	def _disconnect(self):
+		self.unregister_command_overrides()
+
 	#####
 	# Settings
 	#####
@@ -88,6 +93,10 @@ class RatOS:
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=(self.desc_TEST_RESONANCES))
 		self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=(self.desc_SHAPER_CALIBRATE))
 
+	def unregister_command_overrides(self):
+		for command in self.OverriddenCommands:
+			self.gcode.unregister_command(command)
+
 	def register_override(self, command, func, desc):
 		prev_cmd = self.gcode.register_command(command, None)
 		if prev_cmd is None:
@@ -98,6 +107,12 @@ class RatOS:
 			raise self.printer.config_error("Command '%s' already overridden in RatOS" % (command,))
 		self.OverriddenCommands[command] = prev_cmd;
 		self.gcode.register_command(command, func, desc=(desc))
+
+	def unregister_override(self, command):
+		if command not in self.OverriddenCommands or self.OverriddenCommands[command] is None:
+			raise self.printer.config_error("Previous function for command '%s' not found in RatOS override list" % (command,))
+		self.gcode.register_command(command, self.OverriddenCommands[command], desc=desc)
+		self.OverriddenCommands[command] = None
 
 	def get_prev_cmd(self, command):
 		if command not in self.OverriddenCommands or self.OverriddenCommands[command] is None:
