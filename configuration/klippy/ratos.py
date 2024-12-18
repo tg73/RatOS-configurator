@@ -26,7 +26,7 @@ class RatOS:
 		self.allow_unknown_gcode_generator = False
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
-		self.overriddenCommands = {
+		self.overridden_commands = {
 			'TEST_RESONANCES': None,
 			'SHAPER_CALIBRATE': None,
 		}
@@ -89,24 +89,24 @@ class RatOS:
 		self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=(self.desc_SHAPER_CALIBRATE))
 
 	def register_override(self, command, func, desc):
-		if self.overriddenCommands[command] is not None:
-			if self.overriddenCommands[command] != command:
+		if self.overridden_commands[command] is not None:
+			if self.overridden_commands[command] != func:
 				raise self.printer.config_error("Command '%s' is already overridden with a different function" % (command,))
 			return
 
 		prev_cmd = self.gcode.register_command(command, None)
 		if prev_cmd is None:
 			raise self.printer.config_error("Existing command '%s' not found in RatOS override" % (command,))
-		if command not in self.overriddenCommands:
+		if command not in self.overridden_commands:
 			raise self.printer.config_error("Command '%s' not found in RatOS override list" % (command,))
 
-		self.overriddenCommands[command] = prev_cmd;
+		self.overridden_commands[command] = prev_cmd;
 		self.gcode.register_command(command, func, desc=(desc))
 
 	def get_prev_cmd(self, command):
-		if command not in self.overriddenCommands or self.overriddenCommands[command] is None:
+		if command not in self.overridden_commands or self.overridden_commands[command] is None:
 			raise self.printer.config_error("Previous function for command '%s' not found in RatOS override list" % (command,))
-		return self.overriddenCommands[command]
+		return self.overridden_commands[command]
 
 	desc_TEST_RESONANCES = ("Runs the resonance test for a specifed axis, positioning errors caused by sweeping are corrected by a RatOS override of this command.")
 	def override_TEST_RESONANCES(self, gcmd):
