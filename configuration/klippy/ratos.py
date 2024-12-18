@@ -84,8 +84,8 @@ class RatOS:
 	}
 
 	def register_command_overrides(self):
-		self.gcode.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=(self.desc_TEST_RESONANCES))
-		self.gcode.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=(self.desc_SHAPER_CALIBRATE))
+		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=(self.desc_TEST_RESONANCES))
+		self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=(self.desc_SHAPER_CALIBRATE))
 
 	def register_override(self, command, func, desc):
 		prev_cmd = self.gcode.register_command(command, None)
