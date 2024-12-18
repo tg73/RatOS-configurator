@@ -26,6 +26,10 @@ class RatOS:
 		self.allow_unknown_gcode_generator = False
 		self.gcode = self.printer.lookup_object('gcode')
 		self.reactor = self.printer.get_reactor()
+		self.overriddenCommands = {
+			'TEST_RESONANCES': None,
+			'SHAPER_CALIBRATE': None,
+		}
 
 		self.old_is_graph_files = []
 		self.contact_mesh = None
@@ -80,11 +84,6 @@ class RatOS:
 		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
 		self.gcode.register_command('_SYNC_GCODE_POSITION', self.cmd_SYNC_GCODE_POSITION, desc=(self.desc_SYNC_GCODE_POSITION))
 
-	OverriddenCommands = {
-		'TEST_RESONANCES': None,
-		'SHAPER_CALIBRATE': None,
-	}
-
 	def register_command_overrides(self):
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=(self.desc_TEST_RESONANCES))
 		self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=(self.desc_SHAPER_CALIBRATE))
@@ -98,16 +97,16 @@ class RatOS:
 		prev_cmd = self.gcode.register_command(command, None)
 		if prev_cmd is None:
 			raise self.printer.config_error("Existing command '%s' not found in RatOS override" % (command,))
-		if command not in self.OverriddenCommands:
+		if command not in self.overriddenCommands:
 			raise self.printer.config_error("Command '%s' not found in RatOS override list" % (command,))
-			
-		self.OverriddenCommands[command] = prev_cmd;
+
+		self.overriddenCommands[command] = prev_cmd;
 		self.gcode.register_command(command, func, desc=(desc))
 
 	def get_prev_cmd(self, command):
-		if command not in self.OverriddenCommands or self.OverriddenCommands[command] is None:
+		if command not in self.overriddenCommands or self.overriddenCommands[command] is None:
 			raise self.printer.config_error("Previous function for command '%s' not found in RatOS override list" % (command,))
-		return self.OverriddenCommands[command]
+		return self.overriddenCommands[command]
 
 	desc_TEST_RESONANCES = ("Runs the resonance test for a specifed axis, positioning errors caused by sweeping are corrected by a RatOS override of this command.")
 	def override_TEST_RESONANCES(self, gcmd):
