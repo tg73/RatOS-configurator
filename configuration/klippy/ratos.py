@@ -33,7 +33,6 @@ class RatOS:
 
 		self.load_settings()
 		self.register_commands()
-		self.register_command_overrides()
 		self.register_handler()
 
 	#####
@@ -54,6 +53,8 @@ class RatOS:
 		if self.config.has_section("rmmu_hub"):
 			self.rmmu_hub = self.printer.lookup_object("rmmu_hub", None)
 
+		# Register overrides.
+		self.register_command_overrides()
 	#####
 	# Settings
 	#####
