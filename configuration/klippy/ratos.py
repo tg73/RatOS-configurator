@@ -108,13 +108,13 @@ class RatOS:
 	def override_TEST_RESONANCES(self, gcmd):
 		prev_cmd = self.get_prev_cmd('TEST_RESONANCES')
 		prev_cmd(gcmd)
-		self.cmd_SYNC_TOOLHEAD(gcmd)
+		self.cmd_SYNC_GCODE_POSITION(gcmd)
 
 	desc_SHAPER_CALIBRATE = ("Runs the shaper calibration for a specifed axis, positioning errors caused by sweeping are corrected by a RatOS override of this command.")
 	def override_SHAPER_CALIBRATE(self, gcmd):
 		prev_cmd = self.get_prev_cmd('SHAPER_CALIBRATE')
 		prev_cmd(gcmd)
-		self.cmd_SYNC_TOOLHEAD(gcmd)
+		self.cmd_SYNC_GCODE_POSITION(gcmd)
 
 	desc_SYNC_GCODE_POSITION = ("Syncs the toolhead position to the printer position, used internally to correct positioning errors caused by sweeping in resonance tests.")
 	def cmd_SYNC_GCODE_POSITION(self, gcmd):
