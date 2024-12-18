@@ -90,7 +90,7 @@ class RatOS:
 
 	def register_override(self, command, func, desc):
 		if self.overridden_commands[command] is not None:
-			if self.overridden_commands[command] != command:
+			if self.overridden_commands[command] != func:
 				raise self.printer.config_error("Command '%s' is already overridden with a different function" % (command,))
 			return
 
