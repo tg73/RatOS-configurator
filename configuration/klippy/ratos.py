@@ -3,9 +3,6 @@ import logging, collections, pathlib
 import json, subprocess
 from . import bed_mesh as BedMesh
 
-class PostProcessingError(Exception):
-    pass
-
 #####
 # RatOS
 #####
@@ -309,7 +306,7 @@ class RatOS:
 							'You can allow gcode from unknown generators by running <a class="command">ALLOW_UNKNOWN_GCODE_GENERATOR</a> in the console before starting a print._N_' +
 							'Keep in mind that this may cause unexpected behaviour, but it can be useful for calibration prints ' +
 							'such as the ones found in <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis\' Print Tuning Guide</a>.')
-					raise PostProcessingError('Print aborted.')
+					return False
 
 				if data['result'] == 'warning' and 'message' in data:
 					self.console_echo("Warning: " + data['title'], 'warning', data['message'])
@@ -320,24 +317,24 @@ class RatOS:
 
 					if printability == 'NOT_SUPPORTED':
 						self.console_echo('Post-processing unsuccessful', 'error', 'File is not supported, aborting...')
-						raise PostProcessingError('Print aborted.')
+						return False
 						
 					if printability == 'MUST_REPROCESS':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File must be reprocessed before it can be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
-						raise PostProcessingError('Print aborted.')
+						return False
 
 					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
 						self.console_echo('Post-processing skipped', 'warning', 'File contains gcode from an unknown generator._N_Post processing skipped since you have allowed gcode from unknown generators.')
-						return
+						return False
 
 					if printability != 'READY':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File is not ready to be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
-						raise PostProcessingError('Print aborted.')
+						return False
 
 					analysis_result = data['payload']['analysisResult']
 					if not analysis_result:
-						self.console_echo('Post-processing completed', 'success', 'No analysis result found, something is wrong... Please report this issue on GitHub and attach a debug-zip from the configurator, along with the file you tried to print.')
-						raise PostProcessingError('Print aborted.')
+						self.console_echo('Post-processing unsuccessful', 'error', 'No analysis result found, something is wrong... Please report this issue on GitHub and attach a debug-zip from the configurator, along with the file you tried to print.')
+						return False
 
 					if 'firstMoveX' in analysis_result:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=" + str(analysis_result['firstMoveX']))
@@ -374,6 +371,8 @@ class RatOS:
 				if data['result'] == 'waiting':
 					self.console_echo('Post-processing waiting', 'info', 'Waiting for input file to finish being written...')
 
+				return True;
+
 			def _process_output(eventtime):
 				if process.stdout is None:
 					return
@@ -400,7 +399,8 @@ class RatOS:
 						json_data = json.loads(line)
 						if not 'result' in json_data:
 							continue
-						_interpret_output(json_data)
+						success = _interpret_output(json_data)
+						return success
 					except json.JSONDecodeError:
 						# Skip lines that aren't valid JSON
 						logging.warning("RatOS postprocessor: Invalid JSON line: " + line)
@@ -423,24 +423,23 @@ class RatOS:
 			reactor.unregister_fd(hdl)
 			if not complete:
 				process.terminate()
-				raise self.printer.command_error("Post-processing failed: Timed out")
+				self.console_echo("Post-processing failed", "error", "Post processing timed out after 30 minutes.")
+				return False;
 
 			if process.returncode != 0:
+				# We should've already printed the error message in _interpret_output
 				error = process.stderr.read().decode().strip()
 				if error:
-					raise self.printer.command_error(
-						f"Post-processing failed: {error}"
-					)
-				raise self.printer.command_error(f"Post-processing failed: Unexpected error")
-
-			return True
+					logging.error(error)
+					return False;
+				return False;
+			
+			return True;
 
 		except Exception as e:
-			if isinstance(e, PostProcessingError):
-				return False
-			else:
-				raise
-			return False
+			raise
+
+		return True
 
 
 	def get_gcode_file_info(self, filename):
@@ -476,6 +475,11 @@ class RatOS:
 		if type == 'error': color = "#f87171"
 		if type == 'debug': color = "#38bdf8"
 		if type == 'debug': opacity = 0.7
+
+		if (type == 'error' or type == 'alert'):
+			logging.error(title + ": " + msg.replace("_N_","\n"))
+		if (type == 'warning'):
+			logging.warning(title + ": " + msg.replace("_N_","\n"))
 
 		_title = '<p style="font-weight: bold; margin:0; opacity:' + str(opacity) + '; color:' + color + '">' + title + '</p>'
 		if msg:
