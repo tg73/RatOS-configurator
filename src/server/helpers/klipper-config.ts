@@ -2,7 +2,7 @@ import { PrinterConfiguration } from '@/zods/printer-configuration';
 import { sensorlessXTemplate, sensorlessYTemplate } from '@/templates/extras/sensorless-homing';
 import { Limits, PrinterAxis, PrinterRail, matchesDefaultRail } from '@/zods/motion';
 import { findPreset } from '@/data/steppers';
-import { deserializePrinterRailDefinition } from '@/utils/serialization';
+import { deserializePrinterRailDefinition, getAccelerometerWithType } from '@/utils/serialization';
 import {
 	ControlPins,
 	getExtruderRotationDistance,
@@ -31,6 +31,7 @@ import path from 'path';
 import { serverSchema } from '@/env/schema.mjs';
 import { AccelerometerType, KlipperAccelSensorName, klipperAccelSensorSchema } from '@/zods/hardware';
 import { getLogger } from '@/server/helpers/logger';
+import { ToolheadSuffix } from '@/helpers/toolhead';
 
 type WritableFiles = { fileName: string; content: string; overwrite: boolean; order?: number }[];
 type ExcludeStepperParameters<T extends string> = (T extends
@@ -309,32 +310,24 @@ export const constructKlipperConfigUtils = async (config: PrinterConfiguration) 
 			let accelType: z.infer<typeof AccelerometerType> = 'adxl345';
 
 			if (accelerometerName === 'controlboard') {
-				if (config.controlboard?.ADXL345SPI != null) {
-					accelType = 'adxl345';
-				}
-				if (config.controlboard?.LIS2DW != null) {
-					accelType = 'lis2dw';
-				}
+				return getAccelerometerWithType({ id: 'controlboard', title: 'Controlboard' }, null, null, config.controlboard);
 			}
 			if (accelerometerName === 'toolboard_t0' || accelerometerName === 'toolboard_t1') {
 				const toolboard = toolheads.find((t) => t.getToolboardName() === accelerometerName)?.getToolboard();
-				if (toolboard == null) {
-					throw new Error(`No toolboard found for T0`);
-				}
-				if (toolboard.ADXL345SPI != null) {
-					accelType = 'adxl345';
-				}
-				if (toolboard.LIS2DW != null) {
-					accelType = 'lis2dw';
-				}
+				return getAccelerometerWithType(
+					{ id: 'toolboard', title: 'Toolboard' },
+					accelerometerName.split('_')[1] as ToolheadSuffix,
+					toolboard,
+					config.controlboard,
+				);
 			}
 			if (accelerometerName === 'beacon') {
-				accelType = 'beacon';
+				return getAccelerometerWithType({ id: 'beacon', title: 'Beacon' }, null, null, config.controlboard);
 			}
-			return klipperAccelSensorSchema.parse({
-				name: accelerometerName,
-				type: accelType,
-			});
+			if (accelerometerName === 'rpi') {
+				return getAccelerometerWithType({ id: 'sbc', title: 'Toolboard' }, null, null, config.controlboard);
+			}
+			throw new Error(`Unknown accelerometer name: ${accelerometerName}`);
 		},
 	};
 };

@@ -10,10 +10,10 @@ import { getDefaultNozzle } from '@/data/nozzles';
 import deepEqual from 'deep-equal';
 import { KlipperAccelSensorName } from '@/zods/hardware';
 
-type ToolheadSuffix = `t${ToolNumber}`;
-type ToolheadCommand = `T${ToolNumber}`;
-type ToolboardAxisString = 'x' | 'dc';
-type ToolboardShortName = ToolheadSuffix;
+export type ToolheadSuffix = `t${ToolNumber}`;
+export type ToolheadCommand = `T${ToolNumber}`;
+export type ToolboardAxisString = 'x' | 'dc';
+export type ToolboardShortName = ToolheadSuffix;
 
 export class ToolheadHelper<IsToolboard extends boolean> {
 	protected config: ToolheadConfiguration<IsToolboard>;

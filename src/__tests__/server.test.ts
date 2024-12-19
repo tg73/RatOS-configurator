@@ -499,6 +499,38 @@ describe('server', async () => {
 				});
 			});
 		});
+		describe('can generate idex-with-double-orbitools config', async () => {
+			const config = await loadSerializedConfig(path.join(__dirname, 'fixtures', 'idex-with-double-orbitools.json'));
+			const filesToWrite = await getFilesToWrite(config);
+			const res: string = filesToWrite.find((f) => f.fileName === 'RatOS.cfg')?.content ?? '';
+			const printerCfg: string = filesToWrite.find((f) => f.fileName === 'printer.cfg')?.content ?? '';
+			const splitRes = res.split('\n');
+			const annotatedLines = splitRes.map((l: string, i: number) => `Line-${i + 1}`.padEnd(10, '-') + `|${l}`);
+			test('produces valid config', async () => {
+				expect(splitRes.length).toBeGreaterThan(0);
+			});
+			test('contains correct lis2dw accelerometers', () => {
+				const accelLineIndex = splitRes.findIndex((l) => l.includes('variable_adxl_chip: '));
+				expect(accelLineIndex).toBeGreaterThan(-1);
+				const accelLine = splitRes[accelLineIndex];
+				const x = accelLine.includes('lis2dw toolboard_t0');
+				const y = accelLine.includes('lis2dw toolboard_t1');
+				try {
+					expect(x, 'Expected lis2dw toolboard_t0 in accelLine').toBeTruthy();
+				} catch (e) {
+					throw new Error(
+						`Incorrect variable_adxl_chip, expected lis2dw toolboard_t0 to be found in line ${accelLineIndex + 1}:\n${annotatedLines.slice(Math.max(accelLineIndex - 4, 0), Math.min(accelLineIndex + 5, annotatedLines.length)).join('\n')}`,
+					);
+				}
+				try {
+					expect(y, 'Expected lis2dw toolboard_t1 in accelLine').toBeTruthy();
+				} catch (e) {
+					throw new Error(
+						`Incorrect variable_adxl_chip, expected lis2dw toolboard_t1 to be found in line ${accelLineIndex + 1}:\n${annotatedLines.slice(Math.max(accelLineIndex - 4, 0), Math.min(accelLineIndex + 5, annotatedLines.length)).join('\n')}`,
+					);
+				}
+			});
+		});
 	});
 	describe('printer defaults', async () => {
 		const printers = await getPrinters();
