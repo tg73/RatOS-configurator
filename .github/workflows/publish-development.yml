@@ -40,7 +40,7 @@ jobs:
         with:
           workflow-id: publish-development.yml
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.variables.outputs.src-branch }}
+          branch: development # This has to be the main branch of repository since all workflows are run from there
 
       - name: Get commit count
         id: commit-count

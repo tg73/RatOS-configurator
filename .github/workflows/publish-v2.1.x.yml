@@ -40,7 +40,7 @@ jobs:
         with:
           workflow-id: 99826346
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.variables.outputs.src-branch }}
+          branch: development
 
       - name: Get commit count
         id: commit-count
