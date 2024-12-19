@@ -38,7 +38,7 @@ jobs:
         id: last-successful-commit
         uses: tylermilner/last-successful-commit-hash-action@v1
         with:
-          workflow-id: publish-v2.1.x.yml
+          workflow-id: 99826346
           github-token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ steps.variables.outputs.src-branch }}
 
