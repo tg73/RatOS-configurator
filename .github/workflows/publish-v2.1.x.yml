@@ -40,7 +40,7 @@ jobs:
         with:
           workflow-id: 99826346
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: development
+          branch: development # This has to be the main branch of repository since all workflows are run from there
 
       - name: Get commit count
         id: commit-count
