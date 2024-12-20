@@ -315,7 +315,7 @@ class RatOS:
 					printability = data['payload']['printability']
 
 					if printability == 'NOT_SUPPORTED':
-						self.console_echo('Post-processing unsuccessful', 'error', data['payload']['printabilityReasons'] + "_N_You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
+						self.console_echo('Post-processing unsuccessful', 'error', "You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
 						return False
 						
 					if printability == 'MUST_REPROCESS':
@@ -323,8 +323,9 @@ class RatOS:
 						return False
 
 					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
-						self.console_echo('Post-processing skipped', 'warning', 'File contains gcode from an unknown/unidentified generator._N_Post processing skipped since you have allowed gcode from unknown generators.')
-
+						self.console_echo('Post-processing skipped', 'success', 'File contains gcode from an unknown/unidentified generator._N_Post processing has been skipped since you have allowed gcode from unknown generators.')
+						return True
+					
 					if printability != 'READY':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File is not ready to be printed, please slice and upload the unprocessed file again._N_Reasons for failure:_N_ %s' % ("_N_".join(data['payload']['printabilityReasons'])))
 						return False
