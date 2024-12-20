@@ -31,7 +31,7 @@ ensure_service_permission
 ensure_sudo_command_whitelisting
 ensure_pnpm_installation
 pnpm_install
-ensure_pnpm_setup
+install_global_npm_packages
 install_cli
 install_udev_rule
 patch_log_rotation
