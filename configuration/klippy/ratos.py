@@ -315,7 +315,7 @@ class RatOS:
 					printability = data['payload']['printability']
 
 					if printability == 'NOT_SUPPORTED':
-						self.console_echo('Post-processing unsuccessful', 'error', 'File is not supported, aborting...')
+						self.console_echo('Post-processing unsuccessful', 'error', data['payload']['printabilityReasons'] + "_N_You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N_")
 						return False
 						
 					if printability == 'MUST_REPROCESS':
