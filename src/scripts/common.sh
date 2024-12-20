@@ -93,10 +93,11 @@ ensure_pnpm_setup()
 	if [ -z "$PNPM_HOME" ]; then
 		report_status "Creating pnpm home directory..."
 		sudo -u "${RATOS_USERNAME}" pnpm setup
-		# shellcheck disable=SC1091
-		source "${REAL_HOME}/.bashrc"
+		# Extract PNPM_HOME directly from .bashrc
+		PNPM_HOME=$(sudo -u "${RATOS_USERNAME}" grep "export PNPM_HOME=" "${REAL_HOME}/.bashrc" | cut -d'"' -f2)
+		export PNPM_HOME
 	fi
-	if [ ! -d "$PNPM_HOME" ]; then
+	if [ -n "$PNPM_HOME" ] && [ ! -d "$PNPM_HOME" ]; then
 		report_status "PNPM home directory '${PNPM_HOME}' not found, creating..."
 		mkdir -p "$PNPM_HOME"
 		sudo chown -R "${RATOS_USERNAME}:${RATOS_USERNAME}" "$PNPM_HOME"
