@@ -30,7 +30,6 @@ ensure_sudo_command_whitelisting
 install_hooks
 update_package_managers
 pnpm_install
-install_global_npm_packages
 install_cli
 install_udev_rule
 patch_log_rotation

@@ -79,19 +79,6 @@ ensure_pnpm_installation() {
 	fi
 }
 
-install_global_npm_packages()
-{
-	sudo=""
-	[ "$EUID" -ne 0 ] && sudo="sudo"
-	# Install global packages
-	if ! which zx &> /dev/null; then
-		report_status "Installing global npm package requirements..."
-		# Pass PNPM_HOME to the subshell
-		$sudo npm install -g xz
-	fi
-}
-
-
 ensure_service_permission()
 {
 	if ! grep -q "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"; then
