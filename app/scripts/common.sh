@@ -11,16 +11,10 @@ report_status()
     echo -e "\n\n###### $1"
 }
 
-update_npm()
+update_package_managers()
 {
-    report_status "Updating npm..."
-    npm install -g npm
-}
-
-update_pnpm()
-{
-    report_status "Updating pnpm..."
-    npm install -g pnpm
+    report_status "Updating npm and pnpm..."
+    npm update -g npm pnpm
 }
 
 install_or_update_service_file()
@@ -87,11 +81,13 @@ ensure_pnpm_installation() {
 
 install_global_npm_packages()
 {
+	sudo=""
+	[ "$EUID" -ne 0 ] && sudo="sudo"
 	# Install global packages
 	if ! which zx &> /dev/null; then
 		report_status "Installing global npm package requirements..."
 		# Pass PNPM_HOME to the subshell
-		sudo -u "${RATOS_USERNAME}" npm install -g xz
+		$sudo npm install -g xz
 	fi
 }
 
