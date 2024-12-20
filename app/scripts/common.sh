@@ -85,27 +85,13 @@ ensure_pnpm_installation() {
 	fi
 }
 
-ensure_pnpm_setup()
+install_global_npm_packages()
 {
-	REAL_HOME=$(getent passwd "$RATOS_USERNAME" | cut -d: -f6)
-
-    report_status "Ensuring pnpm home is setup..."
-	if [ -z "$PNPM_HOME" ]; then
-		report_status "Creating pnpm home directory..."
-		sudo -u "${RATOS_USERNAME}" pnpm setup
-	fi
-	# Extract PNPM_HOME directly from .bashrc
-	PNPM_HOME=$(sudo -u "${RATOS_USERNAME}" grep "export PNPM_HOME=" "${REAL_HOME}/.bashrc" | cut -d'"' -f2)
-	if [ -n "$PNPM_HOME" ] && [ ! -d "$PNPM_HOME" ]; then
-		report_status "PNPM home directory '${PNPM_HOME}' not found, creating..."
-		mkdir -p "$PNPM_HOME"
-		sudo chown -R "${RATOS_USERNAME}:${RATOS_USERNAME}" "$PNPM_HOME"
-	fi
 	# Install global packages
 	if ! which zx &> /dev/null; then
-		report_status "Installing global pnpm package requirements..."
+		report_status "Installing global npm package requirements..."
 		# Pass PNPM_HOME to the subshell
-		sudo -u "${RATOS_USERNAME}" env "PNPM_HOME=${PNPM_HOME}" "PATH=${PNPM_HOME}:$PATH" pnpm install -g zx
+		sudo -u "${RATOS_USERNAME}" npm install -g xz
 	fi
 }
 
