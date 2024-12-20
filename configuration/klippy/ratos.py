@@ -33,6 +33,7 @@ class RatOS:
 		self.pmgr = BedMeshProfileManager(self.config, self)
 		self.register_commands()
 		self.register_handler()
+		self.load_settings()
 
 	#####
 	# Handler
@@ -41,7 +42,6 @@ class RatOS:
 		self.printer.register_event_handler("klippy:connect", self._connect)
 
 	def _connect(self):
-		self.load_settings()
 		self.v_sd = self.printer.lookup_object('virtual_sdcard', None)
 		self.sdcard_dirname = self.v_sd.sdcard_dirname
 		if self.config.has_section("bed_mesh"):
