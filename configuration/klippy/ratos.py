@@ -431,7 +431,7 @@ class RatOS:
 				error = process.stderr.read().decode().strip()
 				if error:
 					logging.error(error)
-					return False;
+					
 				return False;
 			
 			return True;

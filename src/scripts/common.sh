@@ -85,6 +85,32 @@ ensure_pnpm_installation() {
 	fi
 }
 
+ensure_pnpm_setup()
+{
+	REAL_HOME=$(getent passwd "$RATOS_USERNAME" | cut -d: -f6)
+
+    report_status "Ensuring pnpm home is setup..."
+	if [ -z "$PNPM_HOME" ]; then
+		report_status "Creating pnpm home directory..."
+		sudo -u "${RATOS_USERNAME}" pnpm setup
+		# shellcheck disable=SC1091
+		source "${REAL_HOME}/.bashrc"
+	fi
+	if [ ! -d "$PNPM_HOME" ]; then
+		report_status "PNPM home directory '${PNPM_HOME}' not found, creating..."
+		mkdir -p "$PNPM_HOME"
+		sudo chown -R "${RATOS_USERNAME}:${RATOS_USERNAME}" "$PNPM_HOME"
+	fi
+}
+
+install_global_pnpm_packages()
+{
+	if ! which zx &> /dev/null; then
+		report_status "Installing global pnpm package requirements..."
+		sudo -u "${RATOS_USERNAME}" pnpm install -g zx
+	fi
+}
+
 ensure_service_permission()
 {
 	if ! grep -q "ratos-configurator" "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"; then
