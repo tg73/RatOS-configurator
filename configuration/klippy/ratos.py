@@ -31,8 +31,6 @@ class RatOS:
 		self.old_is_graph_files = []
 		self.contact_mesh = None
 		self.pmgr = BedMeshProfileManager(self.config, self)
-
-		self.load_settings()
 		self.register_commands()
 		self.register_handler()
 
@@ -43,6 +41,7 @@ class RatOS:
 		self.printer.register_event_handler("klippy:connect", self._connect)
 
 	def _connect(self):
+		self.load_settings()
 		self.v_sd = self.printer.lookup_object('virtual_sdcard', None)
 		self.sdcard_dirname = self.v_sd.sdcard_dirname
 		if self.config.has_section("bed_mesh"):
@@ -293,7 +292,7 @@ class RatOS:
 
 			self.partial_output = ""
 			reactor = self.printer.get_reactor()
-
+			success = False
 			def _interpret_output(data):
 				# Handle the parsed data
 				if data['result'] == 'error' and 'message' in data:
@@ -347,6 +346,8 @@ class RatOS:
 						f'_N_Used tools: T{", T".join(analysis_result["usedTools"])}' if "usedTools" in analysis_result else "" +
 						f'_N_Toolshifts: {analysis_result["toolChangeCount"]}' if "toolChangeCount" in analysis_result else ""
 					)
+					success = True
+					return True
 
 				if data['result'] == 'progress':
 					eta_secs = data['payload']['eta']
@@ -371,7 +372,6 @@ class RatOS:
 				if data['result'] == 'waiting':
 					self.console_echo('Post-processing waiting', 'info', 'Waiting for input file to finish being written...')
 
-				return True;
 
 			def _process_output(eventtime):
 				if process.stdout is None:
@@ -399,8 +399,7 @@ class RatOS:
 						json_data = json.loads(line)
 						if not 'result' in json_data:
 							continue
-						success = _interpret_output(json_data)
-						return success
+						_interpret_output(json_data)
 					except json.JSONDecodeError:
 						# Skip lines that aren't valid JSON
 						logging.warning("RatOS postprocessor: Invalid JSON line: " + line)
@@ -433,13 +432,15 @@ class RatOS:
 					logging.error(error)
 					
 				return False;
-			
-			return True;
+
+			self.console_echo("Post-processing status", "info", "Success: %s" % (success))
+
+			return success;
 
 		except Exception as e:
 			raise
 
-		return True
+		return False
 
 
 	def get_gcode_file_info(self, filename):
