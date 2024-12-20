@@ -108,7 +108,8 @@ install_global_pnpm_packages()
 {
 	if ! which zx &> /dev/null; then
 		report_status "Installing global pnpm package requirements..."
-		sudo -u "${RATOS_USERNAME}" pnpm install -g zx
+		# Pass PNPM_HOME to the subshell
+		sudo -u "${RATOS_USERNAME}" env "PNPM_HOME=${PNPM_HOME}" "PATH=${PNPM_HOME}:$PATH" pnpm install -g zx
 	fi
 }
 
