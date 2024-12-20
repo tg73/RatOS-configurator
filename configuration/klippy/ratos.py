@@ -315,7 +315,7 @@ class RatOS:
 					printability = data['payload']['printability']
 
 					if printability == 'NOT_SUPPORTED':
-						self.console_echo('Post-processing unsuccessful', 'error', 'File is not supported, aborting...')
+						self.console_echo('Post-processing unsuccessful', 'error', data['payload']['printabilityReasons'] + "_N_You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N_")
 						return False
 						
 					if printability == 'MUST_REPROCESS':
@@ -323,8 +323,7 @@ class RatOS:
 						return False
 
 					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
-						self.console_echo('Post-processing skipped', 'warning', 'File contains gcode from an unknown generator._N_Post processing skipped since you have allowed gcode from unknown generators.')
-						return False
+						self.console_echo('Post-processing skipped', 'warning', 'File contains gcode from an unknown/unidentified generator._N_Post processing skipped since you have allowed gcode from unknown generators.')
 
 					if printability != 'READY':
 						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File is not ready to be printed, please slice and upload the unprocessed file again.' % ("_N_".join(data['payload']['printabilityReasons'])))
@@ -341,7 +340,8 @@ class RatOS:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=" + str(analysis_result['firstMoveY']))
 
 					self.console_echo(
-						'Post-processing completed', 'success',
+						'Post-processing completed', 
+						'success',
 						f'Slicer: {data["payload"]["generator"]} v{data["payload"]["generatorVersion"]} ' +
 						f'_N_Used tools: T{", T".join(analysis_result["usedTools"])}' if "usedTools" in analysis_result else "" +
 						f'_N_Toolshifts: {analysis_result["toolChangeCount"]}' if "toolChangeCount" in analysis_result else ""
@@ -440,7 +440,7 @@ class RatOS:
 		except Exception as e:
 			raise
 
-		return False
+		return success;
 
 
 	def get_gcode_file_info(self, filename):
