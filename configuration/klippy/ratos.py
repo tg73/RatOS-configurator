@@ -450,8 +450,6 @@ class RatOS:
 				self.post_process_success = False
 				return False;
 
-			self.console_echo("Post-processing status", "info", "Success: %s" % (self.post_process_success))
-
 			return self.post_process_success;
 
 		except Exception as e:
