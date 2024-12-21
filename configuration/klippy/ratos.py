@@ -79,6 +79,7 @@ class RatOS:
 		self.gcode.register_command('BEACON_APPLY_SCAN_COMPENSATION', self.cmd_BEACON_APPLY_SCAN_COMPENSATION, desc=(self.desc_BEACON_APPLY_SCAN_COMPENSATION))
 		self.gcode.register_command('TEST_PROCESS_GCODE_FILE', self.cmd_TEST_PROCESS_GCODE_FILE, desc=(self.desc_TEST_PROCESS_GCODE_FILE))
 		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
+		self.gcode.register_command('BYPASS_GCODE_PROCESSING ', self.cmd_BYPASS_GCODE_PROCESSING , desc=(self.desc_BYPASS_GCODE_PROCESSING ))
 		self.gcode.register_command('_SYNC_GCODE_POSITION', self.cmd_SYNC_GCODE_POSITION, desc=(self.desc_SYNC_GCODE_POSITION))
 
 	def register_command_overrides(self):
@@ -125,6 +126,10 @@ class RatOS:
 	desc_ALLOW_UNKNOWN_GCODE_GENERATOR = "Temporarily allow gcode from generators that cannot be identified by the postprocessor"
 	def cmd_ALLOW_UNKNOWN_GCODE_GENERATOR(self, gcmd):
 		self.allow_unknown_gcode_generator = True
+
+	desc_BYPASS_GCODE_PROCESSING  = "Disables postprocessor for the next print."
+	def cmd_BYPASS_GCODE_PROCESSING (self, gcmd):
+		self.bypass_post_processing = True
 
 	desc_TEST_PROCESS_GCODE_FILE = "Test the G-code post-processor for IDEX and RMMU, only for debugging purposes"
 	def cmd_TEST_PROCESS_GCODE_FILE(self, gcmd):
@@ -199,6 +204,7 @@ class RatOS:
 		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=-1")
 		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=-1")
 		if self.bypass_post_processing:
+			self.bypass_post_processing = self.config.getboolean('bypass_post_processing', False)
 			self.console_echo('Bypassing post-processing', 'info', 'Configuration option `bypass_post_processing` is set to true. Bypassing post-processing...')
 			if isIdex:
 				self.console_echo('Bypassing post-processing on IDEX machines is not recommended', 'warning', '_N_'.join([
