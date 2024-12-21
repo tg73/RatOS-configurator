@@ -130,6 +130,12 @@ class RatOS:
 	desc_BYPASS_GCODE_PROCESSING  = "Disables postprocessor for the next print."
 	def cmd_BYPASS_GCODE_PROCESSING (self, gcmd):
 		self.bypass_post_processing = True
+		self.console_echo('Post-processing bypassed on next print', 'info', "_N_".join([
+			'Post-processing will be bypassed on the next print.',
+			'You can bypass post-processing permanently by adding the following to printer.cfg._N_',
+			'[ratos]',
+			'bypass_post_processing: True_N_'
+		]))
 
 	desc_TEST_PROCESS_GCODE_FILE = "Test the G-code post-processor for IDEX and RMMU, only for debugging purposes"
 	def cmd_TEST_PROCESS_GCODE_FILE(self, gcmd):
