@@ -417,7 +417,9 @@ class RatOS:
 						# Skip lines that aren't valid JSON
 						logging.warning("RatOS postprocessor: Invalid JSON line: " + line)
 
+			# Reset post-processing success flag
 			self.post_process_success = False
+
 			# Register file descriptor with reactor
 			hdl = reactor.register_fd(process.stdout.fileno(), _process_output)
 
