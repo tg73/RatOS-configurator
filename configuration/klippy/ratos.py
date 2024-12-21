@@ -226,7 +226,7 @@ class RatOS:
 	#####
 	# Gcode Post Processor
 	#####
-	def process_gcode_file(self, filename, enable_post_processing):
+	def process_gcode_file(self, filename, enable_gcode_transform):
 		try:
 			[path, size] = self.get_gcode_file_info(filename)
 			# Start ratos postprocess command
