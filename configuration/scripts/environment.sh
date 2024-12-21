@@ -68,7 +68,7 @@ fi
 load_env() {
     local file="$1"
     if [ -f "$file" ]; then
-        while IFS='=' read -r key value; do
+        while IFS='=' read -r key value || [ -n "$key" ]; do
             # Skip comments and empty lines
             [[ $key =~ ^[[:space:]]*# ]] && continue
             [[ -z "$key" ]] && continue
