@@ -201,12 +201,13 @@ class RatOS:
 		if self.bypass_post_processing:
 			self.console_echo('Bypassing post-processing', 'info', 'Configuration option `bypass_post_processing` is set to true. Bypassing post-processing...')
 			if isIdex:
-				self.console_echo('Bypassing post-processing on IDEX machines is not recommended', 'warning',  
-					  'RatOS IDEX features require gcode processing and transformation to be enabled._N_' + 
-					  'You can enable it by adding the following to printer.cfg._N__N_' +
-					  '[ratos]_N_' +
-					  'bypass_post_processing: False_N_' +
-					  'enable_gcode_transform: True_N_')
+				self.console_echo('Bypassing post-processing on IDEX machines is not recommended', 'warning', '_N_'.join([
+					'RatOS IDEX features require gcode processing and transformation to be enabled.',
+					'You can enable it by adding the following to printer.cfg._N_',
+					'[ratos]',
+					'bypass_post_processing: False',
+					'enable_gcode_transform: True_N_'
+				]))
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 			return
 		
@@ -276,11 +277,12 @@ class RatOS:
 			args.append(path)
 			
 			if not enable_gcode_transform and isIdex:
-				self.console_echo('Post-processing on IDEX machines without gcode transformation is not recommended', 'warning',  
-					  'RatOS IDEX features require gcode transformation to be enabled._N_' + 
-					  'You can enable it by adding the following to printer.cfg._N__N_' +
-					  '[ratos]_N_' +
-					  'enable_gcode_transform: True_N_')
+				self.console_echo('Post-processing on IDEX machines without gcode transformation is not recommended', 'warning', '_N_'.join([
+					'RatOS IDEX features require gcode transformation to be enabled.',
+					'You can enable it by adding the following to printer.cfg._N_',
+					'[ratos]',
+					'enable_gcode_transform: True_N_'
+				]))
 
 			logging.info('Post-processing started via RatOS CLI: ' + str(args))
 			self.console_echo('Post-processing started', 'info',  'Processing %s (%.2f mb)...' % (filename, size / 1024 / 1024));
@@ -300,11 +302,13 @@ class RatOS:
 					self.console_echo("Error: " + data['title'], 'alert', data['message'])
 					
 					if data['code'] == 'UNKNOWN_GCODE_GENERATOR':
-						self.console_echo(
-							'Do you want to allow gcode from unknown generators/slicers?', 'info', 
-							'You can allow gcode from unknown generators by running <a class="command">ALLOW_UNKNOWN_GCODE_GENERATOR</a> in the console before starting a print._N_' +
-							'Keep in mind that this may cause unexpected behaviour, but it can be useful for calibration prints ' +
-							'such as the ones found in <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis\' Print Tuning Guide</a>.')
+						message = '_N_'.join([
+							'You can allow gcode from unknown generators by running <a class="command">ALLOW_UNKNOWN_GCODE_GENERATOR</a> in the console before starting a print',
+							'Keep in mind that this may cause unexpected behaviour, but it can be useful for calibration prints',
+							'such as the ones found in <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis\' Print Tuning Guide</a>.'
+						])
+						self.console_echo('Do you want to allow gcode from unknown generators/slicers?', 'info', message)
+
 					return False
 
 				if data['result'] == 'warning' and 'message' in data:
@@ -315,11 +319,11 @@ class RatOS:
 					printability = data['payload']['printability']
 
 					if printability == 'NOT_SUPPORTED':
-						self.console_echo('Post-processing unsuccessful', 'error', "You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
+						self.console_echo('Post-processing Error: slicer version not supported', 'error', "You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
 						return False
 						
 					if printability == 'MUST_REPROCESS':
-						self.console_echo('Post-processing unsuccessful', 'error', 'File must be reprocessed before it can be printed, please slice and upload the unprocessed file again._N_Reasons for failure:_N_ %s' % ("_N_".join(data['payload']['printabilityReasons'])))
+						self.console_echo('Post-processing Error: file must be reprocessed', 'error', 'File must be reprocessed before it can be printed, please slice and upload the unprocessed file again._N_Reasons for failure:_N_ %s' % ("_N_".join(data['payload']['printabilityReasons'])))
 						return False
 
 					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
@@ -327,12 +331,12 @@ class RatOS:
 						return True
 					
 					if printability != 'READY':
-						self.console_echo('Post-processing unsuccessful', 'error', '%s_N_File is not ready to be printed, please slice and upload the unprocessed file again._N_Reasons for failure:_N_ %s' % ("_N_".join(data['payload']['printabilityReasons'])))
+						self.console_echo('Post-processing Error: file is not ready to be printed', 'error', '%s_N_File is not ready to be printed, please slice and upload the unprocessed file again._N_Reasons for failure:_N_ %s' % ("_N_".join(data['payload']['printabilityReasons'])))
 						return False
 
 					analysis_result = data['payload']['analysisResult']
 					if not analysis_result:
-						self.console_echo('Post-processing unsuccessful', 'error', 'No analysis result found, something is wrong... Please report this issue on GitHub and attach a debug-zip from the configurator, along with the file you tried to print.')
+						self.console_echo('Post-processing Error: no analysis result', 'error', 'No analysis result found, something is wrong... Please report this issue on GitHub and attach a debug-zip from the configurator, along with the file you tried to print.')
 						return False
 
 					if 'firstMoveX' in analysis_result:
@@ -340,12 +344,20 @@ class RatOS:
 					if 'firstMoveY' in analysis_result:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=" + str(analysis_result['firstMoveY']))
 
+					tool_shifts = analysis_result["toolChangeCount"] if "toolChangeCount" in analysis_result else 0
+					used_tools = analysis_result["usedTools"] if "usedTools" in analysis_result else "0"
+					
+					success_msg_lines = [
+						f'Slicer: {data["payload"]["generator"]} v{data["payload"]["generatorVersion"]} '
+						f'_N_Used tools: T{", T".join(used_tools)}',
+					]
+					if tool_shifts > 0:
+						success_msg_lines.append(f'_N_Toolshifts: {tool_shifts}')
+
 					self.console_echo(
 						'Post-processing completed', 
 						'success',
-						f'Slicer: {data["payload"]["generator"]} v{data["payload"]["generatorVersion"]} ' +
-						f'_N_Used tools: T{", T".join(analysis_result["usedTools"])}' if "usedTools" in analysis_result else "" +
-						f'_N_Toolshifts: {analysis_result["toolChangeCount"]}' if "toolChangeCount" in analysis_result else ""
+						"_N_".join(success_msg_lines)
 					)
 					self.post_process_success = True
 					return True
