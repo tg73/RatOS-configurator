@@ -10,7 +10,7 @@ source "$SCRIPT_DIR"/ratos-common.sh
 ## but this has been reliable for me so far…
 sleep 10
 
- outdir="${RATOS_PRINTER_DATA_DIR}"/config/input_shaper
+outdir="${RATOS_PRINTER_DATA_DIR}"/config/input_shaper
 if [ ! -d "${outdir}" ]; then
     mkdir "${outdir}"
     chown "${RATOS_USERNAME}:${RATOS_USERGROUP}" "${outdir}"
