@@ -79,7 +79,7 @@ class RatOS:
 		self.gcode.register_command('BEACON_APPLY_SCAN_COMPENSATION', self.cmd_BEACON_APPLY_SCAN_COMPENSATION, desc=(self.desc_BEACON_APPLY_SCAN_COMPENSATION))
 		self.gcode.register_command('TEST_PROCESS_GCODE_FILE', self.cmd_TEST_PROCESS_GCODE_FILE, desc=(self.desc_TEST_PROCESS_GCODE_FILE))
 		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
-		self.gcode.register_command('BYPASS_GCODE_PROCESSING ', self.cmd_BYPASS_GCODE_PROCESSING , desc=(self.desc_BYPASS_GCODE_PROCESSING ))
+		self.gcode.register_command('BYPASS_GCODE_PROCESSING', self.cmd_BYPASS_GCODE_PROCESSING, desc=(self.desc_BYPASS_GCODE_PROCESSING))
 		self.gcode.register_command('_SYNC_GCODE_POSITION', self.cmd_SYNC_GCODE_POSITION, desc=(self.desc_SYNC_GCODE_POSITION))
 
 	def register_command_overrides(self):
@@ -127,8 +127,8 @@ class RatOS:
 	def cmd_ALLOW_UNKNOWN_GCODE_GENERATOR(self, gcmd):
 		self.allow_unknown_gcode_generator = True
 
-	desc_BYPASS_GCODE_PROCESSING  = "Disables postprocessor for the next print."
-	def cmd_BYPASS_GCODE_PROCESSING (self, gcmd):
+	desc_BYPASS_GCODE_PROCESSING = "Disables postprocessor for the next print."
+	def cmd_BYPASS_GCODE_PROCESSING(self, gcmd):
 		self.bypass_post_processing = True
 		self.console_echo('Post-processing bypassed on next print', 'info', "_N_".join([
 			'Post-processing will be bypassed on the next print.',
