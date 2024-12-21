@@ -34,6 +34,7 @@ class RatOS:
 		self.register_commands()
 		self.register_handler()
 		self.load_settings()
+		self.post_process_success = False
 
 	#####
 	# Handler
@@ -292,7 +293,6 @@ class RatOS:
 
 			self.partial_output = ""
 			reactor = self.printer.get_reactor()
-			success = False
 			def _interpret_output(data):
 				# Handle the parsed data
 				if data['result'] == 'error' and 'message' in data:
@@ -347,7 +347,7 @@ class RatOS:
 						f'_N_Used tools: T{", T".join(analysis_result["usedTools"])}' if "usedTools" in analysis_result else "" +
 						f'_N_Toolshifts: {analysis_result["toolChangeCount"]}' if "toolChangeCount" in analysis_result else ""
 					)
-					success = True
+					self.post_process_success = True
 					return True
 
 				if data['result'] == 'progress':
@@ -405,6 +405,7 @@ class RatOS:
 						# Skip lines that aren't valid JSON
 						logging.warning("RatOS postprocessor: Invalid JSON line: " + line)
 
+			self.post_process_success = False
 			# Register file descriptor with reactor
 			hdl = reactor.register_fd(process.stdout.fileno(), _process_output)
 
@@ -431,17 +432,18 @@ class RatOS:
 				error = process.stderr.read().decode().strip()
 				if error:
 					logging.error(error)
-					
+
+				self.post_process_success = False
 				return False;
 
-			self.console_echo("Post-processing status", "info", "Success: %s" % (success))
+			self.console_echo("Post-processing status", "info", "Success: %s" % (self.post_process_success))
 
-			return success;
+			return self.post_process_success;
 
 		except Exception as e:
 			raise
 
-		return success;
+		return self.post_process_success;
 
 
 	def get_gcode_file_info(self, filename):
