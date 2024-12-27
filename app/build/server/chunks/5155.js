@@ -150,10 +150,10 @@ variable_filament_load_speed: 5
 ### Use 100hz pwm
 #############################################################################################################
 [heater_fan toolhead_cooling_fan]
-cycle_time: 0.001
+cycle_time: 0.01
 
 [fan]
-cycle_time: 0.001
+cycle_time: 0.01
 
 #############################################################################################################
 ### USER OVERRIDES & CUSTOM CONFIGURATION
