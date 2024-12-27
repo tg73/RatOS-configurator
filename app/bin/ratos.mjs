@@ -101206,6 +101206,7 @@ init_cjs_shim();
 var Printability = /* @__PURE__ */ ((Printability2) => {
   Printability2["UNKNOWN"] = "UNKNOWN";
   Printability2["NOT_SUPPORTED"] = "NOT_SUPPORTED";
+  Printability2["PROCESSOR_NOT_SUPPORTED"] = "PROCESSOR_NOT_SUPPORTED";
   Printability2["MUST_PROCESS"] = "MUST_PROCESS";
   Printability2["READY"] = "READY";
   Printability2["COULD_REPROCESS"] = "COULD_REPROCESS";
@@ -101322,6 +101323,7 @@ var GCodeFile = class _GCodeFile {
       }
     }
     const reasons = [];
+    let printability;
     if (!options.allowUnsupportedSlicerVersions) {
       try {
         validateGenerator(gci, false);
@@ -101333,20 +101335,21 @@ var GCodeFile = class _GCodeFile {
     }
     if (gci.fileFormatVersion !== void 0) {
       if (gci.fileFormatVersion < _GCodeFile.FILE_FORMAT_VERSION) {
+        printability = "PROCESSOR_NOT_SUPPORTED" /* PROCESSOR_NOT_SUPPORTED */;
         reasons.push(
           "The file format is from an old version of RatOS which is no longer supported. The original file must be re-uploaded or re-sliced."
         );
       } else if (gci.fileFormatVersion > _GCodeFile.FILE_FORMAT_VERSION) {
+        printability = "PROCESSOR_NOT_SUPPORTED" /* PROCESSOR_NOT_SUPPORTED */;
         reasons.push(
           "The file format is from a newer version of RatOS. Update RatOS, or re-upload or re-slice the original file."
         );
       }
     }
     if (reasons.length > 0) {
-      return new _GCodeFile(path10, gci, "NOT_SUPPORTED" /* NOT_SUPPORTED */, void 0, reasons);
+      return new _GCodeFile(path10, gci, printability ?? "NOT_SUPPORTED" /* NOT_SUPPORTED */, void 0, reasons);
     }
     const currentVersion = await getPostProcessorVersion();
-    let printability;
     if (gci.isProcessed) {
       if (gci.processedForIdex !== !!options.printerHasIdex) {
         switch (gci.processedForIdex) {

@@ -285,6 +285,10 @@ class RatOS:
 					self.last_processed_file_result = data['payload']
 					printability = data['payload']['printability']
 
+					if printability == 'PROCESSOR_NOT_SUPPORTED':
+						self.console_echo('Post-processing Error: file was processed by an obsolete or future version of the RatOS postprocessor', 'error', "You can bypass the processor for this file by running BYPASS_GCODE_PROCESSING before starting the print, but there is no guarantee that it will print correctly._N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
+						return False
+
 					if printability == 'NOT_SUPPORTED':
 						self.console_echo('Post-processing Error: slicer version not supported', 'error', "You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
 						return False
