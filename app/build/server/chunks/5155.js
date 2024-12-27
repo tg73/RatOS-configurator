@@ -152,7 +152,7 @@ variable_filament_load_speed: 5
 [heater_fan toolhead_cooling_fan]
 cycle_time: 0.001
 
-[fan part_cooling_fan]
+[fan]
 cycle_time: 0.001
 
 #############################################################################################################
