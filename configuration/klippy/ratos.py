@@ -294,7 +294,8 @@ class RatOS:
 						return False
 
 					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
-						self.console_echo('Post-processing skipped', 'success', 'File contains gcode from an unknown/unidentified generator._N_Post processing has been skipped since you have allowed gcode from unknown generators.')
+						self.console_echo('Post-processing skipped', 'info', 'File contains gcode from an unknown/unidentified generator._N_Post processing has been skipped since gcode from unknown generators is allowed in your configuration.')
+						self.post_process_success = True
 						return True
 					
 					if printability != 'READY':
