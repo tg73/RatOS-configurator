@@ -67,6 +67,7 @@ class BeaconMesh:
 	#####
 	def compensate_beacon_scan(self, profile):
 		systime = self.reactor.monotonic()
+		self.ratos.console_echo("hello 1", "debug", "blah")
 		try:
 			if self.bed_mesh.z_mesh:
 				profile_name = self.bed_mesh.z_mesh.get_profile_name()
@@ -94,6 +95,41 @@ class BeaconMesh:
 			self.ratos.console_echo("Beacon scan compensation error", "error", str(e))
 
 	def create_compensation_mesh(self, profile):
+		# 'RatOSTempOffsetScan' is the proximity scan mesh.
+		# parameter `profile` is the contact mesh.
+		# TODO: this is now almost identical to `compensate_beacon_scan`, consider combining.
+		systime = self.reactor.monotonic()
+		if self.bed_mesh.z_mesh:
+			self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='RatOSTempOffsetScan'")
+			scan_points = self.bed_mesh.get_status(systime)["profiles"]["RatOSTempOffsetScan"]["points"]
+			scan_params = self.bed_mesh.z_mesh.get_mesh_params()
+			scan_x_step = ((scan_params["max_x"] - scan_params["min_x"]) / (len(scan_points[0]) - 1))
+			scan_y_step = ((scan_params["max_y"] - scan_params["min_y"]) / (len(scan_points) - 1))
+
+			self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % profile)
+
+			try:
+				new_points = []
+				for y in range(len(scan_points)):
+					new_points.append([])
+					for x in range(len(scan_points[0])):
+						scan_x_pos = scan_params["min_x"] + x * scan_x_step
+						scan_y_pos = scan_params["min_y"] + y * scan_y_step
+						contact_z = self.bed_mesh.z_mesh.calc_z(scan_x_pos, scan_y_pos)
+						scan_z = scan_points[y][x]
+						offset_z = contact_z - scan_z
+						self.ratos.debug_echo("Create compensation mesh", "scan: %0.4f  contact: %0.4f  offset: %0.4f" % (scan_z, contact_z, offset_z))
+						new_points[y].append(offset_z)
+				self.bed_mesh.z_mesh.build_mesh(new_points)
+				self.bed_mesh.save_profile(profile)
+				self.bed_mesh.set_mesh(self.bed_mesh.z_mesh)
+				self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(profile)))
+			except BedMesh.BedMeshError as e:
+				self.ratos.console_echo("Create compensation mesh error", "error", str(e))
+
+	def ORIGINAL_create_compensation_mesh(self, profile):
+		# 'RatOSTempOffsetScan' is the proximity scan mesh.
+		# parameter `profile` is the contact mesh.
 		systime = self.reactor.monotonic()
 		if self.bed_mesh.z_mesh:
 			self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='RatOSTempOffsetScan'")
