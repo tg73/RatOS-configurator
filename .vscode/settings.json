@@ -1,6 +1,19 @@
 {
-	"typescript.tsdk": "src/node_modules/typescript/lib",
-	"typescript.enablePromptUseWorkspaceTsdk": true,
+"remote.extensionKind": {
+    "ms-python.python": [ "ui" ],
+    "ms-python.vscode-pylance": [ "ui" ],
+	"dannymcgee.klipper": [ "ui" ],
+	"dbaeumer.vscode-eslint": [ "ui" ]
+},
+"files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "app/**": true,
+  },
+
+    "typescript.tsdk": "src/node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
     "tailwindCSS.experimental.classRegex": [
         ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
         ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
