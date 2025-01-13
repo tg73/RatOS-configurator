@@ -1,5 +1,6 @@
 import os, logging, glob
-import json, subprocess, pathlib
+import json, subprocess, pathlib, statistics
+import pprint
 
 #####
 # RatOS
@@ -32,7 +33,7 @@ class RatOS:
 		self.register_handler()
 		self.load_settings()
 		self.post_process_success = False
-
+	
 	#####
 	# Handler
 	#####
@@ -75,6 +76,43 @@ class RatOS:
 		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
 		self.gcode.register_command('BYPASS_GCODE_PROCESSING', self.cmd_BYPASS_GCODE_PROCESSING, desc=(self.desc_BYPASS_GCODE_PROCESSING))
 		self.gcode.register_command('_SYNC_GCODE_POSITION', self.cmd_SYNC_GCODE_POSITION, desc=(self.desc_SYNC_GCODE_POSITION))
+		self.gcode.register_command('BEACON_ACCELEROMETER_QUERY_AVERAGE', self.cmd_BEACON_ACCELEROMETER_QUERY_AVERAGE, desc=(self.desc_BEACON_ACCELEROMETER_QUERY_AVERAGE))
+	
+	desc_BEACON_ACCELEROMETER_QUERY_AVERAGE = "Query accelerometer for the current values"
+	def cmd_BEACON_ACCELEROMETER_QUERY_AVERAGE(self, gcmd):
+		result = self.run_beacon_accelerometer_query_average(gcmd)
+		self.last_beacon_accelerometer_query_average = result
+		gcmd.respond_info("accelerometer values (x, y, z) from %i samples: %.6f, %.6f, %.6f"
+		        % result)
+
+	def run_beacon_accelerometer_query_average(self, gcmd):
+		beacon = self.printer.lookup_object('beacon')
+		if not beacon:		
+			raise gcmd.error("Beacon not found")
+		aclient = beacon.start_internal_client()
+		self.printer.lookup_object('toolhead').dwell(2.)
+		aclient.finish_measurements()
+		values = aclient.get_samples()
+		if not values:
+			raise gcmd.error("No accelerometer measurements found")
+		accel_x = statistics.fmean([v[1] for v in values])
+		accel_y = statistics.fmean([v[2] for v in values])
+		accel_z = statistics.fmean([v[3] for v in values])
+		return (len(values), accel_x, accel_y, accel_z)
+
+	desc_CACHE_BEACON_ACCEL_MESH_VALUE = "Adds a new value to the accelerometer mesh cache."
+	def cmd_CACHE_BEACON_ACCEL_MESH_VALUE(self, gcmd):
+		y = gcmd.get_int('Y', 0)
+		value = gcmd.get_float('VALUE', None)
+		reset = gcmd.get_int('RESET', 0) != 0
+		if reset:
+			self.beacon_accel_mesh_points = None
+			return
+		if self.beacon_accel_mesh_points is None:
+			self.beacon_accel_mesh_points = []
+		if len(self.beacon_accel_mesh_points) < y + 1:
+			self.beacon_accel_mesh_points.append([])
+		self.beacon_accel_mesh_points[y].append(value)
 
 	def register_command_overrides(self):
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=(self.desc_TEST_RESONANCES))
