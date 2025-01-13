@@ -367,7 +367,7 @@ export const processToolchange: Action = (c, s) => {
 		{
 			let foundStop = false;
 			let prevZMove: ProcessLineContext | undefined;
-			for (let scan of c.scanForward(19)) {
+			for (let scan of c.scanForward(49)) {
 				const cmd = parseCommonGCodeCommandLine(scan.line);
 				if (cmd && cmd.letter === 'G' && cmd.value === '1') {
 					if (cmd.x || cmd.y) {

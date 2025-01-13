@@ -62,7 +62,7 @@ export interface FinalizeProcessingOptions {
  **/
 export class GCodeProcessor extends SlidingWindowLineProcessor {
 	constructor(opts: GCodeProcessorOptions) {
-		super(20, 100, opts?.abortSignal);
+		super(50, 100, opts?.abortSignal);
 		this.#state = new State(
 			!!opts.printerHasIdex,
 			!!opts.quickInspectionOnly,
