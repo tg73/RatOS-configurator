@@ -1,6 +1,10 @@
 import collections
 from . import bed_mesh as BedMesh
 
+## TESTING rapid-contact-rapid comp mesh generation
+RATOS_TEMP_SCAN_MESH_BEFORE_NAME = "__BEACON_TEMP_SCAN_MESH_BEFORE__"
+RATOS_TEMP_SCAN_MESH_ATFER_NAME = "__BEACON_TEMP_SCAN_MESH_AFTER__"
+
 ###
 # Mesh constants
 ###
@@ -233,7 +237,7 @@ class BeaconMesh:
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 		
 		title = gcmd.get("TITLE", "Validate compensation mesh profile")
-		subject = gcmd.get("SUBJECT", f"Profile '{profile}'")
+		subject = gcmd.get("SUBJECT", None)
 		bed_temp = gcmd.get_float("COMPARE_BED_TEMP", None)
 		bed_temp_is_error = gcmd.get("COMPARE_BED_TEMP_IS_ERROR", "false").strip().lower() in ("1", "true")
 
@@ -242,7 +246,7 @@ class BeaconMesh:
 			bed_temp = None
 
 		if not self._validate_extended_parameters(
-			self._get_compensation_zmesh(profile, subject).get_mesh_params(),
+			self._create_zmesh_from_profile(profile, subject, "Beacon compensation mesh validation").get_mesh_params(),
 			title,
 			subject,
 			compare_bed_temp=bed_temp,
@@ -257,7 +261,7 @@ class BeaconMesh:
 		if not profile.strip():
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 		
-		if not self.apply_scan_compensation(self._get_compensation_zmesh(profile)):
+		if not self.apply_scan_compensation(self._create_zmesh_from_profile(profile, purpose="Beacon scan compensation")):
 			raise self.printer.command_error("Could not apply scan compensation")
 		
 	desc_CREATE_BEACON_COMPENSATION_MESH = "Creates the beacon compensation mesh by calibrating and diffing a contact and a scan mesh."
@@ -268,7 +272,13 @@ class BeaconMesh:
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 		if not probe_count:
 			raise gcmd.error("Value for parameter 'PROBE_COUNT' must be specified")
-		self.create_compensation_mesh(profile, probe_count)
+		# TODO: Remove TESTING stuff before release
+		method = gcmd.get('TESTING_GENERATION_METHOD', self.gm_ratos.variables.get('testing_default_compensation_mesh_generation_method'))
+		if method and method.strip().lower() == 'temporal_blend':
+			gcmd.respond_info("TESTING: using rapid-contact-rapid temporal blend")
+			self.create_compensation_mesh_TESTING_rapid_contact_rapid(profile, probe_count)
+		else:
+			self.create_compensation_mesh(profile, probe_count)
 
 	desc_SET_ZERO_REFERENCE_POSITION = "Sets the zero reference position for the currently loaded bed mesh."
 	def cmd_SET_ZERO_REFERENCE_POSITION(self, gcmd):
@@ -292,23 +302,26 @@ class BeaconMesh:
 		self.ratos.console_echo("Set zero reference position", "info", 
 			f"Zero reference position saved for profile '{new_mesh.get_profile_name()}'")
 
-	def _get_compensation_zmesh(self, profile, subject=None):
+	def _create_zmesh_from_profile(self, profile, subject=None, purpose=None):
 		if not profile:
 			raise TypeError("Argument profile cannot be None")
 		
 		if subject is None:
 			subject = f"Profile '{profile}'"
+
+		if purpose:
+			purpose = f" for {purpose}"
 		
 		profiles = self.bed_mesh.pmgr.get_profiles()
 		if profile not in profiles:
-			raise self.printer.command_error(f"{subject} not found for Beacon scan compensation")
+			raise self.printer.command_error(f"{subject} not found{purpose}")
 		
 		try:
 			compensation_zmesh = BedMesh.ZMesh(profiles[profile]["mesh_params"], profile)
 			compensation_zmesh.build_mesh(profiles[profile]["points"])
 			return compensation_zmesh
 		except Exception as e:
-			raise self.printer.command_error(f"Could not load {subject[0].lower()}{subject[1:]} for Beacon scan compensation: {str(e)}") from e
+			raise self.printer.command_error(f"Could not load {subject[0].lower()}{subject[1:]}{purpose}: {str(e)}") from e
 
 	# Logs to console for any problems with extended mesh parameters. Returns True if the extended parameters are present
 	# and valid, otherwise False. Version must be the current version. 
@@ -548,7 +561,125 @@ class BeaconMesh:
 			self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(profile)))
 		except BedMesh.BedMeshError as e:
 			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
+
+	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, profile, probe_count):
+		if not self.beacon:
+			self.ratos.console_echo("Create compensation mesh error", "error", 
+				"Beacon module not loaded._N_Make sure you've configured Beacon as your z probe.")
+			return
+
+		if self.z_tilt and not self.z_tilt.z_status.applied:
+			self.ratos.console_echo("Create compensation mesh warning", "warning", 
+				"Z-tilt levelling is configured but has not been applied._N_"
+				"This may result in inaccurate compensation.")
 		
+		if self.qgl and not self.qgl.z_status.applied:
+			self.ratos.console_echo("Create compensation mesh warning", "warning", 
+				"Quad gantry levelling is configured but has not been applied._N_"
+				"This may result in inaccurate compensation.")
+
+		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
+
+		# Go to safe home
+		self.gcode.run_script_from_command("_MOVE_TO_SAFE_Z_HOME Z_HOP=True")
+
+		if beacon_contact_calibrate_model_on_print:
+			# Calibrate a fresh model
+			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE")
+		else:
+			if self.beacon.model is None:
+				self.ratos.console_echo("Create compensation mesh error", "error", 
+					"No active Beacon model is selected._N_Make sure you've performed initial Beacon calibration.")
+				return
+
+			self.check_active_beacon_model_temp(title="Create compensation mesh warning")
+			
+			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MODEL_CREATION=1")
+
+		# create 'before' temp scan mesh
+		self.gcode.run_script_from_command(
+			"BED_MESH_CALIBRATE "
+			"PROFILE='%s'" % (RATOS_TEMP_SCAN_MESH_BEFORE_NAME))
+
+		# create contact mesh
+		self.gcode.run_script_from_command(
+			"BED_MESH_CALIBRATE PROBE_METHOD=contact SAMPLES=2 SAMPLES_DROP=1 SAMPLES_TOLERANCE_RETRIES=10 "
+			"PROBE_COUNT=%d,%d PROFILE='%s'" % (probe_count[0], probe_count[1], RATOS_TEMP_CONTACT_MESH_NAME))
+
+		# create 'after' temp scan mesh
+		self.gcode.run_script_from_command(
+			"BED_MESH_CALIBRATE "
+			"PROFILE='%s'" % (RATOS_TEMP_SCAN_MESH_ATFER_NAME))
+
+		scan_before_zmesh = self._create_zmesh_from_profile(RATOS_TEMP_SCAN_MESH_BEFORE_NAME)
+		scan_after_zmesh = self._create_zmesh_from_profile(RATOS_TEMP_SCAN_MESH_ATFER_NAME)
+		
+		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % RATOS_TEMP_CONTACT_MESH_NAME)
+
+		contact_mesh_points = self.bed_mesh.pmgr.get_profiles()[RATOS_TEMP_CONTACT_MESH_NAME]["points"][:]		
+		contact_params = self.bed_mesh.z_mesh.get_mesh_params()
+		contact_x_step = ((contact_params["max_x"] - contact_params["min_x"]) / (contact_params["x_count"] - 1))
+		contact_y_step = ((contact_params["max_y"] - contact_params["min_y"]) / (contact_params["y_count"] - 1))
+
+		compensation_mesh_points = []
+
+		try:
+			if not self.beacon.mesh_helper.dir in ("x", "y"):
+				raise ValueError(f"Expected 'x' or 'y' for self.beacon.mesh_helper.dir, but got '{self.beacon.mesh_helper.dir}'")
+			
+			dir = self.beacon.mesh_helper.dir
+			y_count = len(contact_mesh_points)
+			x_count = len(contact_mesh_points[0])
+			contact_mesh_point_count = len(contact_mesh_points) * len(contact_mesh_points[0])
+
+			debug_lines = []
+
+			for y in range(y_count):
+				compensation_mesh_points.append([])
+				for x in range(x_count):
+					contact_mesh_index = \
+						((x if y % 2 == 0 else x_count - x - 1) + y * x_count) \
+						if dir == "x" else \
+						((y if x % 2 == 0 else y_count - y - 1) + x * y_count)
+					
+					blend_factor = contact_mesh_index / (contact_mesh_point_count - 1)
+
+					contact_x_pos = contact_params["min_x"] + x * contact_x_step
+					contact_y_pos = contact_params["min_y"] + y * contact_y_step
+
+					scan_before_z = scan_before_zmesh.calc_z(contact_x_pos, contact_y_pos)
+					scan_after_z = scan_after_zmesh.calc_z(contact_x_pos, contact_y_pos)
+					scan_temporal_crossfade_z = ((1 - blend_factor) * scan_before_z) + (blend_factor * scan_after_z)
+
+					contact_z = contact_mesh_points[y][x]
+					offset_z = contact_z - scan_temporal_crossfade_z
+
+					compensation_mesh_points[y].append(offset_z)
+
+					debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
+
+			self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
+
+			# Create new mesh
+			params = self.bed_mesh.z_mesh.get_mesh_params()
+			params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
+			params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
+			params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
+			params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY_AUTOMATIC
+			new_mesh = BedMesh.ZMesh(params, profile)
+			new_mesh.build_mesh(compensation_mesh_points)
+			self.bed_mesh.set_mesh(new_mesh)
+			self.bed_mesh.save_profile(profile)
+
+			# Remove temp meshes
+			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_CONTACT_MESH_NAME)
+			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_SCAN_MESH_BEFORE_NAME)
+			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_SCAN_MESH_ATFER_NAME)
+
+			self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(profile)))
+		except BedMesh.BedMeshError as e:
+			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
+
 	def load_extra_mesh_params(self):
 		profiles = self.bed_mesh.pmgr.get_profiles()
 		
