@@ -38,8 +38,10 @@ RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER = "ratos_beacon_probe_method"
 # - for measured meshes, it's the probe method of measurement
 # - for compensation meshes, it's the probe method of the proximity mesh used to make the compensation mesh
 # - for compensated meshes, it's the probe method of the measured mesh that was then compensated
+RATOS_MESH_NOTES_PARAMETER = "ratos_notes"
+# - abitrary notes, optional
 
-RATOS_MESH_PARAMETERS = (
+RATOS_REQUIRED_MESH_PARAMETERS = (
 	RATOS_MESH_VERSION_PARAMETER,
 	RATOS_MESH_BED_TEMP_PARAMETER,
 	RATOS_MESH_KIND_PARAMETER,
@@ -194,6 +196,7 @@ class BeaconMesh:
 		params[RATOS_MESH_BED_TEMP_PARAMETER] = bed_temp
 		params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_MEASURED
 		params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = ratos_probe_method
+		params.pop(RATOS_MESH_NOTES_PARAMETER, None)
 
 		msg = (
 			f"Setting parameters for active bed mesh '{mesh.get_profile_name()}':_N_"
@@ -348,8 +351,8 @@ class BeaconMesh:
 		error_title = title + " error"
 		warning_title = title + " warning"
 
-		if not all(p in params for p in RATOS_MESH_PARAMETERS):
-			missing = [p for p in RATOS_MESH_PARAMETERS if p not in params]
+		if not all(p in params for p in RATOS_REQUIRED_MESH_PARAMETERS):
+			missing = [p for p in RATOS_REQUIRED_MESH_PARAMETERS if p not in params]
 			self.ratos.debug_echo("BeaconMesh._validate_extended_parameters", f"missing parameters: {', '.join(missing)}")
 			self.ratos.console_echo(error_title, "error", 
 				f"{subject} has incomplete extended metadata.")
@@ -711,6 +714,7 @@ class BeaconMesh:
 					mesh_kind = config.getchoice(RATOS_MESH_KIND_PARAMETER, list(RATOS_MESH_KIND_CHOICES))
 					mesh_probe_method = config.getchoice(RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER, list(RATOS_MESH_BEACON_PROBE_METHOD_CHOICES))
 					mesh_bed_temp = config.getfloat(RATOS_MESH_BED_TEMP_PARAMETER)
+					notes = config.get(RATOS_MESH_NOTES_PARAMETER, None)
 				except config.error as ex:
 					self.ratos.console_echo("RatOS Beacon bed mesh management", "error",
 								f"Bed mesh profile '{profile_name}' configuration is invalid: {str(ex)}")
@@ -721,6 +725,10 @@ class BeaconMesh:
 				profile_params[RATOS_MESH_KIND_PARAMETER] = mesh_kind
 				profile_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = mesh_probe_method
 				profile_params[RATOS_MESH_BED_TEMP_PARAMETER] = mesh_bed_temp
+				if notes:
+					profile_params[RATOS_MESH_NOTES_PARAMETER] = notes
+				else:
+					profile_params.pop(RATOS_MESH_NOTES_PARAMETER, None)
 			else:				
 				self.ratos.console_echo("RatOS Beacon bed mesh management", "warning",
 							f"Bed mesh profile '{profile_name}' was created without extended RatOS Beacon bed mesh support."
