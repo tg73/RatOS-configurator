@@ -272,11 +272,14 @@ class BeaconMesh:
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 		if not probe_count:
 			raise gcmd.error("Value for parameter 'PROBE_COUNT' must be specified")
+		
+		keep_temp_meshs = gcmd.get('KEEP_TEMP_MESHES', '0').strip().lower() in ('1', 'true', 'yes')
+
 		# TODO: Remove TESTING stuff before release
 		method = gcmd.get('TESTING_GENERATION_METHOD', self.gm_ratos.variables.get('testing_default_compensation_mesh_generation_method'))
 		if method and method.strip().lower() == 'temporal_blend':
 			gcmd.respond_info("TESTING: using rapid-contact-rapid temporal blend")
-			self.create_compensation_mesh_TESTING_rapid_contact_rapid(profile, probe_count)
+			self.create_compensation_mesh_TESTING_rapid_contact_rapid(profile, probe_count, keep_temp_meshs)
 		else:
 			self.create_compensation_mesh(profile, probe_count)
 
@@ -562,7 +565,7 @@ class BeaconMesh:
 		except BedMesh.BedMeshError as e:
 			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
 
-	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, profile, probe_count):
+	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, profile, probe_count, keep_temp_meshes):
 		if not self.beacon:
 			self.ratos.console_echo("Create compensation mesh error", "error", 
 				"Beacon module not loaded._N_Make sure you've configured Beacon as your z probe.")
@@ -596,27 +599,31 @@ class BeaconMesh:
 			
 			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MODEL_CREATION=1")
 
+		mesh_before_name = RATOS_TEMP_SCAN_MESH_BEFORE_NAME if not keep_temp_meshes else RATOS_TEMP_SCAN_MESH_BEFORE_NAME + profile
+		mesh_after_name = RATOS_TEMP_SCAN_MESH_ATFER_NAME if not keep_temp_meshes else RATOS_TEMP_SCAN_MESH_ATFER_NAME + profile
+		contact_mesh_name = RATOS_TEMP_CONTACT_MESH_NAME if not keep_temp_meshes else RATOS_TEMP_CONTACT_MESH_NAME + profile
+
 		# create 'before' temp scan mesh
 		self.gcode.run_script_from_command(
 			"BED_MESH_CALIBRATE "
-			"PROFILE='%s'" % (RATOS_TEMP_SCAN_MESH_BEFORE_NAME))
+			"PROFILE='%s'" % (mesh_before_name))
 
 		# create contact mesh
 		self.gcode.run_script_from_command(
 			"BED_MESH_CALIBRATE PROBE_METHOD=contact SAMPLES=2 SAMPLES_DROP=1 SAMPLES_TOLERANCE_RETRIES=10 "
-			"PROBE_COUNT=%d,%d PROFILE='%s'" % (probe_count[0], probe_count[1], RATOS_TEMP_CONTACT_MESH_NAME))
+			"PROBE_COUNT=%d,%d PROFILE='%s'" % (probe_count[0], probe_count[1], contact_mesh_name))
 
 		# create 'after' temp scan mesh
 		self.gcode.run_script_from_command(
 			"BED_MESH_CALIBRATE "
-			"PROFILE='%s'" % (RATOS_TEMP_SCAN_MESH_ATFER_NAME))
-
-		scan_before_zmesh = self._create_zmesh_from_profile(RATOS_TEMP_SCAN_MESH_BEFORE_NAME)
-		scan_after_zmesh = self._create_zmesh_from_profile(RATOS_TEMP_SCAN_MESH_ATFER_NAME)
+			"PROFILE='%s'" % (mesh_after_name))
 		
-		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % RATOS_TEMP_CONTACT_MESH_NAME)
+		scan_before_zmesh = self._create_zmesh_from_profile(mesh_before_name)
+		scan_after_zmesh = self._create_zmesh_from_profile(mesh_after_name)
+		
+		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % contact_mesh_name)
 
-		contact_mesh_points = self.bed_mesh.pmgr.get_profiles()[RATOS_TEMP_CONTACT_MESH_NAME]["points"][:]		
+		contact_mesh_points = self.bed_mesh.pmgr.get_profiles()[contact_mesh_name]["points"][:]		
 		contact_params = self.bed_mesh.z_mesh.get_mesh_params()
 		contact_x_step = ((contact_params["max_x"] - contact_params["min_x"]) / (contact_params["x_count"] - 1))
 		contact_y_step = ((contact_params["max_y"] - contact_params["min_y"]) / (contact_params["y_count"] - 1))
@@ -671,10 +678,11 @@ class BeaconMesh:
 			self.bed_mesh.set_mesh(new_mesh)
 			self.bed_mesh.save_profile(profile)
 
-			# Remove temp meshes
-			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_CONTACT_MESH_NAME)
-			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_SCAN_MESH_BEFORE_NAME)
-			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_SCAN_MESH_ATFER_NAME)
+			if not keep_temp_meshes:
+				# Remove temp meshes
+				self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % contact_mesh_name)
+				self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % mesh_before_name)
+				self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % mesh_after_name)
 
 			self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(profile)))
 		except BedMesh.BedMeshError as e:
