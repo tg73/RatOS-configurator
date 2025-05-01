@@ -281,15 +281,12 @@ class BeaconMesh:
 		if not probe_count:
 			raise gcmd.error("Value for parameter 'PROBE_COUNT' must be specified")
 		
-		keep_temp_meshs = gcmd.get('KEEP_TEMP_MESHES', '0').strip().lower() in ('1', 'true', 'yes')
-
 		# TODO: Remove TESTING stuff before release
 		method = gcmd.get('TESTING_GENERATION_METHOD', self.gm_ratos.variables.get('testing_default_compensation_mesh_generation_method'))
-		gaussian_sigma = gcmd.get_float('GAUSSIAN_SIGMA', self.gm_ratos.variables.get('testing_default_compensation_mesh_gaussian_sigma'))
 
 		if method and method.strip().lower() == 'temporal_blend':
 			gcmd.respond_info("TESTING: using rapid-contact-rapid temporal blend")
-			self.create_compensation_mesh_TESTING_rapid_contact_rapid(profile, probe_count, keep_temp_meshs, gaussian_sigma)
+			self.create_compensation_mesh_TESTING_rapid_contact_rapid(gcmd, profile, probe_count)
 		else:
 			self.create_compensation_mesh(profile, probe_count)
 
@@ -582,7 +579,7 @@ class BeaconMesh:
 		except BedMesh.BedMeshError as e:
 			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
 
-	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, profile, probe_count, keep_temp_meshes, gaussian_sigma=None):
+	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, gcmd, profile, probe_count):
 		if not self.beacon:
 			self.ratos.console_echo("Create compensation mesh error", "error", 
 				"Beacon module not loaded._N_Make sure you've configured Beacon as your z probe.")
@@ -597,6 +594,13 @@ class BeaconMesh:
 			self.ratos.console_echo("Create compensation mesh warning", "warning", 
 				"Quad gantry levelling is configured but has not been applied._N_"
 				"This may result in inaccurate compensation.")
+
+		gaussian_sigma = gcmd.get_float('GAUSSIAN_SIGMA', self.gm_ratos.variables.get('testing_default_compensation_mesh_gaussian_sigma'))
+		keep_temp_meshes = gcmd.get('KEEP_TEMP_MESHES', '0').strip().lower() in ('1', 'true', 'yes')
+		samples = gcmd.get_int('SAMPLES', 2)
+		samples_drop = gcmd.get_int('SAMPLES_DROP', 1)
+
+		gcmd.respond_info(f"keep_temp_meshes: {keep_temp_meshes}, gaussian_sigma: {gaussian_sigma}, samples: {samples} samples_drop: {samples_drop}")
 
 		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
 
@@ -627,8 +631,8 @@ class BeaconMesh:
 
 		# create contact mesh
 		self.gcode.run_script_from_command(
-			"BED_MESH_CALIBRATE PROBE_METHOD=contact SAMPLES=2 SAMPLES_DROP=1 SAMPLES_TOLERANCE_RETRIES=10 "
-			"PROBE_COUNT=%d,%d PROFILE='%s'" % (probe_count[0], probe_count[1], contact_mesh_name))
+			"BED_MESH_CALIBRATE PROBE_METHOD=contact SAMPLES=%d SAMPLES_DROP=%d SAMPLES_TOLERANCE_RETRIES=10 "
+			"PROBE_COUNT=%d,%d PROFILE='%s'" % (samples, samples_drop, probe_count[0], probe_count[1], contact_mesh_name))
 
 		# create 'after' temp scan mesh
 		self.gcode.run_script_from_command(
@@ -690,7 +694,7 @@ class BeaconMesh:
 
 			self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
 
-			if keep_temp_meshes and gaussian_sigma is not None:
+			if keep_temp_meshes and gaussian_sigma is not None and gaussian_sigma > 0:
 				params = contact_params.copy()
 				filtered_profile = contact_mesh_name + "_filtered"
 				new_mesh = BedMesh.ZMesh(params, filtered_profile)
