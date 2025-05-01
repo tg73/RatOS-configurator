@@ -143,6 +143,9 @@ class BeaconMesh:
 			self.gcode.register_command('GET_RATOS_EXTENDED_BED_MESH_PARAMETERS',
 							   self.cmd_GET_RATOS_EXTENDED_BED_MESH_PARAMETERS, 
 							   desc=(self.desc_GET_RATOS_EXTENDED_BED_MESH_PARAMETERS))
+			self.gcode.register_command('REMAKE_BEACON_COMPENSATION_MESH', 
+							   self.cmd_REMAKE_BEACON_COMPENSATION_MESH, 
+							   desc=(self.desc_REMAKE_BEACON_COMPENSATION_MESH))
 
 	desc_BEACON_MESH_INIT = "Performs Beacon mesh initialization tasks"
 	def cmd_BEACON_MESH_INIT(self, gcmd):
@@ -289,6 +292,13 @@ class BeaconMesh:
 			self.create_compensation_mesh_TESTING_rapid_contact_rapid(profile, probe_count, keep_temp_meshs, gaussian_sigma)
 		else:
 			self.create_compensation_mesh(profile, probe_count)
+
+	desc_REMAKE_BEACON_COMPENSATION_MESH = "TESTING! PROFILE='exising comp mesh' NEW_PROFILE='new name' [GAUSSIAN_SIGMA=x]"
+	def cmd_REMAKE_BEACON_COMPENSATION_MESH(self, gcmd):
+		profile = gcmd.get('PROFILE')
+		new_profile = gcmd.get('NEW_PROFILE')
+		gaussian_sigma = gcmd.get_float('GAUSSIAN_SIGMA', self.gm_ratos.variables.get('testing_default_compensation_mesh_gaussian_sigma'))
+		self.TESTING_remake_compensation_mesh(profile, new_profile, gaussian_sigma)
 
 	desc_SET_ZERO_REFERENCE_POSITION = "Sets the zero reference position for the currently loaded bed mesh."
 	def cmd_SET_ZERO_REFERENCE_POSITION(self, gcmd):
@@ -706,6 +716,89 @@ class BeaconMesh:
 				self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % mesh_after_name)
 
 			self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(profile)))
+		except BedMesh.BedMeshError as e:
+			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
+
+	def TESTING_remake_compensation_mesh(self, profile, new_profile, gaussian_sigma=None):
+
+		mesh_before_name = profile + "_SCAN_BEFORE"
+		mesh_after_name = profile + "_SCAN_AFTER"
+		contact_mesh_name = profile + "_CONTACT"
+
+		scan_before_zmesh = self._create_zmesh_from_profile(mesh_before_name)
+		scan_after_zmesh = self._create_zmesh_from_profile(mesh_after_name)
+		contact_zmesh = self._create_zmesh_from_profile(contact_mesh_name)
+
+		contact_mesh_points = contact_zmesh.probed_matrix
+		contact_params = contact_zmesh.get_mesh_params().copy()
+		contact_x_step = ((contact_params["max_x"] - contact_params["min_x"]) / (contact_params["x_count"] - 1))
+		contact_y_step = ((contact_params["max_y"] - contact_params["min_y"]) / (contact_params["y_count"] - 1))
+
+		if gaussian_sigma is not None and gaussian_sigma > 0:
+			self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh with sigma={gaussian_sigma:.4f}")
+			filtered_np = gaussian_filter(contact_mesh_points, sigma=gaussian_sigma, mode='nearest')
+			contact_mesh_points = filtered_np.tolist()
+			contact_params[RATOS_MESH_NOTES_PARAMETER] = f"contact mesh gaussian filtered with sigma={gaussian_sigma:.4f}"
+
+		compensation_mesh_points = []
+
+		try:
+			if not self.beacon.mesh_helper.dir in ("x", "y"):
+				raise ValueError(f"Expected 'x' or 'y' for self.beacon.mesh_helper.dir, but got '{self.beacon.mesh_helper.dir}'")
+			
+			dir = self.beacon.mesh_helper.dir
+			y_count = len(contact_mesh_points)
+			x_count = len(contact_mesh_points[0])
+			contact_mesh_point_count = len(contact_mesh_points) * len(contact_mesh_points[0])
+
+			debug_lines = []
+
+			for y in range(y_count):
+				compensation_mesh_points.append([])
+				for x in range(x_count):
+					contact_mesh_index = \
+						((x if y % 2 == 0 else x_count - x - 1) + y * x_count) \
+						if dir == "x" else \
+						((y if x % 2 == 0 else y_count - y - 1) + x * y_count)
+					
+					blend_factor = contact_mesh_index / (contact_mesh_point_count - 1)
+
+					contact_x_pos = contact_params["min_x"] + x * contact_x_step
+					contact_y_pos = contact_params["min_y"] + y * contact_y_step
+
+					scan_before_z = scan_before_zmesh.calc_z(contact_x_pos, contact_y_pos)
+					scan_after_z = scan_after_zmesh.calc_z(contact_x_pos, contact_y_pos)
+					scan_temporal_crossfade_z = ((1 - blend_factor) * scan_before_z) + (blend_factor * scan_after_z)
+
+					contact_z = contact_mesh_points[y][x]
+					offset_z = contact_z - scan_temporal_crossfade_z
+
+					compensation_mesh_points[y].append(offset_z)
+
+					debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
+
+			self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
+
+			if gaussian_sigma is not None:
+				params = contact_params.copy()
+				filtered_profile = new_profile + RATOS_TEMP_CONTACT_MESH_NAME + "_filtered"
+				new_mesh = BedMesh.ZMesh(params, filtered_profile)
+				new_mesh.build_mesh(contact_mesh_points)
+				self.bed_mesh.set_mesh(new_mesh)
+				self.bed_mesh.save_profile(filtered_profile)
+
+			# Create new mesh
+			params = contact_params.copy()
+			params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
+			params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
+			params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
+			params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
+			new_mesh = BedMesh.ZMesh(params, new_profile)
+			new_mesh.build_mesh(compensation_mesh_points)
+			self.bed_mesh.set_mesh(new_mesh)
+			self.bed_mesh.save_profile(new_profile)
+
+			self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(new_profile)))
 		except BedMesh.BedMeshError as e:
 			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
 
