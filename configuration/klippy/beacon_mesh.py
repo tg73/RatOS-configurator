@@ -1,4 +1,4 @@
-import collections
+import collections, multiprocessing, traceback
 from . import bed_mesh as BedMesh
 import numpy as np
 from scipy.ndimage import gaussian_filter
@@ -579,6 +579,36 @@ class BeaconMesh:
 		except BedMesh.BedMeshError as e:
 			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
 
+	def _apply_filter(self, data, sigma):
+		parent_conn, child_conn = multiprocessing.Pipe()
+
+		def do():
+			try:
+				child_conn.send(
+					(False, self._do_apply_filter(data, sigma))
+				)
+			except Exception:
+				child_conn.send((True, traceback.format_exc()))
+			child_conn.close()
+
+		child = multiprocessing.Process(target=do)
+		child.daemon = True
+		child.start()
+		reactor = self.reactor
+		eventtime = reactor.monotonic()
+		while child.is_alive():
+			eventtime = reactor.pause(eventtime + 0.1)
+		is_err, result = parent_conn.recv()
+		child.join()
+		parent_conn.close()
+		if is_err:
+			raise Exception("Error applying filter: %s" % (result,))
+		else:
+			return result
+		
+	def _do_apply_filter(self, data, sigma):
+		return gaussian_filter(data, sigma=sigma, mode='nearest').tolist()
+
 	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, gcmd, profile, probe_count):
 		if not self.beacon:
 			self.ratos.console_echo("Create compensation mesh error", "error", 
@@ -651,11 +681,12 @@ class BeaconMesh:
 
 		if gaussian_sigma is not None and gaussian_sigma > 0:
 			self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh with sigma={gaussian_sigma:.4f}")
-			filtered_np = gaussian_filter(contact_mesh_points, sigma=gaussian_sigma, mode='nearest')
-			contact_mesh_points = filtered_np.tolist()
+			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma)
 			contact_params[RATOS_MESH_NOTES_PARAMETER] = f"contact mesh gaussian filtered with sigma={gaussian_sigma:.4f}"
 
 		compensation_mesh_points = []
+		
+		eventtime = self.reactor.monotonic()
 
 		try:
 			if not self.beacon.mesh_helper.dir in ("x", "y"):
@@ -691,6 +722,9 @@ class BeaconMesh:
 					compensation_mesh_points[y].append(offset_z)
 
 					debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
+
+				eventtime = self.reactor.pause(eventtime + 0.05)
+
 
 			self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
 
@@ -740,8 +774,7 @@ class BeaconMesh:
 
 		if gaussian_sigma is not None and gaussian_sigma > 0:
 			self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh with sigma={gaussian_sigma:.4f}")
-			filtered_np = gaussian_filter(contact_mesh_points, sigma=gaussian_sigma, mode='nearest')
-			contact_mesh_points = filtered_np.tolist()
+			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma)
 			contact_params[RATOS_MESH_NOTES_PARAMETER] = f"contact mesh gaussian filtered with sigma={gaussian_sigma:.4f}"
 
 		compensation_mesh_points = []
