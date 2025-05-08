@@ -1,7 +1,8 @@
-import collections, multiprocessing, traceback
+import collections, multiprocessing, traceback, logging
 from . import bed_mesh as BedMesh
 import numpy as np
 from scipy.ndimage import gaussian_filter
+from scipy.interpolate import RectBivariateSpline
 
 ## TESTING rapid-contact-rapid comp mesh generation
 RATOS_TEMP_SCAN_MESH_BEFORE_NAME = "__BEACON_TEMP_SCAN_MESH_BEFORE__"
@@ -579,13 +580,13 @@ class BeaconMesh:
 		except BedMesh.BedMeshError as e:
 			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
 
-	def _apply_filter(self, data, sigma):
+	def _apply_filter(self, data, extrapolate_sigma=0.75, sigma=0.75, pad=3):
 		parent_conn, child_conn = multiprocessing.Pipe()
 
 		def do():
 			try:
 				child_conn.send(
-					(False, self._do_apply_filter(data, sigma))
+					(False, self._do_apply_filter(np.array(data), extrapolate_sigma, sigma, pad))
 				)
 			except Exception:
 				child_conn.send((True, traceback.format_exc()))
@@ -606,8 +607,58 @@ class BeaconMesh:
 		else:
 			return result
 		
-	def _do_apply_filter(self, data, sigma):
-		return gaussian_filter(data, sigma=sigma, mode='nearest').tolist()
+	@staticmethod
+	def _do_apply_filter(data, extrapolate_sigma, sigma, pad):
+		# This enhanced filter routine seeks to reduce edge distortion that occurs when
+		# a filter kernel consumes values beyond the edge of the defined data (ie, as
+		# per the 'mode' argument).
+
+		# Pre-filter the data to compute a smoothed, noise-reduced model, using a mode
+		# that minimizes boundary artifacts on the interior.
+		filtered_interior = gaussian_filter(data, sigma=extrapolate_sigma, mode='nearest')
+
+		# Extrapolate the filtered surface.
+		# Determine a pad size that roughly covers the effective kernel support.
+		# For sigma=0.75, a pad of about 3 pixels is a reasonable starting point.
+
+		# Coordinates for original grid:
+		x = np.arange(data.shape[0])
+		y = np.arange(data.shape[1])
+
+		# Define an extended grid that covers the original plus the padding
+		x_ext = np.arange(x[0] - pad, x[-1] + pad + 1)
+		y_ext = np.arange(y[0] - pad, y[-1] + pad + 1)
+
+		# Trim the edges of the pre-filtered data as these will include distorted edge gradients
+		# from the filter which used 'nearest' mode.			
+		trim = int(np.ceil(sigma*2))
+
+		trimmed_filtered_interior = filtered_interior[trim:-trim, trim:-trim]
+		
+		x_trimmed = x[trim:-trim]
+		y_trimmed = y[trim:-trim]
+
+		# Fit a 2D cubic spline to the trimmed filtered data. Use degree 1 to avoid wild values at
+		# extrapolated corners.
+		spline = RectBivariateSpline(x_trimmed, y_trimmed, trimmed_filtered_interior, kx=1, ky=1,
+									bbox= [x_ext[0], x_ext[-1], y_ext[0], y_ext[-1]])
+
+		# Create the extrapolated surface
+		surface_extended = spline(x_ext, y_ext)
+
+		# Replace the interior with the original data
+		surface_extended[x[0] + pad:x[-1] + pad + 1, y[0] + pad:y[-1] + pad + 1] = data
+
+		# Apply the Gaussian filter to the extended data. When consuming values beyond the edges
+		# of the original data, the kernel will use the extrapolated values we created
+		# above, which are a better approximation than any of the standard modes.
+		filtered_extended = gaussian_filter(surface_extended, sigma=sigma, mode='nearest')
+
+		# Crop the filtered array back to the original shape.
+		result = filtered_extended[pad:-pad, pad:-pad]
+
+		# 'result' now should display edges that more faithfully follow the filtered curvature.
+		return result
 
 	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, gcmd, profile, probe_count):
 		if not self.beacon:
@@ -668,10 +719,10 @@ class BeaconMesh:
 		self.gcode.run_script_from_command(
 			"BED_MESH_CALIBRATE "
 			"PROFILE='%s'" % (mesh_after_name))
-		
+				
 		scan_before_zmesh = self._create_zmesh_from_profile(mesh_before_name)
 		scan_after_zmesh = self._create_zmesh_from_profile(mesh_after_name)
-		
+
 		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % contact_mesh_name)
 
 		contact_mesh_points = self.bed_mesh.pmgr.get_profiles()[contact_mesh_name]["points"][:]		
@@ -681,7 +732,7 @@ class BeaconMesh:
 
 		if gaussian_sigma is not None and gaussian_sigma > 0:
 			self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh with sigma={gaussian_sigma:.4f}")
-			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma)
+			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma * 2., gaussian_sigma, int(np.ceil(gaussian_sigma * 4.)))
 			contact_params[RATOS_MESH_NOTES_PARAMETER] = f"contact mesh gaussian filtered with sigma={gaussian_sigma:.4f}"
 
 		compensation_mesh_points = []
@@ -721,12 +772,12 @@ class BeaconMesh:
 
 					compensation_mesh_points[y].append(offset_z)
 
-					debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
+					#debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
 
 				eventtime = self.reactor.pause(eventtime + 0.05)
 
-
-			self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
+			# For a large mesh (eg, 60x60) this can take 2+ minutes
+			#self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
 
 			if keep_temp_meshes and gaussian_sigma is not None and gaussian_sigma > 0:
 				params = contact_params.copy()
@@ -774,7 +825,7 @@ class BeaconMesh:
 
 		if gaussian_sigma is not None and gaussian_sigma > 0:
 			self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh with sigma={gaussian_sigma:.4f}")
-			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma)
+			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma * 2., gaussian_sigma, int(np.ceil(gaussian_sigma * 4.)))
 			contact_params[RATOS_MESH_NOTES_PARAMETER] = f"contact mesh gaussian filtered with sigma={gaussian_sigma:.4f}"
 
 		compensation_mesh_points = []
@@ -812,9 +863,10 @@ class BeaconMesh:
 
 					compensation_mesh_points[y].append(offset_z)
 
-					debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
+					#debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
 
-			self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
+			# For a large mesh (eg, 60x60) this can take 2+ minutes
+			#self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
 
 			if gaussian_sigma is not None:
 				params = contact_params.copy()
