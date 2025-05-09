@@ -1,5 +1,7 @@
-import os, logging, glob, traceback, inspect, re
-import json, subprocess, pathlib
+import os, logging, glob, traceback, inspect, re, math
+import json, subprocess, pathlib, time
+import numpy as np
+from . import probe
 
 #####
 # RatOS
@@ -24,7 +26,15 @@ class RatOS:
 			'TEST_RESONANCES': None,
 			'SHAPER_CALIBRATE': None,
 		}
+
+		# Fields initialized in _connect
+		self.v_sd = None
+		self.sdcard_dirname = None
+		self.dual_carriage = None
+		self.rmmu_hub = None
 		self.bed_mesh = None
+		self.gm_ratos = None
+		self.toolhead = None
 
 		# Status fields
 		self.last_processed_file_result = None
@@ -46,7 +56,9 @@ class RatOS:
 	def _connect(self):
 		self.v_sd = self.printer.lookup_object('virtual_sdcard', None)
 		self.sdcard_dirname = self.v_sd.sdcard_dirname
-		self.dual_carriage = None
+		self.gm_ratos = self.printer.lookup_object('gcode_macro RatOS')
+		self.toolhead = self.printer.lookup_object("toolhead")
+
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
 		self.rmmu_hub = None
@@ -85,6 +97,7 @@ class RatOS:
 		self.gcode.register_command('_RAISE_ERROR', self.cmd_RAISE_ERROR, desc=(self.desc_RAISE_ERROR))
 		self.gcode.register_command('_TRY', self.cmd_TRY, desc=(self.desc_TRY))
 		self.gcode.register_command('_DEBUG_ECHO_STACK_TRACE', self.cmd_DEBUG_ECHO_STACK_TRACE, desc=(self.desc_DEBUG_ECHO_STACK_TRACE))
+		self.gcode.register_command('MULTI_POINT_PROBE', self.cmd_MULTI_POINT_PROBE, desc=(self.desc_MULTI_POINT_PROBE))
 
 	def register_command_overrides(self):
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=(self.desc_TEST_RESONANCES))
@@ -678,6 +691,129 @@ class RatOS:
 		
 		return "".join(lines)
 	
+	#####
+	# Multi-point Probe
+	#####
+
+	def _generate_points(self, n, x_lim, y_lim, min_dist, max_iter=10000):
+		"""
+		Generate n random points within given x and y limits such that
+		any two points are at least min_dist apart.
+		
+		Parameters:
+		- n: number of points to generate
+		- x_lim: tuple (min_x, max_x)
+		- y_lim: tuple (min_y, max_y)
+		- min_dist: minimum required Euclidean distance between any two points
+		- max_iter: maximum number of iterations to try (to avoid infinite loops)
+		
+		Returns:
+		- A NumPy array of shape (m, 2) of the generated points, where m <= n.
+		"""
+		points = []
+		iterations = 0
+
+		while len(points) < n and iterations < max_iter:
+			# Generate a candidate point uniformly within the given x and y limits.
+			candidate = np.array([np.random.uniform(x_lim[0], x_lim[1]),
+								np.random.uniform(y_lim[0], y_lim[1])])
+			
+			# Check that candidate is at least min_dist away from every existing point.
+			if all(np.linalg.norm(candidate - p) >= min_dist for p in points):
+				points.append(candidate.tolist()) # don't leak numpy types
+			
+			iterations += 1
+		
+		if len(points) < n:
+			raise self.gcode.error(
+				"Could not generate all required probe points within the specified iteration limit. "
+				"The conditions are too strict.")
+		
+		return points
+	
+	def _check_homed(self, msg = 'Must home first'):
+		status = self.toolhead.get_status(self.reactor.monotonic())
+		homed_axes = status["homed_axes"]
+		if any(axis not in homed_axes for axis in "xyz"):
+			raise self.gcode.error( msg )
+				
+	desc_MULTI_POINT_PROBE = "TO DO"
+	def cmd_MULTI_POINT_PROBE(self, gcmd):
+		
+		self._check_homed()
+
+		# - assumes already at desired centre location
+		# cmd COUNT=5 MIN_SPAN=10 [SAMPLES=1 SAMPLES_DROP=0 PROBE_METHOD=contact]
+		count = gcmd.get_int('COUNT', 5)
+		min_span = gcmd.get_float('MIN_SPAN', 10.)
+
+		extruder_name = 'extruder'
+		
+		if self.dual_carriage and self.dual_carriage.dc[1].mode.lower() == 'primary':
+			extruder_name = 'extruder1'
+		
+		extruder = self.printer.lookup_object(extruder_name)
+		nozzle_diameter = extruder.nozzle_diameter
+		
+		# Assume typical 0.5mm rim around nozzle
+		nozzle_tip_dia = nozzle_diameter + 1.
+		
+		# Calculate the nozzle-based min range as the length of the side of a
+		# square with area four times the footprint of COUNT nozzle tips.
+		nozzle_based_min_span = math.sqrt(math.pi * (nozzle_tip_dia/2)**2 * count * 4.)
+		span = max(min_span, nozzle_based_min_span)
+		half_span = span / 2.		
+
+		gcmd.respond_info(f"count: {count}  min_span: {min_span}  extruder: {extruder.name}  nozzle_dia: {nozzle_diameter:.3f}  nozzle_tip_dia: {nozzle_tip_dia:.3f}  nozzle_based_min_range: {nozzle_based_min_span:.2f}  use_range: {span:.2f}")
+
+		pos = self.toolhead.get_position()
+
+		range_x = (pos[0] - half_span, pos[0] + half_span)
+		range_y = (pos[1] - half_span, pos[1] + half_span)
+
+		printable_x = ( self.gm_ratos.variables.get('printable_x_min'),	self.gm_ratos.variables.get('printable_x_max') )
+		printable_y = ( self.gm_ratos.variables.get('printable_y_min'),	self.gm_ratos.variables.get('printable_y_max') )
+
+		def includes( r, value ):
+			return r[0] <= value <= r[1]
+		
+		if not (
+			includes(printable_x, range_x[0]) and includes(printable_x, range_x[1]) and 
+			includes(printable_y, range_y[0]) and includes(printable_y, range_y[1])):
+			self.console_echo('MULTI_POINT_PROBE', 'error', f'The required span ({span:.1f}) would probe outside the printable area.')
+			raise gcmd.error('The required span would probe outside the printable area')
+		
+		points = self._generate_points(count, range_x, range_y, nozzle_tip_dia)
+		
+		#gcmd.respond_info( "\n".join([f"{p[0]:.2f}, {p[1]:.2f}" for p in points]))
+
+		# TODO: ProbePointsHelper will consider name, horizontal_move_z and speed from config. It's weird to conflate those
+		# values with [ratos] config. It would seem cleaner to move MULTI_POINT_PROBE into its own file.
+		probe_helper = probe.ProbePointsHelper(self.config, self.probe_finalize, [])
+		probe_helper.update_probe_points(points, len(points))
+		probe_helper.start_probe(gcmd)
+
+	def probe_finalize(self, offsets, positions):
+		def percentile_filter(data, margin=5.):
+			lower_bound = np.percentile(data, margin)
+			upper_bound = np.percentile(data, 100. - margin)
+			filtered_data = data[np.logical_and(data >= lower_bound, data <= upper_bound)]  # Safe comparison
+			return filtered_data
+
+		#self.gcode.respond_info(f"offsets:\n{offsets}")
+		#self.gcode.respond_info(f"positions:\n{positions}")
+		z = np.array([p[2] for p in positions])
+		self.gcode.respond_info(f"mean: {np.mean(z):.5f}  median: {np.median(z):.5f} min: {np.min(z):.5f}  max: {np.max(z):.5f}  spread: {np.max(z)-np.min(z):.5f}  sd: {np.std(z):.5f}")
+		#z5 = percentile_filter(z, 5.)
+		#self.gcode.respond_info(f"mean5: {np.mean(z5):.5f}  median5: {np.median(z5):.5f}")
+
+		fn = "/tmp/multi-point-probe-" + time.strftime("%Y%m%d") + ".csv"
+		with open(fn, "a") as f:
+			f.write(",".join([str(v) for v in z]))
+			f.write("\n")
+
+		return 'done'
+
 #####
 # Loader
 #####
