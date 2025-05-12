@@ -61,7 +61,6 @@ class RatOS:
 
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
-		self.rmmu_hub = None
 		if self.config.has_section("rmmu_hub"):
 			self.rmmu_hub = self.printer.lookup_object("rmmu_hub", None)
 		if self.config.has_section("bed_mesh"):
@@ -89,7 +88,6 @@ class RatOS:
 		self.gcode.register_command('CONSOLE_ECHO', self.cmd_CONSOLE_ECHO, desc=(self.desc_CONSOLE_ECHO))
 		self.gcode.register_command('RATOS_LOG', self.cmd_RATOS_LOG, desc=(self.desc_RATOS_LOG))
 		self.gcode.register_command('PROCESS_GCODE_FILE', self.cmd_PROCESS_GCODE_FILE, desc=(self.desc_PROCESS_GCODE_FILE))
-		self.gcode.register_command('TEST_PROCESS_GCODE_FILE', self.cmd_TEST_PROCESS_GCODE_FILE, desc=(self.desc_TEST_PROCESS_GCODE_FILE))
 		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
 		self.gcode.register_command('BYPASS_GCODE_PROCESSING', self.cmd_BYPASS_GCODE_PROCESSING, desc=(self.desc_BYPASS_GCODE_PROCESSING))
 		self.gcode.register_command('_SYNC_GCODE_POSITION', self.cmd_SYNC_GCODE_POSITION, desc=(self.desc_SYNC_GCODE_POSITION))
@@ -158,17 +156,6 @@ class RatOS:
 			'[ratos]',
 			'bypass_post_processing: True_N_'
 		]))
-
-	desc_TEST_PROCESS_GCODE_FILE = "Test the G-code post-processor for IDEX and RMMU, only for debugging purposes"
-	def cmd_TEST_PROCESS_GCODE_FILE(self, gcmd):
-		dual_carriage = self.dual_carriage
-		self.dual_carriage = gcmd.get('IDEX', dual_carriage != None).lower() == "true"
-		filename = gcmd.get('FILENAME', "")
-		if filename[0] == '/':
-			filename = filename[1:]
-		self.process_gcode_file(filename, True)
-		self.dual_carriage = dual_carriage
-		self.console_echo('Post processing test results', 'debug', 'Output: %s' % (self.last_processed_file_result))
 
 	desc_HELLO_RATOS = "RatOS mainsail welcome message"
 	def cmd_HELLO_RATOS(self, gcmd):
@@ -278,7 +265,7 @@ class RatOS:
 	desc_PROCESS_GCODE_FILE = "G-code post-processor for IDEX and RMMU"
 	def cmd_PROCESS_GCODE_FILE(self, gcmd):
 		filename = gcmd.get('FILENAME', "")
-		isIdex = self.config.has_section("dual_carriage")
+		isIdex = self.dual_carriage is not None
 		if filename[0] == '/':
 			filename = filename[1:]
 		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=-1")
