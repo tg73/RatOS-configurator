@@ -2,6 +2,7 @@ import os, logging, glob, traceback, inspect, re, math
 import json, subprocess, pathlib, time
 import numpy as np
 from . import probe
+import multiprocessing
 
 #####
 # RatOS
@@ -905,21 +906,56 @@ class RatOS:
 		#	f.write(",".join([str(v) for v in z]))
 		#	f.write("\n")
 
+		self.append_to_mpp_file(positions, offsets)
+		return 'done'
+	
+	def append_to_mpp_file(self, positions, offsets):
+		parent_conn, child_conn = multiprocessing.Pipe()
+
+		def do():
+			try:
+				child_conn.send(
+					(False, self._do_append_to_mpp_file(positions, offsets, self.mpp_save_meta, self.mpp_filename_suffix))
+				)
+			except Exception:
+				child_conn.send((True, traceback.format_exc()))
+			child_conn.close()
+
+		child = multiprocessing.Process(target=do)
+		child.daemon = True
+		child.start()
+		reactor = self.reactor
+		eventtime = reactor.monotonic()
+		while child.is_alive():
+			eventtime = reactor.pause(eventtime + 0.1)
+		is_err, result = parent_conn.recv()
+		child.join()
+		parent_conn.close()
+		if is_err:
+			raise Exception("Error appending data to npz file: %s" % (result,))
+		else:
+			is_inner_err, inner_result = result
+			if is_inner_err:
+				raise self.gcode.error(inner_result)
+			else:
+				return inner_result
+
+	@staticmethod
+	def _do_append_to_mpp_file(positions, offsets, meta, filename_suffix):		
 		def get_save_map(i):
 			return { 
 				f'positions_{i}': positions, 
 				f'offsets_{i}': offsets
-			} | {f'{k}_{i}': np.asanyarray(v) for k,v in self.mpp_save_meta.items()}
+			} | {f'{k}_{i}': np.asanyarray(v) for k,v in meta.items()}
 			
-		fn = f"/tmp/multi-point-probe{self.mpp_filename_suffix}.npz"
+		fn = f"/tmp/multi-point-probe{filename_suffix}.npz"
 		if os.path.exists(fn):
 			with np.load(fn) as npz:
 				count = int(npz['count'])
-				np.savez( fn, count=np.array(count+1), **{k:v for k,v in npz.items() if k != 'count'}, **get_save_map(count) )
+				np.savez_compressed( fn, count=np.array(count+1), **{k:v for k,v in npz.items() if k != 'count'}, **get_save_map(count) )
 		else:
-			np.savez( fn, count=np.array(1), **get_save_map(0) )
-		
-		return 'done'
+			np.savez_compressed( fn, count=np.array(1), **get_save_map(0) )
+		return (False, None)
 
 #####
 # Loader
