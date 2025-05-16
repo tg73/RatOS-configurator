@@ -839,6 +839,7 @@ class RatOS:
 			half_span = span / 2.
 
 			gcmd.respond_info(f"count: {count}  min_span: {min_span}  extruder: {extruder.name}  nozzle_dia: {nozzle_diameter:.3f}  nozzle_tip_dia: {nozzle_tip_dia:.3f}  nozzle_based_min_range: {nozzle_based_min_span:.2f}  use_range: {span:.2f}")
+			self.mpp_save_meta = dict(pattern=0,count=count, min_span=min_span, nozzle_diameter=nozzle_diameter, nozzle_tip_dia=nozzle_tip_dia, nozzle_based_min_span=nozzle_based_min_span, span=span)
 			self.mpp_filename_suffix = f"-random{count}"
 
 			range_x = (pos[0] - half_span, pos[0] + half_span)
@@ -862,6 +863,7 @@ class RatOS:
 
 			gcmd.respond_info(f"rings: {rings}  include_centre: {include_centre}  jitter: {jitter_tip_dia_factor:.1f}  extruder: {extruder.name}  nozzle_dia: {nozzle_diameter:.3f}  nozzle_tip_dia: {nozzle_tip_dia:.3f}  span: {span:.2f}  c: {cx:.2f}, {cy:.2f}")
 			self.mpp_filename_suffix = f"-concentric-r{rings}-ic{'1' if include_centre else '0'}-j{jitter_tip_dia_factor:.1f}"
+			self.mpp_save_meta = dict(pattern=1,rings=rings,include_centre=include_centre,jitter=jitter_tip_dia_factor,nozzle_diameter=nozzle_diameter, nozzle_tip_dia=nozzle_tip_dia,span=span,centre=(cx,cy))
 
 			range_x = (pos[0] - span, pos[0] + span)
 			range_y = (pos[1] - span, pos[1] + span)
@@ -898,11 +900,25 @@ class RatOS:
 		#z5 = percentile_filter(z, 5.)
 		#self.gcode.respond_info(f"mean5: {np.mean(z5):.5f}  median5: {np.median(z5):.5f}")
 
-		fn = f"/tmp/multi-point-probe{self.mpp_filename_suffix}.csv"
-		with open(fn, "a") as f:
-			f.write(",".join([str(v) for v in z]))
-			f.write("\n")
+		#fn = f"/tmp/multi-point-probe{self.mpp_filename_suffix}.csv"
+		#with open(fn, "a") as f:
+		#	f.write(",".join([str(v) for v in z]))
+		#	f.write("\n")
 
+		def get_save_map(i):
+			return { 
+				f'positions_{i}': positions, 
+				f'offsets_{i}': offsets
+			} | {f'{k}_{i}': np.asanyarray(v) for k,v in self.mpp_save_meta.items()}
+			
+		fn = f"/tmp/multi-point-probe{self.mpp_filename_suffix}.npz"
+		if os.path.exists(fn):
+			with np.load(fn) as npz:
+				count = int(npz['count'])
+				np.savez( fn, count=np.array(count+1), **{k:v for k,v in npz.items() if k != 'count'}, **get_save_map(count) )
+		else:
+			np.savez( fn, count=np.array(1), **get_save_map(0) )
+		
 		return 'done'
 
 #####
