@@ -748,7 +748,15 @@ class RatOS:
 		y = center_y + radius * np.sin(theta)
 
 		return float(x), float(y)
-	
+
+	@staticmethod	
+	def circle_points(n, radius, center_x, center_y):
+		"""Generate 'n' evenly spaced points on a circle of given radius centered at (center_x, center_y)."""
+		angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
+		x_points = center_x + radius * np.cos(angles)
+		y_points = center_y + radius * np.sin(angles)
+		return np.column_stack((x_points, y_points)).tolist()
+
 	def _generate_points(self, n, x_lim, y_lim, min_dist, max_iter=10000):
 		"""
 		Generate n random points within given x and y limits such that
@@ -799,8 +807,8 @@ class RatOS:
 		# - assumes already at desired centre location
 		# cmd COUNT=5 MIN_SPAN=10 [SAMPLES=1 SAMPLES_DROP=0 PROBE_METHOD=contact]
 		pattern = gcmd.get('PATTERN', 'random').strip().lower()
-		if pattern not in ('random', 'concentric'):
-			raise gcmd.error('If specified, PATTERN must be random or concentric')
+		if pattern not in ('random', 'concentric', 'circle'):
+			raise gcmd.error('If specified, PATTERN must be random, concentric or circle')
 
 		extruder_name = 'extruder'
 		
@@ -876,6 +884,28 @@ class RatOS:
 				raise gcmd.error('The required span would probe outside the printable area')
 			
 			points = self.pack_circles_concentric(nozzle_tip_dia/2, cx, cy, rings, include_centre)
+		elif pattern == 'circle':
+			dia = gcmd.get_float('DIA', 10.0)
+			count = gcmd.get_int('COUNT', 60)
+
+			span = dia + nozzle_diameter
+			cx = pos[0]
+			cy = pos[1]
+			
+			gcmd.respond_info(f"dia: {dia}  count: {count}  extruder: {extruder.name}  nozzle_dia: {nozzle_diameter:.3f}  nozzle_tip_dia: {nozzle_tip_dia:.3f}  span: {span:.2f}  c: {cx:.2f}, {cy:.2f}")
+			self.mpp_filename_suffix = f"-circle-{dia:.1f}d{count}"
+			self.mpp_save_meta = dict(pattern=2,count=count,dia=dia,nozzle_diameter=nozzle_diameter, nozzle_tip_dia=nozzle_tip_dia,span=span,centre=(cx,cy))
+
+			range_x = (pos[0] - span, pos[0] + span)
+			range_y = (pos[1] - span, pos[1] + span)
+
+			if not (
+				includes(printable_x, range_x[0]) and includes(printable_x, range_x[1]) and 
+				includes(printable_y, range_y[0]) and includes(printable_y, range_y[1])):
+				self.console_echo('MULTI_POINT_PROBE', 'error', f'The required span ({span:.1f}) would probe outside the printable area.')
+				raise gcmd.error('The required span would probe outside the printable area')
+			
+			points = self.circle_points(count, dia/2, cx, cy)
 		else:
 			raise gcmd.error(f"Pattern '{pattern}' not implemented.")
 		
