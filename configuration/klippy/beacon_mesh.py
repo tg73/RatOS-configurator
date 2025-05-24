@@ -2,9 +2,8 @@ import collections, multiprocessing, traceback, logging
 from . import bed_mesh as BedMesh
 import numpy as np
 from scipy.ndimage import gaussian_filter
-from scipy.interpolate import RectBivariateSpline
 
-## TESTING rapid-contact-rapid comp mesh generation
+# Temporary mesh names
 RATOS_TEMP_SCAN_MESH_BEFORE_NAME = "__BEACON_TEMP_SCAN_MESH_BEFORE__"
 RATOS_TEMP_SCAN_MESH_ATFER_NAME = "__BEACON_TEMP_SCAN_MESH_AFTER__"
 
@@ -276,27 +275,20 @@ class BeaconMesh:
 	desc_CREATE_BEACON_COMPENSATION_MESH = "Creates the beacon compensation mesh by calibrating and diffing a contact and a scan mesh."
 	def cmd_CREATE_BEACON_COMPENSATION_MESH(self, gcmd):
 		profile = gcmd.get('PROFILE', RATOS_DEFAULT_COMPENSATION_MESH_NAME)
-		probe_count = BedMesh.parse_gcmd_pair(gcmd, 'PROBE_COUNT', minval=3)
+		# Using minval=4 to avoid BedMesh defaulting to using Lagrangian interpolation which appears to be broken
+		probe_count = BedMesh.parse_gcmd_pair(gcmd, 'PROBE_COUNT', minval=4)
 		if not profile.strip():
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 		if not probe_count:
 			raise gcmd.error("Value for parameter 'PROBE_COUNT' must be specified")
 		
-		# TODO: Remove TESTING stuff before release
-		method = gcmd.get('TESTING_GENERATION_METHOD', self.gm_ratos.variables.get('testing_default_compensation_mesh_generation_method'))
-
-		if method and method.strip().lower() == 'temporal_blend':
-			gcmd.respond_info("TESTING: using rapid-contact-rapid temporal blend")
-			self.create_compensation_mesh_TESTING_rapid_contact_rapid(gcmd, profile, probe_count)
-		else:
-			self.create_compensation_mesh(profile, probe_count)
+		self.create_compensation_mesh(profile, probe_count)
 
 	desc_REMAKE_BEACON_COMPENSATION_MESH = "TESTING! PROFILE='exising comp mesh' NEW_PROFILE='new name' [GAUSSIAN_SIGMA=x]"
 	def cmd_REMAKE_BEACON_COMPENSATION_MESH(self, gcmd):
 		profile = gcmd.get('PROFILE')
 		new_profile = gcmd.get('NEW_PROFILE')
-		gaussian_sigma = gcmd.get_float('GAUSSIAN_SIGMA', self.gm_ratos.variables.get('testing_default_compensation_mesh_gaussian_sigma'))
-		self.TESTING_remake_compensation_mesh(profile, new_profile, gaussian_sigma)
+		self.TESTING_remake_compensation_mesh(profile, new_profile)
 
 	desc_SET_ZERO_REFERENCE_POSITION = "Sets the zero reference position for the currently loaded bed mesh."
 	def cmd_SET_ZERO_REFERENCE_POSITION(self, gcmd):
@@ -486,7 +478,7 @@ class BeaconMesh:
 
 			measured_zmesh.build_mesh(new_points)
 			# NB: build_mesh does not replace or mutate its params, so no need to reassign measured_mesh_params.
-			measured_mesh_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
+			measured_mesh_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATED
 			self.bed_mesh.save_profile(measured_mesh_name)
 			self.bed_mesh.set_mesh(measured_zmesh)
 
@@ -499,94 +491,13 @@ class BeaconMesh:
 			self.ratos.console_echo(error_title, "error", str(e))
 			return False
 
-	def create_compensation_mesh(self, profile, probe_count):
-		if not self.beacon:
-			self.ratos.console_echo("Create compensation mesh error", "error", 
-				"Beacon module not loaded._N_Make sure you've configured Beacon as your z probe.")
-			return
-
-		if self.z_tilt and not self.z_tilt.z_status.applied:
-			self.ratos.console_echo("Create compensation mesh warning", "warning", 
-				"Z-tilt levelling is configured but has not been applied._N_"
-				"This may result in inaccurate compensation.")
-		
-		if self.qgl and not self.qgl.z_status.applied:
-			self.ratos.console_echo("Create compensation mesh warning", "warning", 
-				"Quad gantry levelling is configured but has not been applied._N_"
-				"This may result in inaccurate compensation.")
-
-		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
-
-		# Go to safe home
-		self.gcode.run_script_from_command("_MOVE_TO_SAFE_Z_HOME Z_HOP=True")
-
-		if beacon_contact_calibrate_model_on_print:
-			# Calibrate a fresh model
-			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE")
-		else:
-			if self.beacon.model is None:
-				self.ratos.console_echo("Create compensation mesh error", "error", 
-					"No active Beacon model is selected._N_Make sure you've performed initial Beacon calibration.")
-				return
-
-			self.check_active_beacon_model_temp(title="Create compensation mesh warning")
-			
-			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MODEL_CREATION=1")
-
-		# create contact mesh
-		self.gcode.run_script_from_command(
-			"BED_MESH_CALIBRATE PROBE_METHOD=contact SAMPLES=2 SAMPLES_DROP=1 SAMPLES_TOLERANCE_RETRIES=10 "
-			"PROBE_COUNT=%d,%d PROFILE='%s'" % (probe_count[0], probe_count[1], RATOS_TEMP_CONTACT_MESH_NAME))
-
-		# create temp scan mesh
-		self.gcode.run_script_from_command(
-			"BED_MESH_CALIBRATE METHOD=automatic USE_CONTACT_AREA=1 "
-			"PROBE_COUNT=%d,%d PROFILE='%s'" % (probe_count[0], probe_count[1], RATOS_TEMP_SCAN_MESH_NAME))
-
-		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % RATOS_TEMP_SCAN_MESH_NAME)
-		scan_mesh_points = self.bed_mesh.pmgr.get_profiles()[RATOS_TEMP_SCAN_MESH_NAME]["points"]
-		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % RATOS_TEMP_CONTACT_MESH_NAME)
-		contact_mesh_points = self.bed_mesh.pmgr.get_profiles()[RATOS_TEMP_CONTACT_MESH_NAME]["points"]
-		compensation_mesh_points = []
-
-		try:
-
-			for y in range(len(contact_mesh_points)):
-				compensation_mesh_points.append([])
-				for x in range(len(contact_mesh_points[0])):
-					contact_z = contact_mesh_points[y][x]
-					scan_z = scan_mesh_points[y][x]
-					offset_z = contact_z - scan_z
-					self.ratos.debug_echo("Create compensation mesh", 
-						   "scan: %0.4f  contact: %0.4f  offset: %0.4f" % (scan_z, contact_z, offset_z))
-					compensation_mesh_points[y].append(offset_z)
-
-			# Create new mesh
-			params = self.bed_mesh.z_mesh.get_mesh_params()
-			params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
-			params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
-			params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
-			params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY_AUTOMATIC
-			new_mesh = BedMesh.ZMesh(params, profile)
-			new_mesh.build_mesh(compensation_mesh_points)
-			self.bed_mesh.set_mesh(new_mesh)
-			self.bed_mesh.save_profile(profile)
-
-			# Remove temp meshes
-			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_CONTACT_MESH_NAME)
-			self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % RATOS_TEMP_SCAN_MESH_NAME)
-
-			self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(profile)))
-		except BedMesh.BedMeshError as e:
-			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
-
-	def _apply_filter(self, data, extrapolate_sigma=0.75, sigma=0.75, pad=3):
+	def _apply_filter(self, data):
 		parent_conn, child_conn = multiprocessing.Pipe()
 
 		def do():
 			try:
 				child_conn.send(
-					(False, self._do_apply_filter(np.array(data), extrapolate_sigma, sigma, pad))
+					(False, self._do_local_low_filter(np.array(data)))
 				)
 			except Exception:
 				child_conn.send((True, traceback.format_exc()))
@@ -606,61 +517,54 @@ class BeaconMesh:
 			raise Exception("Error applying filter: %s" % (result,))
 		else:
 			return result
-		
+
 	@staticmethod
-	def _do_apply_filter(data, extrapolate_sigma, sigma, pad):
-		# This enhanced filter routine seeks to reduce edge distortion that occurs when
-		# a filter kernel consumes values beyond the edge of the defined data (ie, as
-		# per the 'mode' argument).
+	def _do_local_low_filter(data, lowpass_sigma=1., num_keep=4, num_keep_edge=3, num_keep_corner=2):
+		# 1. Low-pass filter to obtain general shape
+		lowpass = gaussian_filter(data, sigma=lowpass_sigma, mode='nearest')
 
-		# Pre-filter the data to compute a smoothed, noise-reduced model, using a mode
-		# that minimizes boundary artifacts on the interior.
-		filtered_interior = gaussian_filter(data, sigma=extrapolate_sigma, mode='nearest')
+		# 2. Subtract the low-pass filtered version from the original
+		# to get the high-frequency details
+		high_freq_details = data - lowpass
 
-		# Extrapolate the filtered surface.
-		# Determine a pad size that roughly covers the effective kernel support.
-		# For sigma=0.75, a pad of about 3 pixels is a reasonable starting point.
+		# 3. Prepare a new array of the same shape as the original
+		filtered_data = np.zeros_like(data)
 
-		# Coordinates for original grid:
-		x = np.arange(data.shape[0])
-		y = np.arange(data.shape[1])
+		# 4. For each point in the original array:
+		rows, cols = data.shape
+		for i in range(rows):
+			for j in range(cols):
+				# Get the 3x3 neighborhood around the current point within the high-frequency details
+				neighbours = []
+				neighbour_coords = []
+				neighbour_distances = []
+				for di in [-1, 0, 1]:
+					for dj in [-1, 0, 1]:
+						ni, nj = i + di, j + dj
+						if 0 <= ni < rows and 0 <= nj < cols:
+							neighbours.append(high_freq_details[ni, nj])
+							neighbour_coords.append((ni, nj))
+							neighbour_distances.append((di**2 + dj**2)**0.5)
 
-		# Define an extended grid that covers the original plus the padding
-		x_ext = np.arange(x[0] - pad, x[-1] + pad + 1)
-		y_ext = np.arange(y[0] - pad, y[-1] + pad + 1)
+				# Identify the indices of the N lowest values from the neighborhood
+				lowest_indices = np.argsort(neighbours)[:num_keep if len(neighbours) > 6 else num_keep_edge if len(neighbours) > 4 else num_keep_corner]
 
-		# Trim the edges of the pre-filtered data as these will include distorted edge gradients
-		# from the filter which used 'nearest' mode.			
-		trim = int(np.ceil(sigma*2))
+				# Select the corresponding values from the original array
+				lowest_values = [data[neighbour_coords[idx]] for idx in lowest_indices]
 
-		trimmed_filtered_interior = filtered_interior[trim:-trim, trim:-trim]
-		
-		x_trimmed = x[trim:-trim]
-		y_trimmed = y[trim:-trim]
+				# Select the corresponding distances
+				lowest_values_distances = [neighbour_distances[idx] for idx in lowest_indices]
 
-		# Fit a 2D cubic spline to the trimmed filtered data. Use degree 1 to avoid wild values at
-		# extrapolated corners.
-		spline = RectBivariateSpline(x_trimmed, y_trimmed, trimmed_filtered_interior, kx=1, ky=1,
-									bbox= [x_ext[0], x_ext[-1], y_ext[0], y_ext[-1]])
+				# Calculate weights for the lowest values based on their distances
+				lowest_values_weights = [1.0 / (d + 1) for d in lowest_values_distances]
 
-		# Create the extrapolated surface
-		surface_extended = spline(x_ext, y_ext)
+				# Set the current point in the new array to the weighted average of these lowest values
+				filtered_data[i, j] = np.average(lowest_values, weights=lowest_values_weights)
 
-		# Replace the interior with the original data
-		surface_extended[x[0] + pad:x[-1] + pad + 1, y[0] + pad:y[-1] + pad + 1] = data
-
-		# Apply the Gaussian filter to the extended data. When consuming values beyond the edges
-		# of the original data, the kernel will use the extrapolated values we created
-		# above, which are a better approximation than any of the standard modes.
-		filtered_extended = gaussian_filter(surface_extended, sigma=sigma, mode='nearest')
-
-		# Crop the filtered array back to the original shape.
-		result = filtered_extended[pad:-pad, pad:-pad]
-
-		# 'result' now should display edges that more faithfully follow the filtered curvature.
-		return result
-
-	def create_compensation_mesh_TESTING_rapid_contact_rapid(self, gcmd, profile, probe_count):
+		# 5. Return the new array. Don't leak numpy types to the caller.
+		return filtered_data.tolist()
+	
+	def create_compensation_mesh(self, gcmd, profile, probe_count):
 		if not self.beacon:
 			self.ratos.console_echo("Create compensation mesh error", "error", 
 				"Beacon module not loaded._N_Make sure you've configured Beacon as your z probe.")
@@ -676,12 +580,11 @@ class BeaconMesh:
 				"Quad gantry levelling is configured but has not been applied._N_"
 				"This may result in inaccurate compensation.")
 
-		gaussian_sigma = gcmd.get_float('GAUSSIAN_SIGMA', self.gm_ratos.variables.get('testing_default_compensation_mesh_gaussian_sigma'))
 		keep_temp_meshes = gcmd.get('KEEP_TEMP_MESHES', '0').strip().lower() in ('1', 'true', 'yes')
-		samples = gcmd.get_int('SAMPLES', 2)
-		samples_drop = gcmd.get_int('SAMPLES_DROP', 1)
+		samples = gcmd.get_int('SAMPLES', 1)
+		samples_drop = gcmd.get_int('SAMPLES_DROP', 0)
 
-		gcmd.respond_info(f"keep_temp_meshes: {keep_temp_meshes}, gaussian_sigma: {gaussian_sigma}, samples: {samples} samples_drop: {samples_drop}")
+		gcmd.respond_info(f"keep_temp_meshes: {keep_temp_meshes}, samples: {samples} samples_drop: {samples_drop}")
 
 		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
 
@@ -690,7 +593,7 @@ class BeaconMesh:
 
 		if beacon_contact_calibrate_model_on_print:
 			# Calibrate a fresh model
-			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE")
+			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1")
 		else:
 			if self.beacon.model is None:
 				self.ratos.console_echo("Create compensation mesh error", "error", 
@@ -699,7 +602,7 @@ class BeaconMesh:
 
 			self.check_active_beacon_model_temp(title="Create compensation mesh warning")
 			
-			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MODEL_CREATION=1")
+			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1 SKIP_MODEL_CREATION=1")
 
 		mesh_before_name = RATOS_TEMP_SCAN_MESH_BEFORE_NAME if not keep_temp_meshes else profile + "_SCAN_BEFORE"
 		mesh_after_name = RATOS_TEMP_SCAN_MESH_ATFER_NAME if not keep_temp_meshes else profile + "_SCAN_AFTER"
@@ -730,10 +633,9 @@ class BeaconMesh:
 		contact_x_step = ((contact_params["max_x"] - contact_params["min_x"]) / (contact_params["x_count"] - 1))
 		contact_y_step = ((contact_params["max_y"] - contact_params["min_y"]) / (contact_params["y_count"] - 1))
 
-		if gaussian_sigma is not None and gaussian_sigma > 0:
-			self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh with sigma={gaussian_sigma:.4f}")
-			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma * 2., gaussian_sigma, int(np.ceil(gaussian_sigma * 4.)))
-			contact_params[RATOS_MESH_NOTES_PARAMETER] = f"contact mesh gaussian filtered with sigma={gaussian_sigma:.4f}"
+		self.ratos.debug_echo("Create compensation mesh", "Filtering contact mesh")
+		contact_mesh_points = self._apply_filter(contact_mesh_points)
+		contact_params[RATOS_MESH_NOTES_PARAMETER] = "contact mesh filtered using local low filter"
 
 		compensation_mesh_points = []
 		
@@ -774,12 +676,12 @@ class BeaconMesh:
 
 					#debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
 
-				eventtime = self.reactor.pause(eventtime + 0.05)
+				self.reactor.pause(self.reactor.NOW)
 
 			# For a large mesh (eg, 60x60) this can take 2+ minutes
 			#self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
 
-			if keep_temp_meshes and gaussian_sigma is not None and gaussian_sigma > 0:
+			if keep_temp_meshes:
 				params = contact_params.copy()
 				filtered_profile = contact_mesh_name + "_filtered"
 				new_mesh = BedMesh.ZMesh(params, filtered_profile)
@@ -808,6 +710,7 @@ class BeaconMesh:
 		except BedMesh.BedMeshError as e:
 			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
 
+	# TODO: Remove testing stuff before release
 	def TESTING_remake_compensation_mesh(self, profile, new_profile, gaussian_sigma=None):
 
 		mesh_before_name = profile + "_SCAN_BEFORE"
@@ -823,10 +726,9 @@ class BeaconMesh:
 		contact_x_step = ((contact_params["max_x"] - contact_params["min_x"]) / (contact_params["x_count"] - 1))
 		contact_y_step = ((contact_params["max_y"] - contact_params["min_y"]) / (contact_params["y_count"] - 1))
 
-		if gaussian_sigma is not None and gaussian_sigma > 0:
-			self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh with sigma={gaussian_sigma:.4f}")
-			contact_mesh_points = self._apply_filter(contact_mesh_points, gaussian_sigma * 2., gaussian_sigma, int(np.ceil(gaussian_sigma * 4.)))
-			contact_params[RATOS_MESH_NOTES_PARAMETER] = f"contact mesh gaussian filtered with sigma={gaussian_sigma:.4f}"
+		self.ratos.debug_echo("Create compensation mesh", f"Filtering contact mesh")
+		contact_mesh_points = self._apply_filter(contact_mesh_points)
+		contact_params[RATOS_MESH_NOTES_PARAMETER] = "contact mesh filtered using local low filter"
 
 		compensation_mesh_points = []
 
