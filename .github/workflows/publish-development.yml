@@ -26,12 +26,17 @@ jobs:
         id: variables
         shell: bash
         run: |
-          if [[ "${{ github.ref_name }}" == "development" ]]; then
+          if [[ "${{ github.event.workflow_run.head_branch }}" == "development" ]]; then
             echo "target-branch=dev-deployment" >> "$GITHUB_OUTPUT"
           else
-            echo "target-branch=${{ github.ref_name }}-deployment" >> "$GITHUB_OUTPUT"
+            echo "target-branch=${{ github.event.workflow_run.head_branch }}-deployment" >> "$GITHUB_OUTPUT"
           fi
-          echo "src-branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          echo "src-branch=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
+
+      - name: Show variables
+        run: |
+          echo ""::notice::Source branch: ${{ steps.variables.outputs.src-branch }}"
+          echo ""::notice::Target branch: ${{ steps.variables.outputs.target-branch }}"
 
       - uses: actions/checkout@v3
         with:
@@ -46,7 +51,7 @@ jobs:
         with:
           workflow-id: publish-development.yml
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: development # This has to be the main branch of repository since all workflows are run from there
+          branch: ${{ steps.variables.outputs.src-branch }}
 
       - name: Get commit count
         id: commit-count
