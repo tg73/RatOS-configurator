@@ -253,6 +253,13 @@
       "static/chunks/main-app-97a5ed2f18129f03.js",
       "static/chunks/app/calibration/layout-26b8b657dd35a6d1.js"
     ],
+    "/motion/layout": [
+      "static/chunks/webpack-ab219d9568a37304.js",
+      "static/chunks/fa86fe2e-e962572a02b89204.js",
+      "static/chunks/8458-94fd4fc7ee07d7b5.js",
+      "static/chunks/main-app-97a5ed2f18129f03.js",
+      "static/chunks/app/motion/layout-22d5f832036d8b74.js"
+    ],
     "/motion/page": [
       "static/chunks/webpack-ab219d9568a37304.js",
       "static/chunks/fa86fe2e-e962572a02b89204.js",
@@ -281,13 +288,6 @@
       "static/chunks/2948-d80df7fadc6903a1.js",
       "static/css/133c4b0ec1456050.css",
       "static/chunks/app/motion/page-6440e7865341f7a0.js"
-    ],
-    "/motion/layout": [
-      "static/chunks/webpack-ab219d9568a37304.js",
-      "static/chunks/fa86fe2e-e962572a02b89204.js",
-      "static/chunks/8458-94fd4fc7ee07d7b5.js",
-      "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/motion/layout-22d5f832036d8b74.js"
     ],
     "/toolhead/layout": [
       "static/chunks/webpack-ab219d9568a37304.js",
