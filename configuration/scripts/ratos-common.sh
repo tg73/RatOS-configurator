@@ -190,6 +190,7 @@ verify_registered_extensions()
         ["z_offset_probe_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/z_offset_probe.py")
         ["resonance_generator_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/resonance_generator.py")
         ["ratos_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos.py")
+        ["beacon_mesh_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_mesh.py")
     )
 
 	declare -A kinematics_extensions=(

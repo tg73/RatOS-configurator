@@ -2,6 +2,11 @@
 
 # performed outside of a function so that other scripts sourcing this in will run this by default
 
+# Order of precedence, latter overrides former:
+# 1. $envFile
+# 2. $userEnvFile
+# 3. Inline environment variables ie. "RATOS_USERNAME=foo ./scripts/some-script.sh"
+
 # Get the real user (not root) when script is run with sudo
 
 if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
@@ -68,7 +73,7 @@ fi
 load_env() {
     local file="$1"
     if [ -f "$file" ]; then
-        while IFS='=' read -r key value; do
+        while IFS='=' read -r key value || [ -n "$key" ]; do
             # Skip comments and empty lines
             [[ $key =~ ^[[:space:]]*# ]] && continue
             [[ -z "$key" ]] && continue
@@ -85,5 +90,9 @@ if [ ! -f "$envFile" ] && [ ! -f "$userEnvFile" ] ; then
 	echo "Fatal Error: Unable to load RatOS environment, neither $envFile nor $userEnvFile found, exiting..." >&2
 	exit 1
 fi
-[ -f "$envFile" ] && load_env "$envFile"
-[ "$EUID" -ne 0 ] && [ -f "$userEnvFile" ] && load_env "$userEnvFile"
+if [ -f "$envFile" ]; then
+    load_env "$envFile"
+fi
+if [ "$EUID" -ne 0 ] && [ -f "$userEnvFile" ]; then
+    load_env "$userEnvFile"
+fi

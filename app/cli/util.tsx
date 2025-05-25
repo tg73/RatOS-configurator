@@ -1,13 +1,13 @@
-import { $, chalk, echo, path } from 'zx';
+import { $, chalk, echo, path, ProcessPromise, Shell } from 'zx';
 import { Container } from '@/cli/components/container';
 import { APIResult, Status } from '@/cli/components/status';
-import { render } from 'ink';
+import { render, Text } from 'ink';
 import { Command } from 'commander';
-import { readFile, realpath } from 'node:fs/promises';
-import { existsSync, readFileSync } from 'node:fs';
-import { serverSchema } from '@/env/schema.mjs';
-import dotenv from 'dotenv';
+import { realpath } from 'node:fs/promises';
 import React from 'react';
+import { createSignal, Signal } from '@/app/_helpers/signal';
+import { getLogger } from '@/server/helpers/logger';
+export { loadEnvironment } from '@/server/helpers/utils';
 
 const reservedWords = [
 	'if',
@@ -25,7 +25,7 @@ const reservedWords = [
 	'done',
 	'in',
 ];
-
+// From zx/src/util.ts
 export function formatCmd(cmd?: string): string {
 	if (cmd == undefined) return chalk.grey('undefined');
 	const chars = [...cmd];
@@ -134,7 +134,11 @@ export function formatCmd(cmd?: string): string {
 }
 
 export const ensureSudo = async () => {
-	echo("Checking for sudo permissions. If you're prompted for a password, please enter it.");
+	render(
+		<Container>
+			<Text>Checking for sudo permissions. If you're prompted for a password, please enter it.</Text>
+		</Container>,
+	);
 	await $({ verbose: false, quiet: false })`sudo echo "Sudo permissions acquired"`;
 };
 
@@ -187,15 +191,42 @@ export async function getRealPath(program: Command, p: string) {
 	}
 }
 
-let alreadyLoaded = false;
-export function loadEnvironment() {
-	if (alreadyLoaded) {
-		return serverSchema.parse(process.env);
-	}
-	const envFilePath = existsSync('./.env.local') ? '.env.local' : '.env';
-	const envFile = readFileSync(envFilePath, 'utf8');
-	const env = serverSchema.parse({ NODE_ENV: 'production', ...dotenv.parse(envFile) });
-	dotenv.populate(process.env as any, env);
-	alreadyLoaded = true;
-	return env;
-}
+const wrapZx = (scoped$: Shell, cmdSignal: Signal<string | null>) => {
+	const $$: Shell = Object.assign(
+		scoped$,
+		(...args: Parameters<typeof scoped$>) => {
+			const res = scoped$(...args);
+			if (res instanceof ProcessPromise) {
+				return res.then((result) => {
+					cmdSignal(null);
+					return result;
+				});
+			} else {
+				return wrapZx(res, cmdSignal);
+			}
+		},
+		{
+			sync: (...args: Parameters<typeof scoped$>) => {
+				throw new Error('Synchronous execution is not supported.');
+			},
+		},
+	);
+	return $$;
+};
+
+export const constructSignalShell = () => {
+	const cmdSignal = createSignal<string | null>();
+	let scoped$ = $({
+		quiet: true,
+		log(entry) {
+			if (entry.kind === 'cmd') {
+				cmdSignal(entry.cmd);
+				getLogger().info('Running command: ' + entry.cmd);
+			}
+		},
+	});
+
+	const $$ = wrapZx(scoped$, cmdSignal);
+
+	return { cmdSignal, $: $$ };
+};

@@ -17,6 +17,7 @@ import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
 import { postprocessor } from '@/cli/commands/postprocessor';
+import development from '@/cli/commands/development';
 
 export const program = new commander.Command()
 	.name('ratos')
@@ -484,6 +485,8 @@ log
 		const log = '/etc/logrotate.d/ratos-configurator';
 		$({ verbose: true })`logrotate -f ${log}`;
 	});
+
+development(program);
 
 const doctor = program
 	.command('doctor')

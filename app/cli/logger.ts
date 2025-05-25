@@ -26,17 +26,13 @@ export const getLogger = () => {
 		console.warn('cli logger logFile directory does not exist, using default', logFile);
 	}
 
-	const transportOption: pino.LoggerOptions['transport'] =
-		process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
-			? undefined
-			: {
-					target: 'pino/file',
-					options: { destination: environment.LOG_FILE, append: true },
-				};
-	if (transportOption == null) {
+	if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
 		logger = pino({ ...globalPinoOpts }, prettyStream).child({ source: 'cli' });
 	} else {
-		logger = pino({ ...globalPinoOpts, transport: transportOption }).child({ source: 'cli' });
+		// Write to file via stream instead of worker (which breaks when using `ratos development branch` to switch between deployment and development branches).
+		logger = pino({ ...globalPinoOpts }, pino.destination({ dest: logFile, sync: true })).child({
+			source: 'cli',
+		});
 	}
 	return logger;
 };

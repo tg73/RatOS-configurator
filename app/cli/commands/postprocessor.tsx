@@ -16,7 +16,12 @@ import { z, ZodError } from 'zod';
 import { getLogger } from '@/cli/logger';
 import { WarningCodes } from '@/server/gcode-processor/WarningCodes';
 import { getRealPath, loadEnvironment } from '@/cli/util';
-import { GCodeError, GCodeProcessorError, SlicerNotSupported } from '@/server/gcode-processor/errors';
+import {
+	GCodeError,
+	GCodeProcessorError,
+	GeneratorIdentificationNotFound,
+	SlicerNotSupported,
+} from '@/server/gcode-processor/errors';
 import { formatZodError } from '@schema-hub/zod-error-formatter';
 import { Printability } from '@/server/gcode-processor/Printability';
 import { promisify } from 'util';
@@ -100,11 +105,20 @@ const GcodeInfoZod = z.object({
 		.optional(),
 });
 
+const ErrorCodes = z.enum([
+	'UNKNOWN_GCODE_GENERATOR',
+	'UNSUPPORTED_SLICER_VERSION',
+	'FILE_NOT_FOUND',
+	'G_CODE_ERROR',
+	'UNKNOWN_ERROR',
+]);
+
 export const PostProcessorCLIOutput = z.discriminatedUnion('result', [
 	z.object({
 		result: z.literal('error'),
 		title: z.string().optional(),
 		message: z.string(),
+		code: ErrorCodes.default('UNKNOWN_ERROR'),
 	}),
 	z.object({
 		result: z.literal('warning'),
@@ -130,9 +144,10 @@ export const PostProcessorCLIOutput = z.discriminatedUnion('result', [
 	}),
 ]);
 
-export type PostProcessorCLIOutput = z.infer<typeof PostProcessorCLIOutput>;
+export type PostProcessorCLIOutput = z.output<typeof PostProcessorCLIOutput>;
+export type PostProcessorCLIInput = z.input<typeof PostProcessorCLIOutput>;
 
-export const toPostProcessorCLIOutput = (obj: PostProcessorCLIOutput): void => {
+export const toPostProcessorCLIOutput = (obj: PostProcessorCLIInput): void => {
 	try {
 		echo(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
 	} catch (e) {
@@ -143,6 +158,7 @@ export const toPostProcessorCLIOutput = (obj: PostProcessorCLIOutput): void => {
 				JSON.stringify({
 					result: 'error',
 					title: 'An error occurred while serializing postprocessor output',
+					code: 'UNKNOWN_ERROR',
 					message: `This is likely caused by loading a gcode file that was processed by a legacy version of the RatOS postprocessor.\n\n${formatZodError(e, obj).message}`,
 				} satisfies PostProcessorCLIOutput),
 			);
@@ -377,20 +393,27 @@ export const postprocessor = (program: Command) => {
 				let errorMessage =
 					'An unexpected error occurred while processing the file, please download a debug-zip and report this issue.';
 				let errorTitle = 'An unexpected error occurred during post-processing';
+				let errorCode: z.input<typeof ErrorCodes> = 'UNKNOWN_ERROR';
 				if (e instanceof GCodeProcessorError) {
 					errorTitle = 'G-code could not be processed';
 					errorMessage = e.message;
 					if (e instanceof SlicerNotSupported) {
 						errorTitle = 'Unsupported slicer version';
+						errorCode = 'UNSUPPORTED_SLICER_VERSION';
 					}
 					if (e instanceof GCodeError && e.lineNumber) {
 						errorTitle += ` (line ${e.lineNumber})`;
 						errorMessage += `\n\nLine ${e.lineNumber}: ${e.line}`;
+						errorCode = 'G_CODE_ERROR';
+					}
+					if (e instanceof GeneratorIdentificationNotFound) {
+						errorCode = 'UNKNOWN_GCODE_GENERATOR';
 					}
 				} else if (e instanceof Error) {
 					if ('code' in e && e.code === 'ENOENT' && 'path' in e) {
 						errorTitle = 'File not found';
 						errorMessage = `File ${e.path} not found`;
+						errorCode = 'FILE_NOT_FOUND';
 					} else {
 						getLogger().error(e, 'Unexpected error while processing gcode file');
 					}
@@ -404,6 +427,7 @@ export const postprocessor = (program: Command) => {
 						result: 'error',
 						message: errorMessage,
 						title: errorTitle,
+						code: errorCode,
 					});
 				}
 				process.exit(1);
