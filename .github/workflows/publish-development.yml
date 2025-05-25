@@ -145,7 +145,10 @@ jobs:
             else
               # Get the first line of up to 50 commit messages in the range, excluding merge commits as these typically don't contain useful information
               commit_messages=$(git log -n 50 --no-merges --format="- %s" ${{ steps.last-successful-commit.outputs.commit-sha }}..${{ github.sha }})
-              echo "commit-message=$commit_messages" >> $GITHUB_OUTPUT
+              # Escape multi-line output
+              echo "commit-message<<EOF" >> $GITHUB_OUTPUT
+              echo "$commit_messages" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
             fi
 
       - name: Publish to ${{ steps.variables.outputs.target-branch }}
