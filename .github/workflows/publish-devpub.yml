@@ -158,11 +158,8 @@ jobs:
               echo "commit-message=First deployment!" >> $GITHUB_OUTPUT
             else
               # Get the first line of up to 50 commit messages in the range, excluding merge commits as these typically don't contain useful information
-              commit_messages=$(git log -n 50 --no-merges --format="- %s" ${{ steps.read-commit-file.outputs.commit-sha }}..${{ github.event.workflow_run.head_sha }})
-              # Escape multi-line output
-              echo "commit-message<<EOF" >> $GITHUB_OUTPUT
-              echo "$commit_messages" >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
+              commit_messages=$(git log -n 50 --no-merges --format="- %s" ${{ steps.read-commit-file.outputs.commit-sha }}..${{ github.event.workflow_run.head_sha }} | sed ':a;N;$!ba;s/\n/\\n/g')
+              echo "commit-message=$commit_messages" >> $GITHUB_OUTPUT
             fi
 
       - name: Publish to ${{ steps.variables.outputs.target-branch }}
@@ -170,14 +167,7 @@ jobs:
         with:
           folder: .
           commit-message: |
-            <<EOF
-            Deployed ${{ steps.commit-count.outputs.commit-count }} commit${{ steps.commit-count.outputs.commit-count > 1 && 's' || '' }}.
-            
-            ${{ steps.generate-commit-message.outputs.commit-message }}
-
-            See the complete list of changes here:
-            https://github.com/${{ github.repository }}/compare/${{ steps.read-commit-file.outputs.commit-sha }}...${{ github.event.workflow_run.head_sha }}
-            EOF
+            Deployed ${{ steps.commit-count.outputs.commit-count }} commit${{ steps.commit-count.outputs.commit-count > 1 && 's' || '' }}.\n\n${{ steps.generate-commit-message.outputs.commit-message }}\n\nSee the complete list of changes here:\nhttps://github.com/${{ github.repository }}/compare/${{ steps.read-commit-file.outputs.commit-sha }}...${{ github.event.workflow_run.head_sha }}
           git-config-name: ${{ steps.git-config-for-deployment.outputs.git-config-name }}
           git-config-email: ${{ steps.git-config-for-deployment.outputs.git-config-email }}
           branch: ${{ steps.variables.outputs.target-branch }} # The branch name where you want to push the assets
