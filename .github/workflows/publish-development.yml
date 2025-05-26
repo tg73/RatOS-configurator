@@ -132,6 +132,7 @@ jobs:
 
       - name: Generate Commit Message
         id: generate-commit-message
+        if: false
         shell: bash
         run: |
             # Check if the starting commit is the first commit in the repository
@@ -152,9 +153,6 @@ jobs:
           folder: .
           commit-message: |
             Deployed ${{ steps.commit-count.outputs.commit-count }} commit${{ steps.commit-count.outputs.commit-count > 1 && 's' || '' }}.
-            
-            ${{ steps.generate-commit-message.outputs.commit-message }}
-
             See the complete list of changes here:
             https://github.com/${{ github.repository }}/compare/${{ steps.last-successful-commit.outputs.commit-sha }}...${{ github.sha }}
           git-config-name: ${{ steps.git-config-for-deployment.outputs.git-config-name }}
