@@ -1,10 +1,10 @@
 # .github/workflows/publish.yml
-name: Publish to dev-deployment
+name: Publish devpub branches
 on:
   workflow_run:
     workflows: ["CI"] # runs after CI workflow
     branches:
-      - "development"
+      - "**/devpub/**"
     types:
       - completed
 
@@ -25,8 +25,8 @@ jobs:
         id: variables
         shell: bash
         run: |
-          echo "target-branch=dev-deployment" >> "$GITHUB_OUTPUT"
-          echo "src-branch=development" >> "$GITHUB_OUTPUT"
+          echo "target-branch=${{ github.event.workflow_run.head_branch }}-deployment" >> "$GITHUB_OUTPUT"
+          echo "src-branch=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
 
       - name: Show variables
         run: |
@@ -40,20 +40,30 @@ jobs:
       - name: Unshallow repository
         run: git fetch --unshallow origin ${{ steps.variables.outputs.src-branch }}
 
-      - name: Get last successful commit
-        id: last-successful-commit
-        uses: nickderobertis/last-successful-commit-action@v1
-        with:
-          workflow-id: publish-development.yml
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.variables.outputs.src-branch }}
+      - name: Read .commit file from target branch
+        id: read-commit-file
+        shell: bash
+        run: |
+          # Fetch the target branch
+          git fetch origin ${{ steps.variables.outputs.target-branch }} || echo "Branch not found"
+          
+          # Check if the branch exists
+          if git rev-parse --verify origin/${{ steps.variables.outputs.target-branch }} >/dev/null 2>&1; then
+            # Try to read the .commit file from the branch
+            commit_sha=$(git show origin/${{ steps.variables.outputs.target-branch }}:.commit 2>/dev/null || echo "${{ github.sha }}")
+          else
+            commit_sha="${{ github.sha }}"
+          fi
+
+          # Output the result
+          echo "commit-sha=$commit_sha" >> $GITHUB_OUTPUT
 
       - name: Get commit count
         id: commit-count
         shell: bash
         run: |
-          echo "Deploying $(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-sha }}..${{ github.sha }})) commits!"
-          echo "commit-count=$(git rev-list --count ${{ steps.last-successful-commit.outputs.commit-sha }}..${{ github.sha }})" >> "$GITHUB_OUTPUT"
+          echo "Deploying $(git rev-list --count ${{ steps.read-commit-file.outputs.commit-sha }}..${{ github.sha }})) commits!"
+          echo "commit-count=$(git rev-list --count ${{ steps.read-commit-file.outputs.commit-sha }}..${{ github.sha }})" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v3
         with:
@@ -119,6 +129,9 @@ jobs:
         working-directory: ./
         run: mv src app
 
+      - name: Write Commit SHA to .commit
+        run: echo "${{ github.sha }}" > .commit
+
       - name: Set Git Config for Deployment
         id: git-config-for-deployment
         run: |
@@ -135,11 +148,11 @@ jobs:
         shell: bash
         run: |
             # Check if the starting commit is the first commit in the repository
-            if [[ "$(git rev-list --max-parents=0 HEAD)" == "${{ steps.last-successful-commit.outputs.commit-sha }}" ]]; then
+            if [[ "$(git rev-list --max-parents=0 HEAD)" == "${{ steps.read-commit-file.outputs.commit-sha }}" ]]; then
               echo "commit-message=First deployment!" >> $GITHUB_OUTPUT
             else
               # Get the first line of up to 50 commit messages in the range, excluding merge commits as these typically don't contain useful information
-              commit_messages=$(git log -n 50 --no-merges --format="- %s" ${{ steps.last-successful-commit.outputs.commit-sha }}..${{ github.sha }})
+              commit_messages=$(git log -n 50 --no-merges --format="- %s" ${{ steps.read-commit-file.outputs.commit-sha }}..${{ github.sha }})
               # Escape multi-line output
               echo "commit-message<<EOF" >> $GITHUB_OUTPUT
               echo "$commit_messages" >> $GITHUB_OUTPUT
@@ -156,7 +169,7 @@ jobs:
             ${{ steps.generate-commit-message.outputs.commit-message }}
 
             See the complete list of changes here:
-            https://github.com/${{ github.repository }}/compare/${{ steps.last-successful-commit.outputs.commit-sha }}...${{ github.sha }}
+            https://github.com/${{ github.repository }}/compare/${{ steps.read-commit-file.outputs.commit-sha }}...${{ github.sha }}
           git-config-name: ${{ steps.git-config-for-deployment.outputs.git-config-name }}
           git-config-email: ${{ steps.git-config-for-deployment.outputs.git-config-email }}
           branch: ${{ steps.variables.outputs.target-branch }} # The branch name where you want to push the assets
