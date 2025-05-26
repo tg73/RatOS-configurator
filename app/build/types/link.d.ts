@@ -35,8 +35,8 @@ declare namespace __next_route_internal_types__ {
     | `/api/printer-image`
     | `/`
     | `/calibration`
-    | `/motion`
     | `/toolhead`
+    | `/motion`
     | `/wizard`
     | `/analysis/macros/new`
     | `/analysis/macros`
