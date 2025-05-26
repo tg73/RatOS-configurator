@@ -282,7 +282,7 @@ class BeaconMesh:
 		if not probe_count:
 			raise gcmd.error("Value for parameter 'PROBE_COUNT' must be specified")
 		
-		self.create_compensation_mesh(profile, probe_count)
+		self.create_compensation_mesh(gcmd, profile, probe_count)
 
 	desc_REMAKE_BEACON_COMPENSATION_MESH = "TESTING! PROFILE='exising comp mesh' NEW_PROFILE='new name' [GAUSSIAN_SIGMA=x]"
 	def cmd_REMAKE_BEACON_COMPENSATION_MESH(self, gcmd):
