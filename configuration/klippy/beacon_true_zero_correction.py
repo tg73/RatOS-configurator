@@ -35,6 +35,9 @@ class BeaconTrueZeroCorrection:
 		# Config
 		#######
 
+		# Allow the true zero correction to be disabled. This is useful for testing and debugging, and as an esacpe hatch.
+		self.disabled = config.getboolean('disabled', False)
+
 		# z values greater than z_rejection_threshold are rejected. These typically correspond to early triggering
 		# of beacon contact before the nozzle has touched the bed. From test data, these are rare. Only 0.028% of samples
 		# exceeded 75um (from over 32,000 samples across multiple machines and print surfaces).
@@ -42,12 +45,16 @@ class BeaconTrueZeroCorrection:
 
 		# The number of times to probe an additional point if any z values are rejected.
 		self.max_retries = config.getint('max_retries', 10, minval=0, maxval=15)
-		
+
 		# If true, each of the multiple probe locations will itself be probed several times using
 		# the standard beacon error detection logic. From extensive testing, this mode offers no benefit
 		# and should not be used. It is included only as an option for diagnostic purposes.
 		self.use_error_corrected_probing = config.getboolean('use_error_corrected_probing', False)
 
+		if self.disabled:
+			logging.info(f"{self.name}: beacon true zero correction is disabled by configuration.")
+			return
+		
 		if config.has_section('beacon'):
 			self.printer.register_event_handler("klippy:connect",
 												self._handle_connect)
@@ -109,18 +116,18 @@ class BeaconTrueZeroCorrection:
 		zero_xy = self.toolhead.get_position()[:2]
 		retval = self.orig_cmd(gcmd)
 		self._check_homed()
-		ps = ProbingSession(self, gcmd, zero_xy, self.max_retries)
+		ps = ProbingSession(self, gcmd, zero_xy)
 		ps.run()
 
 		return retval
 
 class ProbingSession:
 	
-	def __init__(self, tzc:BeaconTrueZeroCorrection, gcmd, zero_xy_position, max_retries = 10):
+	def __init__(self, tzc:BeaconTrueZeroCorrection, gcmd, zero_xy_position):
 		self.gcmd = gcmd
 		self.tzc = tzc
 		self.zero_xy_position = zero_xy_position
-		self.max_retries = max_retries
+		self.max_retries = tzc.max_retries
 		self.retries = 0
 		self.probe_helper = probe.ProbePointsHelper(self.tzc.config, self._probe_finalize, [])
 		self._finalize_result = None
