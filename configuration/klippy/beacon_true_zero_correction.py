@@ -46,6 +46,15 @@ class BeaconTrueZeroCorrection:
 		# The number of times to probe an additional point if any z values are rejected.
 		self.max_retries = config.getint('max_retries', 10, minval=0, maxval=15)
 
+		# Controls the sampling strategy, notably affecting the number of points probed.
+		# - Level 1: 6 points probed, 1 zero sample, use mean of 3 minimal samples. This is the default and recommended level.
+		# - Level 2: 10 points probed, 1 zero sample, use mean of 3 minimal samples. This is a more robust probing strategy.
+		# - Level 3: 12 points probed, 1 zero sample, use mean of 3 minimal samples. This is the most robust probing strategy.
+		# From extensive testing, level 1 is very effective and efficient, with levels 2 and 3 offering only very modest gains
+		# and diminishing returns.Levels 2 and 3 are included for diagnostic purposes, but level 1 is recommended for most users.
+		# The zero sample is the implied zero sample from BEACON_AUTO_CALIBRATE, which is expected to have been invoked.
+		self.sampling_strategy = config.getint('sampling_strategy', 1, minval=1, maxval=3)
+
 		# If true, each of the multiple probe locations will itself be probed several times using
 		# the standard beacon error detection logic. From extensive testing, this mode offers no benefit
 		# and should not be used. It is included only as an option for diagnostic purposes.
@@ -144,9 +153,11 @@ class ProbingSession:
 		# in probe results.
 
 		# Number of samples to take, including the implied zero sample from BEACON_AUTO_CALIBRATE
-		self._take = 7
-		# Number of maximal-valued samples to discard
-		self._drop_top = 4
+		self._take = (7, 11, 13)[tzc.sampling_strategy - 1]
+
+		# Number of minimal samples to use in the final calculation.
+		self._keep = 3
+
 		# The zero-value initial sample is implied from BEACON_AUTO_CALIBRATE, which is expected to have
 		# been invoked immediatley prior to this command, at the same location.
 		self._samples = [0.]
@@ -250,7 +261,7 @@ class ProbingSession:
 		if len(self._samples) == self._take:
 			# Gathered enough good samples
 			self._samples.sort()
-			use_samples = self._samples[:-self._drop_top]
+			use_samples = self._samples[:self._keep]
 			logging.info(f'{self.tzc.name}: samples: {", ".join(f"{z:.6f}" for z in self._samples)}  using: {", ".join(f"{z:.6f}" for z in use_samples)}')
 			self._finalize_result = float(np.mean(use_samples))
 			return 'done'
