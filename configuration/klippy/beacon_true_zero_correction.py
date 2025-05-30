@@ -35,6 +35,9 @@ class BeaconTrueZeroCorrection:
 		# Config
 		#######
 
+		# Allow the true zero correction to be disabled. This is useful for testing and debugging, and as an esacpe hatch.
+		self.disabled = config.getboolean('disabled', False)
+
 		# z values greater than z_rejection_threshold are rejected. These typically correspond to early triggering
 		# of beacon contact before the nozzle has touched the bed. From test data, these are rare. Only 0.028% of samples
 		# exceeded 75um (from over 32,000 samples across multiple machines and print surfaces).
@@ -42,12 +45,25 @@ class BeaconTrueZeroCorrection:
 
 		# The number of times to probe an additional point if any z values are rejected.
 		self.max_retries = config.getint('max_retries', 10, minval=0, maxval=15)
-		
+
+		# Controls the sampling strategy, notably affecting the number of points probed.
+		# - Level 1: 6 points probed, 1 zero sample, use mean of 3 minimal samples. This is the default and recommended level.
+		# - Level 2: 10 points probed, 1 zero sample, use mean of 3 minimal samples. This is a more robust probing strategy.
+		# - Level 3: 12 points probed, 1 zero sample, use mean of 3 minimal samples. This is the most robust probing strategy.
+		# From extensive testing, level 1 is very effective and efficient, with levels 2 and 3 offering only very modest gains
+		# and diminishing returns.Levels 2 and 3 are included for diagnostic purposes, but level 1 is recommended for most users.
+		# The zero sample is the implied zero sample from BEACON_AUTO_CALIBRATE, which is expected to have been invoked.
+		self.sampling_strategy = config.getint('sampling_strategy', 1, minval=1, maxval=3)
+
 		# If true, each of the multiple probe locations will itself be probed several times using
 		# the standard beacon error detection logic. From extensive testing, this mode offers no benefit
 		# and should not be used. It is included only as an option for diagnostic purposes.
 		self.use_error_corrected_probing = config.getboolean('use_error_corrected_probing', False)
 
+		if self.disabled:
+			logging.info(f"{self.name}: beacon true zero correction is disabled by configuration.")
+			return
+		
 		if config.has_section('beacon'):
 			self.printer.register_event_handler("klippy:connect",
 												self._handle_connect)
@@ -109,18 +125,18 @@ class BeaconTrueZeroCorrection:
 		zero_xy = self.toolhead.get_position()[:2]
 		retval = self.orig_cmd(gcmd)
 		self._check_homed()
-		ps = ProbingSession(self, gcmd, zero_xy, self.max_retries)
+		ps = ProbingSession(self, gcmd, zero_xy)
 		ps.run()
 
 		return retval
 
 class ProbingSession:
 	
-	def __init__(self, tzc:BeaconTrueZeroCorrection, gcmd, zero_xy_position, max_retries = 10):
+	def __init__(self, tzc:BeaconTrueZeroCorrection, gcmd, zero_xy_position):
 		self.gcmd = gcmd
 		self.tzc = tzc
 		self.zero_xy_position = zero_xy_position
-		self.max_retries = max_retries
+		self.max_retries = tzc.max_retries
 		self.retries = 0
 		self.probe_helper = probe.ProbePointsHelper(self.tzc.config, self._probe_finalize, [])
 		self._finalize_result = None
@@ -137,9 +153,11 @@ class ProbingSession:
 		# in probe results.
 
 		# Number of samples to take, including the implied zero sample from BEACON_AUTO_CALIBRATE
-		self._take = 7
-		# Number of maximal-valued samples to discard
-		self._drop_top = 4
+		self._take = (7, 11, 13)[tzc.sampling_strategy - 1]
+
+		# Number of minimal samples to use in the final calculation.
+		self._keep = 3
+
 		# The zero-value initial sample is implied from BEACON_AUTO_CALIBRATE, which is expected to have
 		# been invoked immediatley prior to this command, at the same location.
 		self._samples = [0.]
@@ -243,7 +261,7 @@ class ProbingSession:
 		if len(self._samples) == self._take:
 			# Gathered enough good samples
 			self._samples.sort()
-			use_samples = self._samples[:-self._drop_top]
+			use_samples = self._samples[:self._keep]
 			logging.info(f'{self.tzc.name}: samples: {", ".join(f"{z:.6f}" for z in self._samples)}  using: {", ".join(f"{z:.6f}" for z in use_samples)}')
 			self._finalize_result = float(np.mean(use_samples))
 			return 'done'
