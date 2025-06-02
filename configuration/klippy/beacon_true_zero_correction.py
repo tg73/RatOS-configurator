@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import math, time, logging
+import math, time, logging, socket
 import numpy as np
 from . import probe
 
@@ -173,7 +173,18 @@ class BeaconTrueZeroCorrection:
 			)
 			
 			timestamp = time.strftime("%Y%m%d_%H%M%S")
-			with open(f'/home/pi/printer_data/config/mpp_capture_{timestamp}.csv', 'a') as f:
+			filename = f'/home/pi/printer_data/config/mpp_capture_{timestamp}.csv'
+
+			gcmd.respond_info(f"Capturing diagnostic data to {filename}...")
+
+			with open(filename, 'a') as f:
+				f.write(f"# Beacon True Zero Correction Multi-point Probing Capture at {timestamp} on {socket.gethostname()}\n")
+				f.write(f"# Point Count: {point_count}, MPP per Batch: {mpp_per_batch}, Batch Count: {batch_count}\n")
+				f.write(f"# Samples: {samples}, Samples Drop: {samples_drop}, Samples Tolerance Retries: {samples_tolerance_retries}\n")
+				f.write(f"# Nozzle Tip Diameter: {nozzle_tip_dia:.3f}mm, Span: {span:.3f}mm\n")
+				f.write(f"# Zero XY Position: {zero_xy_position[0]:.3f}, {zero_xy_position[1]:.3f}\n")
+				f.write(f"# Range X: {range_x[0]:.3f} to {range_x[1]:.3f}, Range Y: {range_y[0]:.3f} to {range_y[1]:.3f}\n")
+				
 				def cb(_, positions):
 					f.write(','.join(str(p[2]) for p in positions) + '\n')
 					f.flush()
@@ -190,6 +201,8 @@ class BeaconTrueZeroCorrection:
 						points = self._generate_points(point_count, range_x, range_y, nozzle_tip_dia)
 						probe_helper.update_probe_points(points, len(points))
 						probe_helper.start_probe(probe_gcmd)
+
+			gcmd.respond_info(f"Capture complete, data saved to {filename}")
 		else:
 			raise self.gcode.error(f"Unknown action.")
 
