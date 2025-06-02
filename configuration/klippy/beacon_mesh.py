@@ -1,4 +1,5 @@
-import collections, multiprocessing, traceback, logging
+import multiprocessing, traceback, logging
+from collections import OrderedDict
 from . import bed_mesh as BedMesh
 import numpy as np
 from scipy.ndimage import gaussian_filter
@@ -167,7 +168,7 @@ class BeaconMesh:
 			gcmd.respond_info("There is no active bed mesh")
 			return
 
-		params = collections.OrderedDict({k: v for k,v in mesh.get_mesh_params().items() if str(k).startswith("ratos_")})
+		params = OrderedDict({k: v for k,v in mesh.get_mesh_params().items() if str(k).startswith("ratos_")})
 		if len(params) == 0:
 			gcmd.respond_info('No extended RatOS bed mesh parameters found')
 		else:

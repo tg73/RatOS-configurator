@@ -1,8 +1,8 @@
 import os, logging, glob, traceback, inspect, re, math
-import json, subprocess, pathlib, time
+import json, subprocess, pathlib, multiprocessing
 import numpy as np
+from collections import namedtuple
 from . import probe
-import multiprocessing
 
 #####
 # RatOS
@@ -36,6 +36,7 @@ class RatOS:
 		self.bed_mesh = None
 		self.gm_ratos = None
 		self.toolhead = None
+		self.beacon = None
 
 		# Status fields
 		self.last_processed_file_result = None
@@ -66,6 +67,8 @@ class RatOS:
 			self.rmmu_hub = self.printer.lookup_object("rmmu_hub", None)
 		if self.config.has_section("bed_mesh"):
 			self.bed_mesh = self.printer.lookup_object('bed_mesh')
+		if self.config.has_section("beacon"):
+			self.beacon = self.printer.lookup_object('beacon')
 
 		# Register overrides.
 		self.register_command_overrides()
@@ -576,7 +579,31 @@ class RatOS:
 		except Exception as exc:
 			self.debug_echo("get_ratos_version", ("Exception on run: %s", exc))
 		return version
-	
+
+	def get_beacon_probing_regions(self):
+		"""Gets the probing regions configuration for the Beacon probe, or None if not available.
+		Returns:
+			BeaconProbingRegions or None: A named tuple containing:
+				- x_offset: X offset of the Beacon probe
+				- y_offset: Y offset of the Beacon probe
+				- proximity_min: Tuple of (min_x, min_y) for proximity probing
+				- proximity_max: Tuple of (max_x, max_y) for proximity probing
+				- contact_min: Tuple of (min_x, min_y) for contact probing
+				- contact_max: Tuple of (max_x, max_y) for contact probing
+			Returns None if bed_mesh or beacon configuration is not available.
+		"""
+		if self.beacon is None:
+			return None
+		
+		return namedtuple('BeaconProbingRegions', 
+			['x_offset', 'y_offset', 'proximity_min', 'proximity_max', 'contact_min', 'contact_max'])(
+			x_offset=self.beacon.x_offset,
+			y_offset=self.beacon.y_offset,
+			proximity_min=(self.beacon.mesh_helper.def_min_x, self.beacon.mesh_helper.def_min_y),
+			proximity_max=(self.beacon.mesh_helper.def_max_x, self.beacon.mesh_helper.def_max_y),
+			contact_min=tuple(self.beacon.mesh_helper.def_contact_min),
+			contact_max=tuple(self.beacon.mesh_helper.def_contact_max))
+
 	def get_status(self, eventtime):
 		return {
 			'name': self.name,
