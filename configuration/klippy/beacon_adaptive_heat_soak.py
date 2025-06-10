@@ -241,7 +241,7 @@ class BeaconAdaptiveHeatSoak:
 				if len(history) >= moving_average_size:
 					moving_average = np.mean(history[-moving_average_size:])
 
-					if moving_average <= threshold:
+					if abs(moving_average) <= threshold:
 						hold_count += 1
 						msg = f"Z-rate {moving_average:.1f} nm/s, within threshold of {threshold} nm/s for {hold_count}/{target_hold_count} consecutive measurements"						
 					else:
