@@ -4,131 +4,90 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import time, struct, logging
+import re, time, logging
 import numpy as np
-from multiprocessing import shared_memory, Process, Pipe
 
 class BeaconZRateSession:
-	def __init__(self, config, beacon, reactor):
+	def __init__(self, config, beacon, samples_per_mean=1000, window_size=30, window_step=1):
 		self.config = config
 		self.name = config.get_name()
+		self.printer = config.get_printer()
+		self.gcode = self.printer.lookup_object('gcode')
+		self.reactor = self.printer.get_reactor()
 		self.beacon = beacon
-		self.reactor = reactor
-		self._shm = None
-		self._float_size = struct.calcsize('d')  # Size of double in bytes
-		
-	def cleanup(self):
-		if self._shm is not None:
-			self._shm.close()
-			self._shm.unlink()
-			self._shm = None
-	
-	def _ensure_shared_memory(self, size):
-		# Ensure the shared memory is large enough. Don't bother shrinking it.		
-		if self._shm is None or self._shm.size < size * self._float_size:
-			if self._shm is not None:
-				self._shm.close()
-				self._shm.unlink()
-			self._shm = shared_memory.SharedMemory(create=True, size=size * self._float_size)
-			
-	def get_z_rate(self, sample_count):
-		if sample_count <= 2:
-			raise ValueError("Sample count must be greater than 2 to calculate a rate.")
-		
-		# Time values are stored in the first sample_count elements of the shared memory, and distances
-		# in the second sample_count elements.
-		self._ensure_shared_memory(sample_count * 2)
-		samples = None
-		try:
-			samples = memoryview(self._shm.buf).cast('d')
-			out_of_range_count = 0
-			i = 0
+		self.samples_per_mean = samples_per_mean
+		self.window_size = window_size
+		self.window_step = window_step
 
-			def cb(s):
-				nonlocal i, samples, out_of_range_count
-				if i < sample_count:
-					# s["dist"] is the smoothed distance, we want the unsmoothed data as this is
-					# cleaner for rate calculations.
-					time = s["time"]
-					temp = s["temp"]
-					data = s["data"]
-					freq = self.beacon.count_to_freq(data)
-					dist = self.beacon.freq_to_dist(freq, temp)
-					if dist is None or np.isinf(dist) or np.isnan(dist):
-						out_of_range_count += 1
-					else:
-						samples[i] = time
-						samples[sample_count + i] = dist
-						i += 1
-					
-			with self.beacon.streaming_session(cb):
-				eventtime = self.reactor.monotonic()
-				while i < sample_count:
-					eventtime = self.reactor.pause(eventtime + 0.1)
-					if out_of_range_count > 0:
-						# fail fast, most likely a command was called before the beacon was calibrated or positioned correctly
-						raise Exception(f"Beacon could not measure a valid distance. Beacon must be calibrated and positioned correctly before running this command.")	
-			
-			mid_time = (samples[0] + samples[sample_count - 1]) / 2
+		self._mean_distances = []
+		self._times = []
+		self._sample_buffer = np.zeros(samples_per_mean, dtype=np.float64)
+		self._step_phase = window_step - window_size # Ensure that phase will be 0 after populating the initial window_size means
 
-			# Set up a pipe to communicate with the child process
-			parent_conn, child_conn = Pipe()
+	def _get_next_mean(self):
 
-			child = Process(target=BeaconZRateSession._calculate_z_rate, args=(child_conn, self._shm.name, sample_count))
-			child.daemon = True
-			child.start()
+		first_sample_time = None
+		last_sample_time = None
+		bad_sample_count = 0
+		i = 0
 
+		def cb(s):
+			nonlocal i, bad_sample_count, first_sample_time, last_sample_time
+			if i < self.samples_per_mean:
+				dist = s["dist"]
+				if dist is None or np.isinf(dist) or np.isnan(dist):
+					bad_sample_count += 1
+				else:
+					self._sample_buffer[i] = dist
+					if i == 0:
+						first_sample_time = s["time"]
+
+					i += 1
+
+					if i == self.samples_per_mean:
+						last_sample_time = s["time"]
+
+		with self.beacon.streaming_session(cb):
 			eventtime = self.reactor.monotonic()
-
-			while child.is_alive():
+			while i < self.samples_per_mean:
 				eventtime = self.reactor.pause(eventtime + 0.1)
+				if bad_sample_count > 100:
+					# Not expected. Could be that thermal deflection moved the beacon out of range (too close or too far from the bed).
+					# We've not seen this happen in practice, but we handle it gracefully just in case.
+					raise self.printer.command_error(f"{self.name}: Unexpected error: Beacon failed to measure a valid distance for {bad_sample_count} out of {bad_sample_count + i} samples.")
 
-			is_err, result = parent_conn.recv()
-			
-			child.join()
-			parent_conn.close()
-			
-			if is_err:
-				raise Exception(result)
-			else:
-				return (mid_time, result)
-		finally:
-			if samples is not None:
-				samples.release()
-				del samples
-	
-	@staticmethod
-	def _calculate_z_rate(conn, shm_name, sample_count):
-		try:
-			shm = None
-			samples = None
-			try:
-				shm = shared_memory.SharedMemory(name=shm_name)
-				samples = memoryview(shm.buf).cast('d')
-				
-				if len(samples) < sample_count * 2:
-					raise ValueError("Not enough samples in shared memory")
+		if bad_sample_count > 0:
+			logging.warning(f"{self.name}: {bad_sample_count} out of {bad_sample_count + i} samples were invalid.")
 
-				# Time values are stored in the first sample_count elements of the shared memory, and distances
-				# in the second sample_count elements. The shared memory may be larger than sample_count * 2,
-				# so we take care to only use the first sample_count * 2 values.
-				coefficients = np.polyfit(
-					samples[:sample_count],
-					samples[sample_count:sample_count * 2], 1)
-				
-				slope = coefficients[0]  		# The slope of the line is the rate of change				
-				slope_nm_per_sec = slope * 1e6 	# Convert from millimeters to nanometers per second
-				conn.send((False, slope_nm_per_sec))
-			finally:
-				if samples is not None:
-					samples.release()
-					del samples
-				if shm is not None:
-					shm.close()			
-		except Exception as e:
-			conn.send((True, str(e)))
-		finally: 
-			conn.close()
+		self._step_phase = (self._step_phase + 1) % self.window_step
+
+		# Beacon samples are approximately evenly spaced, so we can use the first and last sample times to calculate the mean time.
+		mean_time = (first_sample_time + last_sample_time) / 2
+		return (mean_time, np.mean(self._sample_buffer))
+
+	def get_next_z_rate(self):
+		while True:
+			if len(self._mean_distances) == self.window_size:
+				self._mean_distances.pop(0)
+				self._times.pop(0)
+
+			# The first call to get_next_z_rate will fill the means list with initial values,
+			# subsequent calls will use the sliding window approach.
+			while len(self._mean_distances) < self.window_size:
+				time, mean = self._get_next_mean()
+				self._mean_distances.append(mean)
+				self._times.append(time)
+
+			if self._step_phase == 0:
+				break
+
+		# Fit a 1-degree polynomial (line) to the data
+		slope, _ = np.polyfit(self._times, self._mean_distances, 1)
+
+		# Convert from millimeters to nanometers per second
+		slope_nm_per_sec = slope * 1e6
+
+		return (self._times[len(self._times) // 2], slope_nm_per_sec)
 
 class BeaconAdaptiveHeatSoak:
 	def __init__(self, config):
@@ -137,31 +96,28 @@ class BeaconAdaptiveHeatSoak:
 		self.printer = config.get_printer()
 		self.reactor = self.printer.get_reactor()
 		self.gcode = self.printer.lookup_object('gcode')
-		
+
 		# Configuration values
 
 		# The default z-rate threshold in nm/s below which we consider the printer to be thermally stable.
 		self.def_threshold = config.getint('threshold', 15, minval=10)
 
-		# The default number of consecutive z-rate reaidings below the threshold before we consider the
-		# printer to be thermally stable. This is used to avoid false positives due to noise in the data.
-		self.def_hold_count = config.getint('hold_count', 3, minval=1)
+		# The default number of continuous seconds with z-rate below the threshold before we consider the
+		# printer to be thermally stable.
+		self.def_hold_count = config.getint('hold_count', 150, minval=1)
 
 		# The default maximum wait time in seconds for the printer to reach thermal stability.
 		self.def_maximum_wait = config.getint('maximum_wait', 5400, minval=0)
 
-		# The default number of samples to take per z-rate calculation. This value is only configurable 
-		# to support testing and debugging, and should not be changed in production.
-		self.def_samples_per_measurement = config.getint('samples_per_measurement', 30000, minval=30000)
+		# TODO: Make trend checks configurable.
 
 		# Setup
 		self.reactor = None
 		self.beacon = None
-		self.first_run = True
 
 		# Register commands
 		self.gcode.register_command(
-			'BEACON_WAIT_FOR_PRINTER_HEAT_SOAK', 
+			'BEACON_WAIT_FOR_PRINTER_HEAT_SOAK',
 			self.cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK,
 			desc=self.desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK)
 
@@ -184,135 +140,238 @@ class BeaconAdaptiveHeatSoak:
 		if self.config.has_section("beacon"):
 			self.beacon = self.printer.lookup_object('beacon')
 
-	def _handle_first_run(self):
-		# We've seen issues where the first streaming_session after a restart begins with some bogus data,
-		# so we throw away some samples to ensure the beacon is ready.
-		if self.first_run:
-			self.first_run = False
-			i = 0
-			def cb(_):
-				nonlocal i
-				i += 1
-			with self.beacon.streaming_session(cb):
-				# Wait for 1000 samples to be collected
-				eventtime = self.reactor.monotonic()				
-				while i < 1000:					
-					eventtime = self.reactor.pause(eventtime + 0.1)
-					
+	def _prepare_for_sampling(self):
+		# We've seen issues where the first streaming_session after some operations begins with some bogus data,
+		# so we throw away some samples to ensure the beacon is ready. Suspected operations include:
+		# - klipper restart
+		# - BEACON_AUTO_CALIBRATE
+		bad_samples = 0
+		good_samples = 0
+
+		def cb(s):
+			nonlocal good_samples, bad_samples
+			dist = s["dist"]
+			if dist is None or np.isinf(dist) or np.isnan(dist):
+				bad_samples += 1
+			else:
+				good_samples += 1
+
+		with self.beacon.streaming_session(cb):
+			# Wait up to 5 seconds for 1000 good samples to be collected
+			# This is a bit arbitrary, but it should be enough to ensure the beacon is ready.
+			start_time = eventtime = self.reactor.monotonic()
+			while good_samples < 1000 and (eventtime - start_time) < 5:
+				eventtime = self.reactor.pause(eventtime + 0.1)
+
+		logging.info(f"{self.name}: Prepared for sampling, collected {good_samples} good samples and {bad_samples} bad samples (total {good_samples+bad_samples} samples).")
+
+		if good_samples < 1000:
+			raise self.printer.command_error(f"Failed to prepare beacon for sampling, timed out waiting for good samples. Beacon must be calibrated and positioned correctly before running this command.")
+
+	def parse_duples_string(s: str) -> tuple:
+		"""
+		Parses a string of duples and returns a tuple of tuple of ints.
+
+		The function expects a string in the format:
+			"(num, num), (num, num), ... "
+
+		It raises a ValueError if the string doesn't match the expected pattern.
+
+		Examples:
+			"(20, 30),(  1, 99 ) , (100, 234)" -> ((20, 30), (1, 99), (100, 234))
+		"""
+		# Define a regex that must match the entire string.
+		full_pattern = r'^\s*\(\s*\d+\s*,\s*\d+\s*\)(?:\s*,\s*\(\s*\d+\s*,\s*\d+\s*\))*\s*$'
+		if not re.fullmatch(full_pattern, s):
+			raise ValueError("Input string does not match the expected pattern.")
+
+		# Define a pattern to find each tuple of digits.
+		tuple_pattern = r'\(\s*(\d+)\s*,\s*(\d+)\s*\)'
+		matches = re.findall(tuple_pattern, s)
+
+		# Convert the string numbers to integers and pack them into tuples.
+		return tuple((int(x), int(y)) for x, y in matches)
+
+	def _check_trend_projection(self, moving_average_history, moving_average_history_times, trend_fit_window, trend_projection, threshold):
+		if len(moving_average_history) < trend_fit_window:
+			# Not enough data to fit a trend
+			return False
+
+		# Fit window 200 take about 1.5ms on Pi 4B, so for now we work on the assumption that
+		# processing can take place in the main thread without blocking the reactor for too long.
+		# If we need longer fit windows, we may need to move this to a separate process.
+
+		# Keep track of time taken, warn if we risk timer too close error.
+		start_time = self.reactor.monotonic()
+
+		times = np.array(moving_average_history_times[-trend_fit_window:])
+		values = np.array(moving_average_history[-trend_fit_window:])
+
+		# Fit a linear regression to the last `trend_fit_window` samples
+		slope, intercept = np.polyfit(times, values, 1)
+
+		check_time = times[-1] + trend_projection
+		check_value = slope * check_time + intercept
+
+		time_taken = self.reactor.monotonic() - start_time
+
+		if time_taken > 3.0:
+			logging.warning(f"{self.name}: Trend projection check for fit window size {trend_fit_window} took {1000.*time_taken:.3f} ms, which risks causing a Klipper timer too close error. Consider reducing the trend fit window size.")
+
+		self.reactor.pause(self.reactor.NOW)
+
+		return abs(check_value) <= threshold
+
 	desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK = "Wait for printer to reach thermal stability using Beacon to monitor deflection changes"
 	def cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK(self, gcmd):
 		if self.beacon is None:
 			raise self.printer.command_error("Beacon is not available. Please ensure RatOS is configured correctly.")
 
-		self._handle_first_run()
+		if self.beacon.model is None:
+			raise self.printer.command_error("Beacon model is not set. Calibrate the Beacon before running this command.")
 
-		threshold = gcmd.get_float('THRESHOLD', self.def_threshold, minval=10)
+		self._prepare_for_sampling()
+
+		threshold = gcmd.get_int('THRESHOLD', self.def_threshold, minval=10)
 		target_hold_count = gcmd.get_int('HOLD_COUNT', self.def_hold_count, minval=1)
 		maximum_wait = gcmd.get_int('MAXIMUM_WAIT', self.def_maximum_wait, minval=0)
-		samples_per_measurement = gcmd.get_int('SAMPLES_PER_MEASUREMENT', self.def_samples_per_measurement, minval=30000)
+		# TODO: Hard-coded for now, make configurable later
+		trend_checks = ((75, 675), (200, 675))
 
-		moving_average_size = 5
+		moving_average_size = 150
 		hold_count = 0
-		history = []
-		z_rate_session = None
-		
-		logging.info(f"{self.name}: Starting heat soak with threshold {threshold} nm/s, hold count {target_hold_count}, maximum wait {maximum_wait} seconds, {samples_per_measurement} samples per measurement and moving average size {moving_average_size}")
-		gcmd.respond_info(f"Waiting for printer to reach thermal stability for up to {maximum_wait} seconds, requiring {target_hold_count} consecutive measurements within the Z-rate threshold of {threshold} nm/s. Please wait...")
-		
+
+		# z_rate_history is a circular buffer of the last `moving_average_size` z-rates
+		z_rate_history = [0] * moving_average_size
+		z_rate_count = 0
+
+		# moving_average_history grows as we collect more data. The full history is logged at the end of the wait.
+		moving_average_history = []
+		moving_average_history_times = []
+
+		gcmd.respond_info(f"Waiting up to {self._format_seconds(maximum_wait)} for printer to reach thermal stability. Please wait...")
+
 		start_time = self.reactor.monotonic()
-		
-		try:
-			z_rate_session = BeaconZRateSession(self.config, self.beacon, self.reactor)
-			
+
+		z_rate_session = BeaconZRateSession(self.config, self.beacon)
+
+		ts = time.strftime("%Y%m%d_%H%M%S")
+		fn = f"/tmp/heat_soak_{ts}.csv"
+
+		logging.info(f"{self.name}: starting: threshold={threshold}, hold_count={target_hold_count}, max_wait={maximum_wait}, mas={moving_average_size}, trend_checks={trend_checks}, z_rates_file={fn}")
+
+		with open(fn, "w") as z_rates_file:
+			z_rates_file.write("time,z_rate\n")
+			time_zero = None
+
 			while True:
 				if self.reactor.monotonic() - start_time > maximum_wait:
-					gcmd.respond_info(f"Maximum wait time of {maximum_wait} seconds exceeded, exiting.")
+					gcmd.respond_info(f"Maximum wait time of {self._format_seconds(maximum_wait)} exceeded, wait completed.")
 					return
 
 				# Get the Z rate from the beacon
 				try:
-					z_rate_result = z_rate_session.get_z_rate(samples_per_measurement)
+					z_rate_result = z_rate_session.get_next_z_rate()
 				except Exception as e:
-					logging.error(f"{self.name}: Error calculating Z-rate, wait aborted: {e}")
 					raise self.printer.command_error(f"Error calculating Z-rate, wait ended prematurely: {e}")
-				
-				history.append(z_rate_result[1])
 
-				if len(history) >= moving_average_size:
-					moving_average = np.mean(history[-moving_average_size:])
+				if time_zero is None:
+					time_zero = z_rate_result[0]
+
+				z_rates_file.write(f"{z_rate_result[0] - time_zero:.8e},{z_rate_result[1]:.8e}\n")
+
+				z_rate_history[z_rate_count % moving_average_size] = z_rate_result[1]
+				z_rate_count += 1
+
+				moving_average = None
+
+				if z_rate_count >= moving_average_size:
+					moving_average = np.mean(z_rate_history)
+					moving_average_history.append(moving_average)
+					moving_average_history_times.append(z_rate_result[0])
+
+				if moving_average is not None:
+					elapsed = self.reactor.monotonic() - start_time
+
+					# Log on every 15th z-rate to avoid flooding the console
+					should_log = z_rate_count % 15 == 0
 
 					if abs(moving_average) <= threshold:
 						hold_count += 1
-						msg = f"Z-rate {moving_average:.1f} nm/s, within threshold of {threshold} nm/s for {hold_count}/{target_hold_count} consecutive measurements"						
+						msg = f"Z-rate {moving_average:.1f} nm/s, within threshold of {threshold} nm/s for {hold_count}/{target_hold_count} consecutive measurements"
 					else:
-						if hold_count > 0:							
+						if hold_count > 0:
 							msg = f"Z-rate {moving_average:.1f} nm/s, moved outside threshold of {threshold} nm/s after {hold_count} consecutive measurements"
 							hold_count = 0
 						else:
 							msg = f"Z-rate {moving_average:.1f} nm/s, not within threshold of {threshold} nm/s"
-					
-					gcmd.respond_info(msg)
-					
+
 					if hold_count >= target_hold_count:
-						gcmd.respond_info(f"Printer is considered thermally stable after {hold_count} consecutive measurements within threshold of {threshold} nm/s.")
-						for i in range(0, len(history), 20):
-							chunk = history[i:i+20]
-							logging.info(f"{self.name}: raw z-rates: {','.join(f'{v:.6e}' for v in chunk)}")
-						return
-				else:
-					logging.info(f"{self.name}: Z-rate {z_rate_result[1]:.3f} nm/s, not enough samples for moving average yet")
-		finally:
-			if z_rate_session is not None:
-				z_rate_session.cleanup()
+						# For increased robustness, we perform one or more linear trend checks. Typically this will
+						# include a trend fitted to a short history window, and a trend fitted to a longer history window.
+						# Together, these checks ensure that the Z-rate is not only stable but also not trending towards instability.
+						all_checks_passed = all(
+							self._check_trend_projection(
+								moving_average_history, moving_average_history_times,
+								trend_check[0], trend_check[1], threshold
+							) for trend_check in trend_checks)
+
+						if all_checks_passed:
+							gcmd.respond_info(f"Printer is considered thermally stable after {self._format_seconds(elapsed)}, wait completed.")
+							return
+						elif should_log:
+							gcmd.respond_info(msg + f", waiting for trend checks to pass ({self._format_seconds(elapsed)} elapsed)")
+					elif should_log:
+						gcmd.respond_info(msg + f" ({self._format_seconds(elapsed)} elapsed)")
 
 	desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_Z_RATES = "For developer use only. This command is used to run diagnostics for Beacon adaptive heat soak."
 	def cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_Z_RATES(self, gcmd):
 		if self.beacon is None:
 			raise self.printer.command_error("Beacon is not available. Please ensure RatOS is configured correctly.")
 
-		self._handle_first_run()
+		if self.beacon.model is None:
+			raise self.printer.command_error("Beacon model is not set. Calibrate the Beacon before running this command.")
+
+		self._prepare_for_sampling()
 
 		duration = gcmd.get_int('DURATION', 7200, minval=0)
-		samples_per_measurement = gcmd.get_int('SAMPLES_PER_MEASUREMENT', 30000, minval=1000)
-
 		timestamp = time.strftime("%Y%m%d_%H%M%S")
-		filename = f'/home/pi/printer_data/config/beacon_adaptive_heat_soak_z_rates_{samples_per_measurement}_{timestamp}.txt'
+		filename = gcmd.get('FILENAME', 'beacon_adaptive_heat_soak_z_rates') + f"_V2_{timestamp}.csv"
 
-		# Make sure we can open the file before starting capture
-		with open(filename, 'w') as f:
-			gcmd.respond_info(f'Capturing diagnostic Z-rates for {duration} seconds using {samples_per_measurement} samples per Z-rate calculation to file {filename}, please wait...')
+		fullpath = f'/home/pi/printer_data/config/{filename}'
+
+		with open(fullpath, 'w') as f:
+			f.write("time,z_rate\n")
+			gcmd.respond_info(f'Capturing diagnostic Z-rates for {duration} seconds using V2 Z-rate calculation to file {fullpath}, please wait...')
 			start_time = self.reactor.monotonic()
-			z_rate_session = None
-			try:
-				z_rate_session = BeaconZRateSession(self.config, self.beacon, self.reactor)
-				history = []
-				time_zero = None
-				while self.reactor.monotonic() - start_time < duration:
-					# Get the Z rate from the beacon
-					try:
-						z_rate_result = z_rate_session.get_z_rate(samples_per_measurement)
-					except Exception as e:
-						raise self.printer.command_error(f"Error calculating Z-rate: {e}")
+			z_rate_session = BeaconZRateSession(self.config, self.beacon)
+			time_zero = None
 
-					gcmd.respond_info(f"Z-rate {z_rate_result[1]:.3f} nm/s")
+			while self.reactor.monotonic() - start_time < duration:
+				# Get the Z rate from the beacon
+				try:
+					z_rate_result = z_rate_session.get_next_z_rate()
+				except Exception as e:
+					raise self.printer.command_error(f"Error calculating Z-rate: {e}")
 
-					if time_zero is None:
-						time_zero = z_rate_result[0]
+				gcmd.respond_info(f"Z-rate {z_rate_result[1]:.3f} nm/s")
 
-					history.append((z_rate_result[0] - time_zero, z_rate_result[1]))
+				if time_zero is None:
+					time_zero = z_rate_result[0]
 
-				np.savetxt(f, history)
-				gcmd.respond_info(f'Diagnostic data captured to {filename}')
-			finally:
-				if z_rate_session is not None:
-					z_rate_session.cleanup()
+				f.write(f"{z_rate_result[0] - time_zero:.8e},{z_rate_result[1]:.8e}\n")
+
+			gcmd.respond_info(f'Diagnostic data captured to {fullpath}')
 
 	desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_BEACON_SAMPLES = "For developer use only. This command is used to run diagnostics for Beacon adaptive heat soak."
 	def cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_BEACON_SAMPLES(self, gcmd):
 		if self.beacon is None:
 			raise self.printer.command_error("Beacon is not available. Please ensure RatOS is configured correctly.")
-		
-		self._handle_first_run()
+
+		if self.beacon.model is None:
+			raise self.printer.command_error("Beacon model is not set. Calibrate the Beacon before running this command.")
+
+		self._prepare_for_sampling()
 
 		duration = gcmd.get_int('DURATION', 300, minval=60)
 		chunk_duration = gcmd.get_int('CHUNK_DURATION', 5, minval=5)
@@ -325,7 +384,7 @@ class BeaconAdaptiveHeatSoak:
 			start_time = self.reactor.monotonic()
 			while self.reactor.monotonic() - start_time < duration:
 				samples = []
-				def cb(s):					
+				def cb(s):
 					unsmooth_data = s["data"]
 					unsmooth_freq = self.beacon.count_to_freq(unsmooth_data)
 					unsmooth_dist = self.beacon.freq_to_dist(unsmooth_freq, s["temp"])
@@ -338,6 +397,15 @@ class BeaconAdaptiveHeatSoak:
 				f.flush()
 
 		gcmd.respond_info(f'Diagnostic data captured to {filename}')
+
+	def _format_seconds(self, seconds):
+		seconds = int(seconds)
+		if seconds < 60:
+			return f"{seconds}s"
+		elif seconds < 3600:
+			return f"{seconds // 60}m {seconds % 60}s"
+		else:
+			return f"{seconds // 3600}h {seconds % 3600 // 60}m {seconds % 60}s"
 
 def load_config(config):
 	return BeaconAdaptiveHeatSoak(config)
