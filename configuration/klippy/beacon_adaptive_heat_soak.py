@@ -400,12 +400,22 @@ class BeaconAdaptiveHeatSoak:
 
 	def _format_seconds(self, seconds):
 		seconds = int(seconds)
-		if seconds < 60:
-			return f"{seconds}s"
-		elif seconds < 3600:
-			return f"{seconds // 60}m {seconds % 60}s"
+		hours = seconds // 3600
+		minutes = (seconds % 3600) // 60
+		secs = seconds % 60
+		
+		if hours > 0:
+			if minutes > 0 or secs > 0:
+				if secs > 0:
+					return f"{hours}h {minutes}m {secs}s"
+				return f"{hours}h {minutes}m"
+			return f"{hours}h"
+		elif minutes > 0:
+			if secs > 0:
+				return f"{minutes}m {secs}s"
+			return f"{minutes}m"
 		else:
-			return f"{seconds // 3600}h {seconds % 3600 // 60}m {seconds % 60}s"
+			return f"{secs}s"
 
 def load_config(config):
 	return BeaconAdaptiveHeatSoak(config)
