@@ -50,6 +50,8 @@ class BeaconZRateSession:
 		with self.beacon.streaming_session(cb):
 			eventtime = self.reactor.monotonic()
 			while i < self.samples_per_mean:
+				if self.printer.is_shutdown():
+					raise self.printer.command_error(f"{self.name}: Printer is shutting down")
 				eventtime = self.reactor.pause(eventtime + 0.1)
 				if bad_sample_count > 100:
 					# Not expected. Could be that thermal deflection moved the beacon out of range (too close or too far from the bed).
@@ -161,6 +163,8 @@ class BeaconAdaptiveHeatSoak:
 			# This is a bit arbitrary, but it should be enough to ensure the beacon is ready.
 			start_time = eventtime = self.reactor.monotonic()
 			while good_samples < 1000 and (eventtime - start_time) < 5:
+				if self.printer.is_shutdown():
+					raise self.printer.command_error(f"{self.name}: Printer is shutting down")
 				eventtime = self.reactor.pause(eventtime + 0.1)
 
 		logging.info(f"{self.name}: Prepared for sampling, collected {good_samples} good samples and {bad_samples} bad samples (total {good_samples+bad_samples} samples).")
@@ -273,7 +277,10 @@ class BeaconAdaptiveHeatSoak:
 				try:
 					z_rate_result = z_rate_session.get_next_z_rate()
 				except Exception as e:
-					raise self.printer.command_error(f"Error calculating Z-rate, wait ended prematurely: {e}")
+					if self.printer.is_shutdown():
+						raise
+					else:
+						raise self.printer.command_error(f"Error calculating Z-rate, wait ended prematurely: {e}")
 
 				if time_zero is None:
 					time_zero = z_rate_result[0]
@@ -352,7 +359,10 @@ class BeaconAdaptiveHeatSoak:
 				try:
 					z_rate_result = z_rate_session.get_next_z_rate()
 				except Exception as e:
-					raise self.printer.command_error(f"Error calculating Z-rate: {e}")
+					if self.printer.is_shutdown():
+						raise
+					else:
+						raise self.printer.command_error(f"Error calculating Z-rate: {e}")					
 
 				gcmd.respond_info(f"Z-rate {z_rate_result[1]:.3f} nm/s")
 
@@ -383,6 +393,9 @@ class BeaconAdaptiveHeatSoak:
 			gcmd.respond_info(f'Capturing diagnostic beacon samples for {duration} seconds in chunks of {chunk_duration} seconds to file {filename}, please wait...')
 			start_time = self.reactor.monotonic()
 			while self.reactor.monotonic() - start_time < duration:
+				if self.printer.is_shutdown():
+					raise self.printer.command_error(f"{self.name}: Printer is shutting down")
+
 				samples = []
 				def cb(s):
 					unsmooth_data = s["data"]
@@ -400,12 +413,22 @@ class BeaconAdaptiveHeatSoak:
 
 	def _format_seconds(self, seconds):
 		seconds = int(seconds)
-		if seconds < 60:
-			return f"{seconds}s"
-		elif seconds < 3600:
-			return f"{seconds // 60}m {seconds % 60}s"
+		hours = seconds // 3600
+		minutes = (seconds % 3600) // 60
+		secs = seconds % 60
+		
+		if hours > 0:
+			if minutes > 0 or secs > 0:
+				if secs > 0:
+					return f"{hours}h {minutes}m {secs}s"
+				return f"{hours}h {minutes}m"
+			return f"{hours}h"
+		elif minutes > 0:
+			if secs > 0:
+				return f"{minutes}m {secs}s"
+			return f"{minutes}m"
 		else:
-			return f"{seconds // 3600}h {seconds % 3600 // 60}m {seconds % 60}s"
+			return f"{secs}s"
 
 def load_config(config):
 	return BeaconAdaptiveHeatSoak(config)
