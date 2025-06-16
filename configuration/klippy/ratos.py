@@ -1,5 +1,5 @@
 import os, logging, glob, traceback, inspect, re
-import json, subprocess, pathlib
+import json, subprocess, pathlib, random, math
 from collections import namedtuple
 
 BeaconProbingRegions = namedtuple('BeaconProbingRegions', 
@@ -96,23 +96,24 @@ class RatOS:
 	# Gcode commands
 	#####
 	def register_commands(self):
-		self.gcode.register_command('HELLO_RATOS', self.cmd_HELLO_RATOS, desc=(self.desc_HELLO_RATOS))
-		self.gcode.register_command('CACHE_IS_GRAPH_FILES', self.cmd_CACHE_IS_GRAPH_FILES, desc=(self.desc_CACHE_IS_GRAPH_FILES))
-		self.gcode.register_command('SHOW_IS_GRAPH_FILES', self.cmd_SHOW_IS_GRAPH_FILES, desc=(self.desc_SHOW_IS_GRAPH_FILES))
-		self.gcode.register_command('CONSOLE_ECHO', self.cmd_CONSOLE_ECHO, desc=(self.desc_CONSOLE_ECHO))
-		self.gcode.register_command('RATOS_LOG', self.cmd_RATOS_LOG, desc=(self.desc_RATOS_LOG))
-		self.gcode.register_command('PROCESS_GCODE_FILE', self.cmd_PROCESS_GCODE_FILE, desc=(self.desc_PROCESS_GCODE_FILE))
-		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
-		self.gcode.register_command('BYPASS_GCODE_PROCESSING', self.cmd_BYPASS_GCODE_PROCESSING, desc=(self.desc_BYPASS_GCODE_PROCESSING))
-		self.gcode.register_command('_SYNC_GCODE_POSITION', self.cmd_SYNC_GCODE_POSITION, desc=(self.desc_SYNC_GCODE_POSITION))
-		self.gcode.register_command('_CHECK_BED_MESH_PROFILE_EXISTS', self.cmd_CHECK_BED_MESH_PROFILE_EXISTS, desc=(self.desc_CHECK_BED_MESH_PROFILE_EXISTS))
-		self.gcode.register_command('_RAISE_ERROR', self.cmd_RAISE_ERROR, desc=(self.desc_RAISE_ERROR))
-		self.gcode.register_command('_TRY', self.cmd_TRY, desc=(self.desc_TRY))
-		self.gcode.register_command('_DEBUG_ECHO_STACK_TRACE', self.cmd_DEBUG_ECHO_STACK_TRACE, desc=(self.desc_DEBUG_ECHO_STACK_TRACE))
+		self.gcode.register_command('HELLO_RATOS', self.cmd_HELLO_RATOS, desc=self.desc_HELLO_RATOS)
+		self.gcode.register_command('CACHE_IS_GRAPH_FILES', self.cmd_CACHE_IS_GRAPH_FILES, desc=self.desc_CACHE_IS_GRAPH_FILES)
+		self.gcode.register_command('SHOW_IS_GRAPH_FILES', self.cmd_SHOW_IS_GRAPH_FILES, desc=self.desc_SHOW_IS_GRAPH_FILES)
+		self.gcode.register_command('CONSOLE_ECHO', self.cmd_CONSOLE_ECHO, desc=self.desc_CONSOLE_ECHO)
+		self.gcode.register_command('RATOS_LOG', self.cmd_RATOS_LOG, desc=self.desc_RATOS_LOG)
+		self.gcode.register_command('PROCESS_GCODE_FILE', self.cmd_PROCESS_GCODE_FILE, desc=self.desc_PROCESS_GCODE_FILE)
+		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR)
+		self.gcode.register_command('BYPASS_GCODE_PROCESSING', self.cmd_BYPASS_GCODE_PROCESSING, desc=self.desc_BYPASS_GCODE_PROCESSING)
+		self.gcode.register_command('_SYNC_GCODE_POSITION', self.cmd_SYNC_GCODE_POSITION, desc=self.desc_SYNC_GCODE_POSITION)
+		self.gcode.register_command('_CHECK_BED_MESH_PROFILE_EXISTS', self.cmd_CHECK_BED_MESH_PROFILE_EXISTS, desc=self.desc_CHECK_BED_MESH_PROFILE_EXISTS)
+		self.gcode.register_command('_RAISE_ERROR', self.cmd_RAISE_ERROR, desc=self.desc_RAISE_ERROR)
+		self.gcode.register_command('_TRY', self.cmd_TRY, desc=self.desc_TRY)
+		self.gcode.register_command('_DEBUG_ECHO_STACK_TRACE', self.cmd_DEBUG_ECHO_STACK_TRACE, desc=self.desc_DEBUG_ECHO_STACK_TRACE)
+		self.gcode.register_command('_MOVE_TO_SAFE_Z_HOME', self.cmd_MOVE_TO_SAFE_Z_HOME, desc=self.desc_MOVE_TO_SAFE_Z_HOME)		
 
 	def register_command_overrides(self):
-		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=(self.desc_TEST_RESONANCES))
-		self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=(self.desc_SHAPER_CALIBRATE))
+		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=self.desc_TEST_RESONANCES)
+		self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=self.desc_SHAPER_CALIBRATE)
 
 	def register_override(self, command, func, desc):
 		if self.overridden_commands[command] is not None:
@@ -301,7 +302,6 @@ class RatOS:
 			self.v_sd.cmd_SDCARD_PRINT_FILE(gcmd)
 		else:
 			self.console_echo('Print aborted', 'error')
-
 
 	#####
 	# Gcode Post Processor
@@ -630,7 +630,41 @@ class RatOS:
 				self.printer.invoke_shutdown(f"{self.name}: (safe_home_x, safe_home_y) must be within the region that Beacon can probe: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y}). The configured location ({safe_home_x}, {safe_home_y}) is outside this region.")			
 		
 		return (safe_home_x, safe_home_y)
-	
+
+	desc_MOVE_TO_SAFE_Z_HOME = "Move to safe home position with optional Z_HOP (pass Z_HOP=True as parameter)"
+	def cmd_MOVE_TO_SAFE_Z_HOME(self, gcmd):
+		speed = float(self.gm_ratos.variables['macro_travel_speed']) * 60
+		fuzzy_radius = gcmd.get_float('FUZZY_RADIUS', 0, minval=0.)
+		z_hop = gcmd.get('Z_HOP', '').lower() in ('true', 'yes', '1')
+		x, y = self.get_safe_home_position()
+		
+		if fuzzy_radius > 0:
+			# Set the home position to a random point on a circle with the given radius centred on the safe home position.
+			angle = random.uniform(0, 2 * math.pi)
+			x += fuzzy_radius * math.cos(angle)
+			y += fuzzy_radius * math.sin(angle)
+			# Limit to the beacon probing region if defined
+			bpr = self.get_beacon_probing_regions()
+			if bpr is not None:
+				safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
+				safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
+				safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
+				safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
+				x = max(safe_min_x, min(x, safe_max_x))
+				y = max(safe_min_y, min(y, safe_max_y))
+			else:
+				# Limit to printable area if no beacon probing region is defined
+				printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
+				printable_y_max = float(self.gm_ratos.variables['printable_y_max'])
+				x = max(0, min(x, printable_x_max))
+				y = max(0, min(y, printable_y_max))
+
+		if z_hop:
+			self.gcode.run_script_from_command("_Z_HOP")
+
+		self.gcode.run_script_from_command(f"__MOVE_TO_SAFE_Z_HOME_ECHO_DEBUG SAFE_HOME_X={x} SAFE_HOME_Y={y} FUZZY_RADIUS={fuzzy_radius} Z_HOP={z_hop}")
+		self.gcode.run_script_from_command(f"G0 X{x} Y{y} F{speed}")
+
 	def get_status(self, eventtime=None):
 		return {
 			'name': self.name,
