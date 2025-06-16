@@ -111,6 +111,9 @@ class BeaconAdaptiveHeatSoak:
 		# The default maximum wait time in seconds for the printer to reach thermal stability.
 		self.def_maximum_wait = config.getint('maximum_wait', 5400, minval=0)
 
+		# The default minimum wait time in seconds for the printer to reach thermal stability.
+		self.def_minimum_wait = config.getint('minimum_wait', 0, minval=0)
+
 		# TODO: Make trend checks configurable.
 
 		# Setup
@@ -238,7 +241,9 @@ class BeaconAdaptiveHeatSoak:
 
 		threshold = gcmd.get_int('THRESHOLD', self.def_threshold, minval=10)
 		target_hold_count = gcmd.get_int('HOLD_COUNT', self.def_hold_count, minval=1)
+		minimum_wait = gcmd.get_int('MINIMUM_WAIT', self.def_minimum_wait, minval=0)
 		maximum_wait = gcmd.get_int('MAXIMUM_WAIT', self.def_maximum_wait, minval=0)
+
 		# TODO: Hard-coded for now, make configurable later
 		trend_checks = ((75, 675), (200, 675))
 
@@ -249,11 +254,11 @@ class BeaconAdaptiveHeatSoak:
 		z_rate_history = [0] * moving_average_size
 		z_rate_count = 0
 
-		# moving_average_history grows as we collect more data. The full history is logged at the end of the wait.
 		moving_average_history = []
 		moving_average_history_times = []
 
-		gcmd.respond_info(f"Waiting up to {self._format_seconds(maximum_wait)} for printer to reach thermal stability. Please wait...")
+		wait_str = f"between {self._format_seconds(minimum_wait)} and {self._format_seconds(maximum_wait)}" if minimum_wait > 0 else f"up to {self._format_seconds(maximum_wait)}"
+		gcmd.respond_info(f"Waiting for {wait_str} for printer to reach thermal stability. Please wait...")
 
 		start_time = self.reactor.monotonic()
 
@@ -262,7 +267,7 @@ class BeaconAdaptiveHeatSoak:
 		ts = time.strftime("%Y%m%d_%H%M%S")
 		fn = f"/tmp/heat_soak_{ts}.csv"
 
-		logging.info(f"{self.name}: starting: threshold={threshold}, hold_count={target_hold_count}, max_wait={maximum_wait}, mas={moving_average_size}, trend_checks={trend_checks}, z_rates_file={fn}")
+		logging.info(f"{self.name}: starting: threshold={threshold}, hold_count={target_hold_count}, min_wait={minimum_wait}, max_wait={maximum_wait}, mas={moving_average_size}, trend_checks={trend_checks}, z_rates_file={fn}")
 
 		with open(fn, "w") as z_rates_file:
 			z_rates_file.write("time,z_rate\n")
@@ -273,7 +278,6 @@ class BeaconAdaptiveHeatSoak:
 					gcmd.respond_info(f"Maximum wait time of {self._format_seconds(maximum_wait)} exceeded, wait completed.")
 					return
 
-				# Get the Z rate from the beacon
 				try:
 					z_rate_result = z_rate_session.get_next_z_rate()
 				except Exception as e:
@@ -324,8 +328,11 @@ class BeaconAdaptiveHeatSoak:
 							) for trend_check in trend_checks)
 
 						if all_checks_passed:
-							gcmd.respond_info(f"Printer is considered thermally stable after {self._format_seconds(elapsed)}, wait completed.")
-							return
+							if elapsed < minimum_wait:
+								gcmd.respond_info(msg + f", trend checks pass, waiting for minimum of {self._format_seconds(elapsed)} to elapse ({self._format_seconds(elapsed)} elapsed)")
+							else:
+								gcmd.respond_info(f"Printer is considered thermally stable after {self._format_seconds(elapsed)}, wait completed.")
+								return
 						elif should_log:
 							gcmd.respond_info(msg + f", waiting for trend checks to pass ({self._format_seconds(elapsed)} elapsed)")
 					elif should_log:
