@@ -346,8 +346,15 @@ class ProbingSession:
 
 		nozzle_tip_dia = self.tzc._get_nozzle_tip_diameter()
 		
-		# Calculate the nozzle-based min span as the length of the side of a
-		# square with area four times the footprint of COUNT nozzle tips.
+		# Calculate the nozzle-based min span as the length of the side of a square with area four times
+		# the footprint of COUNT nozzle tips.
+		#
+		# As an indicative maximum span for mainstream nozzles, a 1.2mm nozzle with 13 points and 15 retries
+		# would have a minimum span of 23.9 mm. As nozzle diameters increase, so the typical first layer height
+		# will increase. There will likely be a point where using true zero correction no longer makes sense,
+		# as any error would be absorbed comfortably by the first layer height. For reference, something like
+		# a GammaMaster 2.4mm nozzle with 13 points and 15 retries would have a minimum span of 35.2mm.
+
 		nozzle_based_min_span = math.sqrt(math.pi * (nozzle_tip_dia/2)**2 * num_points_to_generate * 4.)
 		span = max(min_span, nozzle_based_min_span)
 		half_span = span / 2.		
