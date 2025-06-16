@@ -2,6 +2,18 @@ import os, logging, glob, traceback, inspect, re
 import json, subprocess, pathlib
 from collections import namedtuple
 
+BeaconProbingRegions = namedtuple('BeaconProbingRegions', 
+			['x_offset', 'y_offset', 'proximity_min', 'proximity_max', 'contact_min', 'contact_max'])
+"""
+ A named tuple containing:
+	- x_offset: X offset of the Beacon probe
+	- y_offset: Y offset of the Beacon probe
+	- proximity_min: Tuple of (min_x, min_y) for proximity probing
+	- proximity_max: Tuple of (max_x, max_y) for proximity probing
+	- contact_min: Tuple of (min_x, min_y) for contact probing
+	- contact_max: Tuple of (max_x, max_y) for contact probing
+"""
+
 #####
 # RatOS
 #####
@@ -479,7 +491,7 @@ class RatOS:
 			if not complete:
 				process.terminate()
 				self.console_echo("Post-processing failed", "error", "Post processing timed out after 30 minutes.")
-				return False;
+				return False
 
 			if process.returncode != 0:
 				# We should've already printed the error message in _interpret_output
@@ -488,9 +500,9 @@ class RatOS:
 					logging.error(error)
 
 				self.post_process_success = False
-				return False;
+				return False
 
-			return self.post_process_success;
+			return self.post_process_success
 
 		except Exception as e:
 			raise
@@ -577,7 +589,7 @@ class RatOS:
 			self.debug_echo("get_ratos_version", ("Exception on run: %s", exc))
 		return version
 
-	def get_beacon_probing_regions(self):
+	def get_beacon_probing_regions(self) -> BeaconProbingRegions:
 		"""Gets the probing regions configuration for the Beacon probe, or None if not available.
 		Returns:
 			BeaconProbingRegions or None: A named tuple containing:
@@ -592,8 +604,7 @@ class RatOS:
 		if self.beacon is None:
 			return None
 		
-		return namedtuple('BeaconProbingRegions', 
-			['x_offset', 'y_offset', 'proximity_min', 'proximity_max', 'contact_min', 'contact_max'])(
+		return BeaconProbingRegions(
 			x_offset=self.beacon.x_offset,
 			y_offset=self.beacon.y_offset,
 			proximity_min=(self.beacon.mesh_helper.def_min_x, self.beacon.mesh_helper.def_min_y),
@@ -601,11 +612,31 @@ class RatOS:
 			contact_min=tuple(self.beacon.mesh_helper.def_contact_min),
 			contact_max=tuple(self.beacon.mesh_helper.def_contact_max))
 
-	def get_status(self, eventtime):
+	def get_safe_home_position(self):
+		printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
+		printable_y_max = float(self.gm_ratos.variables['printable_y_max'])
+		safe_home_x = self.gm_ratos.variables.get('safe_home_x', None)
+		safe_home_y = self.gm_ratos.variables.get('safe_home_y', None)
+		safe_home_x = printable_x_max / 2 if safe_home_x is None or str(safe_home_x).lower() == 'middle' else float(safe_home_x)
+		safe_home_y = printable_y_max / 2 if safe_home_y is None or str(safe_home_y).lower() == 'middle' else float(safe_home_y)
+		
+		bpr = self.get_beacon_probing_regions()
+		if bpr is not None:
+			safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
+			safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
+			safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
+			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
+			if safe_home_x < safe_min_x or safe_home_x > safe_max_x or safe_home_y < safe_min_y or safe_home_y > safe_max_y:
+				self.printer.invoke_shutdown(f"{self.name}: (safe_home_x, safe_home_y) must be within the region that Beacon can probe: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y}). The configured location ({safe_home_x}, {safe_home_y}) is outside this region.")			
+		
+		return (safe_home_x, safe_home_y)
+	
+	def get_status(self, eventtime=None):
 		return {
 			'name': self.name,
 			'last_processed_file_result': self.last_processed_file_result,
-			'last_check_bed_mesh_profile_exists_result': self.last_check_bed_mesh_profile_exists_result }
+			'last_check_bed_mesh_profile_exists_result': self.last_check_bed_mesh_profile_exists_result,
+			'safe_home_position': self.get_safe_home_position() }
 
 	#####
 	# Stack trace
