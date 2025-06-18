@@ -51,6 +51,7 @@ class RatOS:
 		# Status fields
 		self.last_processed_file_result = None
 		self.last_check_bed_mesh_profile_exists_result = None
+		self.last_move_to_safe_z_home_position = None
 
 		self.old_is_graph_files = []
 		self.load_settings()
@@ -627,7 +628,7 @@ class RatOS:
 			safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
 			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
 			if safe_home_x < safe_min_x or safe_home_x > safe_max_x or safe_home_y < safe_min_y or safe_home_y > safe_max_y:
-				self.printer.invoke_shutdown(f"{self.name}: (safe_home_x, safe_home_y) must be within the region that Beacon can probe: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y}). The configured location ({safe_home_x}, {safe_home_y}) is outside this region.")			
+				self.printer.invoke_shutdown(f"{self.name}: (safe_home_x, safe_home_y) must be within the region that Beacon can probe: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y}). The configured location ({safe_home_x:.2f}, {safe_home_y:.2f}) is outside this region.")			
 		
 		return (safe_home_x, safe_home_y)
 
@@ -639,10 +640,15 @@ class RatOS:
 		x, y = self.get_safe_home_position()
 		
 		if fuzzy_radius > 0:
-			# Set the home position to a random point on a circle with the given radius centred on the safe home position.
+			# Set the home position to a random point anywhere within the circle centered on the safe home position
+			# Generate random radius between 0 and fuzzy_radius (sqrt of random ensures uniform distribution)
+			random_radius = fuzzy_radius * math.sqrt(random.random())
+			# Generate random angle
 			angle = random.uniform(0, 2 * math.pi)
-			x += fuzzy_radius * math.cos(angle)
-			y += fuzzy_radius * math.sin(angle)
+			# Calculate new position
+			x += random_radius * math.cos(angle)
+			y += random_radius * math.sin(angle)
+
 			# Limit to the beacon probing region if defined
 			bpr = self.get_beacon_probing_regions()
 			if bpr is not None:
@@ -650,27 +656,37 @@ class RatOS:
 				safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
 				safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
 				safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
-				x = max(safe_min_x, min(x, safe_max_x))
-				y = max(safe_min_y, min(y, safe_max_y))
+				constrained_x = max(safe_min_x, min(x, safe_max_x))
+				constrained_y = max(safe_min_y, min(y, safe_max_y))
 			else:
 				# Limit to printable area if no beacon probing region is defined
 				printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
 				printable_y_max = float(self.gm_ratos.variables['printable_y_max'])
-				x = max(0, min(x, printable_x_max))
-				y = max(0, min(y, printable_y_max))
+				constrained_x = max(0, min(x, printable_x_max))
+				constrained_y = max(0, min(y, printable_y_max))
+
+			if (constrained_x, constrained_y) != (x, y):
+				logging.warning(f"{self.name}: _MOVE_TO_SAFE_Z_HOME: fuzzy position had to be constrained to fit within the printable or beacon probing regions, the intended fuzzy behaviour may not be achieved.")
+				x, y = constrained_x, constrained_y
 
 		if z_hop:
 			self.gcode.run_script_from_command("_Z_HOP")
 
-		self.gcode.run_script_from_command(f"__MOVE_TO_SAFE_Z_HOME_ECHO_DEBUG SAFE_HOME_X={x} SAFE_HOME_Y={y} FUZZY_RADIUS={fuzzy_radius} Z_HOP={z_hop}")
+		self.gcode.run_script_from_command(f"__MOVE_TO_SAFE_Z_HOME_ECHO_DEBUG X={x} Y={y} FUZZY_RADIUS={fuzzy_radius} Z_HOP={z_hop}")
 		self.gcode.run_script_from_command(f"G0 X{x} Y{y} F{speed}")
+
+		self.last_move_to_safe_z_home_position = (x, y)
 
 	def get_status(self, eventtime=None):
 		return {
 			'name': self.name,
 			'last_processed_file_result': self.last_processed_file_result,
 			'last_check_bed_mesh_profile_exists_result': self.last_check_bed_mesh_profile_exists_result,
-			'safe_home_position': self.get_safe_home_position() }
+			# The configured safe home position
+			'safe_home_position': self.get_safe_home_position(),
+			# The last position moved to by _MOVE_TO_SAFE_Z_HOME, which may differ from safe_home_position
+			# if FUZZY_RADIUS was used.
+			'last_move_to_safe_z_home_position': self.last_move_to_safe_z_home_position }
 
 	#####
 	# Stack trace
