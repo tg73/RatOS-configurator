@@ -36,6 +36,10 @@ RATOS_MESH_VERSION_PARAMETER = "ratos_mesh_version"
 RATOS_MESH_BED_TEMP_PARAMETER = "ratos_bed_temp"
 # - the prevailing target bed temp when the mesh was created. For a compensated mesh, it's the
 #   target bed temp of the source measured mesh.
+RATOS_MESH_CHAMBER_TEMP_PARAMETER = "ratos_chamber_temp"
+# - the demanded chamber temp when the mesh was created.
+RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER = "ratos_proximity_mesh_bounds"
+# - only for compensation meshes, the bounds of the proximity mesh that was used to make the compensation mesh. left, bottom, right, top (aka min x,y, max x,y)
 RATOS_MESH_KIND_PARAMETER = "ratos_mesh_kind"
 RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER = "ratos_beacon_probe_method"
 # - for measured meshes, it's the probe method of measurement
@@ -278,12 +282,13 @@ class BeaconMesh:
 		profile = gcmd.get('PROFILE', RATOS_DEFAULT_COMPENSATION_MESH_NAME)
 		# Using minval=4 to avoid BedMesh defaulting to using Lagrangian interpolation which appears to be broken
 		probe_count = BedMesh.parse_gcmd_pair(gcmd, 'PROBE_COUNT', minval=4)
+		chamber_temp = gcmd.get_float('CHAMBER_TEMP', 0)
 		if not profile.strip():
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 		if not probe_count:
 			raise gcmd.error("Value for parameter 'PROBE_COUNT' must be specified")
 		
-		self.create_compensation_mesh(gcmd, profile, probe_count)
+		self.create_compensation_mesh(gcmd, profile, probe_count, chamber_temp)
 
 	desc_REMAKE_BEACON_COMPENSATION_MESH = "TESTING! PROFILE='exising comp mesh' NEW_PROFILE='new name' [GAUSSIAN_SIGMA=x]"
 	def cmd_REMAKE_BEACON_COMPENSATION_MESH(self, gcmd):
@@ -565,7 +570,7 @@ class BeaconMesh:
 		# 5. Return the new array. Don't leak numpy types to the caller.
 		return filtered_data.tolist()
 	
-	def create_compensation_mesh(self, gcmd, profile, probe_count):
+	def create_compensation_mesh(self, gcmd, profile, probe_count, chamber_temp):
 		if not self.beacon:
 			self.ratos.console_echo("Create compensation mesh error", "error", 
 				"Beacon module not loaded._N_Make sure you've configured Beacon as your z probe.")
@@ -626,6 +631,9 @@ class BeaconMesh:
 				
 		scan_before_zmesh = self._create_zmesh_from_profile(mesh_before_name)
 		scan_after_zmesh = self._create_zmesh_from_profile(mesh_after_name)
+		scan_mesh_params = scan_before_zmesh.get_mesh_params()
+		scan_mesh_bounds = (scan_mesh_params["min_x"], scan_mesh_params["min_y"],
+							scan_mesh_params["max_x"], scan_mesh_params["max_y"])
 
 		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % contact_mesh_name)
 
@@ -696,6 +704,12 @@ class BeaconMesh:
 			params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
 			params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
 			params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
+
+			# Store a few fields that might be useful for compatibility checking in the future,
+			# but the checks don't yet exist.
+			params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = chamber_temp
+			params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = scan_mesh_bounds
+
 			new_mesh = BedMesh.ZMesh(params, profile)
 			new_mesh.build_mesh(compensation_mesh_points)
 			self.bed_mesh.set_mesh(new_mesh)
@@ -817,6 +831,15 @@ class BeaconMesh:
 					mesh_kind = config.getchoice(RATOS_MESH_KIND_PARAMETER, list(RATOS_MESH_KIND_CHOICES))
 					mesh_probe_method = config.getchoice(RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER, list(RATOS_MESH_BEACON_PROBE_METHOD_CHOICES))
 					mesh_bed_temp = config.getfloat(RATOS_MESH_BED_TEMP_PARAMETER)
+					mesh_chamber_temp = config.getfloat(RATOS_MESH_CHAMBER_TEMP_PARAMETER, None)
+					mesh_proximity_mesh_bounds_str = config.get(RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER, None)
+					if mesh_proximity_mesh_bounds_str:
+						# "(min_x,min_y,max_x,max_y)" format
+						mesh_proximity_mesh_bounds = tuple(float(x) for x in mesh_proximity_mesh_bounds_str.strip("()").split(","))
+						if len(mesh_proximity_mesh_bounds) != 4:
+							raise config.error(f"Invalid value for {RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER}: {mesh_proximity_mesh_bounds_str}")
+					else:
+						mesh_proximity_mesh_bounds = None
 					notes = config.get(RATOS_MESH_NOTES_PARAMETER, None)
 				except config.error as ex:
 					self.ratos.console_echo("RatOS Beacon bed mesh management", "error",
@@ -828,10 +851,21 @@ class BeaconMesh:
 				profile_params[RATOS_MESH_KIND_PARAMETER] = mesh_kind
 				profile_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = mesh_probe_method
 				profile_params[RATOS_MESH_BED_TEMP_PARAMETER] = mesh_bed_temp
+				
 				if notes:
 					profile_params[RATOS_MESH_NOTES_PARAMETER] = notes
 				else:
 					profile_params.pop(RATOS_MESH_NOTES_PARAMETER, None)
+
+				if mesh_chamber_temp is not None:
+					profile_params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = mesh_chamber_temp
+				else:
+					profile_params.pop(RATOS_MESH_CHAMBER_TEMP_PARAMETER, None)
+
+				if mesh_proximity_mesh_bounds is not None:
+					profile_params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = mesh_proximity_mesh_bounds
+				else:
+					profile_params.pop(RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER, None)
 			else:				
 				self.ratos.console_echo("RatOS Beacon bed mesh management", "warning",
 							f"Bed mesh profile '{profile_name}' was created without extended RatOS Beacon bed mesh support."
