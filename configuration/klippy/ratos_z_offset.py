@@ -13,6 +13,7 @@ class RatOSZOffset:
 		self.name = config.get_name()        
 		self.printer.register_event_handler("klippy:connect",
 											self._handle_connect)
+		self.gcode_move = None
 		self.next_transform = None
 		self.offsets = {}
 		self.status = None
@@ -28,8 +29,8 @@ class RatOSZOffset:
 							   desc=self.desc_CLEAR_RATOS_Z_OFFSET)
 		
 	def _handle_connect(self):
-		gcode_move = self.printer.lookup_object('gcode_move')
-		self.next_transform = gcode_move.set_move_transform(self, force=True)
+		self.gcode_move = self.printer.lookup_object('gcode_move')
+		self.next_transform = self.gcode_move.set_move_transform(self, force=True)
 	
 	######
 	# commands
@@ -53,7 +54,8 @@ class RatOSZOffset:
 			self.offsets.pop(name, None)
 		else:
 			self.offsets[name] = offset
-		self._offset_changed()
+		# MOVE and MOVE_SPEED behave like SET_GCODE_OFFSET
+		self._offset_changed(gcmd.get('MOVE', 0), gcmd.get_float('MOVE_SPEED', None))
 
 	desc_CLEAR_RATOS_Z_OFFSET = "Clear a RatOS Z offset. This is equivalent to setting the offset to zero."
 	def cmd_CLEAR_RATOS_Z_OFFSET(self, gcmd):
@@ -67,16 +69,32 @@ class RatOSZOffset:
 				raise gcmd.error(msg)
 			for n in names:
 				self.offsets.pop(n, None)
-		self._offset_changed()
+		# MOVE and MOVE_SPEED behave like SET_GCODE_OFFSET
+		self._offset_changed(gcmd.get('MOVE', 0), gcmd.get_float('MOVE_SPEED', None))
 	
-	def _offset_changed(self):
+	def _offset_changed(self, move=False, move_speed=None):
+		previous_offset = self.combined_offset
 		self.combined_offset = sum(self.offsets.values(), 0.)
-		gcode_move = self.printer.lookup_object('gcode_move')
+		offset_delta = self.combined_offset - previous_offset
+
+		if offset_delta == 0.:
+			return
+		
+		gcode_move = self.gcode_move		
 		gcode_move.reset_last_position()
+
+        # Move the toolhead by the given offset if requested.
+		# This mimics the behaviour and implementation of SET_GCODE_OFFSET in gcode_move.py
+		if move:
+			speed = gcode_move.speed if move_speed is None else move_speed
+			gcode_move.last_position[2] += offset_delta
+			gcode_move.move_with_transform(gcode_move.last_position, speed)
+
 		self._update_status()
 
 	# For use by other extensions
-	def set_offset(self, name:str, offset:float):
+	def set_offset(self, name:str, offset:float, should_move:bool=False, move_speed:float=None):
+		"""Set a RatOS Z offset by name. If should_move is True, the toolhead will be moved by the offset."""
 		if name:
 			name = name.strip().lower()
 		if name not in OFFSET_NAMES:
@@ -85,7 +103,7 @@ class RatOSZOffset:
 			self.offsets.pop(name, None)
 		else:
 			self.offsets[name] = float(offset)
-		self._offset_changed()
+		self._offset_changed(should_move, move_speed)
 
 	######
 	# gcode_move transform compliance
