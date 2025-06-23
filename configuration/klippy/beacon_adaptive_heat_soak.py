@@ -330,7 +330,7 @@ class BeaconAdaptiveHeatSoak:
 
 						if all_checks_passed:
 							if elapsed < minimum_wait:
-								gcmd.respond_info(msg + f", trend checks pass, waiting for minimum of {self._format_seconds(elapsed)} to elapse ({self._format_seconds(elapsed)} elapsed)")
+								gcmd.respond_info(msg + f", trend checks pass, waiting for minimum of {self._format_seconds(minimum_wait)} to elapse ({self._format_seconds(elapsed)} elapsed)")
 							else:
 								gcmd.respond_info(f"Printer is considered thermally stable after {self._format_seconds(elapsed)}, wait completed.")
 								return
