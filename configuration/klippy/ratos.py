@@ -1,3 +1,11 @@
+# RatOS general purpose module
+#
+# Copyright (C) 2024 Helge Keck <HelgeKeck@hotmail.com.com>
+# Copyright (C) 2024 Mikkel Schmidt <mikkel.schmidt@gmail.com>
+# Copyright (C) 2025 Tom Glastonbury <t@tg73.net>
+#
+# This file may be distributed under the terms of the GNU GPLv3 license.
+
 import os, logging, glob, traceback, inspect, re
 import json, subprocess, pathlib, random, math
 from collections import namedtuple
