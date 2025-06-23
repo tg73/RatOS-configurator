@@ -1,4 +1,12 @@
-import multiprocessing, traceback, logging
+# Beacaon contact compensation mesh
+#
+# Copyright (C) 2024 Helge Keck <HelgeKeck@hotmail.com.com>
+# Copyright (C) 2024-2025 Mikkel Schmidt <mikkel.schmidt@gmail.com>
+# Copyright (C) 2025 Tom Glastonbury <t@tg73.net>
+#
+# This file may be distributed under the terms of the GNU GPLv3 license.
+
+import multiprocessing, traceback
 from collections import OrderedDict
 from . import bed_mesh as BedMesh
 import numpy as np
