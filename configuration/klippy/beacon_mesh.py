@@ -10,7 +10,7 @@ import multiprocessing, traceback
 from collections import OrderedDict
 from . import bed_mesh as BedMesh
 import numpy as np
-from scipy.ndimage import gaussian_filter
+import importlib
 
 # Temporary mesh names
 RATOS_TEMP_SCAN_MESH_BEFORE_NAME = "__BEACON_TEMP_SCAN_MESH_BEFORE__"
@@ -100,6 +100,9 @@ class BeaconMesh:
 
 		self.offset_mesh = None
 		self.offset_mesh_points = [[]]
+
+		# Loaded on demand if needed
+		self.scipy_ndimage = None
 
 		self.register_commands()
 		self.register_handler()
@@ -523,10 +526,21 @@ class BeaconMesh:
 		else:
 			return result
 
-	@staticmethod
-	def _do_local_low_filter(data, lowpass_sigma=1., num_keep=4, num_keep_edge=3, num_keep_corner=2):
+	def _gaussian_filter(self, data, sigma, mode):
+		if not self.scipy_ndimage:
+			try:
+				self.scipy_ndimage = importlib.import_module("scipy.ndimage")
+			except ImportError:
+				raise Exception(
+					"Could not load `scipy.ndimage`. To install it, simply run `ratos doctor`. This "
+					"module is required for Beacon contact compensation mesh creation."
+				)
+
+			return self.scipy_ndimage.gaussian_filter(data, sigma=sigma, mode=mode)				
+
+	def _do_local_low_filter(self, data, lowpass_sigma=1., num_keep=4, num_keep_edge=3, num_keep_corner=2):
 		# 1. Low-pass filter to obtain general shape
-		lowpass = gaussian_filter(data, sigma=lowpass_sigma, mode='nearest')
+		lowpass = self._gaussian_filter(data, sigma=lowpass_sigma, mode='nearest')
 
 		# 2. Subtract the low-pass filtered version from the original
 		# to get the high-frequency details
