@@ -248,7 +248,7 @@ class BeaconAdaptiveHeatSoak:
 		trend_checks = ((75, 675), (200, 675))
 
 		# Moving average size was determined experimentally, and provides a good balance between responsiveness and stability.
-		moving_average_size = 180
+		moving_average_size = 210
 		hold_count = 0
 
 		# z_rate_history is a circular buffer of the last `moving_average_size` z-rates
