@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 MCU=/dev/btt-manta-m8p-20
 if [ "$EUID" -ne 0 ]
   then echo "ERROR: Please run as root"

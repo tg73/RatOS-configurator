@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 MCU=/dev/prusa-buddy
 if [ "$EUID" -ne 0 ]
