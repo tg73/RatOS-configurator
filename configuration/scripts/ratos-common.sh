@@ -194,6 +194,7 @@ verify_registered_extensions()
 		["ratos_z_offset_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_z_offset.py")
 		["beacon_true_zero_correction_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_true_zero_correction.py")
 		["beacon_adaptive_heatsoak_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_adaptive_heat_soak.py")
+		["initconfigfile"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/initconfigfile.py")
     )
 
 	declare -A kinematics_extensions=(
