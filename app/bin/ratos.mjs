@@ -98968,13 +98968,9 @@ var getLogger = () => {
   }
   const environment = serverSchema.parse(process.env);
   const logDirExists = existsSync2(path5.dirname(environment.LOG_FILE));
-  const fallbackPath = "/var/log/ratos-server.log";
-  const logFile = logDirExists ? environment.LOG_FILE : fallbackPath;
+  const logFile = logDirExists ? environment.LOG_FILE : "/var/log/ratos-cli.log";
   if (!logDirExists) {
-    if (!existsSync2(path5.dirname(fallbackPath))) {
-      console.warn("Neither configured nor fallback log directories exist. Logging may fail.");
-    }
-    console.warn("server logger logFile directory does not exist, using default", logFile);
+    console.warn("cli logger logFile directory does not exist, using default", logFile);
   }
   const transportOption = process.env.NODE_ENV === "development" ? void 0 : {
     target: "pino/file",
