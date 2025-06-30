@@ -5,10 +5,10 @@
 # causes a deep copy of the configuration status, which can be expensive, notably for
 # large configurations, potentially leading to `timer too close` errors.
 #
-# Macros should instead access `printer.initconfigfile` to get the immutable status. Note that
-# this status is a fixed snapshot from when Kipper initializes, so it will not reflect changes made
-# to the configuration after Kipper initializes - for example, updated PID tuning results and
-# bed mesh profile additions or removals.
+# Macros should instead access `printer.fastconfig` to get the immutable status. The 
+# `settings`, `config` and `warnings` keys behave exactly like the keys of
+# `printer.configfile`. The `save_config_pending` and `save_config_pending_items` keys
+#  are not exposed by `printer.fastconfig`.
 #
 # Copyright (C) 2025 Tom Glastonbury <t@tg73.net>
 #
