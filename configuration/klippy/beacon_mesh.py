@@ -21,7 +21,7 @@ RATOS_TEMP_SCAN_MESH_ATFER_NAME = "__BEACON_TEMP_SCAN_MESH_AFTER__"
 ###
 RATOS_TEMP_SCAN_MESH_NAME = "__BEACON_TEMP_SCAN_MESH__"
 RATOS_TEMP_CONTACT_MESH_NAME = "__BEACON_TEMP_CONTACT_MESH__"
-RATOS_DEFAULT_COMPENSATION_MESH_NAME = "Beacon Scan Compensation"
+RATOS_COMPENSATION_MESH_NAME_AUTO = "auto"
 RATOS_MESH_VERSION = 1
 
 RATOS_MESH_KIND_MEASURED = "measured"
@@ -159,6 +159,9 @@ class BeaconMesh:
 			self.gcode.register_command('GET_RATOS_EXTENDED_BED_MESH_PARAMETERS',
 							   self.cmd_GET_RATOS_EXTENDED_BED_MESH_PARAMETERS, 
 							   desc=(self.desc_GET_RATOS_EXTENDED_BED_MESH_PARAMETERS))
+			self.gcode.register_command('_TEST_COMPENSATION_MESH_AUTO_SELECTION',
+							   self.cmd_TEST_COMPENSATION_MESH_AUTO_SELECTION, 
+							   desc=(self.desc_TEST_COMPENSATION_MESH_AUTO_SELECTION))
 
 	desc_BEACON_MESH_INIT = "Performs Beacon mesh initialization tasks"
 	def cmd_BEACON_MESH_INIT(self, gcmd):
@@ -262,6 +265,9 @@ class BeaconMesh:
 		bed_temp = gcmd.get_float("COMPARE_BED_TEMP", None)
 		bed_temp_is_error = gcmd.get("COMPARE_BED_TEMP_IS_ERROR", "false").strip().lower() in ("1", "true")
 
+		if profile.lower() == RATOS_COMPENSATION_MESH_NAME_AUTO:
+			profile = self.auto_select_compensation_mesh(bed_temp)
+
 		# eg, caller can use BED_TEMP=-1 when bed temp should not be checked
 		if bed_temp < 0:
 			bed_temp = None
@@ -276,26 +282,143 @@ class BeaconMesh:
 
 			raise self.printer.command_error(f"{subject} is not a valid compensation mesh profile")
 
+	def get_profiles(self, kind=None):
+		# Gets a dictionary of all RatOS-valid profiles, optionally filtered by kind.
+		profiles = self.bed_mesh.pmgr.get_profiles()
+
+		result = {}
+
+		for profile_name, profile in profiles.items():
+			params = profile["mesh_params"]
+			# Consider only RatOS-valid profiles
+			if RATOS_MESH_VERSION_PARAMETER in params: 
+				if kind is None or params[RATOS_MESH_KIND_PARAMETER] == kind:
+					result[profile_name] = profile
+		
+		return result
+
+	def auto_select_compensation_mesh(self, bed_temperature=None):		
+		# Automatically selects a compensation mesh based on the specified bed_temperature, or the
+		# current target bed temperature if bed_temperature is None.
+
+		link_url = "https://os.ratrig.com/docs/configuration/beacon_contact"
+		link_text = "Beacon Contact Compensation Mesh"
+		link_line = f'Lean more about <a href="{link_url}" target="_blank">{link_text}</a>'
+
+		profiles = self.get_profiles(RATOS_MESH_KIND_COMPENSATION)
+
+		if not profiles:
+			self.ratos.console_echo("Auto-select compensation mesh error", "error", 
+						   "No compensation mesh profiles found. Create a compensation mesh, or disable the_N_"
+						   "Beacon compensation mesh feature._N_"
+						   + link_line)
+
+			raise self.printer.command_error("No compensation mesh profiles found")
+		
+		if bed_temperature is None:
+			bed_temperature = self._get_nominal_bed_temp()
+
+		profile_list = ", ".join(f"{name} ({profile['mesh_params'][RATOS_MESH_BED_TEMP_PARAMETER]}°C)" for name, profile in profiles.items())
+		self.ratos.debug_echo("auto_select_compensation_mesh",
+			f"Available compensation mesh profiles: {profile_list}")
+
+		# Find the closest compensation mesh profile based on bed temperature
+		best_profiles = []
+		best_temp_diff = float('inf')
+		
+		for profile_name, profile in profiles.items():
+			params = profile["mesh_params"]
+			profile_bed_temp = params[RATOS_MESH_BED_TEMP_PARAMETER]
+			temp_diff = abs(profile_bed_temp - bed_temperature)
+			
+			if temp_diff < best_temp_diff:
+				best_temp_diff = temp_diff
+				best_profiles = [(profile_name, profile_bed_temp)]
+			elif temp_diff == best_temp_diff:
+				best_profiles.append((profile_name, profile_bed_temp))
+		
+		# If there are multiple candidate profiles with the same bed temperature, then the result
+		# is ambiguous, which is considered an error.
+		distinct_bed_temps = set(temp for _, temp in best_profiles)
+		if len(distinct_bed_temps) != len(best_profiles):
+			self.ratos.console_echo("Auto-select compensation mesh error", "error", 
+				"A compensation mesh cannot be selected automatically because there is more than one equally-suitable profile._N_"
+				"Either delete one of the following profiles, or configure the desired profile explicitly:_N_"
+				+ "_N_".join(f"  '{name}' ({temp}°C)" for name, temp in best_profiles)
+				+ f"_N_{link_line}")
+
+			raise self.printer.command_error("Automatic compensation mesh selection is ambiguous")
+
+		# Pick the candidate profile with the highest bed temperature
+		best_profile, best_temp = max(best_profiles, key=lambda x: x[1])
+
+		# Check if the temperature difference is too large
+		if best_temp_diff > self.bed_temp_warning_margin:
+			self.ratos.console_echo("Auto-select compensation mesh warning", "warning", 
+				f"Selected compensation mesh '{best_profile}' has a bed temperature of {best_temp}°C, "
+				f"which differs by {best_temp_diff:.1f}°C from the requested {bed_temperature:.1f}°C._N_"
+				"This may result in inaccurate compensation."
+				+ f"_N_{link_line}")
+		else:
+			self.gcode.respond_info(
+				f"Selected compensation mesh '{best_profile}' with bed temperature {best_temp}°C "
+				f"(requested: {bed_temperature:.1f}°C, difference: {best_temp_diff:.1f}°C)")
+		
+		return best_profile
+
+	desc_TEST_COMPENSATION_MESH_AUTO_SELECTION = "Tests the automatic selection of a compensation mesh. Will raise an error if no suitable mesh is found."
+	def cmd_TEST_COMPENSATION_MESH_AUTO_SELECTION(self, gcmd):
+		bed_temp = gcmd.get_float('BED_TEMP', self._get_nominal_bed_temp())
+		try:
+			profile_name = self.auto_select_compensation_mesh(bed_temp)
+			gcmd.respond_info(f"Auto-selected compensation mesh profile: {profile_name}")
+		except Exception as e:
+			raise gcmd.error(str(e)) from e
+
 	desc_BEACON_APPLY_SCAN_COMPENSATION = "Compensates a beacon scan mesh with a beacon compensation mesh."
 	def cmd_BEACON_APPLY_SCAN_COMPENSATION(self, gcmd):
-		profile = gcmd.get('PROFILE', RATOS_DEFAULT_COMPENSATION_MESH_NAME)
-		if not profile.strip():
+		profile = gcmd.get('PROFILE', RATOS_COMPENSATION_MESH_NAME_AUTO).strip()
+		if not profile:
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 		
-		if not self.apply_scan_compensation(self._create_zmesh_from_profile(profile, purpose="Beacon scan compensation")):
+		if not self.apply_scan_compensation(profile):
 			raise self.printer.command_error("Could not apply scan compensation")
+
+	def _get_unique_profile_name(self, base_name):
+		# Obtains a unique profile name based on the base_name.
+		# If the base_name already exists, appends a number to make it unique.
+		# Returns a tuple of (unique_name, base_name_is_unique).
+		profiles = self.bed_mesh.pmgr.get_profiles()
+		if base_name not in profiles:
+			return (base_name, True)
 		
+		i = 1
+		while f"{base_name}_{i}" in profiles:
+			i += 1
+		
+		return (f"{base_name}_{i}", False)
+	
 	desc_CREATE_BEACON_COMPENSATION_MESH = "Creates the beacon compensation mesh by calibrating and diffing a contact and a scan mesh."
 	def cmd_CREATE_BEACON_COMPENSATION_MESH(self, gcmd):
-		profile = gcmd.get('PROFILE', RATOS_DEFAULT_COMPENSATION_MESH_NAME)
+		profile = gcmd.get('PROFILE', RATOS_COMPENSATION_MESH_NAME_AUTO).strip()
 		# Using minval=4 to avoid BedMesh defaulting to using Lagrangian interpolation which appears to be broken
 		probe_count = BedMesh.parse_gcmd_pair(gcmd, 'PROBE_COUNT', minval=4)
 		chamber_temp = gcmd.get_float('CHAMBER_TEMP', 0)
-		if not profile.strip():
+		
+		if not profile:
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
+
 		if not probe_count:
 			raise gcmd.error("Value for parameter 'PROBE_COUNT' must be specified")
-		
+
+		if profile.lower() == RATOS_COMPENSATION_MESH_NAME_AUTO:
+			base_name = f"compensation_bed_{round(self._get_nominal_bed_temp())}C"
+			profile, is_unique = self._get_unique_profile_name(base_name)
+			if not is_unique:
+				self.ratos.console_echo("Create beacon compensation mesh", "info", 
+					f"The default automatic profile name '{base_name}' already exists. The unique name '{profile}' will be used instead.")
+			gcmd.respond_info(f"Using automatic profile name '{profile}' for the new compensation mesh")
+				
 		self.create_compensation_mesh(gcmd, profile, probe_count, chamber_temp)
 
 	desc_SET_ZERO_REFERENCE_POSITION = "Sets the zero reference position for the currently loaded bed mesh."
@@ -424,9 +547,9 @@ class BeaconMesh:
 	#####
 	# Beacon Scan Compensation
 	#####
-	def apply_scan_compensation(self, compensation_zmesh) -> bool:
-		if not compensation_zmesh:
-			raise TypeError("Argument compensation_zmesh cannot be None")
+	def apply_scan_compensation(self, comp_mesh_profile_name) -> bool:
+		if not comp_mesh_profile_name:
+			raise TypeError("Argument comp_mesh_profile_name must be provided")
 		
 		error_title = "Apply scan compensation error"
 		try:
@@ -439,6 +562,7 @@ class BeaconMesh:
 			
 			measured_mesh_params = measured_zmesh.get_mesh_params()
 			measured_mesh_name = measured_zmesh.get_profile_name()
+			measured_mesh_bed_temp = measured_mesh_params[RATOS_MESH_BED_TEMP_PARAMETER]
 
 			if not self._validate_extended_parameters(
 				measured_mesh_params,
@@ -448,6 +572,10 @@ class BeaconMesh:
 				allowed_probe_methods=(RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY, RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY_AUTOMATIC)):
 				return False
 
+			if comp_mesh_profile_name.lower() == RATOS_COMPENSATION_MESH_NAME_AUTO:
+				comp_mesh_profile_name = self.auto_select_compensation_mesh(measured_mesh_bed_temp)
+			
+			compensation_zmesh = self._create_zmesh_from_profile(comp_mesh_profile_name, purpose="Beacon scan compensation")						
 			compensation_mesh_params = compensation_zmesh.get_mesh_params()
 			compensation_mesh_name = compensation_zmesh.get_profile_name()
 			
@@ -455,7 +583,7 @@ class BeaconMesh:
 				compensation_mesh_params,
 				"Apply scan compensation",
 				f"Specified compensation mesh '{compensation_mesh_name}'",
-				compare_bed_temp=measured_mesh_params[RATOS_MESH_BED_TEMP_PARAMETER],
+				compare_bed_temp=measured_mesh_bed_temp,
 				allowed_kinds=(RATOS_MESH_KIND_COMPENSATION,)):
 				return False
 						

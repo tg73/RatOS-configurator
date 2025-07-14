@@ -4,9 +4,134 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import re, time, logging
+import re, time, logging, os, multiprocessing, traceback, pygam
 import numpy as np
 
+class ThresholdPredictor:
+	def __init__(self, printer):
+		self.printer = printer
+		self.reactor = printer.get_reactor()
+		self._gam = None
+
+	def predict_threshold(self, maximum_z_change_microns, period_seconds):
+		'''
+		Given the specified maximum amount of Z change that should be allowed during the specified
+		period after the soak completes, predict the threshold value that should be used for the soak.
+
+		The period is typically closely related to the first layer duration. The maximum Z change
+		is typically associated with the amount of oversquish that is acceptable during the first layer.
+		
+		Parameters:
+			maximum_z_change_microns: The maximum Z change allowed during the period after the
+				soak completes, in microns.
+			period_seconds: The time period in seconds after the soak completes, in seconds.
+		Returns:
+			The predicted adaptive heat soak threshold in nanometers per second.
+		'''
+
+		# Note: The implementation assumes that the method is called infrequently, and speed is not critical.
+		# Computation is performed in a separate process, and the implementation is reactor-friendly.
+		# Resources are released between calls to this method. At the time of writing, typical prediction
+		# time is under 1s on a Raspberry Pi 4B, which is acceptable for the use case.
+
+		parent_conn, child_conn = multiprocessing.Pipe()
+		
+		def do():
+			try:
+				child_conn.send(
+					(False, self._do_predict_threshold(maximum_z_change_microns, period_seconds))
+				)
+			except Exception:
+				child_conn.send((True, traceback.format_exc()))
+			child_conn.close()
+
+		child = multiprocessing.Process(target=do)
+		child.daemon = True
+		child.start()
+		reactor = self.reactor
+		eventtime = reactor.monotonic()
+		while child.is_alive():
+			eventtime = reactor.pause(eventtime + 0.1)
+		is_err, result = parent_conn.recv()
+		child.join()
+		parent_conn.close()
+		if is_err:
+			raise self.printer.command_error("Error predicting adaptive heat soak threshold: %s" % (result,))
+		else:
+			return result		
+
+	def _do_predict_threshold(self, z, p):
+		gam = self._get_model()
+		X = np.array([[p, z, z / p, 1.0 / p]])
+		prediction = gam.predict(X)
+		if prediction.size == 0:
+			raise LookupError("Prediction failed, no data available in the model.")
+		t = float(prediction[0])
+		
+		# Ensure a minimum threshold of 10.0. From experimental data, we observe that thresholds
+		# below this number approach the noise floor of the system and are not useful.
+		t = max(t, 10.0)
+		return t
+		
+	def _load_training_data(self):
+		# The training data was derived from experimental data measured on multiple V-Core 4 machines.
+		# It predicts z rate thresholds that have been evaluated as suitable for V-Core 4 300, 400 and 500 printers
+		# with the stock aluminium extrusion and steel linear rail gantry, and also with limited evaluation
+		# for steel and titanium box-section tube gantries.
+		
+		path = os.path.join(
+			os.path.dirname(os.path.realpath(__file__)),
+			'beacon_adaptive_heat_soak_model_training.csv')
+		
+		if not os.path.exists(path):
+			raise FileNotFoundError(f"Beacon adaptive heat soak model training data file not found: {path}")
+				
+		try:
+			data = np.genfromtxt(path, delimiter=',', names=True)
+		except Exception as e:
+			raise Exception(f"Failed to load model training data: {e}") from e
+		
+		return data
+	
+	def _get_model(self):
+		if self._gam is not None:
+			return self._gam
+
+		# We train the model on demand rather the relying on a cached pickled model file.
+		# This approach is somewhat inefficient but adequate for the current use case, and avoids 
+		# the challenges of robust and reliable pickling and unpickling the model as regards 
+		# package updates and changes to the model.
+		
+		data = self._load_training_data()
+
+		Xp = data['period']  		# Period
+		Xz = data['max_z_change']  	# Max Z Change
+		y = data['threshold']  		# Threshold
+
+		# Add additional columns to X to support additional smoothing terms in the GAM
+		X = np.column_stack([
+			Xp,  # Period
+			Xz,  # Max Z Change
+			Xz / Xp,  # rate
+			1.0 / Xp,  # inverse period
+		])
+
+		gam = pygam.LinearGAM(
+			pygam.s(0, n_splines=20)
+			+ pygam.s(1, n_splines=20) 
+			+ pygam.te(0, 1, n_splines=[10,10])
+			+ pygam.s(2, n_splines=20) 	# smooth on z/p
+			+ pygam.s(3, n_splines=20), # smooth on 1/p
+			tol=1e-6,
+			lam=0.6,
+			spline_order=3,
+			fit_intercept=True)
+		
+		gam.fit(X, y)
+
+		self._gam = gam
+		return gam
+	
 class BeaconZRateSession:
 	def __init__(self, config, beacon, samples_per_mean=1000, window_size=30, window_step=1):
 		self.config = config
@@ -101,12 +226,14 @@ class BeaconAdaptiveHeatSoak:
 
 		# Configuration values
 
-		# The default z-rate threshold in nm/s below which we consider the printer to be thermally stable.
-		self.def_threshold = config.getint('threshold', 15, minval=10)
+		# The default layer quality for adaptive heat soak, which is used in conjunction with maximum_first_layer_duration
+		# to determine the z rate threshold for thermal stability. The greater the quality value, the less oversquish is tolerated.
+		# 1 = rough, 2 = draft, 3 = normal, 4 = high, 5 = maximum
+		self.def_layer_quality = config.getint('layer_quality', 3, minval=1, maxval=5)
 
-		# The default number of continuous seconds with z-rate below the threshold before we consider the
-		# printer to be thermally stable.
-		self.def_hold_count = config.getint('hold_count', 150, minval=1)
+		# The default maximum first layer duration in seconds, which is used in conjunction with layer_quality to determine
+		# the z rate threshold for thermal stability.
+		self.def_maxiumm_first_layer_duration = config.getint('maximum_first_layer_duration', 1800, minval=60, maxval=7200)
 
 		# The default maximum wait time in seconds for the printer to reach thermal stability.
 		self.def_maximum_wait = config.getint('maximum_wait', 5400, minval=0)
@@ -135,6 +262,11 @@ class BeaconAdaptiveHeatSoak:
 			'_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_Z_RATES',
 			self.cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_Z_RATES,
 			desc=self.desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_Z_RATES)
+
+		self.gcode.register_command(
+			'_TEST_PREDICT_ADAPTIVE_HEAT_SOAK_THRESHOLD',
+			self.cmd_TEST_PREDICT_ADAPTIVE_HEAT_SOAK_THRESHOLD,
+			desc=self.desc_TEST_PREDICT_ADAPTIVE_HEAT_SOAK_THRESHOLD)
 
 		self.printer.register_event_handler("klippy:connect",
 											self._handle_connect)
@@ -229,6 +361,13 @@ class BeaconAdaptiveHeatSoak:
 
 		return abs(check_value) <= threshold
 
+	def _get_maximum_z_change_microns_for_quality(self, quality):
+		if quality < 1 or quality > 5:
+			raise ValueError(f"Invalid layer quality {quality}, must be between 1 and 5.")
+		
+		# Returns the maximum Z change in microns for the given layer quality
+		return (150, 100, 50, 20, 10)[quality - 1]  # Microns for layer quality 1-5
+
 	desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK = "Wait for printer to reach thermal stability using Beacon to monitor deflection changes"
 	def cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK(self, gcmd):
 		if self.beacon is None:
@@ -239,16 +378,30 @@ class BeaconAdaptiveHeatSoak:
 
 		self._prepare_for_sampling()
 
-		threshold = gcmd.get_int('THRESHOLD', self.def_threshold, minval=10)
-		target_hold_count = gcmd.get_int('HOLD_COUNT', self.def_hold_count, minval=1)
+		threshold = gcmd.get_int('_FORCE_THRESHOLD', None, minval=8)
 		minimum_wait = gcmd.get_int('MINIMUM_WAIT', self.def_minimum_wait, minval=0)
 		maximum_wait = gcmd.get_int('MAXIMUM_WAIT', self.def_maximum_wait, minval=0)
+		layer_quality = gcmd.get_int('LAYER_QUALITY', self.def_layer_quality, minval=1, maxval=5)
+		maximum_first_layer_duration = gcmd.get_int('MAXIMUM_FIRST_LAYER_DURATION', self.def_maxiumm_first_layer_duration, minval=60, maxval=7200)
 
-		# TODO: Hard-coded for now, make configurable later
+		if threshold is None:
+			# Calculate the threshold based on the layer quality and maximum first layer duration
+			maximum_z_change_microns = self._get_maximum_z_change_microns_for_quality(layer_quality)
+			
+			predictor = ThresholdPredictor(self.printer)
+			threshold = predictor.predict_threshold( maximum_z_change_microns, maximum_first_layer_duration)
+
+			logging.info(f"{self.name}: Predicted adaptive heat soak threshold for maximum Z change of {maximum_z_change_microns} microns (quality {layer_quality}) over {maximum_first_layer_duration} seconds: {threshold:.2f} nm/s")
+		else:
+			logging.info(f"{self.name}: Using forced adaptive heat soak threshold: {threshold:.2f} nm/s")
+
+		# The following control values were determined experimentally, and should not be changed 
+		# without careful consideration and reference to the corpus of experimental data. Changing
+		# these values will also invalidate the threshold predictor training data.
+		target_hold_count = 150
+		moving_average_size = 210
 		trend_checks = ((75, 675), (200, 675))
 
-		# Moving average size was determined experimentally, and provides a good balance between responsiveness and stability.
-		moving_average_size = 210
 		hold_count = 0
 
 		# z_rate_history is a circular buffer of the last `moving_average_size` z-rates
@@ -380,6 +533,18 @@ class BeaconAdaptiveHeatSoak:
 				f.write(f"{z_rate_result[0] - time_zero:.8e},{z_rate_result[1]:.8e}\n")
 
 			gcmd.respond_info(f'Diagnostic data captured to {fullpath}')
+
+	desc_TEST_PREDICT_ADAPTIVE_HEAT_SOAK_THRESHOLD = "For developer use only. Specify Z (maximum z change in microns) and P (period in seconds)."
+	def cmd_TEST_PREDICT_ADAPTIVE_HEAT_SOAK_THRESHOLD(self, gcmd):
+		maximum_z_change_microns = gcmd.get_int('Z', 100, minval=1)
+		period_seconds = gcmd.get_int('P', 300, minval=60)
+
+		start_time = self.reactor.monotonic()
+		predictor = ThresholdPredictor(self.printer)
+		threshold = predictor.predict_threshold(maximum_z_change_microns, period_seconds)
+		end_time = self.reactor.monotonic()
+
+		gcmd.respond_info(f"Predicted adaptive heat soak threshold for maximum Z change of {maximum_z_change_microns} microns over {period_seconds} seconds: {threshold:.2f} nm/s (prediction took {1000. * (end_time - start_time):.1f} ms)")
 
 	desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_BEACON_SAMPLES = "For developer use only. This command is used to run diagnostics for Beacon adaptive heat soak."
 	def cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_BEACON_SAMPLES(self, gcmd):
