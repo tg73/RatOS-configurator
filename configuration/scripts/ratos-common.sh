@@ -196,7 +196,6 @@ verify_registered_extensions()
 		["beacon_adaptive_heatsoak_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_adaptive_heat_soak.py")
 		["fastconfig"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/fastconfig.py")
 		["dynamic_governor"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/dynamic_governor.py")
-		["ratos_gcode_redirect"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_gcode_redirect.py")
     )
 
 	declare -A kinematics_extensions=(

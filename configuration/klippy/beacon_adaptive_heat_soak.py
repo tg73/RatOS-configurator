@@ -62,6 +62,8 @@ class ThresholdPredictor:
 
 	def _do_predict_threshold(self, z, p):
 		gam = self._get_model()
+		z = float(z)
+		p = float(p)
 		X = np.array([[p, z, z / p, 1.0 / p]])
 		prediction = gam.predict(X)
 		if prediction.size == 0:
