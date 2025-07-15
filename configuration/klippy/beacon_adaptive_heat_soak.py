@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import re, time, logging, os, multiprocessing, traceback, pygam
+import time, logging, os, multiprocessing, traceback, pygam
 import numpy as np
 
 class ThresholdPredictor:
@@ -145,6 +145,9 @@ class BeaconZRateSession:
 		self._sample_buffer = np.zeros(samples_per_mean, dtype=np.float64)
 		self._step_phase = window_step - window_size # Ensure that phase will be 0 after populating the initial window_size means
 
+	def get_estimated_delay_for_first_z_rate(self, beacon_sampling_rate=1000.0):
+		return self.window_size * (self.samples_per_mean / beacon_sampling_rate)
+	
 	def _get_next_mean(self):
 
 		first_sample_time = None
@@ -212,6 +215,75 @@ class BeaconZRateSession:
 
 		return (self._times[len(self._times) // 2], slope_nm_per_sec)
 
+class BackgroundDisplayStatusProgressHandler:
+	def __init__(
+			self, 
+			printer,
+			msg_fmt = "{spinner} {progress:.0f}%",
+			display_status_update_interval=0.8,
+			spinner_sequence="⠋⠙⠹⠸⠼⠴⠦⠧⠇"):
+				
+		self.reactor = printer.get_reactor()
+		self.gcode = printer.lookup_object('gcode')
+		self.display_status = printer.lookup_object('display_status')
+		self.display_status_update_interval = display_status_update_interval
+		self._spinner_sequence = spinner_sequence
+		self._spinner_phase = 0
+		self._timer = None
+		self._auto_rate_last_eventtime = None
+		self.msg_fmt = msg_fmt
+		self._progress = 0.0
+		self._auto_rate = 0.0
+
+	def enable(self):
+		if self._timer:
+			return
+		
+		self._timer = self.reactor.register_timer(
+			self._handle_timer, self.reactor.NOW)
+
+	def disable(self):
+		if self._timer is None:
+			return
+		
+		self.reactor.unregister_timer(self._timer)
+		self._timer = None
+		self.display_status.message = None
+		self.display_status.progress = None
+
+	@property
+	def progress(self):
+		return self._progress
+
+	@progress.setter
+	def progress(self, value):
+		self._progress = min(1.0, max(0.0, value))
+
+	def set_auto_rate(self, increment_per_second):
+		"""
+		Set the auto rate for the background progress handler.
+		This is the amount by which the progress will be automatically incremented per second.
+		"""
+		self._auto_rate_last_eventtime = None
+		self._auto_rate = increment_per_second
+
+	def _handle_timer(self, eventtime):
+		if self._auto_rate_last_eventtime is None:
+			self._auto_rate_last_eventtime = eventtime
+
+		if self._auto_rate > 0.0:
+			self._progress = min(1.0, max(0.0, self._progress + self._auto_rate * (eventtime - self._auto_rate_last_eventtime)))
+
+		self._auto_rate_last_eventtime = eventtime
+
+		spinner = self._spinner_sequence[self._spinner_phase]
+		self._spinner_phase = (self._spinner_phase + 1) % len(self._spinner_sequence)
+
+		if self.msg_fmt is not None:
+			self.display_status.message = self.msg_fmt.format(progress=self._progress * 100.0, spinner=spinner)
+		
+		return self.reactor.monotonic() + self.display_status_update_interval
+
 class BeaconAdaptiveHeatSoak:
 	def __init__(self, config):
 		self.config = config
@@ -225,24 +297,23 @@ class BeaconAdaptiveHeatSoak:
 		# The default layer quality for adaptive heat soak, which is used in conjunction with maximum_first_layer_duration
 		# to determine the z rate threshold for thermal stability. The greater the quality value, the less oversquish is tolerated.
 		# 1 = rough, 2 = draft, 3 = normal, 4 = high, 5 = maximum
-		self.def_layer_quality = config.getint('layer_quality', 3, minval=1, maxval=5)
+		self.def_layer_quality = config.getint('default_layer_quality', 3, minval=1, maxval=5)
 
 		# The default maximum first layer duration in seconds, which is used in conjunction with layer_quality to determine
 		# the z rate threshold for thermal stability.
-		self.def_maxiumm_first_layer_duration = config.getint('maximum_first_layer_duration', 1800, minval=60, maxval=7200)
+		self.def_maxiumm_first_layer_duration = config.getint('default_maximum_first_layer_duration', 1800, minval=60, maxval=7200)
 
 		# The default maximum wait time in seconds for the printer to reach thermal stability.
-		self.def_maximum_wait = config.getint('maximum_wait', 5400, minval=0)
+		self.def_maximum_wait = config.getint('default_maximum_wait', 5400, minval=0)
 
 		# The default minimum wait time in seconds for the printer to reach thermal stability.
-		self.def_minimum_wait = config.getint('minimum_wait', 0, minval=0)
+		self.def_minimum_wait = config.getint('default_minimum_wait', 0, minval=0)
 
 		# TODO: Make trend checks configurable.
 
 		# Setup
 		self.reactor = None
 		self.beacon = None
-		self.display_status = None
 
 		# Register commands
 		self.gcode.register_command(
@@ -270,21 +341,25 @@ class BeaconAdaptiveHeatSoak:
 
 	def _handle_connect(self):
 		self.reactor = self.printer.get_reactor()
-		self.display_status = self.printer.lookup_object('display_status')
 
 		if self.config.has_section("beacon"):
 			self.beacon = self.printer.lookup_object('beacon')
 
-	def _prepare_for_sampling(self):
+	def _prepare_for_sampling_and_get_sampling_frequency(self):
 		# We've seen issues where the first streaming_session after some operations begins with some bogus data,
 		# so we throw away some samples to ensure the beacon is ready. Suspected operations include:
 		# - klipper restart
 		# - BEACON_AUTO_CALIBRATE
 		bad_samples = 0
 		good_samples = 0
+		first_sample_time = None
+		last_sample_time = None
 
 		def cb(s):
-			nonlocal good_samples, bad_samples
+			nonlocal good_samples, bad_samples, first_sample_time, last_sample_time
+			if (first_sample_time is None):
+				first_sample_time = s["time"]
+			last_sample_time = s["time"]
 			dist = s["dist"]
 			if dist is None or np.isinf(dist) or np.isnan(dist):
 				bad_samples += 1
@@ -304,30 +379,8 @@ class BeaconAdaptiveHeatSoak:
 
 		if good_samples < 1000:
 			raise self.printer.command_error(f"Failed to prepare beacon for sampling, timed out waiting for good samples. Beacon must be calibrated and positioned correctly before running this command.")
-
-	def parse_duples_string(s: str) -> tuple:
-		"""
-		Parses a string of duples and returns a tuple of tuple of ints.
-
-		The function expects a string in the format:
-			"(num, num), (num, num), ... "
-
-		It raises a ValueError if the string doesn't match the expected pattern.
-
-		Examples:
-			"(20, 30),(  1, 99 ) , (100, 234)" -> ((20, 30), (1, 99), (100, 234))
-		"""
-		# Define a regex that must match the entire string.
-		full_pattern = r'^\s*\(\s*\d+\s*,\s*\d+\s*\)(?:\s*,\s*\(\s*\d+\s*,\s*\d+\s*\))*\s*$'
-		if not re.fullmatch(full_pattern, s):
-			raise ValueError("Input string does not match the expected pattern.")
-
-		# Define a pattern to find each tuple of digits.
-		tuple_pattern = r'\(\s*(\d+)\s*,\s*(\d+)\s*\)'
-		matches = re.findall(tuple_pattern, s)
-
-		# Convert the string numbers to integers and pack them into tuples.
-		return tuple((int(x), int(y)) for x, y in matches)
+		
+		return (good_samples + bad_samples) / (last_sample_time - first_sample_time)
 
 	def _check_trend_projection(self, moving_average_history, moving_average_history_times, trend_fit_window, trend_projection, threshold):
 		if len(moving_average_history) < trend_fit_window:
@@ -359,6 +412,13 @@ class BeaconAdaptiveHeatSoak:
 
 		return abs(check_value) <= threshold
 
+	def get_layer_quality_name(self, quality):
+		# Returns the name of the layer quality based on the quality value.
+		if quality < 1 or quality > 5:
+			raise ValueError(f"Invalid layer quality {quality}, must be between 1 and 5.")
+		
+		return ("rough", "draft", "normal", "high", "maximum")[quality - 1]	
+	
 	def _get_maximum_z_change_microns_for_quality(self, quality):
 		if quality < 1 or quality > 5:
 			raise ValueError(f"Invalid layer quality {quality}, must be between 1 and 5.")
@@ -366,7 +426,7 @@ class BeaconAdaptiveHeatSoak:
 		# Returns the maximum Z change in microns for the given layer quality.
 		# This is a fixed mapping based on empirical data and should not be changed.
 		return (150, 100, 50, 20, 10)[quality - 1]  # Microns for layer quality 1-5
-
+	
 	desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK = "Wait for printer to reach thermal stability using Beacon to monitor deflection changes"
 	def cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK(self, gcmd):
 		if self.beacon is None:
@@ -375,13 +435,14 @@ class BeaconAdaptiveHeatSoak:
 		if self.beacon.model is None:
 			raise self.printer.command_error("Beacon model is not set. Calibrate the Beacon before running this command.")
 
-		self._prepare_for_sampling()
-
 		threshold = gcmd.get_int('_FORCE_THRESHOLD', None, minval=8)
 		minimum_wait = gcmd.get_int('MINIMUM_WAIT', self.def_minimum_wait, minval=0)
 		maximum_wait = gcmd.get_int('MAXIMUM_WAIT', self.def_maximum_wait, minval=0)
 		layer_quality = gcmd.get_int('LAYER_QUALITY', self.def_layer_quality, minval=1, maxval=5)
 		maximum_first_layer_duration = gcmd.get_int('MAXIMUM_FIRST_LAYER_DURATION', self.def_maxiumm_first_layer_duration, minval=60, maxval=7200)
+
+		params_msg = ''
+		threshold_origin = "forced" if threshold is not None else "predicted"
 
 		if threshold is None:
 			# Calculate the threshold based on the layer quality and maximum first layer duration
@@ -392,11 +453,13 @@ class BeaconAdaptiveHeatSoak:
 			period = maximum_first_layer_duration + 120
 
 			predictor = ThresholdPredictor(self.printer)
-			threshold = int(predictor.predict_threshold( maximum_z_change_microns, period))
-
-			logging.info(f"{self.name}: Predicted adaptive heat soak threshold for maximum Z change of {maximum_z_change_microns} microns (quality {layer_quality}) over {period} seconds: {threshold:.2f} nm/s")
+			threshold = predictor.predict_threshold(maximum_z_change_microns, period)
+			params_msg = f"\nto suit layer quality {layer_quality} ({self.get_layer_quality_name(layer_quality)}) with maximum first layer duration of {self._format_seconds(maximum_first_layer_duration)}"
+			logging.info(f"{self.name}: predicted adaptive heat soak threshold for maximum Z change of {maximum_z_change_microns} microns (quality {layer_quality}) over {period} seconds: {threshold:.2f} nm/s")
 		else:
-			logging.info(f"{self.name}: Using forced adaptive heat soak threshold: {threshold:.2f} nm/s")
+			logging.info(f"{self.name}: using forced adaptive heat soak threshold: {threshold:.2f} nm/s")		
+
+		beacon_sampling_rate = self._prepare_for_sampling_and_get_sampling_frequency()
 
 		# The following control values were determined experimentally, and should not be changed 
 		# without careful consideration and reference to the corpus of experimental data. Changing
@@ -414,28 +477,34 @@ class BeaconAdaptiveHeatSoak:
 		moving_average_history = []
 		moving_average_history_times = []
 
-		wait_str = f"between {self._format_seconds(minimum_wait)} and {self._format_seconds(maximum_wait)}" if minimum_wait > 0 else f"up to {self._format_seconds(maximum_wait)}"
-		msg = f"Waiting for {wait_str} for printer to reach thermal stability. Please wait..."
-		self.display_status.message = msg
-		self.display_status.progress = 0.		
-		gcmd.respond_info(msg)
+		gcmd.respond_info(f"Adaptive heat soak started, waiting for printer to reach thermal stability{params_msg}.\nCheck printer status for progress. Please wait...")
 
+		progress_handler = None
 		try:
 			start_time = self.reactor.monotonic()
-
 			z_rate_session = BeaconZRateSession(self.config, self.beacon)
+			progress_handler = BackgroundDisplayStatusProgressHandler(self.printer, "{spinner} Heat soaking {progress:.1f}%")
+
+			# Automatically increment progress to reach about 5% by the time the first z-rate moving average is available.
+			estimated_time_to_first_moving_average = \
+				z_rate_session.get_estimated_delay_for_first_z_rate(beacon_sampling_rate) \
+				+ moving_average_size * (z_rate_session.samples_per_mean / beacon_sampling_rate)
+			
+			progress_handler.set_auto_rate(0.05 / estimated_time_to_first_moving_average)
+			progress_handler.enable()
 
 			ts = time.strftime("%Y%m%d_%H%M%S")
 			fn = f"/tmp/heat_soak_{ts}.csv"
 
-			logging.info(f"{self.name}: starting: threshold={threshold}, hold_count={target_hold_count}, min_wait={minimum_wait}, max_wait={maximum_wait}, mas={moving_average_size}, trend_checks={trend_checks}, z_rates_file={fn}")
+			logging.info(f"{self.name}: starting: threshold={threshold} ({threshold_origin}), est_t_to_first_ma={estimated_time_to_first_moving_average:.1f} hold_count={target_hold_count}, min_wait={minimum_wait}, max_wait={maximum_wait}, mas={moving_average_size}, trend_checks={trend_checks}, layer_quality={layer_quality}, maximum_first_layer_duration={maximum_first_layer_duration}, beacon_sampling_rate={beacon_sampling_rate:.1f}, z_rates_file={fn}")
 
 			with open(fn, "w") as z_rates_file:
 				z_rates_file.write("time,z_rate\n")
 				time_zero = None
+				progress_start = None
 				progress_start_z_rate = None
 				progress_z_rate_range = None
-				progress = 0.0
+				progress_on_final_approach = False				
 
 				while True:
 					if self.reactor.monotonic() - start_time > maximum_wait:
@@ -452,19 +521,15 @@ class BeaconAdaptiveHeatSoak:
 
 					if time_zero is None:
 						time_zero = z_rate_result[0]
-						progress_start_z_rate = abs(z_rate_result[1])
-						progress_z_rate_range = max(1.0, progress_start_z_rate - threshold)
-
-					# Dumb MVP progress implemetation, just to show that something is happening. Max out at 95% to avoid confusion
-					# while waiting for hold count and trend checks to pass.
-					progress = max(progress, 0.95 * min(1.0, ((abs(z_rate_result[1]) - progress_start_z_rate) / progress_z_rate_range)))
-					self.display_status.progress = progress
 
 					z_rates_file.write(f"{z_rate_result[0] - time_zero:.8e},{z_rate_result[1]:.8e}\n")
-
 					z_rate_history[z_rate_count % moving_average_size] = z_rate_result[1]
 					z_rate_count += 1
 
+					# Throttle logging
+					should_log = z_rate_count % 20 == 0			
+
+					elapsed = self.reactor.monotonic() - start_time
 					moving_average = None
 
 					if z_rate_count >= moving_average_size:
@@ -473,25 +538,53 @@ class BeaconAdaptiveHeatSoak:
 						moving_average_history_times.append(z_rate_result[0])
 
 					if moving_average is not None:
-						elapsed = self.reactor.monotonic() - start_time
+						if progress_start is None:
+							progress_handler.set_auto_rate(0)
+							progress_start = progress_handler.progress							
+							progress_start_z_rate = abs(moving_average)
+							# This is the amount of z-rate change until we reach the threshold. We add 10% of the threshold
+							# as we will surely move beyond the threshold. If we are *already* within the threshold
+							# this happens with a very quick first layer - we must wait for proven z-rate stability: 
+							# we handle this by the max condition, which applies when threshold is larger than the start z-rate;
+							# this will promptly cause the progress to transition to 95% and enter the final approach phase.
+							progress_z_rate_range = max(1.0, (progress_start_z_rate - threshold) + 0.1 * threshold)
+							logging.info(f"{self.name}: first ma: elapsed={elapsed:.1f}, progress_start={progress_start:.2f}, progress_start_z_rate={progress_start_z_rate:.2f}, progress_z_rate_range={progress_z_rate_range:.2f}, moving_average={moving_average:.2f} nm/s")
+							if progress_start > 0.1:
+								# This is unexpected. The value should be close to 5%. Force it, even though we'll jump
+								# progress backwards.
+								progress_handler.progress = progress_start = 0.1								
+								logging.warning(f"{self.name}: unexpected progress_start value {progress_start:.2f}, resetting to 0.1 to avoid confusion.")
 
-						# Log on every 15th z-rate to avoid flooding the console
-						should_log = z_rate_count % 15 == 0
+						# Hold back 5% of progress to avoid confusion while waiting for hold count and trend checks to pass.
+						# And don't allow progress to decrease.
+						progress_handler.progress = max(
+							progress_handler.progress,
+							progress_start + (0.95 - progress_start) * min(1.0, (progress_start_z_rate - abs(moving_average)) / progress_z_rate_range)
+						)
+
+						if progress_handler.progress >= 0.949 and not progress_on_final_approach:
+							# We're on the final approach to 100% progress. For now, fake a slow approach to 99%
+							# over the next 10 minutes for user confidence. MVP implementation, we may want to 
+							# improve this later.
+							progress_on_final_approach = True
+							progress_handler.set_auto_rate(0.04 / 600.0)
+						elif progress_handler.progress >= 0.989 and progress_on_final_approach:
+							# Hold at ~99%
+							progress_handler.set_auto_rate(0.0)
+
+						all_checks_passed = 'N/A'
+						min_wait_satisfied = 'N/A'
 
 						if abs(moving_average) <= threshold:
 							hold_count += 1
-							msg = f"Z-rate {moving_average:.1f} nm/s, within threshold of {threshold} nm/s for {hold_count}/{target_hold_count} consecutive measurements"
 						else:
-							if hold_count > 0:
-								msg = f"Z-rate {moving_average:.1f} nm/s, moved outside threshold of {threshold} nm/s after {hold_count} consecutive measurements"
-								hold_count = 0
-							else:
-								msg = f"Z-rate {moving_average:.1f} nm/s, not within threshold of {threshold} nm/s"
+							hold_count = 0
 
 						if hold_count >= target_hold_count:
 							# For increased robustness, we perform one or more linear trend checks. Typically this will
 							# include a trend fitted to a short history window, and a trend fitted to a longer history window.
 							# Together, these checks ensure that the Z-rate is not only stable but also not trending towards instability.
+							# In testing, this has been shown to reduce the risk of false positives.
 							all_checks_passed = all(
 								self._check_trend_projection(
 									moving_average_history, moving_average_history_times,
@@ -500,24 +593,19 @@ class BeaconAdaptiveHeatSoak:
 
 							if all_checks_passed:
 								if elapsed < minimum_wait:
-									msg += f", trend checks pass, waiting for minimum of {self._format_seconds(minimum_wait)} to elapse ({self._format_seconds(elapsed)} elapsed)  {progress * 100:.1f}%"
-									self.display_status.message = msg
-									gcmd.respond_info(msg)
+									min_wait_satisfied = False
 								else:
-									msg = f"Printer is considered thermally stable after {self._format_seconds(elapsed)}, wait completed."
+									msg = f"Adaptive heat soak completed in {self._format_seconds(elapsed)}."
 									gcmd.respond_info(msg)
 									return
-							elif should_log:
-								msg += f", waiting for trend checks to pass ({self._format_seconds(elapsed)} elapsed) {progress * 100:.1f}%"
-								self.display_status.message = msg
-								gcmd.respond_info(msg)
-						elif should_log:
-							msg += f" ({self._format_seconds(elapsed)} elapsed) {progress * 100:.1f}%"
-							self.display_status.message = msg
-							gcmd.respond_info(msg)
+						
+						if should_log:
+							logging.info(f"{self.name}: elapsed={elapsed:.1f} s, progress={progress_handler.progress * 100.0:.2f}%, moving_average={moving_average:.2f} nm/s, hold_count={hold_count}/{target_hold_count}, all_checks_passed={all_checks_passed}, min_wait_satisfied={min_wait_satisfied}, threshold={threshold:.2f} nm/s")
+					elif should_log:
+						logging.info(f"{self.name}: elapsed={elapsed:.1f} s, waiting for first moving average to be available...")
 		finally:
-			self.display_status.message = None
-			self.display_status.progress = None
+			if progress_handler is not None:
+				progress_handler.disable()				
 
 	desc_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_Z_RATES = "For developer use only. This command is used to run diagnostics for Beacon adaptive heat soak."
 	def cmd_BEACON_WAIT_FOR_PRINTER_HEAT_SOAK_CAPTURE_Z_RATES(self, gcmd):
@@ -527,7 +615,7 @@ class BeaconAdaptiveHeatSoak:
 		if self.beacon.model is None:
 			raise self.printer.command_error("Beacon model is not set. Calibrate the Beacon before running this command.")
 
-		self._prepare_for_sampling()
+		self._prepare_for_sampling_and_get_sampling_frequency()
 
 		duration = gcmd.get_int('DURATION', 7200, minval=0)
 		timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -581,7 +669,7 @@ class BeaconAdaptiveHeatSoak:
 		if self.beacon.model is None:
 			raise self.printer.command_error("Beacon model is not set. Calibrate the Beacon before running this command.")
 
-		self._prepare_for_sampling()
+		self._prepare_for_sampling_and_get_sampling_frequency()
 
 		duration = gcmd.get_int('DURATION', 300, minval=60)
 		chunk_duration = gcmd.get_int('CHUNK_DURATION', 5, minval=5)
