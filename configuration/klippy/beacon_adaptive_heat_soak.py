@@ -499,7 +499,8 @@ class BeaconAdaptiveHeatSoak:
 				time_zero = None
 				progress_start = None
 				progress_start_z_rate = None
-				progress_z_rate_range = None				
+				progress_z_rate_range = None
+				progress_on_final_approach = False				
 
 				while True:
 					if self.reactor.monotonic() - start_time > maximum_wait:
@@ -552,10 +553,21 @@ class BeaconAdaptiveHeatSoak:
 
 						# Hold back 5% of progress to avoid confusion while waiting for hold count and trend checks to pass.
 						# And don't allow progress to decrease.
-						progress_handler.progress = max( 
+						progress_handler.progress = max(
 							progress_handler.progress,
-							progress_start + (0.95 - progress_start) * min(1.0, (abs(moving_average) - progress_start_z_rate) / progress_z_rate_range))
-						
+							progress_start + (0.95 - progress_start) * min(1.0, (progress_start_z_rate - abs(moving_average)) / progress_z_rate_range)
+						)
+
+						if progress_handler.progress >= 0.949 and not progress_on_final_approach:
+							# We're on the final approach to 100% progress. For now, fake a slow approach to 99%
+							# over the next 10 minutes for user confidence. MVP implementation, we may want to 
+							# improve this later.
+							progress_on_final_approach = True
+							progress_handler.set_auto_rate(0.04 / 600.0)
+						elif progress_handler.progress >= 0.989 and progress_on_final_approach:
+							# Hold at ~99%
+							progress_handler.set_auto_rate(0.0)
+
 						all_checks_passed = 'N/A'
 						min_wait_satisfied = 'N/A'
 
