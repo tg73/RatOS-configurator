@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import re, time, logging, os, multiprocessing, traceback, pygam
+import time, logging, os, multiprocessing, traceback, pygam
 import numpy as np
 
 class ThresholdPredictor:
@@ -282,9 +282,6 @@ class BackgroundDisplayStatusProgressHandler:
 		if self.msg_fmt is not None:
 			self.display_status.message = self.msg_fmt.format(progress=self._progress * 100.0, spinner=spinner)
 		
-		#m73_cmd = self.gcode.create_gcode_command("M73", "M73", dict(P=self._progress * 100.0))
-		#self.display_status.cmd_M73(m73_cmd)
-		
 		return self.reactor.monotonic() + self.display_status_update_interval
 
 class BeaconAdaptiveHeatSoak:
@@ -415,6 +412,13 @@ class BeaconAdaptiveHeatSoak:
 
 		return abs(check_value) <= threshold
 
+	def get_layer_quality_name(self, quality):
+		# Returns the name of the layer quality based on the quality value.
+		if quality < 1 or quality > 5:
+			raise ValueError(f"Invalid layer quality {quality}, must be between 1 and 5.")
+		
+		return ("rough", "draft", "normal", "high", "maximum")[quality - 1]	
+	
 	def _get_maximum_z_change_microns_for_quality(self, quality):
 		if quality < 1 or quality > 5:
 			raise ValueError(f"Invalid layer quality {quality}, must be between 1 and 5.")
@@ -449,8 +453,8 @@ class BeaconAdaptiveHeatSoak:
 			period = maximum_first_layer_duration + 120
 
 			predictor = ThresholdPredictor(self.printer)
-			threshold = predictor.predict_threshold( maximum_z_change_microns, period)
-			params_msg = f" to suit layer quality {layer_quality} with maximum first layer duration of {self._format_seconds(maximum_first_layer_duration)}"
+			threshold = predictor.predict_threshold(maximum_z_change_microns, period)
+			params_msg = f"\nto suit layer quality {layer_quality} ({self.get_layer_quality_name(layer_quality)}) with maximum first layer duration of {self._format_seconds(maximum_first_layer_duration)}"
 			logging.info(f"{self.name}: predicted adaptive heat soak threshold for maximum Z change of {maximum_z_change_microns} microns (quality {layer_quality}) over {period} seconds: {threshold:.2f} nm/s")
 		else:
 			logging.info(f"{self.name}: using forced adaptive heat soak threshold: {threshold:.2f} nm/s")		
@@ -473,7 +477,7 @@ class BeaconAdaptiveHeatSoak:
 		moving_average_history = []
 		moving_average_history_times = []
 
-		gcmd.respond_info(f"Adaptive heat soak started, waiting for printer to reach thermal stability{params_msg}.\nSee printer status for updates. Please wait...")
+		gcmd.respond_info(f"Adaptive heat soak started, waiting for printer to reach thermal stability{params_msg}.\nCheck printer status for progress. Please wait...")
 
 		progress_handler = None
 		try:
@@ -538,12 +542,12 @@ class BeaconAdaptiveHeatSoak:
 							progress_handler.set_auto_rate(0)
 							progress_start = progress_handler.progress							
 							progress_start_z_rate = abs(moving_average)
-							# This is the amount of z-rate change until we reach the threshold. We add 10%
-							# as we will surely move beyond the threshold. If we are *already* within the threshold,
-							# this happens with a very quick first layer - we're already within the threshold, and
-							# we must wait for proven z-rate stability: we handle this by the max condition, which
-							# applies when threshold is larger than the start z-rate.
-							progress_z_rate_range = 1.1 * max(1.0, progress_start_z_rate - threshold)
+							# This is the amount of z-rate change until we reach the threshold. We add 10% of the threshold
+							# as we will surely move beyond the threshold. If we are *already* within the threshold
+							# this happens with a very quick first layer - we must wait for proven z-rate stability: 
+							# we handle this by the max condition, which applies when threshold is larger than the start z-rate;
+							# this will promptly cause the progress to transition to 95% and enter the final approach phase.
+							progress_z_rate_range = max(1.0, (progress_start_z_rate - threshold) + 0.1 * threshold)
 							logging.info(f"{self.name}: first ma: elapsed={elapsed:.1f}, progress_start={progress_start:.2f}, progress_start_z_rate={progress_start_z_rate:.2f}, progress_z_rate_range={progress_z_rate_range:.2f}, moving_average={moving_average:.2f} nm/s")
 							if progress_start > 0.1:
 								# This is unexpected. The value should be close to 5%. Force it, even though we'll jump
