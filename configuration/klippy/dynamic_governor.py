@@ -1,6 +1,7 @@
 # Automatically switches the CPU frequency governor to “performance”
-# when any stepper is enabled, and back to “ondemand” when all steppers
-# are disabled or Klipper is shutting down.
+# when the machine is in an active state (that is, when any stepper is enabled),
+# and back to “ondemand” when the machine is in an idle state (that is, all steppers
+# are disabled or Klipper is shutting down).
 #
 # Note: 
 # 
@@ -27,28 +28,45 @@ class DynamicGovernor:
 			logging.info(f"{self.name}: disabled by config")
 			return
 
-		self.governor_motors_on = config.get('governor_motors_on', 'performance')
-		self.governor_motors_off = config.get('governor_motors_off', 'ondemand')
+		self.active_governor = config.get('active_governor', 'performance')
+		self.idle_governor = config.get('idle_governor', 'ondemand')
+		self.idle_governor_delay = config.getint('idle_governor_delay', 30, minval=10)
 
 		# Ensure cpufreq-set is available and get the list of valid governors
 		self._check_cpufrequtils()
 
-		if self.governor_motors_on not in self._valid_governors:
+		if self.active_governor not in self._valid_governors:
 			raise self.printer.config_error(
-				f"{self.name}: governor_motors_on '{self.governor_motors_on}' "
+				f"{self.name}: active_governor '{self.active_governor}' "
 				"not in available governors: "
 				+ ', '.join(self._valid_governors)
 			)
 
-		if self.governor_motors_off not in self._valid_governors:
+		if self.idle_governor not in self._valid_governors:
 			raise self.printer.config_error(
-				f"{self.name}: governor_motors_off '{self.governor_motors_off}' "
+				f"{self.name}: idle_governor '{self.idle_governor}' "
 				"not in available governors: "
 				+ ', '.join(self._valid_governors)
 			)
 
-		logging.info(f"{self.name}: governor_motors_on={self.governor_motors_on}, "
-		             f"governor_motors_off={self.governor_motors_off}")
+		logging.info(f"{self.name}: active_governor={self.active_governor}, "
+		             f"idle_governor={self.idle_governor}, idle_governor_delay={self.idle_governor_delay}s")
+		
+		# The transition to the idle governor is delayed to avoid switching
+		# during homing, and to allow for remaining critically-timed operations
+		# to complete.
+		def callback(eventtime):
+			try:
+				self._exec_cpufreq(self.idle_governor)
+			except Exception as e:
+				logging.warning(f"{self.name}: failed to set idle governor: {e}")
+			return self.printer.get_reactor().NEVER
+
+		self._idle_delay_timer = self.printer.get_reactor().register_timer(callback)			
+
+		# Start in active mode. A delayed transition to idle will be scheduled
+		# in the _on_ready callback if no steppers are enabled.
+		self._on_active()
 
 		# Track how many steppers are currently enabled
 		self._enabled_count = 0
@@ -58,7 +76,7 @@ class DynamicGovernor:
 
 		# Ensure we reset to ondemand on shutdown
 		self.printer.register_event_handler('klippy:shutdown', self._on_shutdown)
-
+	
 	def _check_cpufrequtils(self):
 		# Ensure cpufreq-set is available
 		try:
@@ -123,18 +141,10 @@ class DynamicGovernor:
 			# Register the state callback for this stepper
 			se.register_state_callback(self._on_stepper_state)
 
-		# Apply the initial governor based on current state		
-		self._exec_cpufreq(self.governor_motors_on if self._enabled_count > 0 else self.governor_motors_off)
-
-	def _exec_cpufreq(self, governor: str):
-		"""Run cpufreq-set -r -g <governor> quietly."""
-		try:
-			self._run_subprocess_with_timeout(['sudo', '-n', 'cpufreq-set', '-r', '-g', governor])
-			logging.info(f"{self.name}: set CPU governor to '{governor}'")
-		except Exception as e:
-			logging.warning(
-				f"{self.name}: failed to set governor to '{governor}': {e}"
-			)
+		# We switched to active mode during construction. Schedule a delayed
+		# transition to idle if no steppers are enabled.
+		if self._enabled_count == 0:
+			self._on_idle()
 
 	def _on_stepper_state(self, print_time, enabled: bool):
 		"""
@@ -145,7 +155,7 @@ class DynamicGovernor:
 		if enabled:
 			# If transitioning from 0→1 enabled steppers, ramp to performance
 			if self._enabled_count == 0:
-				self._exec_cpufreq(self.governor_motors_on)
+				self._on_active()
 			self._enabled_count += 1
 		else:
 			# Guard against negative counts
@@ -153,7 +163,7 @@ class DynamicGovernor:
 				self._enabled_count -= 1
 			# If no more steppers are enabled, switch back to ondemand
 			if self._enabled_count == 0:
-				self._exec_cpufreq(self.governor_motors_off)
+				self._on_idle()
 
 		logging.debug(
 			f"{self.name}: stepper state changed, enabled_count={self._enabled_count}"
@@ -162,7 +172,28 @@ class DynamicGovernor:
 	def _on_shutdown(self):
 		"""Reset governor when Klipper is shutting down or restarting."""
 		# Regardless of current state, go back to ondemand
-		self._exec_cpufreq(self.governor_motors_off)
+		self._on_idle()
+
+	def _on_active(self):
+		reactor = self.printer.get_reactor()
+		reactor.update_timer(self._idle_delay_timer, reactor.NEVER)
+		self._exec_cpufreq(self.active_governor)
+
+	def _on_idle(self):
+		reactor = self.printer.get_reactor()
+		t = reactor.monotonic() + self.idle_governor_delay
+		logging.info(f"{self.name}: scheduling idle governor switch at {t:.1f}")
+		reactor.update_timer(self._idle_delay_timer, t)
+
+	def _exec_cpufreq(self, governor: str):
+		"""Run cpufreq-set -r -g <governor> quietly."""
+		try:
+			self._run_subprocess_with_timeout(['sudo', '-n', 'cpufreq-set', '-r', '-g', governor])
+			logging.info(f"{self.name}: set CPU governor to '{governor}'")
+		except Exception as e:
+			logging.warning(
+				f"{self.name}: failed to set governor to '{governor}': {e}"
+			)
 
 	def _run_subprocess_with_timeout(self, cmd, timeout_secs=10):
 		"""Run a subprocess command with a timeout.
