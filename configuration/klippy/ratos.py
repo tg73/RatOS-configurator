@@ -55,6 +55,7 @@ class RatOS:
 		self.gm_ratos = None
 		self.toolhead = None
 		self.beacon = None
+		self.display_status = None
 
 		# Status fields
 		self.last_processed_file_result = None
@@ -79,6 +80,7 @@ class RatOS:
 		self.sdcard_dirname = self.v_sd.sdcard_dirname
 		self.gm_ratos = self.printer.lookup_object('gcode_macro RatOS')
 		self.toolhead = self.printer.lookup_object("toolhead")
+		self.display_status = self.printer.lookup_object("display_status")
 
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
@@ -552,14 +554,18 @@ class RatOS:
 		if type == 'debug': color = "#38bdf8"
 		if type == 'debug': opacity = 0.7
 
+		msg = msg.replace("_N_","\n")
+
 		if (type == 'error' or type == 'alert'):
-			logging.error(title + ": " + msg.replace("_N_","\n"))
+			logging.error(title + ": " + msg)
+			self.display_status.message = f"ERROR: {title} (check the console for details)"
 		if (type == 'warning'):
-			logging.warning(title + ": " + msg.replace("_N_","\n"))
+			logging.warning(title + ": " + msg)
+			self.display_status.message = f"WARNING: {title} (check the console for details)"
 
 		_title = '<p style="font-weight: bold; margin:0; opacity:' + str(opacity) + '; color:' + color + '">' + title + '</p>'
 		if msg:
-			_msg = '<p style="margin:0; opacity:' + str(opacity) + '; color:' + color + '">' + msg.replace("_N_","\n") + '</p>'
+			_msg = '<p style="margin:0; opacity:' + str(opacity) + '; color:' + color + '">' + msg + '</p>'
 		else:
 			_msg = ''
 
