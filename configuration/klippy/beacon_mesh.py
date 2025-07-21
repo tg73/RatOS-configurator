@@ -719,12 +719,12 @@ class BeaconMesh:
 
 		if self.z_tilt and not self.z_tilt.z_status.applied:
 			self.ratos.console_echo("Create compensation mesh warning", "warning", 
-				"Z-tilt levelling is configured but has not been applied._N_"
+				"Z-tilt leveling is configured but has not been applied._N_"
 				"This may result in inaccurate compensation.")
 		
 		if self.qgl and not self.qgl.z_status.applied:
 			self.ratos.console_echo("Create compensation mesh warning", "warning", 
-				"Quad gantry levelling is configured but has not been applied._N_"
+				"Quad gantry leveling is configured but has not been applied._N_"
 				"This may result in inaccurate compensation.")
 
 		keep_temp_meshes = gcmd.get('KEEP_TEMP_MESHES', '0').strip().lower() in ('1', 'true', 'yes')
