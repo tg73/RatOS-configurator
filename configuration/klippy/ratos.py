@@ -9,6 +9,8 @@
 import os, logging, glob, traceback, inspect, re
 import json, subprocess, pathlib, random, math
 from collections import namedtuple
+import numpy as np
+from datetime import datetime
 
 BeaconProbingRegions = namedtuple('BeaconProbingRegions', 
 			['x_offset', 'y_offset', 'proximity_min', 'proximity_max', 'contact_min', 'contact_max'])
@@ -55,6 +57,7 @@ class RatOS:
 		self.gm_ratos = None
 		self.toolhead = None
 		self.beacon = None
+		self.save_variables = None
 
 		# Status fields
 		self.last_processed_file_result = None
@@ -79,6 +82,7 @@ class RatOS:
 		self.sdcard_dirname = self.v_sd.sdcard_dirname
 		self.gm_ratos = self.printer.lookup_object('gcode_macro RatOS')
 		self.toolhead = self.printer.lookup_object("toolhead")
+		self.save_variables = self.printer.lookup_object("save_variables")
 
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
@@ -118,7 +122,230 @@ class RatOS:
 		self.gcode.register_command('_RAISE_ERROR', self.cmd_RAISE_ERROR, desc=self.desc_RAISE_ERROR)
 		self.gcode.register_command('_TRY', self.cmd_TRY, desc=self.desc_TRY)
 		self.gcode.register_command('_DEBUG_ECHO_STACK_TRACE', self.cmd_DEBUG_ECHO_STACK_TRACE, desc=self.desc_DEBUG_ECHO_STACK_TRACE)
-		self.gcode.register_command('_MOVE_TO_SAFE_Z_HOME', self.cmd_MOVE_TO_SAFE_Z_HOME, desc=self.desc_MOVE_TO_SAFE_Z_HOME)		
+		self.gcode.register_command('_MOVE_TO_SAFE_Z_HOME', self.cmd_MOVE_TO_SAFE_Z_HOME, desc=self.desc_MOVE_TO_SAFE_Z_HOME)
+		self.gcode.register_command('_BEACON_CALIBRATE_NOZZLE_TEMP_OFFSET_CORE', self.cmd_BEACON_CALIBRATE_NOZZLE_TEMP_OFFSET_CORE, desc=self.desc_BEACON_CALIBRATE_NOZZLE_TEMP_OFFSET_CORE)
+		
+	desc_BEACON_CALIBRATE_NOZZLE_TEMP_OFFSET_CORE = "Internal use only. Only called from BEACON_CALIBRATE_NOZZLE_TEMP_OFFSET"
+	def cmd_BEACON_CALIBRATE_NOZZLE_TEMP_OFFSET_CORE(self, gcmd):
+		"""
+		Core function for calibrating the Beacon probe's nozzle temperature offset.
+		This function is called by the Beacon probe's calibration command.
+		It is not intended to be called directly from G-code.
+		"""
+		if self.beacon is None:
+			raise gcmd.error("Beacon probe is not configured")
+		
+		min_temp = gcmd.get_float('MIN_TEMP', 150.0)
+		max_temp = gcmd.get_float('MAX_TEMP', 250.0)
+		soak_time = gcmd.get_int('SOAK_TIME', 0)
+		version = gcmd.get_int('VERSION', 1, minval=1)
+
+		default_toolhead = int(self.gm_ratos.variables.get('default_toolhead', 0))
+		travel_speed = float(self.gm_ratos.variables['macro_travel_speed']) * 60.
+		z_speed = float(self.gm_ratos.variables['macro_z_speed']) * 60.
+
+		#soak_time = int(self.gm_ratos.variables.get('hotend_heat_soak_time', 10))
+		extruder = "extruder" if default_toolhead == 0 else "extruder1"
+
+		# TODO: Move to a location less likely to suffer from z thermal drift. This
+		# depends on the structure of the printer. For example, on a corexy printer where
+		# the gantry is the X axis, a positon close to an XY joiner (away from the middle of the gantry)
+		# is a good candidate. However, we have no means to know the structure of the printer at this
+		# time.
+				
+		gcmd.respond_info(f"Running Beacon probe nozzle temperature offset calibration (version {version})...")
+
+		if version == 2:
+			soak_time = 0
+			num_temps = 5
+			temps_up = [int(min_temp + i * (max_temp - min_temp) / (num_temps - 1)) for i in range(num_temps)]
+			#temps_down = temps_up[::-1][1:]  # exclude the duplicate max_temp
+			temp_profile = temps_up * 3
+			random.shuffle(temp_profile)
+			
+			results = []
+			time_zero = None
+
+			for i, temp in enumerate(temp_profile):
+				self.gcode.respond_info(f"Heating hotend to {temp}°C...")
+				self.gcode.run_script_from_command(
+					f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET={temp}\n"
+					f"TEMPERATURE_WAIT SENSOR={extruder} MINIMUM={temp-1} MAXIMUM={temp+1}\n")
+				if soak_time > 0:
+					self.gcode.respond_info(f"Heat soaking hotend at {temp}°C for {soak_time} seconds...")
+					self.reactor.pause(self.reactor.monotonic() + soak_time)
+				self.gcode.respond_info(f"Probing with hotend temperature {temp}°C...")
+				self.gcode.run_script_from_command(
+					"PROBE PROBE_METHOD=contact PROBE_SPEED=3 LIFT_SPEED=15 SAMPLES=5 SAMPLE_RETRACT_DIST=3 SAMPLES_TOLERANCE=0.005 SAMPLES_TOLERANCE_RETRIES=10 SAMPLES_RESULT=median")
+					#"PROBE PROBE_METHOD=contact SAMPLES_DROP=1 SAMPLES=3")
+				t = self.reactor.monotonic()
+				if time_zero is None:
+					time_zero = t
+				#self.gcode.run_script_from_command("_Z_HOP")
+				results.append([t-time_zero, temp, self.beacon.last_z_result])
+
+			self.gcode.respond_info(f"hotend_expansion_results: {results}")
+
+			self.gcode.run_script_from_command(
+				f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET=0")
+		elif version == 3:
+			soak_time = 0
+			num_temps = 5
+			temps_up = [int(min_temp + i * (max_temp - min_temp) / (num_temps - 1)) for i in range(num_temps)]			
+			temp_profile = temps_up * 3
+			random.shuffle(temp_profile)
+			
+			results = {t: [] for t in temps_up}
+
+			for i, temp in enumerate(temp_profile):
+				self.gcode.respond_info(f"Heating hotend to {temp}°C...")
+				self.gcode.run_script_from_command(
+					f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET={temp}\n"
+					f"TEMPERATURE_WAIT SENSOR={extruder} MINIMUM={temp-1} MAXIMUM={temp+1}\n")
+				if soak_time > 0:
+					self.gcode.respond_info(f"Heat soaking hotend at {temp}°C for {soak_time} seconds...")
+					self.reactor.pause(self.reactor.monotonic() + soak_time)
+				self.gcode.respond_info(f"Probing with hotend temperature {temp}°C...")
+				self.gcode.run_script_from_command(
+					"PROBE PROBE_METHOD=contact PROBE_SPEED=3 LIFT_SPEED=15 SAMPLES=4 SAMPLE_RETRACT_DIST=3 SAMPLES_TOLERANCE=0.008 SAMPLES_TOLERANCE_RETRIES=10 SAMPLES_RESULT=median")
+					#"PROBE PROBE_METHOD=contact SAMPLES_DROP=1 SAMPLES=3\n"
+					#"_Z_HOP")
+				results[temp].append(self.beacon.last_z_result)
+
+			self.gcode.respond_info(f"hotend_expansion_results_v3: {results}")
+
+			self.gcode.run_script_from_command(
+				f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET=0")
+			
+			# Calculate the mean for each temperature. This aims to eliminate drift in the beacon readings, as
+			# can be caused by thermal expansion of the beacon mount, or other thermal effects.		
+			means = [np.mean(results[t]) for t in temps_up]
+			
+			# Linear fit to the means
+			a, b = np.polyfit(temps_up, means, 1)
+			
+			z_min = a * min_temp + b
+			z_max = a * max_temp + b
+			dz = z_max - z_min
+
+			a_mids, b_mids = np.polyfit(temps_up[1:-1], means[1:-1], 1)
+			z_min_mids = a_mids * min_temp + b_mids
+			z_max_mids = a_mids * max_temp + b_mids
+			dz_mids = z_max_mids - z_min_mids
+
+			self.gcode.respond_info(f"hotend_expansion_stats_v3: pos={self.toolhead.get_position()[:2]}, dZ={dz:.6f}, dZ_mids: {dz_mids:.6f}")
+
+		elif version == 1:
+			num_temps = gcmd.get_int('NUM_TEMPS', 5, minval=2)
+			cycles = gcmd.get_int('CYCLES', 2, minval=1)
+			do_move = gcmd.get_int('MOVE', 0) == 1
+
+			now = datetime.now().strftime("%H:%M:%S")
+			pos_info = f"pos={self.toolhead.get_position()[:2]}" if not do_move else "do_move=true"
+			self.gcode.respond_info(f"hotend_expansion_start_v1: now={now}, soak_time={soak_time}, {pos_info}, num_temps={num_temps}, cycles={cycles}")
+			temps_up = [int(min_temp + i * (max_temp - min_temp) / (num_temps - 1)) for i in range(num_temps)]
+			temps_down = temps_up[::-1][1:-1] # exclude the duplicate max_temp and min_temp
+			temps_down_final = temps_up[::-1][1:]  # exclude the duplicate max_temp
+			temp_profile = temps_up + ( temps_down + temps_up ) * ( cycles - 1 ) + temps_down_final
+			
+			bpr = self.get_beacon_probing_regions()
+			move_z = 5.
+			move_to_soak_pos_cmd = \
+				f"G1 Z{move_z} F{z_speed}\n" \
+				f"G1 X{bpr.contact_max[0]} Y{bpr.contact_min[1]} F{travel_speed}"
+			move_to_probe_pos_cmd = \
+				f"G1 Z{move_z} F{z_speed}\n" \
+				f"G1 X{bpr.contact_min[0]} Y{bpr.contact_min[1]} F{travel_speed}"
+			
+			results = {t: [] for t in temps_up}
+
+			for i, temp in enumerate(temp_profile):
+				self.gcode.respond_info(f"Heating hotend to {temp}°C...")
+				self.gcode.run_script_from_command(
+					f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET={temp}\n"
+					+ move_to_soak_pos_cmd if do_move else '' +
+					f"TEMPERATURE_WAIT SENSOR={extruder} MINIMUM={temp-1} MAXIMUM={temp+1}")
+				if soak_time > 0:
+					self.gcode.respond_info(f"Heat soaking hotend at {temp}°C for {soak_time} seconds...")
+					self.reactor.pause(self.reactor.monotonic() + soak_time)
+				if do_move:
+					self.gcode.run_script_from_command(move_to_probe_pos_cmd)
+				self.gcode.run_script_from_command(move_to_probe_pos_cmd)
+				self.gcode.respond_info(f"Probing with hotend temperature {temp}°C...")
+				self.gcode.run_script_from_command(
+					"PROBE PROBE_METHOD=contact PROBE_SPEED=3 LIFT_SPEED=15 SAMPLES=4 SAMPLE_RETRACT_DIST=3 SAMPLES_TOLERANCE=0.008 SAMPLES_TOLERANCE_RETRIES=10 SAMPLES_RESULT=median")
+					#"PROBE_METHOD=contact PROBE_SPEED=3 LIFT_SPEED=15 SAMPLES=5 SAMPLE_RETRACT_DIST=3 SAMPLES_TOLERANCE=0.005 SAMPLES_TOLERANCE_RETRIES=10 SAMPLES_RESULT=median")
+					#"PROBE PROBE_METHOD=contact SAMPLES_DROP=1 SAMPLES=3\n"
+					#"_Z_HOP")
+				results[temp].append(self.beacon.last_z_result)
+
+			self.gcode.respond_info(f"hotend_expansion_results_v1: {results}")
+
+			self.gcode.run_script_from_command(
+				f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET=0")
+			
+			# Calculate the mean for each temperature. This aims to eliminate drift in the beacon readings, as
+			# can be caused by thermal expansion of the beacon mount, or other thermal effects.		
+			means = [np.mean(results[t]) for t in temps_up]
+			
+			# Linear fit to the means
+			a, b = np.polyfit(temps_up, means, 1)
+			
+			z_min = a * min_temp + b
+			z_max = a * max_temp + b
+			dz = z_max - z_min
+			
+			now = datetime.now().strftime("%H:%M:%S")
+			self.gcode.respond_info(f"hotend_expansion_stats_v1: now={now}, soak_time={soak_time}, {pos_info}, num_temps={num_temps}, cycles={cycles}, dZ={dz:.6f}")
+			#self.gcode.respond_info(f"T{ 0 if default_toolhead == 0 else 1} expansion coefficient: {dz:.6f}")
+		elif version == 4:
+			# Classic algorithm ported from jinja macro
+			temps_up = [min_temp, max_temp]
+			temp_profile = temps_up * 2
+			
+			
+			results = {t: [] for t in temps_up}
+			last_min_temp_z = None
+			last_max_temp_z = None
+
+			for i, temp in enumerate(temp_profile):
+				self.gcode.respond_info(f"Heating hotend to {temp}°C...")
+				self.gcode.run_script_from_command(
+					f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET={temp}\n"
+					f"TEMPERATURE_WAIT SENSOR={extruder} MINIMUM={temp} MAXIMUM={temp+2}\n")
+				if soak_time > 0:
+					self.gcode.respond_info(f"Heat soaking hotend at {temp}°C for {soak_time} seconds...")
+					self.reactor.pause(self.reactor.monotonic() + soak_time)
+				self.gcode.respond_info(f"Probing with hotend temperature {temp}°C...")
+				self.gcode.run_script_from_command(
+					"PROBE PROBE_METHOD=contact PROBE_SPEED=3 LIFT_SPEED=15 SAMPLES=4 SAMPLE_RETRACT_DIST=3 SAMPLES_TOLERANCE=0.008 SAMPLES_TOLERANCE_RETRIES=10 SAMPLES_RESULT=median\n"
+					"BEACON_QUERY\n"
+					f"G1 Z5 F{z_speed}")
+				z = self.beacon.last_z_result
+				if temp == min_temp:
+					last_min_temp_z = z
+				elif temp == max_temp:
+					last_max_temp_z = z
+				results[temp].append(z)
+
+			self.gcode.respond_info(f"hotend_expansion_results_v4: {results}")
+
+			self.gcode.run_script_from_command(
+				"_MOVE_TO_SAFE_Z_HOME Z_HOP=True\n"
+				f"SET_HEATER_TEMPERATURE HEATER={extruder} TARGET=0")
+			
+			# Calculate the mean for each temperature. This aims to eliminate drift in the beacon readings, as
+			# can be caused by thermal expansion of the beacon mount, or other thermal effects.		
+			means = [np.mean(results[t]) for t in temps_up]
+			
+			# Linear fit to the means
+			a, b = np.polyfit(temps_up, means, 1)
+			
+			z_min = a * min_temp + b
+			z_max = a * max_temp + b
+			dz = z_max - z_min
+
+			self.gcode.respond_info(f"hotend_expansion_stats_v4: pos={self.toolhead.get_position()[:2]}, dZ_fit={dz:.6f}, dZ_classic: {last_max_temp_z - last_min_temp_z:.6f}")
 
 	def register_command_overrides(self):
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=self.desc_TEST_RESONANCES)
@@ -684,6 +911,15 @@ class RatOS:
 		self.gcode.run_script_from_command(f"G0 X{x} Y{y} F{speed}")
 
 		self.last_move_to_safe_z_home_position = (x, y)
+
+	def save_variable(self, variable, value):
+		"""
+		Saves the specified variable to the save_variables object.
+		Note that `value` is parsed by ast.literal_eval, so it must be a valid Python literal.
+		Strings must be quoted, e.g. value="'foo'" or value='"foo"'.
+		"""
+		cmd = self.gcode.create_gcode_command("SAVE_VARIABLE", "SAVE_VARIABLE", dict(VARIABLE=variable, VALUE=value))
+		self.save_variables.cmd_SAVE_VARIABLE(cmd)
 
 	def get_status(self, eventtime=None):
 		return {
