@@ -20,9 +20,11 @@ import copy
 class ImmutablePrinterConfigStatusWrapper(Mapping):
 
 	def __init__(self, config):
+		self.name = config.get_name()
 		self._printer = config.get_printer()
 		self._printer.register_event_handler("klippy:connect",
-											self._handle_connect)		
+											self._handle_connect)
+		self._initialized = False	
 
 	def _handle_connect(self):
 		pconfig = self._printer.lookup_object('configfile')
@@ -30,8 +32,11 @@ class ImmutablePrinterConfigStatusWrapper(Mapping):
 		self._immutable_status = copy.deepcopy(pconfig.get_status(eventtime))
 		self._immutable_status.pop('save_config_pending', None)
 		self._immutable_status.pop('save_config_pending_items', None)
+		self._initialized = True
 	
 	def get_status(self, eventtime=None):
+		if not self._initialized:
+			raise RuntimeError(f"{self.name}: get_status called before initialization!")
 		return self
 	
 	def __deepcopy__(self, memo):
