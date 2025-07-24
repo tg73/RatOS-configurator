@@ -630,8 +630,8 @@ class RatOS:
 	def get_safe_home_position(self):
 		printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
 		printable_y_max = float(self.gm_ratos.variables['printable_y_max'])
-		safe_home_x = self.gm_ratos.variables.get('safe_home_x', None)
-		safe_home_y = self.gm_ratos.variables.get('safe_home_y', None)
+		raw_safe_home_x = safe_home_x = self.gm_ratos.variables.get('safe_home_x', None)
+		raw_safe_home_y = safe_home_y = self.gm_ratos.variables.get('safe_home_y', None)
 		safe_home_x = printable_x_max / 2 if safe_home_x is None or str(safe_home_x).lower() == 'middle' else float(safe_home_x)
 		safe_home_y = printable_y_max / 2 if safe_home_y is None or str(safe_home_y).lower() == 'middle' else float(safe_home_y)
 		
@@ -642,7 +642,9 @@ class RatOS:
 			safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
 			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
 			if safe_home_x < safe_min_x or safe_home_x > safe_max_x or safe_home_y < safe_min_y or safe_home_y > safe_max_y:
-				self.printer.invoke_shutdown(f"{self.name}: (safe_home_x, safe_home_y) must be within the region that Beacon can probe: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y}). The configured location ({safe_home_x:.2f}, {safe_home_y:.2f}) is outside this region.")			
+				if not self.printer.is_shutdown():
+					logging.info(f"{self.name}: (safe_home_x, safe_home_y) is not within beacon-probable region: printable_x_max={printable_x_max}, printable_y_max={printable_y_max}, safe_home_x={safe_home_x}, safe_home_y={safe_home_y}, raw_safe_home_x={raw_safe_home_x}, raw_safe_home_y={raw_safe_home_y}, beacon probing region: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y})")
+					self.printer.invoke_shutdown(f"{self.name}: (safe_home_x, safe_home_y) must be within the region that Beacon can probe: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y}). The configured location ({safe_home_x:.2f}, {safe_home_y:.2f}) is outside this region.")			
 		
 		return (safe_home_x, safe_home_y)
 
