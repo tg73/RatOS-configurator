@@ -96,9 +96,9 @@ export function validateGenerator(
 					{ cause: gcodeInfo },
 				);
 			case GCodeFlavour.PrusaSlicer:
-				if (!semver.satisfies(gcodeInfo.generatorVersion, '2.8.0 || 2.8.1 || 2.9.0')) {
+				if (!semver.satisfies(gcodeInfo.generatorVersion, '2.8.0 || 2.8.1 || 2.9.0 || 2.9.1 || 2.9.2')) {
 					throw new SlicerNotSupported(
-						`Only versions 2.8.0, 2.8.1 and 2.9.0 of PrusaSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+						`Only release versions 2.8.0, 2.8.1 and 2.9.0 - 2.9.2 of PrusaSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
 						{ cause: gcodeInfo },
 					);
 				}
