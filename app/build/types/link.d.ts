@@ -37,10 +37,10 @@ declare namespace __next_route_internal_types__ {
     | `/api/update-logs/generate-test-data`
     | `/`
     | `/motion`
-    | `/toolhead`
     | `/calibration`
-    | `/update-logs`
+    | `/toolhead`
     | `/wizard`
+    | `/update-logs`
     | `/analysis`
     | `/analysis/macros/new`
     | `/analysis/macros`
