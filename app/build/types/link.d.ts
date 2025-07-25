@@ -38,8 +38,8 @@ declare namespace __next_route_internal_types__ {
     | `/`
     | `/calibration`
     | `/motion`
-    | `/toolhead`
     | `/update-logs`
+    | `/toolhead`
     | `/wizard`
     | `/analysis/macros/new`
     | `/analysis`
@@ -48,8 +48,8 @@ declare namespace __next_route_internal_types__ {
     | `/api/trpc/${SafeSlug<T>}`
     | `/analysis/macros/${SafeSlug<T>}/edit`
     | `/analysis/macros/${SafeSlug<T>}`
-    | `/analysis/macros/${SafeSlug<T>}/recordings`
     | `/analysis/macros/${SafeSlug<T>}/recordings/${SafeSlug<T>}`
+    | `/analysis/macros/${SafeSlug<T>}/recordings`
 
   type RouteImpl<T> = 
     | StaticRoutes
