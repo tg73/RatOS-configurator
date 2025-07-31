@@ -10,9 +10,10 @@ from enum import Enum
 import math
 import multiprocessing, traceback
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, NamedTuple
 import numpy as np
 import importlib
+from dataclasses import dataclass
 
 from . import bed_mesh as BedMesh
 from . import probe
@@ -953,6 +954,10 @@ class BeaconMesh:
 		try:
 			chamber_temp = 0 ###### TODO #####
 			profile = gcmd.get('PROFILE', 'default').strip()
+			pattern = gcmd.get('PATTERN', '').strip().lower()
+			if not pattern in ('sawtooth', 'offset_aligned'):
+				raise gcmd.error(f"Invalid PATTERN value '{pattern}'. Must be 'sawtooth' or 'offset_aligned'.")
+			
 			bpr: BeaconProbingRegions = self.ratos.get_beacon_probing_regions()
 			safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
 			safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
@@ -962,44 +967,72 @@ class BeaconMesh:
 			if (bpr.contact_min != bpr.proximity_min or bpr.contact_max != bpr.proximity_max):
 				self.gcode.respond_info('Beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
 
-			resolution = gcmd.get_float("RESOLUTION", float(self.gm_ratos.variables.get('beacon_scan_compensation_resolution', 8.)))
 
-			probe_count_x = int((safe_max_x - safe_min_x) / resolution + 1)
-			probe_count_y = int((safe_max_y - safe_min_y) / resolution + 1)
+			if pattern == 'sawtooth':
+				resolution = gcmd.get_float("RESOLUTION", float(self.gm_ratos.variables.get('beacon_scan_compensation_resolution', 8.)))
+				probe_count_x = int((safe_max_x - safe_min_x) / resolution + 1)
+				probe_count_y = int((safe_max_y - safe_min_y) / resolution + 1)
 
-			# There's some rounding of the distance between points, so the actual max coordinates are
-			# returned by generate_mesh_points.
-			max_x, max_y, points = self.generate_mesh_points(
-				probe_count_x, probe_count_y,
-				[safe_min_x, safe_min_y],
-				[safe_max_x, safe_max_y])
+				# There's some rounding of the distance between points, so the actual max coordinates are
+				# returned by generate_mesh_points.
+				max_x, max_y, points = self.generate_mesh_points(
+					probe_count_x, probe_count_y,
+					[safe_min_x, safe_min_y],
+					[safe_max_x, safe_max_y])
 
-			contact_z = None
-			results = [[None] * probe_count_x for _ in range(probe_count_y)]
+				contact_z = None
+				results = [[None] * probe_count_x for _ in range(probe_count_y)]
 
-			# TODO: Handle faulty regions!
+				# TODO: Handle faulty regions!
 
-			for i, point in enumerate(points):
-				gcmd.respond_info(f"Probing point {i + 1}/{len(points)}: {point[0]:.2f}, {point[1]:.2f}")
+				for i, point in enumerate(points):
+					gcmd.respond_info(f"Probing point {i + 1}/{len(points)}: {point[0]:.2f}, {point[1]:.2f}")
 
-				contact_z, proximity_z = self._cotemporal_probing_helper.probe(
+					contact_z, proximity_z = self._cotemporal_probing_helper.probe_single_location(
+						gcmd,
+						point[2:],
+						contact_z)
+
+					results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
+
+				gcmd.respond_info(f"Probed {len(points)} points in the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})")
+
+				contact_points = [[results[y][x][2] for x in range(len(results[y]))] for y in range(len(results))]
+				proximity_points = [[results[y][x][3] for x in range(len(results[y]))] for y in range(len(results))]
+				filtered_contact_points = self._apply_filter(contact_points)
+			elif pattern == 'offset_aligned':
+				resolution = gcmd.get_float("TARGET_RESOLUTION", float(self.gm_ratos.variables.get('beacon_scan_compensation_resolution', 8.)))
+				finest_resolution = gcmd.get_float("FINEST_RESOLUTION", resolution * 0.8)
+
+				probe_count_x, probe_count_y, max_x, max_y, actions = self._cotemporal_probing_helper.generate_probe_action_sequence_beacon_offset_aligned(
+					resolution,
+					finest_resolution,
+					(safe_min_x, safe_min_y),
+					(safe_max_x, safe_max_y)
+				)
+
+				gcmd.respond_info(
+					f"Generated {len(actions)} probe actions for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
+					f"Probe count: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
+				
+				results = self._cotemporal_probing_helper.run_probe_action_sequence(
 					gcmd,
-					point[2:],
-					contact_z)
+					probe_count_x, probe_count_y,
+					actions
+				)
 
-				results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
-
-			gcmd.respond_info(f"Probed {len(points)} points in the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})")
-
-			contact_points = [[results[y][x][2] for x in range(len(results[y]))] for y in range(len(results))]
-			proximity_points = [[results[y][x][3] for x in range(len(results[y]))] for y in range(len(results))]
-			filtered_contact_points = self._apply_filter(contact_points)
-
+				contact_points = [[results[y][x].contact_z for x in range(len(results[y]))] for y in range(len(results))]
+				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]
+				filtered_contact_points = self._apply_filter(contact_points)
+			else:
+				raise gcmd.error(f"Unsupported PATTERN value '{pattern}'. Only 'sawtooth' and 'offset_aligned' are supported.")
+			
 			extra_params = {}
 			extra_params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
 			extra_params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
 			extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_MEASURED
 			extra_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
+			extra_params[RATOS_MESH_NOTES_PARAMETER] = f"cotemporal mesh created using sampling pattern {pattern}"
 
 			# Store a few fields that might be useful for compatibility checking in the future,
 			# but the checks don't yet exist.
@@ -1030,7 +1063,7 @@ class BeaconMesh:
 				proximity_points
 			)
 
-			comp_points = [[filtered_contact_points[y][x] - proximity_points[y][x] for x in range(len(results[y]))] for y in range(len(results))]
+			comp_points = [[filtered_contact_points[y][x] - proximity_points[y][x] for x in range(len(proximity_points[y]))] for y in range(len(proximity_points))]
 			extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
 
 			self._install_and_save_new_mesh(
@@ -1138,10 +1171,45 @@ class ProbeCommandKind(Enum):
 	CONTACT_MULTI = 2
 	PROXIMITY = 3
 
+class ProbeAction(NamedTuple):
+	"""
+	Represents a single probing action.
+
+	Attributes:
+		is_contact:
+			True if this is a contact probe, False if this is a proximity probe.
+		idx_x: The x index of the point in the mesh.
+		idx_y: The y index of the point in the mesh.
+		pos_x: The x coordinate of the toolhead at which the probing action should take place (ie, proximity actions are adjusted for the beacon offset).
+		pos_y: The y coordinate of the toolhead at which the probing action should take place (ie, proximity actions are adjusted for the beacon offset).
+	"""
+	is_contact: bool
+	idx_x: int
+	idx_y: int
+	pos_x: float
+	pos_y: float
+
+@dataclass
+class ProbeActionResult:
+	"""
+	Represents the result of a probing action.
+
+	Attributes:
+		contact_z: The z value from the contact probe.
+		proximity_z: The z value from the proximity probe.
+		contact_time: The reactor monotonic time when the contact probe was completed.
+		proximity_time: The reactor monotonic time when the proximity probe was completed.
+	"""
+	contact_z: float
+	proximity_z: float
+	contact_time: float
+	proximity_time: float
+
 class CotemporalProbingHelper:
 
 	def __init__(self, config):
 		self.printer = config.get_printer()
+		self.reactor = self.printer.get_reactor()
 		self.gcode = self.printer.lookup_object("gcode")
 
 		self.beacon = None
@@ -1168,9 +1236,16 @@ class CotemporalProbingHelper:
 		# last expected-circumstance probe was a contact or proximity probe.
 		self._beacon_proximity_offsets = (self.beacon.x_offset, self.beacon.y_offset, self.beacon.trigger_distance)
 
-	def probe(self, gcmd, position, contact_reference_z, delta_contact_z_limit=0.075) -> Tuple[float, float]:
+	def do_contact_probe(self, gcmd, position, contact_reference_z=None, delta_contact_z_limit=0.075) -> float:
+		"""
+		Perform a contact probe at a single position.
+		:param gcmd: Gcode command object
+		:param position: A single [x, y] coordinate to probe.
+		:param contact_reference_z: The reference z value to compare against for contact probing validity checking.
+		:param delta_contact_z_limit: The maximum allowed difference between the contact probe z value and the reference z value.
+		:return: The z value from the contact probe.
+		"""
 		if not self.beacon:
-			# We don't expect to be called if the beacon module is not loaded.
 			raise RatOSBeaconMeshError("Beacon module is not loaded")
 
 		try:
@@ -1212,10 +1287,31 @@ class CotemporalProbingHelper:
 				self._probe_finalize = contact_cb
 				self._probe_helper.start_probe(contact_cmd)
 
+			return contact_z
+		finally:
+			self._probe_finalize = None
+
+	def do_proximity_probe(self, gcmd, position, use_offset=False) -> float:
+		"""
+		Perform a proximity probe at a single position.
+		:param gcmd: Gcode command object
+		:param position: A single [x, y] coordinate to probe.
+		:param use_offset: If True, apply the beacon proximity offsets to the position.
+		:return: The z value from the proximity probe.
+		"""
+		if not self.beacon:
+			raise RatOSBeaconMeshError("Beacon module is not loaded")
+
+		try:
 			proximity_z = None
-			proximity_cmd = self._get_probe_command(
-				gcmd,
-				ProbeCommandKind.PROXIMITY)
+
+			if use_offset:
+				position = [
+					position[0] - self._beacon_proximity_offsets[0],
+					position[1] - self._beacon_proximity_offsets[1]
+				]
+
+			proximity_cmd = self._get_probe_command(gcmd, ProbeCommandKind.PROXIMITY)
 
 			def proximity_cb(_, positions):
 				nonlocal proximity_z
@@ -1224,18 +1320,39 @@ class CotemporalProbingHelper:
 				proximity_z = positions[0][2]
 				return "done"
 
-			self._probe_helper.update_probe_points(
-				[[
-					position[0] - self._beacon_proximity_offsets[0],
-					position[1] - self._beacon_proximity_offsets[1]
-				]],
-				1)
+			self._probe_helper.update_probe_points([position], 1)
 			self._probe_finalize = proximity_cb
 			self._probe_helper.start_probe(proximity_cmd)
 
-			return contact_z, proximity_z - self._beacon_proximity_offsets[2]
+			return proximity_z - self._beacon_proximity_offsets[2]
 		finally:
 			self._probe_finalize = None
+
+	def probe_single_location(self, gcmd, position, contact_reference_z, delta_contact_z_limit=0.075) -> Tuple[float, float]:
+		"""
+		Probe contact and proximity at a single location.
+		:param gcmd: Gcode command object
+		:param position: A single [x, y] coordinate to probe.
+		:param contact_reference_z: The reference z value to compare against for contact probing validity checking.
+		:param delta_contact_z_limit: The maximum allowed difference between the contact probe z value and the reference z value.
+		:return: A tuple of (contact_z, proximity_z) where contact_z is the z value from the contact probe and proximity_z is the z value from the proximity probe.
+		"""
+		if not self.beacon:
+			# We don't expect to be called if the beacon module is not loaded.
+			raise RatOSBeaconMeshError("Beacon module is not loaded")
+
+		contact_z = self.do_contact_probe(
+			gcmd,
+			position,
+			contact_reference_z=contact_reference_z,
+			delta_contact_z_limit=delta_contact_z_limit)			
+
+		proximity_z = self.do_proximity_probe(
+			gcmd,
+			position,
+			use_offset=True)
+		
+		return contact_z, proximity_z
 
 	def _call_probe_finalize(self, offsets, positions):
 		if self._probe_finalize is None:
@@ -1279,6 +1396,186 @@ class CotemporalProbingHelper:
 				+ "".join(" " + k + "=" + v for k, v in probe_args.items()),
 			probe_args
 		)
+
+	def run_probe_action_sequence(self, gcmd, count_x:int, count_y:int, probe_actions:List[ProbeAction], delta_contact_z_limit=0.075) -> List[List[ProbeActionResult]]:
+		"""
+		Perform a sequence of probing actions.
+		:param gcmd: Gcode command object
+		:param probe_actions: A list of ProbeAction objects representing the probing actions to perform.
+		:return: A grid of tuples (contact_z, proximity_z, contact_time, proximity_time) where contact_z is the z value from the contact 
+		         probe, proximity_z is the z value from the proximity probe and time_difference is the
+				 time that elapsed between the contact and proximity probes in seconds.
+		"""
+		if not self.beacon:
+			# We don't expect to be called if the beacon module is not loaded.
+			raise RatOSBeaconMeshError("Beacon module is not loaded")
+
+		results = [[ProbeActionResult() for _ in range(count_x)] for _ in range(count_y)]
+
+		last_contact_z = None
+
+		for i, action in enumerate(probe_actions):
+			if action.idx_x < 0 or action.idx_x >= count_x or action.idx_y < 0 or action.idx_y >= count_y:
+				raise RatOSBeaconMeshError(f"ProbeAction indices out of bounds: idx_x={action.idx_x}, idx_y={action.idx_y}, count_x={count_x}, count_y={count_y}")
+
+			action_result = results[action.idx_y][action.idx_x]
+			
+			if action.is_contact:
+				# Perform a contact probe
+				contact_z = self.do_contact_probe(
+					gcmd,
+					[action.pos_x, action.pos_y],
+					last_contact_z,
+					delta_contact_z_limit=delta_contact_z_limit
+				)
+				last_contact_z = contact_z
+				action_result.contact_z = contact_z
+				action_result.contact_time = self.reactor.monotonic()
+			else:
+				proximity_z = self.do_proximity_probe(
+					gcmd,
+					[action.pos_x, action.pos_y])
+				action_result.proximity_z = proximity_z
+				action_result.proximity_time = self.reactor.monotonic()
+
+			if i % 10 == 0:
+				gcmd.respond_info(f"Performed {i + 1}/{len(probe_actions)} probe actions, {100.*(i+1)/len(probe_actions):.1f}% complete")
+
+		return results
+
+	def generate_probe_action_sequence_beacon_offset_aligned(
+			self,
+			target_resolution:float,
+			finest_resolution_allowed:float,
+			mesh_min:Tuple[float,float],
+			mesh_max:Tuple[float,float]) -> Tuple[int, int, float, float, List[ProbeAction]]:
+		"""
+		Generate a sampling sequence for a rectangular bed with the primary axis of movement aligned to primary axis of the beacon mounting offset.
+		The actual resolution of the mesh will be the primary axis beacon offset divided by some whole number.
+		:param target_resolution: The target resolution of the mesh in mm.
+		:param finest_resolution_allowed: The finest permitted resolution of the mesh in mm.
+		:param mesh_min: Minimum x, y coordinates of the mesh (min_x, min_y)
+		:param mesh_max: Maximum x, y coordinates of the mesh (max_x, max_y)
+		:return: A tuple of (count_x, count_y, max_x, max_y, points) where:
+				count_x and count_y are the number of points in the mesh.
+				max_x and max_y are the maximum x, y coordinates of the mesh (max_x, max_y).
+				points is a list of tuples (is_contact, idx_x, idx_y, pos_x, pos_y), where:
+		        	idx_x and idx_y are the indices of the point in the mesh, pos_x and pos_y are the coordinates of the
+					toolhead at which the probing action should take place (ie, proximity actions are for adjusted for the beacon offset).
+		"""
+		if target_resolution < finest_resolution_allowed:
+			raise RatOSBeaconMeshError(
+				f"Target resolution ({target_resolution:.3f} mm) is less than the finest resolution allowed ({finest_resolution_allowed:.3f} mm).")
+				
+		# Maximum allowed secondary offset in mm
+		# This is the maximum allowed offset in the direction perpendicular to the primary movement.
+		# For example, if the primary movement is 'x', this is the maximum allowed offset in the 'y' direction.
+		# With this data collection algorithm, we don't move the probe off the primary axis, so
+		# maximum_secondary_offset limits how far off-axis we allow the probe to be.
+		maximum_secondary_offset = 2.0
+
+		offsets = self._beacon_proximity_offsets
+		if offsets[0] < 5. and offsets[1] < 5.:
+			# It's not physically possible to have the beacon overlap with the nozzle. The check above
+			# is actually more permissive than current beacon physical dimensions so it allows for future
+			# beacon hardware revisions.
+			raise RatOSBeaconMeshError(f"The configured Beacon sensor offset ({offsets[0]:.3f}, {offsets[1]:.3f}) is not valid.")
+		
+		primary_axis = 'x' if abs(offsets[0]) > abs(offsets[1]) else 'y'
+		secondary_axis = 'y' if primary_axis == 'x' else 'x'
+		primary_offset = offsets[0] if primary_axis == 'x' else offsets[1]
+		secondary_offset = offsets[1] if primary_axis == 'x' else offsets[0]
+		abs_primary_offset = abs(primary_offset)
+		abs_secondary_offset = abs(secondary_offset)
+		
+		if abs_secondary_offset > maximum_secondary_offset:
+			# This happens when the beacon is not mounted off to one side of the nozzle predominantly in the
+			# x axis or predominantly in the y axis, for example if the beacon is mounted diagnonally offset from the nozzle.
+			raise RatOSBeaconMeshError(
+				f"The secondary Beacon sensor offset (|{secondary_axis}|={abs_secondary_offset}) is too large for use with the offset-aligned data collection method. "
+				f"Maximum allowed secondary offset is {maximum_secondary_offset:.3f} mm.")
+
+		if abs_primary_offset < finest_resolution_allowed:
+			# If the primary axis offset is smaller than the finest resolution allowed, we can't use this method.
+			raise RatOSBeaconMeshError(
+				f"The primary Beacon sensor offset (|{primary_axis}|={abs_primary_offset}) is smaller than the finest resolution allowed ({finest_resolution_allowed:.3f} mm). "
+				f"To use offset-aligned data collection, the finest resolution allowed must be decreased.")
+		
+		offset_divisor = round(abs_primary_offset / target_resolution)
+		if offset_divisor < 1:
+			offset_divisor = 1
+		elif offset_divisor > 1 and abs_primary_offset / offset_divisor < finest_resolution_allowed:
+			offset_divisor -= 1
+
+		# Round the resolution to the nearest hundredth of a millimeter, beacause Klipper's bed_mesh module
+		# does this too. I'm not certain why, might be simply to keep numbers tidy for display.
+		resolution = round(abs_primary_offset / offset_divisor, 2)
+
+		x_count = int((mesh_max[0] - mesh_min[0]) / resolution + 1)
+		y_count = int((mesh_max[1] - mesh_min[1]) / resolution + 1)
+
+		max_x = mesh_min[0] + resolution * (x_count - 1)
+		max_y = mesh_min[1] + resolution * (y_count - 1)
+
+		primary_count, secondary_count = (x_count, y_count) if primary_axis == 'x' else (y_count, x_count)
+		
+		# - We always start probing at mesh_min
+		# - We start by probing along the primary axis, moving in the positive direction.
+		# - We then move to the next point along the secondary axis, and then probe along the primary axis in the negative direction.
+		# - We repeat this until we have probed all points.
+
+		# For each line of probing along the primary axis:
+		# - We must determine if the beacon offset is leading or trailing the nozzle. This is
+		#   determined by the sign of the primary axis offset compared to the primary axis direction.
+		#   If the sign of the primary axis direction is the same as the sign of the primary axis offset,
+		#   the beacon is leading the nozzle, otherwise it is trailing.
+		# - If the beacon is leading the nozzle, we probe the proximity point first, then the contact point.
+		# - If the beacon is trailing the nozzle, we probe the contact point first, then the proximity point.
+		# - The toolhead location progresses monotonically along the primary axis.
+		# - If offset_divisor is greater than 1, we must probe the first (offset_divisor - 1) proximity or
+		#   contact points (accorinding to whether the beacon is leading or trailing), and thereafter we
+		#   probe both contact and proximity points at the same toolhead location, although the location
+		#   measured by proximity will be offset by the beacon offset in the primary axis direction.
+
+		probe_actions = []
+		def append_probe_action(is_contact, primary_idx, secondary_idx):			
+			x_index = primary_idx if primary_axis == 'x' else secondary_idx
+			y_index = secondary_idx if primary_axis == 'x' else primary_idx
+			x_pos = mesh_min[0] + x_index * resolution
+			y_pos = mesh_min[1] + y_index * resolution
+			if not is_contact:
+				if primary_axis == 'x':
+					x_pos += primary_offset
+				else:
+					y_pos += primary_offset
+
+			probe_actions.append(ProbeAction(is_contact, x_index, y_index, x_pos, y_pos))
+		
+		for secondary_idx in range(secondary_count):			
+			# Determine if the beacon is leading or trailing the nozzle
+			beacon_leading = ( primary_offset > 0 ) == ( secondary_idx % 2 == 0 )
+
+			def primary_idx_from_line_idx(primary_line_idx):
+				if secondary_idx % 2 == 0:
+					return primary_line_idx
+				else:
+					return primary_count - primary_line_idx - 1
+
+			# Add any initial probe actions for the first (offset_divisor - 1) points
+			for primary_line_idx in range(offset_divisor - 1):
+				append_probe_action(not beacon_leading, primary_idx_from_line_idx(primary_line_idx), secondary_idx)
+				pass
+		
+			# Add probe actions where contact and proximity are probed at the same toolhead position
+			for primary_line_idx in range(primary_count - (offset_divisor - 1)):
+				append_probe_action(not beacon_leading, primary_idx_from_line_idx(primary_line_idx + offset_divisor - 1), secondary_idx)
+				append_probe_action(beacon_leading, primary_idx_from_line_idx(primary_line_idx), secondary_idx)
+
+			# Add any final probe actions for the last (offset_divisor - 1) points
+			for primary_line_idx in range(offset_divisor - 1):
+				append_probe_action(beacon_leading, primary_idx_from_line_idx(primary_count - (offset_divisor - 1) + primary_line_idx), secondary_idx)
+
+		return x_count, y_count, max_x, max_y, probe_actions
 
 #####
 # Loader
