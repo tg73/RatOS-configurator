@@ -177,6 +177,10 @@ class BeaconMesh:
 							   desc=(self.desc_TEST_COMPENSATION_MESH_AUTO_SELECTION))
 			self.gcode.register_command('_TEST_CT_PROBE',
 							   self._cotemporal_bed_probe)
+			self.gcode.register_command('_RECREATE_COMPENSATION_MESH',
+							   self.cmd_RECREATE_COMPENSATION_MESH)
+			self.gcode.register_command('_BED_MESH_SUBTRACT',
+							   self.cmd_BED_MESH_SUBTRACT)
 
 	desc_BEACON_MESH_INIT = "Performs Beacon mesh initialization tasks"
 	def cmd_BEACON_MESH_INIT(self, gcmd):
@@ -473,9 +477,9 @@ class BeaconMesh:
 			raise self.printer.command_error(f"{subject} not found{purpose}")
 
 		try:
-			compensation_zmesh = BedMesh.ZMesh(profiles[profile]["mesh_params"], profile, self.reactor)
-			compensation_zmesh.build_mesh(profiles[profile]["points"])
-			return compensation_zmesh
+			zmesh = BedMesh.ZMesh(profiles[profile]["mesh_params"], profile, self.reactor)
+			zmesh.build_mesh(profiles[profile]["points"])
+			return zmesh
 		except Exception as e:
 			raise self.printer.command_error(f"Could not load {subject[0].lower()}{subject[1:]}{purpose}: {str(e)}") from e
 
@@ -951,9 +955,21 @@ class BeaconMesh:
 				continue
 
 	def _cotemporal_bed_probe(self, gcmd):
+		profile = gcmd.get('PROFILE', RATOS_COMPENSATION_MESH_NAME_AUTO).strip()
+		chamber_temp = gcmd.get_float('CHAMBER_TEMP', 0)
+
+		if not profile:
+			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
+
+		if profile.lower() == RATOS_COMPENSATION_MESH_NAME_AUTO:
+			base_name = f"compensation_bed_{round(self._get_nominal_bed_temp())}C"
+			profile, is_unique = self._get_unique_profile_name(base_name)
+			if not is_unique:
+				self.ratos.console_echo("Create beacon compensation mesh", "info",
+					f"The default automatic profile name '{base_name}' already exists. The unique name '{profile}' will be used instead.")
+			gcmd.respond_info(f"Using automatic profile name '{profile}' for the new compensation mesh")
+
 		try:
-			chamber_temp = 0 ###### TODO #####
-			profile = gcmd.get('PROFILE', 'default').strip()
 			pattern = gcmd.get('PATTERN', '').strip().lower()
 			if not pattern in ('sawtooth', 'offset_aligned'):
 				raise gcmd.error(f"Invalid PATTERN value '{pattern}'. Must be 'sawtooth' or 'offset_aligned'.")
@@ -967,6 +983,7 @@ class BeaconMesh:
 			if (bpr.contact_min != bpr.proximity_min or bpr.contact_max != bpr.proximity_max):
 				self.gcode.respond_info('Beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
 
+			primary_axis = None
 
 			if pattern == 'sawtooth':
 				resolution = gcmd.get_float("RESOLUTION", float(self.gm_ratos.variables.get('beacon_scan_compensation_resolution', 8.)))
@@ -999,12 +1016,12 @@ class BeaconMesh:
 
 				contact_points = [[results[y][x][2] for x in range(len(results[y]))] for y in range(len(results))]
 				proximity_points = [[results[y][x][3] for x in range(len(results[y]))] for y in range(len(results))]
-				filtered_contact_points = self._apply_filter(contact_points)
+				
 			elif pattern == 'offset_aligned':
 				resolution = gcmd.get_float("TARGET_RESOLUTION", float(self.gm_ratos.variables.get('beacon_scan_compensation_resolution', 8.)))
 				finest_resolution = gcmd.get_float("FINEST_RESOLUTION", resolution * 0.8)
 
-				probe_count_x, probe_count_y, max_x, max_y, actions = self._cotemporal_probing_helper.generate_probe_action_sequence_beacon_offset_aligned(
+				primary_axis, probe_count_x, probe_count_y, max_x, max_y, actions = self._cotemporal_probing_helper.generate_probe_action_sequence_beacon_offset_aligned(
 					resolution,
 					finest_resolution,
 					(safe_min_x, safe_min_y),
@@ -1022,8 +1039,7 @@ class BeaconMesh:
 				)
 
 				contact_points = [[results[y][x].contact_z for x in range(len(results[y]))] for y in range(len(results))]
-				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]
-				filtered_contact_points = self._apply_filter(contact_points)
+				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]				
 			else:
 				raise gcmd.error(f"Unsupported PATTERN value '{pattern}'. Only 'sawtooth' and 'offset_aligned' are supported.")
 			
@@ -1039,13 +1055,63 @@ class BeaconMesh:
 			extra_params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = chamber_temp
 			extra_params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = (safe_min_x, safe_min_y, safe_max_x, safe_max_y)
 
-			self._install_and_save_new_mesh(
-				f"{profile}_CONTACT",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				contact_points
-			)
+			if primary_axis is not None:				
+				deridged_contact_points = self.filter_along_primary_axis(contact_points, primary_axis)
+				deridged_proximity_points = self.filter_along_primary_axis(proximity_points, primary_axis)
+
+				filtered_contact_points = self._apply_filter(deridged_contact_points)
+
+				self._install_and_save_new_mesh(
+					f"{profile}_CONTACT",
+					extra_params,
+					(safe_min_x, safe_min_y),
+					(max_x, max_y),
+					contact_points
+				)
+
+				self._install_and_save_new_mesh(
+					f"{profile}_CONTACT_DERIDGED",
+					extra_params,
+					(safe_min_x, safe_min_y),
+					(max_x, max_y),
+					deridged_contact_points
+				)
+
+				self._install_and_save_new_mesh(
+					f"{profile}_PROXIMITY",
+					extra_params,
+					(safe_min_x, safe_min_y),
+					(max_x, max_y),
+					proximity_points
+				)
+
+				self._install_and_save_new_mesh(
+					f"{profile}_PROXIMITY_DERIDGED",
+					extra_params,
+					(safe_min_x, safe_min_y),
+					(max_x, max_y),
+					deridged_proximity_points
+				)
+
+				proximity_points = deridged_proximity_points
+			else:
+				filtered_contact_points = self._apply_filter(contact_points)
+
+				self._install_and_save_new_mesh(
+					f"{profile}_CONTACT",
+					extra_params,
+					(safe_min_x, safe_min_y),
+					(max_x, max_y),
+					contact_points
+				)
+
+				self._install_and_save_new_mesh(
+					f"{profile}_PROXIMITY",
+					extra_params,
+					(safe_min_x, safe_min_y),
+					(max_x, max_y),
+					proximity_points
+				)
 
 			self._install_and_save_new_mesh(
 				f"{profile}_CONTACT_FILTERED",
@@ -1055,19 +1121,11 @@ class BeaconMesh:
 				filtered_contact_points
 			)
 
-			self._install_and_save_new_mesh(
-				f"{profile}_PROXIMITY",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				proximity_points
-			)
-
 			comp_points = [[filtered_contact_points[y][x] - proximity_points[y][x] for x in range(len(proximity_points[y]))] for y in range(len(proximity_points))]
 			extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
 
 			self._install_and_save_new_mesh(
-				f"{profile}_compensation",
+				f"{profile}",
 				extra_params,
 				(safe_min_x, safe_min_y),
 				(max_x, max_y),
@@ -1078,7 +1136,239 @@ class BeaconMesh:
 
 		except RatOSBeaconMeshError as e:
 			raise gcmd.error(f"Failed to create cotemporal mesh: {str(e)}") from e
+		
+	def cmd_BED_MESH_SUBTRACT(self, gcmd):
+		profile_a = gcmd.get('A').strip()
+		profile_b = gcmd.get('B').strip()
+		primary= gcmd.get('PRIMARY', 'a').strip().lower()
+		if profile_a == profile_b:
+			raise gcmd.error("Profiles A and B must be different.")
+		if primary not in ('a', 'b'):
+			raise gcmd.error(f"Invalid PRIMARY value '{primary}'. Must be 'A' or 'B'.")
 
+		zmesh_a = self._create_zmesh_from_profile(profile_a)
+		zmesh_b = self._create_zmesh_from_profile(profile_b)
+
+		pri, sec = (zmesh_a, zmesh_b) if primary == 'a' else (zmesh_b, zmesh_a)
+				
+		pri_points = pri.probed_matrix
+		sec_points = sec.probed_matrix
+		diff_points = np.full_like(pri_points, 0.)
+		
+		grid_is_same = pri.mesh_x_min == sec.mesh_x_min and \
+			pri.mesh_x_max == sec.mesh_x_max and \
+			pri.mesh_y_min == sec.mesh_y_min and \
+			pri.mesh_y_max == sec.mesh_y_max and \
+			len(pri_points) == len(sec_points) and \
+			len(pri_points[0]) == len(sec_points[0])
+
+		for y in range(len(pri_points)):
+			for x in range(len(pri_points[0])):
+				pri_z = pri_points[y][x]
+				x_pos = pri.mesh_x_min + x * ((pri.mesh_x_max - pri.mesh_x_min) / (len(pri.probed_matrix[0]) - 1))
+				y_pos = pri.mesh_y_min + y * ((pri.mesh_y_max - pri.mesh_y_min) / (len(pri.probed_matrix) - 1))
+				sec_z = sec_points[y][x] if grid_is_same else sec.calc_z(x_pos, y_pos)
+				diff = pri_z - sec_z if primary == 'a' else sec_z - pri_z
+				diff_points[y][x] = diff
+				if ( x == 0 or x == len(pri_points[0]) - 1 ) and (y == 0 or y == len(pri_points) - 1):
+					# Only log the corners
+					gcmd.respond_info(
+						f"Subtracting {profile_b} from {profile_a} at point {x}, {y} ({x_pos:.2f}, {y_pos:.2f}): "
+						f"pri={pri_z:.4f}, sec={sec_z:.4f}, diff={diff:.4f}"
+					)
+		
+		extra_params = {}
+		extra_params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
+		extra_params[RATOS_MESH_BED_TEMP_PARAMETER] = 0
+		extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_MEASURED
+		extra_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
+		extra_params[RATOS_MESH_NOTES_PARAMETER] = f"Mesh subtraction of '{profile_a}' minus '{profile_b}' based on the grid of '{profile_a if primary == 'a' else profile_b}'."
+
+		self._install_and_save_new_mesh(
+			f"{profile_a}_MINUS_{profile_b}",
+			extra_params,
+			(pri.mesh_x_min, pri.mesh_y_min),
+			(pri.mesh_x_max, pri.mesh_y_max),			
+			diff_points.tolist()
+		)
+
+	def cmd_RECREATE_COMPENSATION_MESH(self, gcmd):
+		profile = gcmd.get('PROFILE').strip()
+		new_profile = gcmd.get('NEW_PROFILE').strip()
+		primary_axis = gcmd.get('PRIMARY_AXIS', None)
+
+		if primary_axis is not None and primary_axis not in ('x', 'y'):
+			raise gcmd.error(f"Invalid PRIMARY_AXIS value '{primary_axis}'. Must be 'x', 'y' or unspecified.")
+		
+		proximity_name = f"{profile}_PROXIMITY"
+		contact_name = f"{profile}_CONTACT"
+
+		contact_zmesh = self._create_zmesh_from_profile(contact_name)
+		proximity_zmesh = self._create_zmesh_from_profile(proximity_name)
+
+		contact_points = contact_zmesh.probed_matrix
+		proximity_points = proximity_zmesh.probed_matrix
+
+		params = contact_zmesh.get_mesh_params()
+
+		extra_params = {}
+		extra_params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
+		extra_params[RATOS_MESH_BED_TEMP_PARAMETER] = params[RATOS_MESH_BED_TEMP_PARAMETER]
+		extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_MEASURED
+		extra_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
+		extra_params[RATOS_MESH_NOTES_PARAMETER] = params[RATOS_MESH_NOTES_PARAMETER] + f" (recreated from {profile})"
+
+		# Store a few fields that might be useful for compatibility checking in the future,
+		# but the checks don't yet exist.
+		extra_params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = params[RATOS_MESH_CHAMBER_TEMP_PARAMETER]
+		extra_params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER]
+		safe_min_x, safe_min_y = params["min_x"], params["min_y"]
+		max_x, max_y = params["max_x"], params["max_y"]
+
+		if primary_axis is not None:				
+			deridged_contact_points = self.filter_along_primary_axis(contact_points, primary_axis)
+			deridged_proximity_points = self.filter_along_primary_axis(proximity_points, primary_axis)
+
+			contact_rmse = self.get_mesh_difference_rmse(contact_points, deridged_contact_points)
+			proximity_rmse = self.get_mesh_difference_rmse(proximity_points, deridged_proximity_points)
+			
+			gcmd.respond_info(
+				f"Contact RMSE: {contact_rmse:.4f}, Proximity RMSE: {proximity_rmse:.4f} for primary axis '{primary_axis}'")
+
+			extra_params[RATOS_MESH_NOTES_PARAMETER] = extra_params[RATOS_MESH_NOTES_PARAMETER] + f" (deridged with primary axis '{primary_axis}', contact RMSE: {contact_rmse:.4f}, proximity RMSE: {proximity_rmse:.4f})"
+
+			filtered_contact_points = self._apply_filter(deridged_contact_points)
+
+			self._install_and_save_new_mesh(
+				f"{new_profile}_CONTACT",
+				extra_params,
+				(safe_min_x, safe_min_y),
+				(max_x, max_y),
+				contact_points
+			)
+
+			self._install_and_save_new_mesh(
+				f"{new_profile}_CONTACT_DERIDGED",
+				extra_params,
+				(safe_min_x, safe_min_y),
+				(max_x, max_y),
+				deridged_contact_points
+			)
+
+			self._install_and_save_new_mesh(
+				f"{new_profile}_PROXIMITY",
+				extra_params,
+				(safe_min_x, safe_min_y),
+				(max_x, max_y),
+				proximity_points
+			)
+
+			self._install_and_save_new_mesh(
+				f"{new_profile}_PROXIMITY_DERIDGED",
+				extra_params,
+				(safe_min_x, safe_min_y),
+				(max_x, max_y),
+				deridged_proximity_points
+			)
+
+			proximity_points = deridged_proximity_points
+		else:
+			filtered_contact_points = self._apply_filter(contact_points)
+
+			self._install_and_save_new_mesh(
+				f"{new_profile}_CONTACT",
+				extra_params,
+				(safe_min_x, safe_min_y),
+				(max_x, max_y),
+				contact_points
+			)
+
+			self._install_and_save_new_mesh(
+				f"{new_profile}_PROXIMITY",
+				extra_params,
+				(safe_min_x, safe_min_y),
+				(max_x, max_y),
+				proximity_points
+			)
+
+		self._install_and_save_new_mesh(
+			f"{new_profile}_CONTACT_FILTERED",
+			extra_params,
+			(safe_min_x, safe_min_y),
+			(max_x, max_y),
+			filtered_contact_points
+		)
+
+		comp_points = [[filtered_contact_points[y][x] - proximity_points[y][x] for x in range(len(proximity_points[y]))] for y in range(len(proximity_points))]
+		extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
+
+		self._install_and_save_new_mesh(
+			f"{new_profile}",
+			extra_params,
+			(safe_min_x, safe_min_y),
+			(max_x, max_y),
+			comp_points
+		)
+
+		gcmd.respond_info(f"Cotemporal mesh recreated with profile '{new_profile}'")
+
+	def get_mesh_difference_rmse(self, points_a: List[List[float]], points_b: List[List[float]]) -> float:
+		"""
+		Calculate the RMSE (Root Mean Square Error) between two sets of mesh points.
+		:param points_a: First set of mesh points.
+		:param points_b: Second set of mesh points.
+		:return: RMSE value.
+		"""
+		np_a = np.array(points_a)
+		np_b = np.array(points_b)
+
+		if np_a.shape != np_b.shape:
+			raise ValueError("The two point sets must have the same shape.")
+
+		diff = np_a - np_b
+		rmse = np.sqrt(np.mean(np.square(diff)))
+		return rmse
+	
+	def filter_along_primary_axis(self, input_points: List[List[float]], primary_axis: str) -> List[List[float]]:
+		"""
+		Apply a de-ridging filter to the input points along the specified primary axis.
+		:param input_points: List of points to filter, where each point is a list of coordinates.
+		:param primary_axis: The primary axis along which to apply the filter ('x' or 'y').
+		:return: Filtered list of points.
+		:raises ValueError: If the primary_axis is not 'x' or 'y'.
+		"""		
+		arr = np.array(input_points)
+		if primary_axis == 'y':
+			# Filter along axis 1 (columns)
+			result = np.zeros_like(arr)
+			# Middle points
+			result[:, 1:-1] = (
+				0.25 * arr[:, :-2] +
+				0.5  * arr[:, 1:-1] +
+				0.25 * arr[:, 2:]
+			)
+			# Left edge
+			result[:, 0] = 0.5 * arr[:, 0] + 0.5 * arr[:, 1]
+			# Right edge
+			result[:, -1] = 0.5 * arr[:, -1] + 0.5 * arr[:, -2]
+		elif primary_axis == 'x':
+			# Filter along axis 0 (rows)
+			result = np.zeros_like(arr)
+			# Middle points
+			result[1:-1, :] = (
+				0.25 * arr[:-2, :] +
+				0.5  * arr[1:-1, :] +
+				0.25 * arr[2:, :]
+			)
+			# Top edge
+			result[0, :] = 0.5 * arr[0, :] + 0.5 * arr[1, :]
+			# Bottom edge
+			result[-1, :] = 0.5 * arr[-1, :] + 0.5 * arr[-2, :]
+		else:
+			raise ValueError(f"Invalid primary_axis: {primary_axis}")
+
+		return result.tolist()
+	
 	def _install_and_save_new_mesh(
 			self,
 			profile_name,
@@ -1200,10 +1490,10 @@ class ProbeActionResult:
 		contact_time: The reactor monotonic time when the contact probe was completed.
 		proximity_time: The reactor monotonic time when the proximity probe was completed.
 	"""
-	contact_z: float
-	proximity_z: float
-	contact_time: float
-	proximity_time: float
+	contact_z: Optional[float] = None
+	proximity_z: Optional[float] = None
+	contact_time: Optional[float] = None
+	proximity_time: Optional[float] = None
 
 class CotemporalProbingHelper:
 
@@ -1545,9 +1835,9 @@ class CotemporalProbingHelper:
 			y_pos = mesh_min[1] + y_index * resolution
 			if not is_contact:
 				if primary_axis == 'x':
-					x_pos += primary_offset
+					x_pos -= primary_offset
 				else:
-					y_pos += primary_offset
+					y_pos -= primary_offset
 
 			probe_actions.append(ProbeAction(is_contact, x_index, y_index, x_pos, y_pos))
 		
@@ -1575,7 +1865,7 @@ class CotemporalProbingHelper:
 			for primary_line_idx in range(offset_divisor - 1):
 				append_probe_action(beacon_leading, primary_idx_from_line_idx(primary_count - (offset_divisor - 1) + primary_line_idx), secondary_idx)
 
-		return x_count, y_count, max_x, max_y, probe_actions
+		return primary_axis, x_count, y_count, max_x, max_y, probe_actions
 
 #####
 # Loader
