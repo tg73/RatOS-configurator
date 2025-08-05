@@ -12,6 +12,8 @@ from . import bed_mesh as BedMesh
 import numpy as np
 import importlib
 
+DEFAULT_REACTOR_PAUSE_OFFSET = 0.006 # 6ms
+
 # Temporary mesh names
 RATOS_TEMP_SCAN_MESH_BEFORE_NAME = "__BEACON_TEMP_SCAN_MESH_BEFORE__"
 RATOS_TEMP_SCAN_MESH_ATFER_NAME = "__BEACON_TEMP_SCAN_MESH_AFTER__"
@@ -434,7 +436,7 @@ class BeaconMesh:
 		self.ratos.debug_echo("SET_ZERO_REFERENCE_POSITION", f"X:{x_pos:.2f} Y:{y_pos:.2f}")
 
 		org_mesh = self.bed_mesh.get_mesh()
-		new_mesh = BedMesh.ZMesh(org_mesh.get_mesh_params(), org_mesh.get_profile_name())
+		new_mesh = BedMesh.ZMesh(org_mesh.get_mesh_params(), org_mesh.get_profile_name(), self.reactor)
 		new_mesh.build_mesh(org_mesh.get_probed_matrix())
 		new_mesh.set_zero_reference(x_pos, y_pos)
 		self.bed_mesh.set_mesh(new_mesh)
@@ -458,7 +460,7 @@ class BeaconMesh:
 			raise self.printer.command_error(f"{subject} not found{purpose}")
 		
 		try:
-			compensation_zmesh = BedMesh.ZMesh(profiles[profile]["mesh_params"], profile)
+			compensation_zmesh = BedMesh.ZMesh(profiles[profile]["mesh_params"], profile, self.reactor)
 			compensation_zmesh.build_mesh(profiles[profile]["points"])
 			return compensation_zmesh
 		except Exception as e:
@@ -609,8 +611,11 @@ class BeaconMesh:
 					measured_z = measured_points[y][x]
 					compensation_z = compensation_zmesh.calc_z(x_pos, y_pos)
 					new_z = measured_z + compensation_z
-					self.ratos.debug_echo("Beacon scan compensation", "measured: %0.4f  compensation: %0.4f  new: %0.4f" % (measured_z, compensation_z, new_z))
+					# Debug disabled: this can produce thousands of lines of output, and also ratos.debug_echo(...)
+					# is implemented as a gcode_macro call, which is relatively heavy-weight.
+					# self.ratos.debug_echo("Beacon scan compensation", "measured: %0.4f  compensation: %0.4f  new: %0.4f" % (measured_z, compensation_z, new_z))
 					new_points[y].append(new_z)
+				self.reactor.pause(self.reactor.monotonic() + DEFAULT_REACTOR_PAUSE_OFFSET)
 
 			measured_zmesh.build_mesh(new_points)
 			# NB: build_mesh does not replace or mutate its params, so no need to reassign measured_mesh_params.
@@ -826,7 +831,7 @@ class BeaconMesh:
 
 					#debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
 
-				self.reactor.pause(self.reactor.NOW)
+				self.reactor.pause(self.reactor.monotonic() + DEFAULT_REACTOR_PAUSE_OFFSET)
 
 			# For a large mesh (eg, 60x60) this can take 2+ minutes
 			#self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
@@ -834,7 +839,7 @@ class BeaconMesh:
 			if keep_temp_meshes:
 				params = contact_params.copy()
 				filtered_profile = contact_mesh_name + "_filtered"
-				new_mesh = BedMesh.ZMesh(params, filtered_profile)
+				new_mesh = BedMesh.ZMesh(params, filtered_profile, self.reactor)
 				new_mesh.build_mesh(contact_mesh_points)
 				self.bed_mesh.set_mesh(new_mesh)
 				self.bed_mesh.save_profile(filtered_profile)
@@ -851,7 +856,7 @@ class BeaconMesh:
 			params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = chamber_temp
 			params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = scan_mesh_bounds
 
-			new_mesh = BedMesh.ZMesh(params, profile)
+			new_mesh = BedMesh.ZMesh(params, profile, self.reactor)
 			new_mesh.build_mesh(compensation_mesh_points)
 			self.bed_mesh.set_mesh(new_mesh)
 			self.bed_mesh.save_profile(profile)
