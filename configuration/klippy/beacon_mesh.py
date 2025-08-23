@@ -688,7 +688,7 @@ class BeaconMesh:
 
 			return self.scipy_ndimage.gaussian_filter(data, sigma=sigma, mode=mode)
 
-	def _do_local_low_filter(self, data, lowpass_sigma=1., num_keep=4, num_keep_edge=3, num_keep_corner=2):
+	def _do_local_low_filter(self, data, lowpass_sigma=1.):
 		# 1. Low-pass filter to obtain general shape
 		lowpass = self._gaussian_filter(data, sigma=lowpass_sigma, mode='nearest')
 
@@ -703,12 +703,12 @@ class BeaconMesh:
 		rows, cols = data.shape
 		for i in range(rows):
 			for j in range(cols):
-				# Get the 3x3 neighborhood around the current point within the high-frequency details
+				# Get the 5x5 neighborhood around the current point within the high-frequency details
 				neighbours = []
 				neighbour_coords = []
 				neighbour_distances = []
-				for di in [-1, 0, 1]:
-					for dj in [-1, 0, 1]:
+				for di in [-2, -1, 0, 1, 2]:
+					for dj in [-2, -1, 0, 1, 2]:
 						ni, nj = i + di, j + dj
 						if 0 <= ni < rows and 0 <= nj < cols:
 							neighbours.append(high_freq_details[ni, nj])
@@ -716,7 +716,7 @@ class BeaconMesh:
 							neighbour_distances.append((di**2 + dj**2)**0.5)
 
 				# Identify the indices of the N lowest values from the neighborhood
-				lowest_indices = np.argsort(neighbours)[:num_keep if len(neighbours) > 6 else num_keep_edge if len(neighbours) > 4 else num_keep_corner]
+				lowest_indices = np.argsort(neighbours)[:math.floor(len(neighbours) / 2)]
 
 				# Select the corresponding values from the original array
 				lowest_values = [data[neighbour_coords[idx]] for idx in lowest_indices]
