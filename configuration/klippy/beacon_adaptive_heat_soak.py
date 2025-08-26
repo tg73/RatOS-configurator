@@ -395,7 +395,7 @@ class BeaconAdaptiveHeatSoak:
 		remaining_attempts = 3
 		while remaining_attempts > 0:
 			try:
-				return self.__prepare_for_sampling_and_get_sampling_frequency_core()
+				return self._prepare_for_sampling_and_get_sampling_frequency_core()
 			except Exception as e:
 				remaining_attempts -= 1
 				if remaining_attempts == 0:
