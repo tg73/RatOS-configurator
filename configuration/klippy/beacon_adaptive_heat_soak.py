@@ -389,6 +389,22 @@ class BeaconAdaptiveHeatSoak:
 			self.beacon = self.printer.lookup_object('beacon')
 
 	def _prepare_for_sampling_and_get_sampling_frequency(self):
+		# During internal testing, we've seen one machine that occasionally fails to prepare
+		# the beacon for sampling. This retry is a speculative workaround for that issuue. The cause
+		# is unknown, and we don't know if this will help. Time (and wider usage) will tell.
+		remaining_attempts = 3
+		while remaining_attempts > 0:
+			try:
+				return self.__prepare_for_sampling_and_get_sampling_frequency_core()
+			except Exception as e:
+				remaining_attempts -= 1
+				if remaining_attempts == 0:
+					raise
+				else:
+					logging.warning(f"{self.name}: Warning: Failed to prepare beacon for sampling, retrying: {e}")
+					self.reactor.pause(self.reactor.monotonic() + 2.0)
+
+	def _prepare_for_sampling_and_get_sampling_frequency_core(self):
 		# We've seen issues where the first streaming_session after some operations begins with some bogus data,
 		# so we throw away some samples to ensure the beacon is ready. Suspected operations include:
 		# - klipper restart
