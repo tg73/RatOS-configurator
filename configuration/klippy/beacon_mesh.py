@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from . import bed_mesh as BedMesh
 from . import probe
-from .ratos import BeaconProbingRegions
+from .ratos import BeaconProbingRegions, BackgroundDisplayStatusProgressHandler
 
 DEFAULT_REACTOR_PAUSE_OFFSET = 0.006 # 6ms
 
@@ -82,7 +82,8 @@ class RatOSBeaconMeshError(Exception):
 #####
 
 class BeaconMesh:
-	bed_temp_warning_margin = 15
+	BED_TEMP_WARNING_MARGIN = 15.0
+	POINT_BY_POINT_FORCE_MULTIPOINT_SPACING_THRESHOLD = 25.0
 
 	@staticmethod
 	def format_pretty_list(items, conjunction="or"):
@@ -372,7 +373,7 @@ class BeaconMesh:
 		best_profile, best_temp = max(best_profiles, key=lambda x: x[1])
 
 		# Check if the temperature difference is too large
-		if best_temp_diff > self.bed_temp_warning_margin:
+		if best_temp_diff > self.BED_TEMP_WARNING_MARGIN:
 			self.ratos.console_echo("Auto-select compensation mesh warning", "warning",
 				f"Selected compensation mesh '{best_profile}' has a bed temperature of {best_temp}°C, "
 				f"which differs by {best_temp_diff:.1f}°C from the requested {bed_temperature:.1f}°C._N_"
@@ -597,7 +598,7 @@ class BeaconMesh:
 				f"{subject} must be a {self.format_pretty_list(allowed_probe_methods)} probe method mesh. A {params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER]} probe method mesh cannot be used.")
 			return False
 
-		if compare_bed_temp is not None and (compare_bed_temp < bed_temp - self.bed_temp_warning_margin or compare_bed_temp > bed_temp + self.bed_temp_warning_margin):
+		if compare_bed_temp is not None and (compare_bed_temp < bed_temp - self.BED_TEMP_WARNING_MARGIN or compare_bed_temp > bed_temp + self.BED_TEMP_WARNING_MARGIN):
 			self.ratos.console_echo(
 				error_title if compare_bed_temp_is_error else warning_title,
 				"error" if compare_bed_temp_is_error else "warning",
@@ -789,7 +790,7 @@ class BeaconMesh:
 			if (bpr.contact_min != bpr.proximity_min or bpr.contact_max != bpr.proximity_max):
 				logging.info(f'{self.name}: Beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
 
-			use_offset_aligned = self._cotemporal_probing_helper.can_use_offset_aligned_probing()
+			use_offset_aligned = self._cotemporal_probing_helper.can_use_offset_aligned_probing(minimum_spacing)
 			primary_axis = None
 			extra_notes = ""
 
@@ -807,14 +808,22 @@ class BeaconMesh:
 					f"Generated {len(actions)} probe actions for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
 					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
 
-				# TODO: Progress reporting!
 				# TODO: Handle faulty regions!
 
-				results = self._cotemporal_probing_helper.run_probe_action_sequence(
-					gcmd,
-					probe_count_x, probe_count_y,
-					actions
-				)
+				progress_handler = None
+				try:
+					progress_handler = BackgroundDisplayStatusProgressHandler(self.printer, "{spinner} Probing {progress:.1f}%")
+					progress_handler.enable()
+
+					results = self._cotemporal_probing_helper.run_probe_action_sequence(
+						gcmd,
+						probe_count_x, probe_count_y,
+						actions,
+						progress_handler=progress_handler
+					)
+				finally:
+					if progress_handler:
+						progress_handler.disable()					
 
 				contact_points = [[results[y][x].contact_z for x in range(len(results[y]))] for y in range(len(results))]
 				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]
@@ -836,26 +845,41 @@ class BeaconMesh:
 					[safe_min_x, safe_min_y],
 					[safe_max_x, safe_max_y])
 
+				x_spacing = (max_x - safe_min_x) / (probe_count_x - 1)
+				y_spacing = (max_y - safe_min_y) / (probe_count_y - 1)
+
+				force_multipoint_probing = (
+					x_spacing > self.POINT_BY_POINT_FORCE_MULTIPOINT_SPACING_THRESHOLD or 
+					y_spacing > self.POINT_BY_POINT_FORCE_MULTIPOINT_SPACING_THRESHOLD
+				)
+
 				contact_z = None
 				results = [[None] * probe_count_x for _ in range(probe_count_y)]
-
+				
 				gcmd.respond_info(
 					f"Using {pattern} cotemporal probing strategy:\n"
 					f"Generated {len(points)} probe points for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
 					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
 				
-				# TODO: Progress reporting!
 				# TODO: Handle faulty regions!
 
-				for i, point in enumerate(points):
-					gcmd.respond_info(f"Probing point {i + 1}/{len(points)}: {point[0]:.2f}, {point[1]:.2f}")
+				progress_handler = None
+				try:
+					progress_handler = BackgroundDisplayStatusProgressHandler(self.printer, "{spinner} Probing {progress:.1f}%")
+					progress_handler.enable()
 
-					contact_z, proximity_z = self._cotemporal_probing_helper.probe_single_location(
-						gcmd,
-						point[2:],
-						contact_z)
+					for i, point in enumerate(points):
+						progress_handler.progress = (i + 1) / len(points)
 
-					results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
+						contact_z, proximity_z = self._cotemporal_probing_helper.probe_single_location(
+							gcmd,
+							point[2:],
+							None if force_multipoint_probing else contact_z)
+
+						results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
+				finally:
+					if progress_handler:
+						progress_handler.disable()					
 
 				gcmd.respond_info(f"Probed {len(points)} points in the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})")
 
@@ -1365,7 +1389,7 @@ class CotemporalProbingHelper:
 		# last expected-circumstance probe was a contact or proximity probe.
 		self._beacon_proximity_offsets = (self.beacon.x_offset, self.beacon.y_offset, self.beacon.trigger_distance)
 
-	def do_contact_probe(self, gcmd, position, contact_reference_z=None, delta_contact_z_limit=0.075) -> float:
+	def do_contact_probe(self, gcmd, position, contact_reference_z: Optional[float]=None, delta_contact_z_limit=0.075) -> float:
 		"""
 		Perform a contact probe at a single position.
 		:param gcmd: Gcode command object
@@ -1457,7 +1481,7 @@ class CotemporalProbingHelper:
 		finally:
 			self._probe_finalize = None
 
-	def probe_single_location(self, gcmd, position, contact_reference_z, delta_contact_z_limit=0.075) -> Tuple[float, float]:
+	def probe_single_location(self, gcmd, position, contact_reference_z: Optional[float], delta_contact_z_limit=0.075) -> Tuple[float, float]:
 		"""
 		Probe contact and proximity at a single location.
 		:param gcmd: Gcode command object
@@ -1526,7 +1550,15 @@ class CotemporalProbingHelper:
 			probe_args
 		)
 
-	def run_probe_action_sequence(self, gcmd, count_x:int, count_y:int, probe_actions:List[ProbeAction], delta_contact_z_limit=0.075) -> List[List[ProbeActionResult]]:
+	def run_probe_action_sequence(
+			self, 
+			gcmd, 
+			count_x:int, 
+			count_y:int,
+			probe_actions:List[ProbeAction],
+			*,
+			delta_contact_z_limit=0.075,
+			progress_handler:Optional[BackgroundDisplayStatusProgressHandler]=None) -> List[List[ProbeActionResult]]:
 		"""
 		Perform a sequence of probing actions.
 		:param gcmd: Gcode command object
@@ -1567,8 +1599,8 @@ class CotemporalProbingHelper:
 				action_result.proximity_z = proximity_z
 				action_result.proximity_time = self.reactor.monotonic()
 
-			if i % 10 == 0:
-				gcmd.respond_info(f"Performed {i + 1}/{len(probe_actions)} probe actions, {100.*(i+1)/len(probe_actions):.1f}% complete")
+			if progress_handler:
+				progress_handler.progress = (i + 1) / len(probe_actions)
 
 		return results
 
