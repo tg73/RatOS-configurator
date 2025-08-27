@@ -836,8 +836,8 @@ class BeaconMesh:
 				pattern = "point-by-point"
 
 				# Require at least 4 points in each axis to avoid breaking filter and interpolation logic.
-				probe_count_x = min(4, int((safe_max_x - safe_min_x) / desired_spacing + 1))
-				probe_count_y = min(4, int((safe_max_y - safe_min_y) / desired_spacing + 1))
+				probe_count_x = max(4, int((safe_max_x - safe_min_x) / desired_spacing + 1))
+				probe_count_y = max(4, int((safe_max_y - safe_min_y) / desired_spacing + 1))
 
 				# There's some rounding of the distance between points, so the actual max coordinates are
 				# returned by generate_mesh_points.
