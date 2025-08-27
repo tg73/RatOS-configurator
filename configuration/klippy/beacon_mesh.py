@@ -47,7 +47,9 @@ RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY = "proximity"
 RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY_AUTOMATIC = "proximity_automatic"
 # - stop and sample (with diving if needed)
 RATOS_MESH_BEACON_PROBE_METHOD_CONTACT = "contact"
-RATOS_MESH_BEACON_PROBE_METHOD_CHOICES = (RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY, RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY_AUTOMATIC, RATOS_MESH_BEACON_PROBE_METHOD_CONTACT)
+RATOS_MESH_BEACON_PROBE_METHOD_COTEMPORAL_OFFSET_ALIGNED = "cotemporal_offset_aligned"
+RATOS_MESH_BEACON_PROBE_METHOD_COTEMPORAL_POINT_BY_POINT = "cotemporal_point_by_point"
+RATOS_MESH_BEACON_PROBE_METHOD_CHOICES = (RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY, RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY_AUTOMATIC, RATOS_MESH_BEACON_PROBE_METHOD_CONTACT, RATOS_MESH_BEACON_PROBE_METHOD_COTEMPORAL_OFFSET_ALIGNED, RATOS_MESH_BEACON_PROBE_METHOD_COTEMPORAL_POINT_BY_POINT)
 
 RATOS_MESH_VERSION_PARAMETER = "ratos_mesh_version"
 # - versioning of the extra metadata attached to meshes by ratos
@@ -465,7 +467,7 @@ class BeaconMesh:
 
 		keep_temp_meshes = gcmd.get('KEEP_TEMP_MESHES', '0').strip().lower() in ('1', 'true', 'yes')
 
-		logging.info(f"keep_temp_meshes: {keep_temp_meshes}")
+		logging.info(f"{self.name}: keep_temp_meshes: {keep_temp_meshes}")
 
 		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
 
@@ -479,13 +481,13 @@ class BeaconMesh:
 			if self.beacon.model is None:
 				self.ratos.console_echo("Create compensation mesh error", "error",
 					"No active Beacon model is selected._N_Make sure you've performed initial Beacon calibration.")
-				return
+				raise gcmd.error("No active Beacon model selected")
 
 			self.check_active_beacon_model_temp(title="Create compensation mesh warning")
 
 			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1 SKIP_MODEL_CREATION=1")
 
-		self.create_compensation_mesh(gcmd, profile, desired_spacing, minimum_spacing, chamber_temp, keep_temp_meshes)
+		self.create_compensation_mesh(gcmd, profile, desired_spacing, minimum_spacing, chamber_temp, keep_temp_meshes)		
 
 	desc_SET_ZERO_REFERENCE_POSITION = "Sets the zero reference position for the currently loaded bed mesh."
 	def cmd_SET_ZERO_REFERENCE_POSITION(self, gcmd):
@@ -696,7 +698,7 @@ class BeaconMesh:
 			self.ratos.console_echo(error_title, "error", str(e))
 			return False
 
-	def _apply_filter(self, data):
+	def _apply_local_low_filter(self, data):
 		parent_conn, child_conn = multiprocessing.Pipe()
 
 		def do():
@@ -719,7 +721,7 @@ class BeaconMesh:
 		child.join()
 		parent_conn.close()
 		if is_err:
-			raise Exception("Error applying filter: %s" % (result,))
+			raise Exception("Error applying local-low filter: %s" % (result,))
 		else:
 			return result
 
@@ -780,160 +782,192 @@ class BeaconMesh:
 		# 5. Return the new array. Don't leak numpy types to the caller.
 		return filtered_data.tolist()
 
-	def create_compensation_mesh(self, gcmd, profile, probe_count, chamber_temp):
-		if not self.beacon:
-			self.ratos.console_echo("Create compensation mesh error", "error",
-				"Beacon module not loaded._N_Make sure you've configured Beacon as your z probe.")
-			return
-
-		if self.z_tilt and not self.z_tilt.z_status.applied:
-			self.ratos.console_echo("Create compensation mesh warning", "warning",
-				"Z-tilt leveling is configured but has not been applied._N_"
-				"This may result in inaccurate compensation.")
-
-		if self.qgl and not self.qgl.z_status.applied:
-			self.ratos.console_echo("Create compensation mesh warning", "warning",
-				"Quad gantry leveling is configured but has not been applied._N_"
-				"This may result in inaccurate compensation.")
-
-		keep_temp_meshes = gcmd.get('KEEP_TEMP_MESHES', '0').strip().lower() in ('1', 'true', 'yes')
-		samples = gcmd.get_int('SAMPLES', 1)
-		samples_drop = gcmd.get_int('SAMPLES_DROP', 0)
-
-		gcmd.respond_info(f"keep_temp_meshes: {keep_temp_meshes}, samples: {samples} samples_drop: {samples_drop}")
-
-		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
-
-		# Go to safe home
-		self.gcode.run_script_from_command("_MOVE_TO_SAFE_Z_HOME Z_HOP=True")
-
-		if beacon_contact_calibrate_model_on_print:
-			# Calibrate a fresh model
-			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1")
-		else:
-			if self.beacon.model is None:
-				self.ratos.console_echo("Create compensation mesh error", "error",
-					"No active Beacon model is selected._N_Make sure you've performed initial Beacon calibration.")
-				return
-
-			self.check_active_beacon_model_temp(title="Create compensation mesh warning")
-
-			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1 SKIP_MODEL_CREATION=1")
-
-		mesh_before_name = RATOS_TEMP_SCAN_MESH_BEFORE_NAME if not keep_temp_meshes else profile + "_SCAN_BEFORE"
-		mesh_after_name = RATOS_TEMP_SCAN_MESH_ATFER_NAME if not keep_temp_meshes else profile + "_SCAN_AFTER"
-		contact_mesh_name = RATOS_TEMP_CONTACT_MESH_NAME if not keep_temp_meshes else profile + "_CONTACT"
-
-		# create 'before' temp scan mesh
-		self.gcode.run_script_from_command(
-			"BED_MESH_CALIBRATE "
-			"PROFILE='%s'" % (mesh_before_name))
-
-		# create contact mesh
-		self.gcode.run_script_from_command(
-			"BED_MESH_CALIBRATE PROBE_METHOD=contact SAMPLES=%d SAMPLES_DROP=%d SAMPLES_TOLERANCE_RETRIES=10 "
-			"PROBE_COUNT=%d,%d PROFILE='%s'" % (samples, samples_drop, probe_count[0], probe_count[1], contact_mesh_name))
-
-		# create 'after' temp scan mesh
-		self.gcode.run_script_from_command(
-			"BED_MESH_CALIBRATE "
-			"PROFILE='%s'" % (mesh_after_name))
-
-		scan_before_zmesh = self._create_zmesh_from_profile(mesh_before_name)
-		scan_after_zmesh = self._create_zmesh_from_profile(mesh_after_name)
-		scan_mesh_params = scan_before_zmesh.get_mesh_params()
-		scan_mesh_bounds = (scan_mesh_params["min_x"], scan_mesh_params["min_y"],
-							scan_mesh_params["max_x"], scan_mesh_params["max_y"])
-
-		self.gcode.run_script_from_command("BED_MESH_PROFILE LOAD='%s'" % contact_mesh_name)
-
-		contact_mesh_points = self.bed_mesh.pmgr.get_profiles()[contact_mesh_name]["points"][:]
-		contact_params = self.bed_mesh.z_mesh.get_mesh_params()
-		contact_x_step = ((contact_params["max_x"] - contact_params["min_x"]) / (contact_params["x_count"] - 1))
-		contact_y_step = ((contact_params["max_y"] - contact_params["min_y"]) / (contact_params["y_count"] - 1))
-
-		self.ratos.debug_echo("Create compensation mesh", "Filtering contact mesh")
-		contact_mesh_points = self._apply_filter(contact_mesh_points)
-		contact_params[RATOS_MESH_NOTES_PARAMETER] = "contact mesh filtered using local low filter"
-
-		compensation_mesh_points = []
-
-		eventtime = self.reactor.monotonic()
-
+	def create_compensation_mesh(self, gcmd, profile, desired_spacing, minimum_spacing, chamber_temp, keep_temp_meshes):
 		try:
-			if not self.beacon.mesh_helper.dir in ("x", "y"):
-				raise ValueError(f"Expected 'x' or 'y' for self.beacon.mesh_helper.dir, but got '{self.beacon.mesh_helper.dir}'")
+			bpr: BeaconProbingRegions = self.ratos.get_beacon_probing_regions()
+			safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
+			safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
+			safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
+			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
 
-			dir = self.beacon.mesh_helper.dir
-			y_count = len(contact_mesh_points)
-			x_count = len(contact_mesh_points[0])
-			contact_mesh_point_count = len(contact_mesh_points) * len(contact_mesh_points[0])
+			if (bpr.contact_min != bpr.proximity_min or bpr.contact_max != bpr.proximity_max):
+				logging.info(f'{self.name}: Beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
 
-			debug_lines = []
+			use_offset_aligned = self._cotemporal_probing_helper.can_use_offset_aligned_probing()
+			primary_axis = None
+			extra_notes = ""
 
-			for y in range(y_count):
-				compensation_mesh_points.append([])
-				for x in range(x_count):
-					contact_mesh_index = \
-						((x if y % 2 == 0 else x_count - x - 1) + y * x_count) \
-						if dir == "x" else \
-						((y if x % 2 == 0 else y_count - y - 1) + x * y_count)
+			if use_offset_aligned:
+				pattern = "offset-aligned"
+				primary_axis, probe_count_x, probe_count_y, max_x, max_y, actions = self._cotemporal_probing_helper.generate_probe_action_sequence_beacon_offset_aligned(
+					desired_spacing,
+					minimum_spacing,
+					(safe_min_x, safe_min_y),
+					(safe_max_x, safe_max_y)
+				)
 
-					blend_factor = contact_mesh_index / (contact_mesh_point_count - 1)
+				gcmd.respond_info(
+					f"Using {pattern} cotemporal probing strategy:\n"
+					f"Generated {len(actions)} probe actions for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
+					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
 
-					contact_x_pos = contact_params["min_x"] + x * contact_x_step
-					contact_y_pos = contact_params["min_y"] + y * contact_y_step
+				# TODO: Progress reporting!
+				# TODO: Handle faulty regions!
 
-					scan_before_z = scan_before_zmesh.calc_z(contact_x_pos, contact_y_pos)
-					scan_after_z = scan_after_zmesh.calc_z(contact_x_pos, contact_y_pos)
-					scan_temporal_crossfade_z = ((1 - blend_factor) * scan_before_z) + (blend_factor * scan_after_z)
+				results = self._cotemporal_probing_helper.run_probe_action_sequence(
+					gcmd,
+					probe_count_x, probe_count_y,
+					actions
+				)
 
-					contact_z = contact_mesh_points[y][x]
-					offset_z = contact_z - scan_temporal_crossfade_z
+				contact_points = [[results[y][x].contact_z for x in range(len(results[y]))] for y in range(len(results))]
+				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]
 
-					compensation_mesh_points[y].append(offset_z)
+			else:
+				# This is the simple but slow point-by-point probing strategy.
+				# Note that the filtering logic is geared towards quite high-resolution meshes (eg, 10mm spacing).
+				# Low-resolution meshes are not recommended.
+				pattern = "point-by-point"
 
-					#debug_lines.append( f"xi: {x}  yi: {y}  x: {contact_x_pos:.1f}  y: {contact_y_pos:.1f}  cmi: {contact_mesh_index}  blend: {blend_factor:.3f}  scan_before: {scan_before_z:.4f}  scan_after: {scan_after_z:.4f}  blended_scan_z: {scan_temporal_crossfade_z:.4f}  contact_z: {contact_z:.4f}  offset_z: {offset_z:.4f}")
+				# Require at least 4 points in each axis to avoid breaking filter and interpolation logic.
+				probe_count_x = min(4, int((safe_max_x - safe_min_x) / desired_spacing + 1))
+				probe_count_y = min(4, int((safe_max_y - safe_min_y) / desired_spacing + 1))
 
-				self.reactor.pause(self.reactor.monotonic() + DEFAULT_REACTOR_PAUSE_OFFSET)
+				# There's some rounding of the distance between points, so the actual max coordinates are
+				# returned by generate_mesh_points.
+				max_x, max_y, points = self.generate_mesh_points(
+					probe_count_x, probe_count_y,
+					[safe_min_x, safe_min_y],
+					[safe_max_x, safe_max_y])
 
-			# For a large mesh (eg, 60x60) this can take 2+ minutes
-			#self.ratos.debug_echo("Create compensation mesh", "_N_".join(debug_lines))
+				contact_z = None
+				results = [[None] * probe_count_x for _ in range(probe_count_y)]
 
-			if keep_temp_meshes:
-				params = contact_params.copy()
-				filtered_profile = contact_mesh_name + "_filtered"
-				new_mesh = BedMesh.ZMesh(params, filtered_profile, self.reactor)
-				new_mesh.build_mesh(contact_mesh_points)
-				self.bed_mesh.set_mesh(new_mesh)
-				self.bed_mesh.save_profile(filtered_profile)
+				gcmd.respond_info(
+					f"Using {pattern} cotemporal probing strategy:\n"
+					f"Generated {len(points)} probe points for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
+					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
+				
+				# TODO: Progress reporting!
+				# TODO: Handle faulty regions!
 
-			# Create new mesh
-			params = contact_params.copy()
-			params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
-			params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
-			params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
-			params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
+				for i, point in enumerate(points):
+					gcmd.respond_info(f"Probing point {i + 1}/{len(points)}: {point[0]:.2f}, {point[1]:.2f}")
+
+					contact_z, proximity_z = self._cotemporal_probing_helper.probe_single_location(
+						gcmd,
+						point[2:],
+						contact_z)
+
+					results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
+
+				gcmd.respond_info(f"Probed {len(points)} points in the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})")
+
+				contact_points = [[results[y][x][2] for x in range(len(results[y]))] for y in range(len(results))]
+				proximity_points = [[results[y][x][3] for x in range(len(results[y]))] for y in range(len(results))]			
+
+			extra_params = {}
+			extra_params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
+			extra_params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
+			extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_MEASURED
+			extra_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_COTEMPORAL_OFFSET_ALIGNED if use_offset_aligned else RATOS_MESH_BEACON_PROBE_METHOD_COTEMPORAL_POINT_BY_POINT
+			extra_params[RATOS_MESH_NOTES_PARAMETER] = f"input mesh for cotemporal mesh created using {pattern} sampling pattern"
 
 			# Store a few fields that might be useful for compatibility checking in the future,
 			# but the checks don't yet exist.
-			params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = chamber_temp
-			params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = scan_mesh_bounds
+			extra_params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = chamber_temp
+			extra_params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = (safe_min_x, safe_min_y, safe_max_x, safe_max_y)
 
-			new_mesh = BedMesh.ZMesh(params, profile, self.reactor)
-			new_mesh.build_mesh(compensation_mesh_points)
-			self.bed_mesh.set_mesh(new_mesh)
-			self.bed_mesh.save_profile(profile)
+			if primary_axis is not None:
+				deridged_contact_points = self._apply_deridging_filter(contact_points, primary_axis)
+				deridged_proximity_points = self._apply_deridging_filter(proximity_points, primary_axis)
 
-			if not keep_temp_meshes:
-				# Remove temp meshes
-				self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % contact_mesh_name)
-				self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % mesh_before_name)
-				self.gcode.run_script_from_command("BED_MESH_PROFILE REMOVE='%s'" % mesh_after_name)
+				contact_rmse = self._get_mesh_difference_rmse(contact_points, deridged_contact_points)
+				proximity_rmse = self._get_mesh_difference_rmse(proximity_points, deridged_proximity_points)
 
-			self.ratos.console_echo("Create compensation mesh", "debug", "Compensation Mesh %s created" % (str(profile)))
-		except BedMesh.BedMeshError as e:
-			self.ratos.console_echo("Create compensation mesh error", "error", str(e))
+				extra_notes += f", deridged (primary axis: {primary_axis}, contact RMSE: {contact_rmse:.4f}, proximity RMSE: {proximity_rmse:.4f})"
+
+				filtered_contact_points = self._apply_local_low_filter(deridged_contact_points)
+
+				if keep_temp_meshes:
+					self._install_and_save_new_mesh(
+						f"{profile}_CONTACT",
+						extra_params,
+						(safe_min_x, safe_min_y),
+						(max_x, max_y),
+						contact_points
+					)
+
+					self._install_and_save_new_mesh(
+						f"{profile}_CONTACT_DERIDGED",
+						extra_params,
+						(safe_min_x, safe_min_y),
+						(max_x, max_y),
+						deridged_contact_points
+					)
+
+					self._install_and_save_new_mesh(
+						f"{profile}_PROXIMITY",
+						extra_params,
+						(safe_min_x, safe_min_y),
+						(max_x, max_y),
+						proximity_points
+					)
+
+					self._install_and_save_new_mesh(
+						f"{profile}_PROXIMITY_DERIDGED",
+						extra_params,
+						(safe_min_x, safe_min_y),
+						(max_x, max_y),
+						deridged_proximity_points
+					)
+
+				proximity_points = deridged_proximity_points
+			else:
+				filtered_contact_points = self._apply_local_low_filter(contact_points)
+
+				if keep_temp_meshes:
+					self._install_and_save_new_mesh(
+						f"{profile}_CONTACT",
+						extra_params,
+						(safe_min_x, safe_min_y),
+						(max_x, max_y),
+						contact_points
+					)
+
+					self._install_and_save_new_mesh(
+						f"{profile}_PROXIMITY",
+						extra_params,
+						(safe_min_x, safe_min_y),
+						(max_x, max_y),
+						proximity_points
+					)
+
+			if keep_temp_meshes:
+				self._install_and_save_new_mesh(
+					f"{profile}_CONTACT_FILTERED",
+					extra_params,
+					(safe_min_x, safe_min_y),
+					(max_x, max_y),
+					filtered_contact_points
+				)
+
+			comp_points = [[filtered_contact_points[y][x] - proximity_points[y][x] for x in range(len(proximity_points[y]))] for y in range(len(proximity_points))]
+			extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
+			extra_params[RATOS_MESH_NOTES_PARAMETER] = f"cotemporal compensation mesh created using {pattern} sampling pattern{extra_notes}"
+
+			self._install_and_save_new_mesh(
+				f"{profile}",
+				extra_params,
+				(safe_min_x, safe_min_y),
+				(max_x, max_y),
+				comp_points
+			)
+
+			gcmd.respond_info(f"Compensation mesh created with profile '{profile}'")
+
+		except RatOSBeaconMeshError as e:
+			raise gcmd.error(f"Failed to create compensation mesh: {str(e)}") from e
 
 	def load_extra_mesh_params(self):
 		profiles = self.bed_mesh.pmgr.get_profiles()
@@ -1000,180 +1034,6 @@ class BeaconMesh:
 							f"Bed mesh profile '{profile_name}' has version {version} which is not compatible with this version of RatOS.")
 				self.bed_mesh.pmgr.incompatible_profiles.append(profile_name)
 				continue
-
-	def _cotemporal_bed_probe(self, gcmd, profile, desired_spacing, minimum_spacing, chamber_temp, keep_temp_meshes):
-		try:
-			bpr: BeaconProbingRegions = self.ratos.get_beacon_probing_regions()
-			safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
-			safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
-			safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
-			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
-
-			if (bpr.contact_min != bpr.proximity_min or bpr.contact_max != bpr.proximity_max):
-				self.gcode.respond_info('Beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
-
-			primary_axis = None
-
-			if self._cotemporal_probing_helper.can_use_offset_aligned_probing():
-				pattern = "offset-aligned"
-				primary_axis, probe_count_x, probe_count_y, max_x, max_y, actions = self._cotemporal_probing_helper.generate_probe_action_sequence_beacon_offset_aligned(
-					desired_spacing,
-					minimum_spacing,
-					(safe_min_x, safe_min_y),
-					(safe_max_x, safe_max_y)
-				)
-
-				gcmd.respond_info(
-					"Using offset-aligned probing strategy:\n"
-					f"Generated {len(actions)} probe actions for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
-					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
-
-				# TODO: Progress reporting!
-				# TODO: Handle faulty regions!
-
-				results = self._cotemporal_probing_helper.run_probe_action_sequence(
-					gcmd,
-					probe_count_x, probe_count_y,
-					actions
-				)
-
-				contact_points = [[results[y][x].contact_z for x in range(len(results[y]))] for y in range(len(results))]
-				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]
-
-			else:
-				pattern = "point-by-point"
-				probe_count_x = int((safe_max_x - safe_min_x) / desired_spacing + 1)
-				probe_count_y = int((safe_max_y - safe_min_y) / desired_spacing + 1)
-
-				# There's some rounding of the distance between points, so the actual max coordinates are
-				# returned by generate_mesh_points.
-				max_x, max_y, points = self.generate_mesh_points(
-					probe_count_x, probe_count_y,
-					[safe_min_x, safe_min_y],
-					[safe_max_x, safe_max_y])
-
-				contact_z = None
-				results = [[None] * probe_count_x for _ in range(probe_count_y)]
-
-				gcmd.respond_info(
-					"Using simple cotemporal probing strategy:\n"
-					f"Generated {len(points)} probe points for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
-					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
-				
-				# TODO: Progress reporting!
-				# TODO: Handle faulty regions!
-
-				for i, point in enumerate(points):
-					gcmd.respond_info(f"Probing point {i + 1}/{len(points)}: {point[0]:.2f}, {point[1]:.2f}")
-
-					contact_z, proximity_z = self._cotemporal_probing_helper.probe_single_location(
-						gcmd,
-						point[2:],
-						contact_z)
-
-					results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
-
-				gcmd.respond_info(f"Probed {len(points)} points in the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})")
-
-				contact_points = [[results[y][x][2] for x in range(len(results[y]))] for y in range(len(results))]
-				proximity_points = [[results[y][x][3] for x in range(len(results[y]))] for y in range(len(results))]			
-
-			extra_params = {}
-			extra_params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
-			extra_params[RATOS_MESH_BED_TEMP_PARAMETER] = self._get_nominal_bed_temp()
-			extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_MEASURED
-			extra_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
-			extra_params[RATOS_MESH_NOTES_PARAMETER] = f"cotemporal mesh created using {pattern} sampling pattern"
-
-			# Store a few fields that might be useful for compatibility checking in the future,
-			# but the checks don't yet exist.
-			extra_params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = chamber_temp
-			extra_params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = (safe_min_x, safe_min_y, safe_max_x, safe_max_y)
-
-			if primary_axis is not None:
-				deridged_contact_points = self.filter_along_primary_axis(contact_points, primary_axis)
-				deridged_proximity_points = self.filter_along_primary_axis(proximity_points, primary_axis)
-
-				filtered_contact_points = self._apply_filter(deridged_contact_points)
-
-				if keep_temp_meshes:
-					self._install_and_save_new_mesh(
-						f"{profile}_CONTACT",
-						extra_params,
-						(safe_min_x, safe_min_y),
-						(max_x, max_y),
-						contact_points
-					)
-
-					self._install_and_save_new_mesh(
-						f"{profile}_CONTACT_DERIDGED",
-						extra_params,
-						(safe_min_x, safe_min_y),
-						(max_x, max_y),
-						deridged_contact_points
-					)
-
-					self._install_and_save_new_mesh(
-						f"{profile}_PROXIMITY",
-						extra_params,
-						(safe_min_x, safe_min_y),
-						(max_x, max_y),
-						proximity_points
-					)
-
-					self._install_and_save_new_mesh(
-						f"{profile}_PROXIMITY_DERIDGED",
-						extra_params,
-						(safe_min_x, safe_min_y),
-						(max_x, max_y),
-						deridged_proximity_points
-					)
-
-				proximity_points = deridged_proximity_points
-			else:
-				filtered_contact_points = self._apply_filter(contact_points)
-
-				if keep_temp_meshes:
-					self._install_and_save_new_mesh(
-						f"{profile}_CONTACT",
-						extra_params,
-						(safe_min_x, safe_min_y),
-						(max_x, max_y),
-						contact_points
-					)
-
-					self._install_and_save_new_mesh(
-						f"{profile}_PROXIMITY",
-						extra_params,
-						(safe_min_x, safe_min_y),
-						(max_x, max_y),
-						proximity_points
-					)
-
-			if keep_temp_meshes:
-				self._install_and_save_new_mesh(
-					f"{profile}_CONTACT_FILTERED",
-					extra_params,
-					(safe_min_x, safe_min_y),
-					(max_x, max_y),
-					filtered_contact_points
-				)
-
-			comp_points = [[filtered_contact_points[y][x] - proximity_points[y][x] for x in range(len(proximity_points[y]))] for y in range(len(proximity_points))]
-			extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
-
-			self._install_and_save_new_mesh(
-				f"{profile}",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				comp_points
-			)
-
-			gcmd.respond_info(f"Cotemporal mesh created with profile '{profile}'")
-
-		except RatOSBeaconMeshError as e:
-			raise gcmd.error(f"Failed to create cotemporal mesh: {str(e)}") from e
 
 	desc_BED_MESH_SUBTRACT = "For diagnostic use. Subtracts mesh A from mesh B and creates a new mesh with the result. The new mesh will have the grid of the PRIMARY mesh."
 	def cmd_BED_MESH_SUBTRACT(self, gcmd):
@@ -1268,18 +1128,18 @@ class BeaconMesh:
 		max_x, max_y = params["max_x"], params["max_y"]
 
 		if primary_axis is not None:
-			deridged_contact_points = self.filter_along_primary_axis(contact_points, primary_axis)
-			deridged_proximity_points = self.filter_along_primary_axis(proximity_points, primary_axis)
+			deridged_contact_points = self._apply_deridging_filter(contact_points, primary_axis)
+			deridged_proximity_points = self._apply_deridging_filter(proximity_points, primary_axis)
 
-			contact_rmse = self.get_mesh_difference_rmse(contact_points, deridged_contact_points)
-			proximity_rmse = self.get_mesh_difference_rmse(proximity_points, deridged_proximity_points)
+			contact_rmse = self._get_mesh_difference_rmse(contact_points, deridged_contact_points)
+			proximity_rmse = self._get_mesh_difference_rmse(proximity_points, deridged_proximity_points)
 
 			gcmd.respond_info(
 				f"Contact RMSE: {contact_rmse:.4f}, Proximity RMSE: {proximity_rmse:.4f} for primary axis '{primary_axis}'")
 
 			extra_params[RATOS_MESH_NOTES_PARAMETER] = extra_params[RATOS_MESH_NOTES_PARAMETER] + f" (deridged with primary axis '{primary_axis}', contact RMSE: {contact_rmse:.4f}, proximity RMSE: {proximity_rmse:.4f})"
 
-			filtered_contact_points = self._apply_filter(deridged_contact_points)
+			filtered_contact_points = self._apply_local_low_filter(deridged_contact_points)
 
 			self._install_and_save_new_mesh(
 				f"{new_profile}_CONTACT",
@@ -1315,7 +1175,7 @@ class BeaconMesh:
 
 			proximity_points = deridged_proximity_points
 		else:
-			filtered_contact_points = self._apply_filter(contact_points)
+			filtered_contact_points = self._apply_local_low_filter(contact_points)
 
 			self._install_and_save_new_mesh(
 				f"{new_profile}_CONTACT",
@@ -1354,7 +1214,34 @@ class BeaconMesh:
 
 		gcmd.respond_info(f"Cotemporal mesh recreated with profile '{new_profile}'")
 
-	def get_mesh_difference_rmse(self, points_a: List[List[float]], points_b: List[List[float]]) -> float:
+	def _get_mesh_difference_rmse(self, points_a: List[List[float]], points_b: List[List[float]]) -> float:
+		parent_conn, child_conn = multiprocessing.Pipe()
+
+		def do():
+			try:
+				child_conn.send(
+					(False, self._do_get_mesh_difference_rmse(points_a, points_b))
+				)
+			except Exception:
+				child_conn.send((True, traceback.format_exc()))
+			child_conn.close()
+
+		child = multiprocessing.Process(target=do)
+		child.daemon = True
+		child.start()
+		reactor = self.reactor
+		eventtime = reactor.monotonic()
+		while child.is_alive():
+			eventtime = reactor.pause(eventtime + 0.1)
+		is_err, result = parent_conn.recv()
+		child.join()
+		parent_conn.close()
+		if is_err:
+			raise Exception("Error applying deridging filter: %s" % (result,))
+		else:
+			return result
+	
+	def _do_get_mesh_difference_rmse(self, points_a: List[List[float]], points_b: List[List[float]]) -> float:
 		"""
 		Calculate the RMSE (Root Mean Square Error) between two sets of mesh points.
 		:param points_a: First set of mesh points.
@@ -1371,7 +1258,34 @@ class BeaconMesh:
 		rmse = np.sqrt(np.mean(np.square(diff)))
 		return rmse
 
-	def filter_along_primary_axis(self, input_points: List[List[float]], primary_axis: str) -> List[List[float]]:
+	def _apply_deridging_filter(self, input_points: List[List[float]], primary_axis: str) -> List[List[float]]:
+		parent_conn, child_conn = multiprocessing.Pipe()
+
+		def do():
+			try:
+				child_conn.send(
+					(False, self._do_apply_deridging_filter(input_points, primary_axis))
+				)
+			except Exception:
+				child_conn.send((True, traceback.format_exc()))
+			child_conn.close()
+
+		child = multiprocessing.Process(target=do)
+		child.daemon = True
+		child.start()
+		reactor = self.reactor
+		eventtime = reactor.monotonic()
+		while child.is_alive():
+			eventtime = reactor.pause(eventtime + 0.1)
+		is_err, result = parent_conn.recv()
+		child.join()
+		parent_conn.close()
+		if is_err:
+			raise Exception("Error applying deridging filter: %s" % (result,))
+		else:
+			return result
+
+	def _do_apply_deridging_filter(self, input_points: List[List[float]], primary_axis: str) -> List[List[float]]:
 		"""
 		Apply a de-ridging filter to the input points along the specified primary axis.
 		:param input_points: List of points to filter, where each point is a list of coordinates.
