@@ -11,7 +11,7 @@
   "/toolhead/page": "app/toolhead/page.js",
   "/update-logs/page": "app/update-logs/page.js",
   "/wizard/page": "app/wizard/page.js",
-  "/analysis/macros/new/page": "app/analysis/macros/new/page.js",
   "/analysis/macros/page": "app/analysis/macros/page.js",
+  "/analysis/macros/new/page": "app/analysis/macros/new/page.js",
   "/analysis/page": "app/analysis/page.js"
 }
