@@ -791,6 +791,7 @@ class BeaconMesh:
 				logging.info(f'{self.name}: Beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
 
 			use_offset_aligned = self._cotemporal_probing_helper.can_use_offset_aligned_probing(minimum_spacing)
+			skip_local_low_filter = False
 			primary_axis = None
 			extra_notes = ""
 
@@ -853,13 +854,19 @@ class BeaconMesh:
 					y_spacing > self.POINT_BY_POINT_FORCE_MULTIPOINT_SPACING_THRESHOLD
 				)
 
+				if force_multipoint_probing:
+					skip_local_low_filter = True
+					extra_notes += ", using multi-sample probing due to large spacing (local-low filter skipped)"
+					logging.info(f"{self.name}: Using multi-sample probing for point-by-point probing strategy due to large spacing (x_spacing: {x_spacing:.2f}, y_spacing: {y_spacing:.2f})")
+
 				contact_z = None
 				results = [[None] * probe_count_x for _ in range(probe_count_y)]
 				
 				gcmd.respond_info(
 					f"Using {pattern} cotemporal probing strategy:\n"
 					f"Generated {len(points)} probe points for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
-					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
+					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f}), spacing: ({x_spacing:.2f}, {y_spacing:.2f})"
+					+ (", using multi-sample probing due to large spacing" if force_multipoint_probing else ""))
 				
 				# TODO: Handle faulty regions!
 
@@ -907,7 +914,7 @@ class BeaconMesh:
 
 				extra_notes += f", deridged (primary axis: {primary_axis}, contact RMSE: {contact_rmse:.4f}, proximity RMSE: {proximity_rmse:.4f})"
 
-				filtered_contact_points = self._apply_local_low_filter(deridged_contact_points)
+				filtered_contact_points = deridged_contact_points if skip_local_low_filter else self._apply_local_low_filter(deridged_contact_points)
 
 				if keep_temp_meshes:
 					self._install_and_save_new_mesh(
@@ -944,7 +951,7 @@ class BeaconMesh:
 
 				proximity_points = deridged_proximity_points
 			else:
-				filtered_contact_points = self._apply_local_low_filter(contact_points)
+				filtered_contact_points = contact_points if skip_local_low_filter else self._apply_local_low_filter(contact_points)
 
 				if keep_temp_meshes:
 					self._install_and_save_new_mesh(
@@ -963,7 +970,7 @@ class BeaconMesh:
 						proximity_points
 					)
 
-			if keep_temp_meshes:
+			if keep_temp_meshes and not skip_local_low_filter:
 				self._install_and_save_new_mesh(
 					f"{profile}_CONTACT_FILTERED",
 					extra_params,
