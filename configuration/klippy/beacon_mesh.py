@@ -1,6 +1,6 @@
 # Beacaon contact compensation mesh
 #
-# Copyright (C) 2024 Helge Keck <HelgeKeck@hotmail.com.com>
+# Copyright (C) 2024 Helge Keck <HelgeKeck@hotmail.com>
 # Copyright (C) 2024-2025 Mikkel Schmidt <mikkel.schmidt@gmail.com>
 # Copyright (C) 2025 Tom Glastonbury <t@tg73.net>
 #
@@ -178,10 +178,6 @@ class BeaconMesh:
 			self.gcode.register_command('_TEST_COMPENSATION_MESH_AUTO_SELECTION',
 							   self.cmd_TEST_COMPENSATION_MESH_AUTO_SELECTION,
 							   desc=self.desc_TEST_COMPENSATION_MESH_AUTO_SELECTION)
-			self.gcode.register_command('_TEST_CT_PROBE',
-							   self._cotemporal_bed_probe)
-			self.gcode.register_command('_RECREATE_COMPENSATION_MESH',
-							   self.cmd_RECREATE_COMPENSATION_MESH)
 			self.gcode.register_command('_BED_MESH_SUBTRACT',
 							   self.cmd_BED_MESH_SUBTRACT,
 							   desc=self.desc_BED_MESH_SUBTRACT)
@@ -1093,126 +1089,6 @@ class BeaconMesh:
 			(pri.mesh_x_max, pri.mesh_y_max),
 			diff_points.tolist()
 		)
-
-	def cmd_RECREATE_COMPENSATION_MESH(self, gcmd):
-		profile = gcmd.get('PROFILE').strip()
-		new_profile = gcmd.get('NEW_PROFILE').strip()
-		primary_axis = gcmd.get('PRIMARY_AXIS', None)
-
-		if primary_axis is not None and primary_axis not in ('x', 'y'):
-			raise gcmd.error(f"Invalid PRIMARY_AXIS value '{primary_axis}'. Must be 'x', 'y' or unspecified.")
-
-		proximity_name = f"{profile}_PROXIMITY"
-		contact_name = f"{profile}_CONTACT"
-
-		contact_zmesh = self._create_zmesh_from_profile(contact_name)
-		proximity_zmesh = self._create_zmesh_from_profile(proximity_name)
-
-		contact_points = contact_zmesh.probed_matrix
-		proximity_points = proximity_zmesh.probed_matrix
-
-		params = contact_zmesh.get_mesh_params()
-
-		extra_params = {}
-		extra_params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
-		extra_params[RATOS_MESH_BED_TEMP_PARAMETER] = params[RATOS_MESH_BED_TEMP_PARAMETER]
-		extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_MEASURED
-		extra_params[RATOS_MESH_BEACON_PROBE_METHOD_PARAMETER] = RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY
-		extra_params[RATOS_MESH_NOTES_PARAMETER] = params[RATOS_MESH_NOTES_PARAMETER] + f" (recreated from {profile})"
-
-		# Store a few fields that might be useful for compatibility checking in the future,
-		# but the checks don't yet exist.
-		extra_params[RATOS_MESH_CHAMBER_TEMP_PARAMETER] = params[RATOS_MESH_CHAMBER_TEMP_PARAMETER]
-		extra_params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER] = params[RATOS_MESH_PROXIMITY_MESH_BOUNDS_PARAMETER]
-		safe_min_x, safe_min_y = params["min_x"], params["min_y"]
-		max_x, max_y = params["max_x"], params["max_y"]
-
-		if primary_axis is not None:
-			deridged_contact_points = self._apply_deridging_filter(contact_points, primary_axis)
-			deridged_proximity_points = self._apply_deridging_filter(proximity_points, primary_axis)
-
-			contact_rmse = self._get_mesh_difference_rmse(contact_points, deridged_contact_points)
-			proximity_rmse = self._get_mesh_difference_rmse(proximity_points, deridged_proximity_points)
-
-			gcmd.respond_info(
-				f"Contact RMSE: {contact_rmse:.4f}, Proximity RMSE: {proximity_rmse:.4f} for primary axis '{primary_axis}'")
-
-			extra_params[RATOS_MESH_NOTES_PARAMETER] = extra_params[RATOS_MESH_NOTES_PARAMETER] + f" (deridged with primary axis '{primary_axis}', contact RMSE: {contact_rmse:.4f}, proximity RMSE: {proximity_rmse:.4f})"
-
-			filtered_contact_points = self._apply_local_low_filter(deridged_contact_points)
-
-			self._install_and_save_new_mesh(
-				f"{new_profile}_CONTACT",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				contact_points
-			)
-
-			self._install_and_save_new_mesh(
-				f"{new_profile}_CONTACT_DERIDGED",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				deridged_contact_points
-			)
-
-			self._install_and_save_new_mesh(
-				f"{new_profile}_PROXIMITY",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				proximity_points
-			)
-
-			self._install_and_save_new_mesh(
-				f"{new_profile}_PROXIMITY_DERIDGED",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				deridged_proximity_points
-			)
-
-			proximity_points = deridged_proximity_points
-		else:
-			filtered_contact_points = self._apply_local_low_filter(contact_points)
-
-			self._install_and_save_new_mesh(
-				f"{new_profile}_CONTACT",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				contact_points
-			)
-
-			self._install_and_save_new_mesh(
-				f"{new_profile}_PROXIMITY",
-				extra_params,
-				(safe_min_x, safe_min_y),
-				(max_x, max_y),
-				proximity_points
-			)
-
-		self._install_and_save_new_mesh(
-			f"{new_profile}_CONTACT_FILTERED",
-			extra_params,
-			(safe_min_x, safe_min_y),
-			(max_x, max_y),
-			filtered_contact_points
-		)
-
-		comp_points = [[filtered_contact_points[y][x] - proximity_points[y][x] for x in range(len(proximity_points[y]))] for y in range(len(proximity_points))]
-		extra_params[RATOS_MESH_KIND_PARAMETER] = RATOS_MESH_KIND_COMPENSATION
-
-		self._install_and_save_new_mesh(
-			f"{new_profile}",
-			extra_params,
-			(safe_min_x, safe_min_y),
-			(max_x, max_y),
-			comp_points
-		)
-
-		gcmd.respond_info(f"Cotemporal mesh recreated with profile '{new_profile}'")
 
 	def _get_mesh_difference_rmse(self, points_a: List[List[float]], points_b: List[List[float]]) -> float:
 		parent_conn, child_conn = multiprocessing.Pipe()
