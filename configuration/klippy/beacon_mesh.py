@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from . import bed_mesh as BedMesh
 from . import probe
-from .ratos import BeaconProbingRegions
+from .ratos import BeaconProbingRegions, BackgroundDisplayStatusProgressHandler
 
 DEFAULT_REACTOR_PAUSE_OFFSET = 0.006 # 6ms
 
@@ -808,14 +808,22 @@ class BeaconMesh:
 					f"Generated {len(actions)} probe actions for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
 					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
 
-				# TODO: Progress reporting!
 				# TODO: Handle faulty regions!
 
-				results = self._cotemporal_probing_helper.run_probe_action_sequence(
-					gcmd,
-					probe_count_x, probe_count_y,
-					actions
-				)
+				progress_handler = None
+				try:
+					progress_handler = BackgroundDisplayStatusProgressHandler(self.printer, "{spinner} Probing {progress:.1f}%")
+					progress_handler.enable()
+
+					results = self._cotemporal_probing_helper.run_probe_action_sequence(
+						gcmd,
+						probe_count_x, probe_count_y,
+						actions,
+						progress_handler=progress_handler
+					)
+				finally:
+					if progress_handler:
+						progress_handler.disable()					
 
 				contact_points = [[results[y][x].contact_z for x in range(len(results[y]))] for y in range(len(results))]
 				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]
@@ -853,18 +861,25 @@ class BeaconMesh:
 					f"Generated {len(points)} probe points for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
 					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
 				
-				# TODO: Progress reporting!
 				# TODO: Handle faulty regions!
 
-				for i, point in enumerate(points):
-					gcmd.respond_info(f"Probing point {i + 1}/{len(points)}: {point[0]:.2f}, {point[1]:.2f}")
+				progress_handler = None
+				try:
+					progress_handler = BackgroundDisplayStatusProgressHandler(self.printer, "{spinner} Probing {progress:.1f}%")
+					progress_handler.enable()
 
-					contact_z, proximity_z = self._cotemporal_probing_helper.probe_single_location(
-						gcmd,
-						point[2:],
-						None if force_multipoint_probing else contact_z)
+					for i, point in enumerate(points):
+						progress_handler.progress = (i + 1) / len(points)
 
-					results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
+						contact_z, proximity_z = self._cotemporal_probing_helper.probe_single_location(
+							gcmd,
+							point[2:],
+							None if force_multipoint_probing else contact_z)
+
+						results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
+				finally:
+					if progress_handler:
+						progress_handler.disable()					
 
 				gcmd.respond_info(f"Probed {len(points)} points in the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})")
 
@@ -1535,7 +1550,15 @@ class CotemporalProbingHelper:
 			probe_args
 		)
 
-	def run_probe_action_sequence(self, gcmd, count_x:int, count_y:int, probe_actions:List[ProbeAction], delta_contact_z_limit=0.075) -> List[List[ProbeActionResult]]:
+	def run_probe_action_sequence(
+			self, 
+			gcmd, 
+			count_x:int, 
+			count_y:int,
+			probe_actions:List[ProbeAction],
+			*,
+			delta_contact_z_limit=0.075,
+			progress_handler:Optional[BackgroundDisplayStatusProgressHandler]=None) -> List[List[ProbeActionResult]]:
 		"""
 		Perform a sequence of probing actions.
 		:param gcmd: Gcode command object
@@ -1576,8 +1599,8 @@ class CotemporalProbingHelper:
 				action_result.proximity_z = proximity_z
 				action_result.proximity_time = self.reactor.monotonic()
 
-			if i % 10 == 0:
-				gcmd.respond_info(f"Performed {i + 1}/{len(probe_actions)} probe actions, {100.*(i+1)/len(probe_actions):.1f}% complete")
+			if progress_handler:
+				progress_handler.progress = (i + 1) / len(probe_actions)
 
 		return results
 
