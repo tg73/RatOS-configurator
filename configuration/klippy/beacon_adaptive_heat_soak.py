@@ -6,6 +6,7 @@
 
 import time, logging, os, multiprocessing, traceback, pygam
 import numpy as np
+from .ratos import BackgroundDisplayStatusProgressHandler
 
 class ThresholdPredictor:
 	def __init__(self, printer):
@@ -219,75 +220,6 @@ class BeaconZRateSession:
 		slope_nm_per_sec = slope * 1e6
 
 		return (mid_time, slope_nm_per_sec, mid_z)
-
-class BackgroundDisplayStatusProgressHandler:
-	def __init__(
-			self, 
-			printer,
-			msg_fmt = "{spinner} {progress:.0f}%",
-			display_status_update_interval=0.8,
-			spinner_sequence="⠋⠙⠹⠸⠼⠴⠦⠧⠇"):
-				
-		self.reactor = printer.get_reactor()
-		self.gcode = printer.lookup_object('gcode')
-		self.display_status = printer.lookup_object('display_status')
-		self.display_status_update_interval = display_status_update_interval
-		self._spinner_sequence = spinner_sequence
-		self._spinner_phase = 0
-		self._timer = None
-		self._auto_rate_last_eventtime = None
-		self.msg_fmt = msg_fmt
-		self._progress = 0.0
-		self._auto_rate = 0.0
-
-	def enable(self):
-		if self._timer:
-			return
-		
-		self._timer = self.reactor.register_timer(
-			self._handle_timer, self.reactor.NOW)
-
-	def disable(self):
-		if self._timer is None:
-			return
-		
-		self.reactor.unregister_timer(self._timer)
-		self._timer = None
-		self.display_status.message = None
-		self.display_status.progress = None
-
-	@property
-	def progress(self):
-		return self._progress
-
-	@progress.setter
-	def progress(self, value):
-		self._progress = min(1.0, max(0.0, value))
-
-	def set_auto_rate(self, increment_per_second):
-		"""
-		Set the auto rate for the background progress handler.
-		This is the amount by which the progress will be automatically incremented per second.
-		"""
-		self._auto_rate_last_eventtime = None
-		self._auto_rate = increment_per_second
-
-	def _handle_timer(self, eventtime):
-		if self._auto_rate_last_eventtime is None:
-			self._auto_rate_last_eventtime = eventtime
-
-		if self._auto_rate > 0.0:
-			self._progress = min(1.0, max(0.0, self._progress + self._auto_rate * (eventtime - self._auto_rate_last_eventtime)))
-
-		self._auto_rate_last_eventtime = eventtime
-
-		spinner = self._spinner_sequence[self._spinner_phase]
-		self._spinner_phase = (self._spinner_phase + 1) % len(self._spinner_sequence)
-
-		if self.msg_fmt is not None:
-			self.display_status.message = self.msg_fmt.format(progress=self._progress * 100.0, spinner=spinner)
-		
-		return self.reactor.monotonic() + self.display_status_update_interval
 
 class RunningAverage:
 	# A running average implementation that maintains a circular buffer of the last `size` values,
