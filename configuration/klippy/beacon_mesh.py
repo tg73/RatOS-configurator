@@ -5,6 +5,11 @@
 # Copyright (C) 2025 Tom Glastonbury <t@tg73.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
+#
+# Contains portions of code adapted from beacon.py (GPLv3) https://github.com/beacon3d/beacon_klipper
+# Copyright (C) 2020-2023 Matt Baker <baker.matt.j@gmail.com>
+# Copyright (C) 2020-2023 Lasse Dalegaard <dalegaard@gmail.com>
+# Copyright (C) 2023 Beacon <beacon3d.com>
 
 from enum import Enum
 import logging
@@ -77,6 +82,18 @@ RATOS_REQUIRED_MESH_PARAMETERS = (
 class RatOSBeaconMeshError(Exception):
 	pass
 
+class Region:
+	def __init__(self, x_min, x_max, y_min, y_max):
+		self.x_min = x_min
+		self.x_max = x_max
+		self.y_min = y_min
+		self.y_max = y_max
+
+	def is_point_within(self, x, y):
+		return (x > self.x_min and x < self.x_max) and (
+			y > self.y_min and y < self.y_max
+		)
+
 #####
 # Beacon Mesh
 #####
@@ -120,6 +137,7 @@ class BeaconMesh:
 
 		# Loaded on demand if needed
 		self.scipy_ndimage = None
+		self.scipy = None
 
 		self.register_commands()
 		self.register_handler()
@@ -428,19 +446,19 @@ class BeaconMesh:
 			raise gcmd.error("Beacon module not loaded")
 
 		profile = gcmd.get('PROFILE', RATOS_COMPENSATION_MESH_NAME_AUTO).strip()
-		
+
 		if gcmd.get('PROBE_COUNT', None) is not None:
 			# Sanity check: RatOS scripts know about this, and this command should not be called directly by users,
 			# but just in case...
 			raise gcmd.error("Parameter 'PROBE_COUNT' is no longer supported.")
-		
+
 		desired_spacing = gcmd.get_float("DESIRED_SPACING", float(self.gm_ratos.variables.get('beacon_scan_compensation_desired_spacing', 10.)))
 		minimum_spacing = gcmd.get_float("MINIMUM_SPACING", desired_spacing * 0.8)
 		chamber_temp = gcmd.get_float('CHAMBER_TEMP', 0)
 
 		if desired_spacing < minimum_spacing:
 			raise gcmd.error("Parameter 'DESIRED_SPACING' must be greater than or equal to 'MINIMUM_SPACING'")
-		
+
 		if not profile:
 			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
 
@@ -484,7 +502,7 @@ class BeaconMesh:
 
 			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1 SKIP_MODEL_CREATION=1")
 
-		self.create_compensation_mesh(gcmd, profile, desired_spacing, minimum_spacing, chamber_temp, keep_temp_meshes)		
+		self.create_compensation_mesh(gcmd, profile, desired_spacing, minimum_spacing, chamber_temp, keep_temp_meshes)
 
 	desc_SET_ZERO_REFERENCE_POSITION = "Sets the zero reference position for the currently loaded bed mesh."
 	def cmd_SET_ZERO_REFERENCE_POSITION(self, gcmd):
@@ -718,7 +736,7 @@ class BeaconMesh:
 		child.join()
 		parent_conn.close()
 		if is_err:
-			raise Exception("Error applying local-low filter: %s" % (result,))
+			raise RatOSBeaconMeshError("Error applying local-low filter: %s" % (result,))
 		else:
 			return result
 
@@ -732,7 +750,7 @@ class BeaconMesh:
 					"module is required for Beacon contact compensation mesh creation."
 				)
 
-			return self.scipy_ndimage.gaussian_filter(data, sigma=sigma, mode=mode)
+		return self.scipy_ndimage.gaussian_filter(data, sigma=sigma, mode=mode)
 
 	def _do_local_low_filter(self, data, lowpass_sigma=1.):
 		# 1. Low-pass filter to obtain general shape
@@ -788,7 +806,11 @@ class BeaconMesh:
 			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
 
 			if (bpr.contact_min != bpr.proximity_min or bpr.contact_max != bpr.proximity_max):
-				logging.info(f'{self.name}: Beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
+				logging.info(f'{self.name}: beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
+
+			if self._cotemporal_probing_helper.faulty_regions:
+				gcmd.respond_info(f"{len(self._cotemporal_probing_helper.faulty_regions)} faulty proximity probing regions are configured. Proximity values for points within these regions will be interpolated.")
+				logging.info(f"{self.name}: faulty proximity probing regions: {self._cotemporal_probing_helper.faulty_regions}")
 
 			use_offset_aligned = self._cotemporal_probing_helper.can_use_offset_aligned_probing(minimum_spacing)
 			skip_local_low_filter = False
@@ -804,19 +826,20 @@ class BeaconMesh:
 					(safe_max_x, safe_max_y)
 				)
 
+				x_spacing = (max_x - safe_min_x) / (probe_count_x - 1)
+				y_spacing = (max_y - safe_min_y) / (probe_count_y - 1)
+
 				gcmd.respond_info(
 					f"Using {pattern} cotemporal probing strategy:\n"
 					f"Generated {len(actions)} probe actions for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
-					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f})")
-
-				# TODO: Handle faulty regions!
+					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f}), spacing: ({x_spacing:.2f}, {y_spacing:.2f})")
 
 				progress_handler = None
 				try:
 					progress_handler = BackgroundDisplayStatusProgressHandler(self.printer, "{spinner} Probing {progress:.1f}%")
 					progress_handler.enable()
 
-					results = self._cotemporal_probing_helper.run_probe_action_sequence(
+					faulty_proximity_count, results = self._cotemporal_probing_helper.run_probe_action_sequence(
 						gcmd,
 						probe_count_x, probe_count_y,
 						actions,
@@ -824,7 +847,7 @@ class BeaconMesh:
 					)
 				finally:
 					if progress_handler:
-						progress_handler.disable()					
+						progress_handler.disable()
 
 				contact_points = [[results[y][x].contact_z for x in range(len(results[y]))] for y in range(len(results))]
 				proximity_points = [[results[y][x].proximity_z for x in range(len(results[y]))] for y in range(len(results))]
@@ -850,7 +873,7 @@ class BeaconMesh:
 				y_spacing = (max_y - safe_min_y) / (probe_count_y - 1)
 
 				force_multipoint_probing = (
-					x_spacing > self.POINT_BY_POINT_FORCE_MULTIPOINT_SPACING_THRESHOLD or 
+					x_spacing > self.POINT_BY_POINT_FORCE_MULTIPOINT_SPACING_THRESHOLD or
 					y_spacing > self.POINT_BY_POINT_FORCE_MULTIPOINT_SPACING_THRESHOLD
 				)
 
@@ -860,15 +883,14 @@ class BeaconMesh:
 					logging.info(f"{self.name}: Using multi-sample probing for point-by-point probing strategy due to large spacing (x_spacing: {x_spacing:.2f}, y_spacing: {y_spacing:.2f})")
 
 				contact_z = None
+				faulty_proximity_count = 0
 				results = [[None] * probe_count_x for _ in range(probe_count_y)]
-				
+
 				gcmd.respond_info(
 					f"Using {pattern} cotemporal probing strategy:\n"
 					f"Generated {len(points)} probe points for the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})\n"
 					f"Mesh points: {probe_count_x} x {probe_count_y}, max coordinates: ({max_x:.2f}, {max_y:.2f}), spacing: ({x_spacing:.2f}, {y_spacing:.2f})"
 					+ (", using multi-sample probing due to large spacing" if force_multipoint_probing else ""))
-				
-				# TODO: Handle faulty regions!
 
 				progress_handler = None
 				try:
@@ -883,15 +905,22 @@ class BeaconMesh:
 							point[2:],
 							None if force_multipoint_probing else contact_z)
 
+						if math.isnan(proximity_z):
+							faulty_proximity_count += 1
+
 						results[point[1]][point[0]] = (point[2], point[3], contact_z, proximity_z)
 				finally:
 					if progress_handler:
-						progress_handler.disable()					
+						progress_handler.disable()
 
 				gcmd.respond_info(f"Probed {len(points)} points in the region from ({safe_min_x:.2f}, {safe_min_y:.2f}) to ({safe_max_x:.2f}, {safe_max_y:.2f})")
 
 				contact_points = [[results[y][x][2] for x in range(len(results[y]))] for y in range(len(results))]
-				proximity_points = [[results[y][x][3] for x in range(len(results[y]))] for y in range(len(results))]			
+				proximity_points = [[results[y][x][3] for x in range(len(results[y]))] for y in range(len(results))]
+
+			if faulty_proximity_count > 0:
+				gcmd.respond_info(f"{faulty_proximity_count} faulty region proximity probe values will be interpolated.")
+				proximity_points = self._interpolate_faulty_region_values(proximity_points, x_spacing, y_spacing)
 
 			extra_params = {}
 			extra_params[RATOS_MESH_VERSION_PARAMETER] = RATOS_MESH_VERSION
@@ -1144,10 +1173,10 @@ class BeaconMesh:
 		child.join()
 		parent_conn.close()
 		if is_err:
-			raise Exception("Error applying deridging filter: %s" % (result,))
+			raise RatOSBeaconMeshError("Error calculating mesh difference RMSE: %s" % (result,))
 		else:
 			return result
-	
+
 	def _do_get_mesh_difference_rmse(self, points_a: List[List[float]], points_b: List[List[float]]) -> float:
 		"""
 		Calculate the RMSE (Root Mean Square Error) between two sets of mesh points.
@@ -1188,7 +1217,7 @@ class BeaconMesh:
 		child.join()
 		parent_conn.close()
 		if is_err:
-			raise Exception("Error applying deridging filter: %s" % (result,))
+			raise RatOSBeaconMeshError("Error applying deridging filter: %s" % (result,))
 		else:
 			return result
 
@@ -1319,6 +1348,87 @@ class BeaconMesh:
 			pos_y += y_dist
 		return (max_x, max_y, points)
 
+	def _interpolate_faulty_region_values(self, points: List[List[float]], x_spacing: float, y_spacing: float) -> List[List[float]]:
+		parent_conn, child_conn = multiprocessing.Pipe()
+
+		def do():
+			try:
+				child_conn.send(
+					(False, self._do_interpolate_faulty_region_values(points, x_spacing, y_spacing))
+				)
+			except Exception:
+				child_conn.send((True, traceback.format_exc()))
+			child_conn.close()
+
+		child = multiprocessing.Process(target=do)
+		child.daemon = True
+		child.start()
+		reactor = self.reactor
+		eventtime = reactor.monotonic()
+		while child.is_alive():
+			eventtime = reactor.pause(eventtime + 0.1)
+		is_err, result = parent_conn.recv()
+		child.join()
+		parent_conn.close()
+		if is_err:
+			raise RatOSBeaconMeshError("Error interpolating faulty region values: %s" % (result,))
+		else:
+			return result
+
+	def _do_interpolate_faulty_region_values(self, points: List[List[float]], x_spacing, y_spacing) -> List[List[float]]:
+		# Replace faulty points with interpolated values, modifying the input array in place. Return the modified array.
+		# x_spacing and y_spacing are the distances between points in the mesh, used to determine adjacency.
+		# points is a 2D array of floats, where faulty points are NaN.
+
+		if not self.scipy:
+			try:
+				self.scipy = importlib.import_module("scipy")
+			except ImportError:
+				raise Exception(
+					"Could not load `scipy`. To install it, simply run `ratos doctor`. This "
+					"module is required for Beacon contact compensation mesh creation."
+				)
+
+			if not hasattr(self.scipy.interpolate, "RBFInterpolator"):
+				raise Exception(
+					"The RBFInterpolator class is missing from the scipy module. Try using `ratos doctor`. This "
+					"class is required for Beacon contact compensation mesh creation."
+				)
+
+		pp = np.array(points)
+
+		# Find faulty points (NaN)
+		mask_faulty = np.isnan(pp)
+
+		# If no faulty points, return as is
+		if not np.any(mask_faulty):
+			return points
+
+		y_count, x_count = pp.shape
+
+		# Build coordinate arrays
+		xs = np.arange(x_count) * x_spacing
+		ys = np.arange(y_count) * y_spacing
+		grid_x, grid_y = np.meshgrid(xs, ys)
+
+		# Get valid points
+		valid_mask = ~mask_faulty
+		valid_x = grid_x[valid_mask].flatten()
+		valid_y = grid_y[valid_mask].flatten()
+		valid_z = pp[valid_mask].flatten()
+
+		# Prepare coordinates for interpolation
+		interp_coords = np.column_stack((valid_x, valid_y))
+		query_coords = np.column_stack((grid_x[mask_faulty], grid_y[mask_faulty]))
+
+		# Interpolate faulty points
+		interpolated = self.scipy.interpolate.RBFInterpolator(interp_coords, valid_z, neighbors=64)(query_coords)
+
+		# Fill in repaired values
+		pp[mask_faulty] = interpolated
+
+		return pp.tolist()
+
 class ProbeCommandKind(Enum):
 	CONTACT_SINGLE = 1
 	CONTACT_MULTI = 2
@@ -1360,8 +1470,8 @@ class ProbeActionResult:
 
 class CotemporalProbingHelper:
 
-	# For offset-aligned probing, this is the maximum allowed offset in the direction perpendicular to the 
-	# primary movement. For example, if the primary movement is 'x', this is the maximum allowed offset in 
+	# For offset-aligned probing, this is the maximum allowed offset in the direction perpendicular to the
+	# primary movement. For example, if the primary movement is 'x', this is the maximum allowed offset in
 	# the 'y' direction. With offset-aligned algorithm, we don't move the probe off the primary axis, so
 	# MAXIMUM_SECONDARY_BEACON_OFFSET limits how far off-axis we allow the probe to be.
 	# NB: Beacons mounted off-axis have not been tested, so this value is speculative.
@@ -1376,9 +1486,26 @@ class CotemporalProbingHelper:
 		self._probe_finalize = None
 		self._probe_helper = None
 		self._beacon_proximity_offsets = None
+		self.faulty_regions = []
 
 		if not config.has_section("beacon"):
 			return
+
+		if config.has_section("bed_mesh"):
+			mesh_config = config.getsection("bed_mesh")
+
+			for i in list(range(1, 100, 1)):
+				start = mesh_config.getfloatlist(
+					"faulty_region_%d_min" % (i,), None, count=2
+				)
+				if start is None:
+					break
+				end = mesh_config.getfloatlist("faulty_region_%d_max" % (i,), count=2)
+				x_min = min(start[0], end[0])
+				x_max = max(start[0], end[0])
+				y_min = min(start[1], end[1])
+				y_max = max(start[1], end[1])
+				self.faulty_regions.append(Region(x_min, x_max, y_min, y_max))
 
 		self._probe_helper = probe.ProbePointsHelper(config, self._call_probe_finalize, [])
 		self.printer.register_event_handler("klippy:connect", self._connect)
@@ -1395,6 +1522,16 @@ class CotemporalProbingHelper:
 		# bugs, as the value returned when called outside designed-for limited circumstances depends on whether the
 		# last expected-circumstance probe was a contact or proximity probe.
 		self._beacon_proximity_offsets = (self.beacon.x_offset, self.beacon.y_offset, self.beacon.trigger_distance)
+
+	def _is_faulty_coordinate(self, x, y, add_offsets=False):
+		if add_offsets:
+			xo, yo = self.beacon.x_offset, self.beacon.y_offset
+			x += xo
+			y += yo
+		for r in self.faulty_regions:
+			if r.is_point_within(x, y):
+				return True
+		return False
 
 	def do_contact_probe(self, gcmd, position, contact_reference_z: Optional[float]=None, delta_contact_z_limit=0.075) -> float:
 		"""
@@ -1451,12 +1588,12 @@ class CotemporalProbingHelper:
 		finally:
 			self._probe_finalize = None
 
-	def do_proximity_probe(self, gcmd, position, use_offset=False) -> float:
+	def do_proximity_probe(self, gcmd, position, subtract_offset=False) -> float:
 		"""
 		Perform a proximity probe at a single position.
 		:param gcmd: Gcode command object
 		:param position: A single [x, y] coordinate to probe.
-		:param use_offset: If True, apply the beacon proximity offsets to the position.
+		:param subtract_offset: If True, subtract the beacon proximity offsets from the position.
 		:return: The z value from the proximity probe.
 		"""
 		if not self.beacon:
@@ -1465,11 +1602,15 @@ class CotemporalProbingHelper:
 		try:
 			proximity_z = None
 
-			if use_offset:
+			if subtract_offset:
 				position = [
 					position[0] - self._beacon_proximity_offsets[0],
 					position[1] - self._beacon_proximity_offsets[1]
 				]
+
+			if self._is_faulty_coordinate(position[0], position[1], add_offsets=True):
+				gcmd.respond_info(f"Skipping proximity probe at faulty region coordinate ({position[0] + self._beacon_proximity_offsets[0]:.2f}, {position[1] + self._beacon_proximity_offsets[1]:.2f})")
+				return float('nan')
 
 			proximity_cmd = self._get_probe_command(gcmd, ProbeCommandKind.PROXIMITY)
 
@@ -1510,7 +1651,7 @@ class CotemporalProbingHelper:
 		proximity_z = self.do_proximity_probe(
 			gcmd,
 			position,
-			use_offset=True)
+			subtract_offset=True)
 
 		return contact_z, proximity_z
 
@@ -1558,20 +1699,22 @@ class CotemporalProbingHelper:
 		)
 
 	def run_probe_action_sequence(
-			self, 
-			gcmd, 
-			count_x:int, 
+			self,
+			gcmd,
+			count_x:int,
 			count_y:int,
 			probe_actions:List[ProbeAction],
 			*,
 			delta_contact_z_limit=0.075,
-			progress_handler:Optional[BackgroundDisplayStatusProgressHandler]=None) -> List[List[ProbeActionResult]]:
+			progress_handler:Optional[BackgroundDisplayStatusProgressHandler]=None) -> Tuple[int, List[List[ProbeActionResult]]]:
 		"""
 		Perform a sequence of probing actions.
 		:param gcmd: Gcode command object
 		:param probe_actions: A list of ProbeAction objects representing the probing actions to perform.
-		:return: A grid of tuples (contact_z, proximity_z, contact_time, proximity_time) where contact_z is the z value from the contact
-		         probe, proximity_z is the z value from the proximity probe and time_difference is the
+		:return: A tuple of (faulty_count, results) where:
+				faulty_count is the number of faulty proximity points detected during probing.
+				results is a grid of tuples (contact_z, proximity_z, contact_time, proximity_time) where contact_z is the z value from the contact
+				 probe, proximity_z is the z value from the proximity probe and time_difference is the
 				 time that elapsed between the contact and proximity probes in seconds.
 		"""
 		if not self.beacon:
@@ -1580,6 +1723,7 @@ class CotemporalProbingHelper:
 
 		results = [[ProbeActionResult() for _ in range(count_x)] for _ in range(count_y)]
 
+		faulty_count = 0
 		last_contact_z = None
 
 		for i, action in enumerate(probe_actions):
@@ -1605,11 +1749,14 @@ class CotemporalProbingHelper:
 					[action.pos_x, action.pos_y])
 				action_result.proximity_z = proximity_z
 				action_result.proximity_time = self.reactor.monotonic()
+				if math.isnan(proximity_z):
+					# Faulty point detected
+					faulty_count += 1
 
 			if progress_handler:
 				progress_handler.progress = (i + 1) / len(probe_actions)
 
-		return results
+		return (faulty_count, results)
 
 	def can_use_offset_aligned_probing(self, minimum_spacing) -> bool:
 		"""
@@ -1638,9 +1785,9 @@ class CotemporalProbingHelper:
 		if abs_primary_offset < minimum_spacing:
 			# If the primary axis offset is smaller than the finest resolution allowed.
 			return False
-		
+
 		return True
-	
+
 	def generate_probe_action_sequence_beacon_offset_aligned(
 			self,
 			desired_spacing:float,
@@ -1658,7 +1805,7 @@ class CotemporalProbingHelper:
 				count_x and count_y are the number of points in the mesh.
 				max_x and max_y are the maximum x, y coordinates of the mesh (max_x, max_y).
 				points is a list of tuples (is_contact, idx_x, idx_y, pos_x, pos_y), where:
-		        	idx_x and idx_y are the indices of the point in the mesh, pos_x and pos_y are the coordinates of the
+					idx_x and idx_y are the indices of the point in the mesh, pos_x and pos_y are the coordinates of the
 					toolhead at which the probing action should take place (ie, proximity actions are for adjusted for the beacon offset).
 		"""
 		if desired_spacing < minimum_spacing:
