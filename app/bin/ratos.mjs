@@ -102214,10 +102214,17 @@ var captureConfigSection = (c, s2) => {
     default:
       return 1 /* RemoveAndContinue */;
   }
+  const rxFirstLayerEstimate = /(?:(?<H>\d+)h\s*)?(?:(?<M>\d+)m\s*)?(?:(?<S>\d+)s)?/;
+  const firstLayerEsitmateLinePrefix = "; estimated first layer printing time (normal mode) = ";
   return [
     0 /* Continue */,
     (c2, s3) => {
-      if (c2.line.startsWith(startLine)) {
+      if (c2.line.startsWith(firstLayerEsitmateLinePrefix)) {
+        const match2 = rxFirstLayerEstimate.exec(c2.line.substring(firstLayerEsitmateLinePrefix.length));
+        if (match2 && (match2.groups?.H || match2.groups?.M || match2.groups?.S)) {
+          s3.slicerFirstLayerDuration = (match2.groups?.H ? Number(match2.groups.H) * 3600 : 0) + (match2.groups?.M ? Number(match2.groups.M) * 60 : 0) + (match2.groups?.S ? Number(match2.groups.S) : 0);
+        }
+      } else if (c2.line.startsWith(startLine)) {
         s3.configSection = /* @__PURE__ */ new Map();
         return [
           2 /* Stop */,
@@ -102254,6 +102261,7 @@ var AnalysisResultSchema = z.discriminatedUnion("kind", [
     minX: z.number(),
     maxX: z.number(),
     hasPurgeTower: z.boolean().optional(),
+    slicerFirstLayerDuration: z.number().optional(),
     configSection: z.record(z.string(), z.string()).optional(),
     usedTools: z.array(z.string())
   }),
@@ -102326,7 +102334,7 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
       return result === void 0 ? 0 /* Continue */ : result;
     } else {
       if (state.gcodeInfoOrUndefined === void 0) {
-        throw new InternalError("Attemted to invoke flavour-filtered action before the flavour is known.");
+        throw new InternalError("Attempted to invoke flavour-filtered action before the flavour is known.");
       } else {
         const keep = this.satisfiesFilter(state.gcodeInfoOrUndefined, action[0]);
         if (keep) {
@@ -102399,6 +102407,7 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
         firstMoveX: s2.firstMoveX,
         firstMoveY: s2.firstMoveY,
         hasPurgeTower: s2.hasPurgeTower,
+        slicerFirstLayerDuration: s2.slicerFirstLayerDuration,
         configSection: s2.configSectionAsObject
       };
     } else {
@@ -102412,6 +102421,7 @@ var GCodeProcessor = class _GCodeProcessor extends SlidingWindowLineProcessor {
         minX: s2.minX,
         maxX: s2.maxX,
         hasPurgeTower: s2.hasPurgeTower,
+        slicerFirstLayerDuration: s2.slicerFirstLayerDuration,
         configSection: s2.configSectionAsObject,
         usedTools: s2.usedTools
       };
