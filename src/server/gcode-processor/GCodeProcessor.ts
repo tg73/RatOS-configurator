@@ -127,7 +127,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			if (state.gcodeInfoOrUndefined === undefined) {
 				// Allowing flavour-filtered actions to execute before the flavour is known is considered a
 				// design error. An preceding action should return ActionResult.Stop or throw.
-				throw new InternalError('Attemted to invoke flavour-filtered action before the flavour is known.');
+				throw new InternalError('Attempted to invoke flavour-filtered action before the flavour is known.');
 			} else {
 				const keep = this.satisfiesFilter(state.gcodeInfoOrUndefined, action[0]);
 				if (keep) {
@@ -230,6 +230,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 				firstMoveX: s.firstMoveX,
 				firstMoveY: s.firstMoveY,
 				hasPurgeTower: s.hasPurgeTower,
+				slicerFirstLayerDuration: s.slicerFirstLayerDuration,
 				configSection: s.configSectionAsObject,
 			};
 		} else {
@@ -243,6 +244,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 				minX: s.minX,
 				maxX: s.maxX,
 				hasPurgeTower: s.hasPurgeTower,
+				slicerFirstLayerDuration: s.slicerFirstLayerDuration,
 				configSection: s.configSectionAsObject,
 				usedTools: s.usedTools,
 			};
@@ -269,6 +271,14 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 
 			if (s.firstMoveX && s.firstMoveY) {
 				toAdd += ` FIRST_X=${s.firstMoveX} FIRST_Y=${s.firstMoveY}`;
+			}
+
+			// Add SLICER_FIRST_LAYER_DURATION only if it is not already present
+			if (
+				s.slicerFirstLayerDuration &&
+				!/(\s|\d)SLICER_FIRST_LAYER_DURATION(\s|=)/.test(s.startPrintLine.line)
+			) {
+				toAdd += ` SLICER_FIRST_LAYER_DURATION=${s.slicerFirstLayerDuration}`;
 			}
 
 			if (s.minX < Number.MAX_VALUE) {

@@ -87,6 +87,7 @@ const GcodeInfoZod = z.object({
 				toolChangeCount: z.number(),
 				firstMoveX: z.string().optional(),
 				firstMoveY: z.string().optional(),
+				slicerFirstLayerDuration: z.number().optional(),
 				minX: z.number(),
 				maxX: z.number(),
 				hasPurgeTower: z.boolean().optional(),
@@ -99,6 +100,7 @@ const GcodeInfoZod = z.object({
 				extruderTemps: z.array(z.string()).optional(),
 				firstMoveX: z.string().optional(),
 				firstMoveY: z.string().optional(),
+				slicerFirstLayerDuration: z.number().optional(),
 				hasPurgeTower: z.boolean().optional(),
 			}),
 		])

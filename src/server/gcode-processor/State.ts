@@ -54,6 +54,7 @@ export class State {
 	public minX = Number.MAX_VALUE;
 	public maxX = Number.MIN_VALUE;
 	public hasPurgeTower?: boolean;
+	public slicerFirstLayerDuration?: number;
 	public configSection?: Map<string, string>;
 	public processingHasBeenFinalized = false;
 

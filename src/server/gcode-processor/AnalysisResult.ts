@@ -39,6 +39,7 @@ export interface FullAnalysisResult extends BaseAnalysisResult {
 	readonly maxX: number;
 	readonly hasPurgeTower?: boolean;
 	readonly usedTools: string[];
+	readonly slicerFirstLayerDuration?: number;
 	readonly configSection?: {
 		[key: string]: string;
 	};
@@ -46,7 +47,7 @@ export interface FullAnalysisResult extends BaseAnalysisResult {
 
 export interface QuickAnalysisResult
 	extends BaseAnalysisResult,
-		Pick<FullAnalysisResult, 'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'configSection'> {
+		Pick<FullAnalysisResult, 'extruderTemps' | 'firstMoveX' | 'firstMoveY' | 'hasPurgeTower' | 'slicerFirstLayerDuration' | 'configSection'> {
 	readonly kind: AnalysisResultKind.Quick;
 }
 
@@ -63,6 +64,7 @@ export const AnalysisResultSchema = z.discriminatedUnion('kind', [
 		minX: z.number(),
 		maxX: z.number(),
 		hasPurgeTower: z.boolean().optional(),
+		slicerFirstLayerDuration: z.number().optional(),
 		configSection: z.record(z.string(), z.string()).optional(),
 		usedTools: z.array(z.string()),
 	}),

@@ -276,7 +276,7 @@ class BeaconAdaptiveHeatSoak:
 
 		# The default maximum first layer duration in seconds, which is used in conjunction with layer_quality to determine
 		# the z rate threshold for thermal stability.
-		self.def_maxiumm_first_layer_duration = config.getint('default_maximum_first_layer_duration', 1800, minval=60, maxval=7200)
+		self.def_maxiumm_first_layer_duration = config.getint('default_maximum_first_layer_duration', 1800, minval=1, maxval=7200)
 
 		# The default maximum wait time in seconds for the printer to reach thermal stability.
 		self.def_maximum_wait = config.getint('default_maximum_wait', 5400, minval=0)
@@ -430,7 +430,7 @@ class BeaconAdaptiveHeatSoak:
 		minimum_wait = gcmd.get_int('MINIMUM_WAIT', self.def_minimum_wait, minval=0)
 		maximum_wait = gcmd.get_int('MAXIMUM_WAIT', self.def_maximum_wait, minval=0)
 		layer_quality = gcmd.get_int('LAYER_QUALITY', self.def_layer_quality, minval=1, maxval=5)
-		maximum_first_layer_duration = gcmd.get_int('MAXIMUM_FIRST_LAYER_DURATION', self.def_maxiumm_first_layer_duration, minval=60, maxval=7200)
+		maximum_first_layer_duration = gcmd.get_int('MAXIMUM_FIRST_LAYER_DURATION', self.def_maxiumm_first_layer_duration, minval=1, maxval=7200)
 
 		params_msg = ''
 		threshold_origin = "forced" if threshold is not None else "predicted"
@@ -681,7 +681,7 @@ class BeaconAdaptiveHeatSoak:
 	desc_TEST_PREDICT_ADAPTIVE_HEAT_SOAK_THRESHOLD = "For developer use only. Specify Z (maximum z change in microns) and P (period in seconds)."
 	def cmd_TEST_PREDICT_ADAPTIVE_HEAT_SOAK_THRESHOLD(self, gcmd):
 		maximum_z_change_microns = gcmd.get_int('Z', 100, minval=1)
-		period_seconds = gcmd.get_int('P', 300, minval=60)
+		period_seconds = gcmd.get_int('P', 300, minval=1)
 
 		start_time = self.reactor.monotonic()
 		predictor = ThresholdPredictor(self.printer)

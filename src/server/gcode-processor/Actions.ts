@@ -448,11 +448,23 @@ export const captureConfigSection: Action = (c, s) => {
 			return ActionResult.RemoveAndContinue;
 	}
 
+	const rxFirstLayerEstimate = /(?:(?<H>\d+)h\s*)?(?:(?<M>\d+)m\s*)?(?:(?<S>\d+)s)?/;
+	const firstLayerEsitmateLinePrefix = "; estimated first layer printing time (normal mode) = "
+
 	// Replace this action with the action to look for the flavour-specific start line:
 	return [
 		ActionResult.Continue,
 		(c, s) => {
-			if (c.line.startsWith(startLine)) {
+			if (c.line.startsWith(firstLayerEsitmateLinePrefix)) {
+				const match = rxFirstLayerEstimate.exec(c.line.substring(firstLayerEsitmateLinePrefix.length));
+				if (match && (match.groups?.H || match.groups?.M || match.groups?.S)) {
+					s.slicerFirstLayerDuration =
+						(match.groups?.H ? Number(match.groups.H) * 3600 : 0) +
+						(match.groups?.M ? Number(match.groups.M) * 60 : 0) +
+						(match.groups?.S ? Number(match.groups.S) : 0);
+				}
+			}
+			else if (c.line.startsWith(startLine)) {
 				s.configSection = new Map<string, string>();
 				// Replace this action with the action to capture the config section:
 				return [
