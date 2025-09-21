@@ -276,26 +276,4 @@ __EOF
 	$sudo cp --preserve=mode /tmp/031-ratos-configurator-wifi /etc/sudoers.d/031-ratos-configurator-wifi
 
 	echo "RatOS configurator commands has successfully been whitelisted!"
-
-	$sudo chown root:root /tmp/031-ratos-configurator-scripts
-	$sudo chmod 440 /tmp/031-ratos-configurator-scripts
-	$sudo cp --preserve=mode /tmp/031-ratos-configurator-scripts /etc/sudoers.d/031-ratos-configurator-scripts
-
-	echo "RatOS configurator scripts has successfully been whitelisted!"
-
-	# Whitelist klippy extension commands
-	if [[ -e /etc/sudoers.d/031-ratos-klippy-extensions ]]
-	then
-		$sudo rm /etc/sudoers.d/031-ratos-klippy-extensions
-	fi
-	touch /tmp/031-ratos-klippy-extensions
-	cat << __EOF > /tmp/031-ratos-klippy-extensions
-${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: /usr/bin/cpufreq-set
-__EOF
-
-	$sudo chown root:root /tmp/031-ratos-klippy-extensions
-	$sudo chmod 440 /tmp/031-ratos-klippy-extensions
-	$sudo cp --preserve=mode /tmp/031-ratos-klippy-extensions /etc/sudoers.d/031-ratos-klippy-extensions
-
-	echo "RatOS klippy extension commands has successfully been whitelisted!"
 }

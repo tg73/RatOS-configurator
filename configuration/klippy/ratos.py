@@ -295,7 +295,6 @@ class RatOS:
 			filename = filename[1:]
 		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=-1")
 		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=-1")
-		self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=slicer_first_layer_duration VALUE=-1")		
 		if self.bypass_post_processing:
 			self.bypass_post_processing = self.config.getboolean('bypass_post_processing', False)
 			self.console_echo('Bypassing post-processing', 'info', 'Configuration option `bypass_post_processing` is set to true. Bypassing post-processing...')
@@ -407,8 +406,6 @@ class RatOS:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_x VALUE=" + str(analysis_result['firstMoveX']))
 					if 'firstMoveY' in analysis_result:
 						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=first_y VALUE=" + str(analysis_result['firstMoveY']))
-					if 'slicerFirstLayerDuration' in analysis_result:
-						self.gcode.run_script_from_command("SET_GCODE_VARIABLE MACRO=START_PRINT VARIABLE=slicer_first_layer_duration VALUE=" + str(analysis_result['slicerFirstLayerDuration']))
 
 					tool_shifts = analysis_result["toolChangeCount"] if "toolChangeCount" in analysis_result else 0
 					used_tools = analysis_result["usedTools"] if "usedTools" in analysis_result else "0"
