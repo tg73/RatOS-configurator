@@ -83,7 +83,7 @@ const development = (program: Command) => {
 				renderError(`Remote "${remote}" not found`);
 			}
 			if (
-				(await $`git fetch ${remote} --depth=1 && git branch -r`)
+				(await $`git branch -r`)
 					.lines()
 					.map((line) => line.trim())
 					.filter((line) => line.startsWith(`${remote}/${newBranch}`)).length === 0

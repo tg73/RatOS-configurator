@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 verified=1
 
 while IFS= read -r -d '' file; do

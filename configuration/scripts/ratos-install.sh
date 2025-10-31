@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # This script installs additional dependencies for RatOS.
 
 PKGLIST="python3-numpy python3-matplotlib curl git"

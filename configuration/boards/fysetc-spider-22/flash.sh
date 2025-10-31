@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 MCU=/dev/fysetc-spider
 if [ "$EUID" -ne 0 ]

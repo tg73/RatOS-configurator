@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 MCU=/dev/btt-skr-3
 if [ "$EUID" -ne 0 ]
