@@ -34,10 +34,10 @@ declare namespace __next_route_internal_types__ {
     | `/api/mcu-image`
     | `/api/printer-image`
     | `/`
+    | `/calibration`
     | `/motion`
     | `/toolhead`
     | `/wizard`
-    | `/calibration`
     | `/analysis`
     | `/analysis/macros/new`
     | `/analysis/macros`

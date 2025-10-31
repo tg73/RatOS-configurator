@@ -70,7 +70,7 @@
       "static/chunks/fa86fe2e-e962572a02b89204.js",
       "static/chunks/8458-94fd4fc7ee07d7b5.js",
       "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/loading-fb3e5165a328f318.js"
+      "static/chunks/app/loading-30e88ff8fdea8906.js"
     ],
     "/page": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
@@ -87,12 +87,19 @@
       "static/chunks/4595-a75c7b03a3da5fea.js",
       "static/chunks/app/page-1515ddc4724995f9.js"
     ],
+    "/analysis/macros/loading": [
+      "static/chunks/webpack-6db2fc16f3140bd0.js",
+      "static/chunks/fa86fe2e-e962572a02b89204.js",
+      "static/chunks/8458-94fd4fc7ee07d7b5.js",
+      "static/chunks/main-app-97a5ed2f18129f03.js",
+      "static/chunks/app/analysis/macros/loading-2b0f08ba1a9dffc1.js"
+    ],
     "/analysis/layout": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
       "static/chunks/fa86fe2e-e962572a02b89204.js",
       "static/chunks/8458-94fd4fc7ee07d7b5.js",
       "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/analysis/layout-7c1cac4fee441c46.js"
+      "static/chunks/app/analysis/layout-0e908e87d6a6bd16.js"
     ],
     "/analysis/loading": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
@@ -102,13 +109,6 @@
       "static/chunks/5360-d882b384d4358925.js",
       "static/chunks/3790-ddc1c2523886a0d3.js",
       "static/chunks/app/analysis/loading-d2169d3de3eb1c80.js"
-    ],
-    "/analysis/macros/loading": [
-      "static/chunks/webpack-6db2fc16f3140bd0.js",
-      "static/chunks/fa86fe2e-e962572a02b89204.js",
-      "static/chunks/8458-94fd4fc7ee07d7b5.js",
-      "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/analysis/macros/loading-6fca0780e7131c4e.js"
     ],
     "/analysis/macros/[id]/edit/page": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
@@ -151,7 +151,7 @@
       "static/chunks/fa86fe2e-e962572a02b89204.js",
       "static/chunks/8458-94fd4fc7ee07d7b5.js",
       "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/analysis/macros/[id]/edit/loading-24c67d515a39ed9d.js"
+      "static/chunks/app/analysis/macros/[id]/edit/loading-b20040ff60ba1cf7.js"
     ],
     "/analysis/macros/[id]/page": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
@@ -227,6 +227,32 @@
       "static/chunks/3942-e1937c7269c0e2bb.js",
       "static/chunks/app/analysis/macros/[id]/recordings/page-e848d51a39ca0331.js"
     ],
+    "/calibration/page": [
+      "static/chunks/webpack-6db2fc16f3140bd0.js",
+      "static/chunks/fa86fe2e-e962572a02b89204.js",
+      "static/chunks/8458-94fd4fc7ee07d7b5.js",
+      "static/chunks/main-app-97a5ed2f18129f03.js",
+      "static/chunks/f923c8e2-cf8dee8729a14857.js",
+      "static/chunks/966-a027bb842de0853e.js",
+      "static/chunks/8965-ec2ed0ce3c32edb0.js",
+      "static/chunks/5360-d882b384d4358925.js",
+      "static/chunks/3790-ddc1c2523886a0d3.js",
+      "static/chunks/6230-bd1a2c335d803a40.js",
+      "static/chunks/2705-f3e522b1f8aa7a47.js",
+      "static/chunks/3150-5f27b0c10b4006ed.js",
+      "static/chunks/4535-f1dfdc9ca77715ec.js",
+      "static/chunks/2084-18c6b6949578b538.js",
+      "static/chunks/4595-a75c7b03a3da5fea.js",
+      "static/chunks/6375-f8d8d37fa4eb4325.js",
+      "static/chunks/app/calibration/page-656bc4be55161654.js"
+    ],
+    "/calibration/layout": [
+      "static/chunks/webpack-6db2fc16f3140bd0.js",
+      "static/chunks/fa86fe2e-e962572a02b89204.js",
+      "static/chunks/8458-94fd4fc7ee07d7b5.js",
+      "static/chunks/main-app-97a5ed2f18129f03.js",
+      "static/chunks/app/calibration/layout-26b8b657dd35a6d1.js"
+    ],
     "/motion/page": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
       "static/chunks/fa86fe2e-e962572a02b89204.js",
@@ -261,7 +287,7 @@
       "static/chunks/fa86fe2e-e962572a02b89204.js",
       "static/chunks/8458-94fd4fc7ee07d7b5.js",
       "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/motion/layout-505473bdaebd5feb.js"
+      "static/chunks/app/motion/layout-22d5f832036d8b74.js"
     ],
     "/toolhead/page": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
@@ -291,7 +317,7 @@
       "static/chunks/fa86fe2e-e962572a02b89204.js",
       "static/chunks/8458-94fd4fc7ee07d7b5.js",
       "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/toolhead/layout-1b325b433d034b86.js"
+      "static/chunks/app/toolhead/layout-220a280869051600.js"
     ],
     "/wizard/page": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
@@ -328,33 +354,7 @@
       "static/chunks/fa86fe2e-e962572a02b89204.js",
       "static/chunks/8458-94fd4fc7ee07d7b5.js",
       "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/wizard/layout-741b9ed077488d33.js"
-    ],
-    "/calibration/layout": [
-      "static/chunks/webpack-6db2fc16f3140bd0.js",
-      "static/chunks/fa86fe2e-e962572a02b89204.js",
-      "static/chunks/8458-94fd4fc7ee07d7b5.js",
-      "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/calibration/layout-452efc88200204e4.js"
-    ],
-    "/calibration/page": [
-      "static/chunks/webpack-6db2fc16f3140bd0.js",
-      "static/chunks/fa86fe2e-e962572a02b89204.js",
-      "static/chunks/8458-94fd4fc7ee07d7b5.js",
-      "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/f923c8e2-cf8dee8729a14857.js",
-      "static/chunks/966-a027bb842de0853e.js",
-      "static/chunks/8965-ec2ed0ce3c32edb0.js",
-      "static/chunks/5360-d882b384d4358925.js",
-      "static/chunks/3790-ddc1c2523886a0d3.js",
-      "static/chunks/6230-bd1a2c335d803a40.js",
-      "static/chunks/2705-f3e522b1f8aa7a47.js",
-      "static/chunks/3150-5f27b0c10b4006ed.js",
-      "static/chunks/4535-f1dfdc9ca77715ec.js",
-      "static/chunks/2084-18c6b6949578b538.js",
-      "static/chunks/4595-a75c7b03a3da5fea.js",
-      "static/chunks/6375-f8d8d37fa4eb4325.js",
-      "static/chunks/app/calibration/page-656bc4be55161654.js"
+      "static/chunks/app/wizard/layout-2fc3924c465feacb.js"
     ],
     "/analysis/page": [
       "static/chunks/webpack-6db2fc16f3140bd0.js",
