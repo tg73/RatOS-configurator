@@ -37,8 +37,8 @@
 				"partFan": "4pin-dedicated",
 				"hotendFan": "4pin-dedicated",
 				"probe": "superpinda",
-				"xEndstop": "endstop",
-				"yEndstop": "endstop"
+				"xEndstop": "sensorless",
+				"yEndstop": "sensorless"
 			}
 		],
 		"rails": [

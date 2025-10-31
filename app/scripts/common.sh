@@ -167,7 +167,7 @@ install_cli()
 	source="$SRC_DIR/bin/ratos"
 	if [ ! -L "$target" ] || [ ! "$(readlink "$target")" = "$source" ]; then
 		report_status "Installing RatOS CLI"
-		$sudo rm "$target"
+		$sudo rm -f "$target"
 		$sudo ln -s "$source" "$target"
 		$sudo chmod a+x "$target"
 	else

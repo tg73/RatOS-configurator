@@ -4,9 +4,6 @@ import { loadEnvironment } from '@/cli/util';
 
 loadEnvironment();
 try {
-	program.command('test-error').action(async () => {
-		throw new Error('Test error');
-	});
 	await program.parseAsync();
 } catch (e) {
 	if (e instanceof Error) {

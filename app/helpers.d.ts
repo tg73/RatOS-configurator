@@ -11,6 +11,10 @@ type ExplicitObject<T> = {
 	readonly [P in keyof T]: P extends keyof T ? T[P] : never;
 };
 
+type SimplifyObject<T> = {
+	[P in keyof T]: P extends keyof T ? T[P] : never;
+};
+
 type _NumbersBefore<N extends number, A extends number[] = []> = A['length'] extends N
 	? A[number]
 	: _NumbersBefore<N, [...A, A['length']]>;

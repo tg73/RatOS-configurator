@@ -1,7 +1,5 @@
 import os, logging, glob
-import logging, collections, pathlib
-import json, subprocess
-from . import bed_mesh as BedMesh
+import json, subprocess, pathlib
 
 #####
 # RatOS
@@ -29,8 +27,7 @@ class RatOS:
 		}
 
 		self.old_is_graph_files = []
-		self.contact_mesh = None
-		self.pmgr = BedMeshProfileManager(self.config, self)
+		self.load_settings()
 		self.register_commands()
 		self.register_handler()
 		self.load_settings()
@@ -45,8 +42,6 @@ class RatOS:
 	def _connect(self):
 		self.v_sd = self.printer.lookup_object('virtual_sdcard', None)
 		self.sdcard_dirname = self.v_sd.sdcard_dirname
-		if self.config.has_section("bed_mesh"):
-			self.bed_mesh = self.printer.lookup_object('bed_mesh')
 		self.dual_carriage = None
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
@@ -76,7 +71,6 @@ class RatOS:
 		self.gcode.register_command('CONSOLE_ECHO', self.cmd_CONSOLE_ECHO, desc=(self.desc_CONSOLE_ECHO))
 		self.gcode.register_command('RATOS_LOG', self.cmd_RATOS_LOG, desc=(self.desc_RATOS_LOG))
 		self.gcode.register_command('PROCESS_GCODE_FILE', self.cmd_PROCESS_GCODE_FILE, desc=(self.desc_PROCESS_GCODE_FILE))
-		self.gcode.register_command('BEACON_APPLY_SCAN_COMPENSATION', self.cmd_BEACON_APPLY_SCAN_COMPENSATION, desc=(self.desc_BEACON_APPLY_SCAN_COMPENSATION))
 		self.gcode.register_command('TEST_PROCESS_GCODE_FILE', self.cmd_TEST_PROCESS_GCODE_FILE, desc=(self.desc_TEST_PROCESS_GCODE_FILE))
 		self.gcode.register_command('ALLOW_UNKNOWN_GCODE_GENERATOR', self.cmd_ALLOW_UNKNOWN_GCODE_GENERATOR, desc=(self.desc_ALLOW_UNKNOWN_GCODE_GENERATOR))
 		self.gcode.register_command('BYPASS_GCODE_PROCESSING', self.cmd_BYPASS_GCODE_PROCESSING, desc=(self.desc_BYPASS_GCODE_PROCESSING))
@@ -94,7 +88,12 @@ class RatOS:
 
 		prev_cmd = self.gcode.register_command(command, None)
 		if prev_cmd is None:
-			raise self.printer.config_error("Existing command '%s' not found in RatOS override" % (command,))
+			if (command == 'TEST_RESONANCES' or command == 'SHAPER_CALIBRATE') and not self.config.has_section('resonance_tester'):
+				# No [resonance_tester] section found, don't throw an error, skip overriding.
+				logging.info("No [resonance_tester] section found, skipping override of command '%s'" % (command,))
+				return
+			else:
+				raise self.printer.config_error("Existing command '%s' not found in RatOS override" % (command,))
 		if command not in self.overridden_commands:
 			raise self.printer.config_error("Command '%s' not found in RatOS override list" % (command,))
 
@@ -228,49 +227,10 @@ class RatOS:
 		else:
 			self.console_echo('Print aborted', 'error')
 
-	desc_BEACON_APPLY_SCAN_COMPENSATION = "Compensates magnetic inaccuracies for beacon scan meshes."
-	def cmd_BEACON_APPLY_SCAN_COMPENSATION(self, gcmd):
-		profile = gcmd.get('PROFILE', "Contact")
-		if not profile.strip():
-			raise gcmd.error("Value for parameter 'PROFILE' must be specified")
-		if profile not in self.pmgr.get_profiles():
-			raise self.printer.command_error("Profile " + str(profile) + " not found for Beacon scan compensation")
-		self.contact_mesh = self.pmgr.load_profile(profile)
-		if not self.contact_mesh:
-			raise self.printer.command_error("Could not load profile " + str(profile) + " for Beacon scan compensation")
-		self.compensate_beacon_scan(profile)
 
 	#####
-	# Beacon Scan Compensation
+	# Gcode Post Processor
 	#####
-	def compensate_beacon_scan(self, profile):
-		systime = self.reactor.monotonic()
-		try:
-			if self.bed_mesh.z_mesh:
-				profile_name = self.bed_mesh.z_mesh.get_profile_name()
-				if profile_name != profile:
-					points = self.bed_mesh.get_status(systime)["profiles"][profile_name]["points"]
-					params = self.bed_mesh.z_mesh.get_mesh_params()
-					x_step = ((params["max_x"] - params["min_x"]) / (len(points[0]) - 1))
-					y_step = ((params["max_y"] - params["min_y"]) / (len(points) - 1))
-					new_points = []
-					for y in range(len(points)):
-						new_points.append([])
-						for x in range(len(points[0])):
-							x_pos = params["min_x"] + x * x_step
-							y_pos = params["min_y"] + y * y_step
-							z_val = points[y][x]
-							contact_z = self.contact_mesh.calc_z(x_pos, y_pos)
-							new_z = z_val - (z_val - contact_z)
-							new_points[y].append(new_z)
-					self.bed_mesh.z_mesh.build_mesh(new_points)
-					self.bed_mesh.save_profile(profile_name)
-					self.bed_mesh.set_mesh(self.bed_mesh.z_mesh)
-					self.console_echo("Beacon scan compensation", "debug", "Mesh scan profile %s compensated with contact profile %s" % (str(profile_name), str(profile)))
-					
-		except BedMesh.BedMeshError as e:
-			self.console_echo("Beacon scan compensation error", "error", str(e))
-
 	def process_gcode_file(self, filename, enable_gcode_transform):
 		try:
 			[path, size] = self.get_gcode_file_info(filename)
@@ -330,6 +290,10 @@ class RatOS:
 					self.last_processed_file_result = data['payload']
 					printability = data['payload']['printability']
 
+					if printability == 'PROCESSOR_NOT_SUPPORTED':
+						self.console_echo('Post-processing Error: file was processed by an obsolete or future version of the RatOS postprocessor', 'error', "You can bypass the processor for this file by running BYPASS_GCODE_PROCESSING before starting the print, but there is no guarantee that it will print correctly._N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
+						return False
+
 					if printability == 'NOT_SUPPORTED':
 						self.console_echo('Post-processing Error: slicer version not supported', 'error', "You can allow unsupported slicers by adding the following to printer.cfg._N__N_[ratos]_N_allow_unsupported_slicer_versions: True_N__N_Reasons for failure:_N_ %s" % ("_N_".join(data['payload']['printabilityReasons'])))
 						return False
@@ -339,7 +303,8 @@ class RatOS:
 						return False
 
 					if printability == "UNKNOWN" and data['payload']['generator'] == "unknown" and self.allow_unknown_gcode_generator:
-						self.console_echo('Post-processing skipped', 'success', 'File contains gcode from an unknown/unidentified generator._N_Post processing has been skipped since you have allowed gcode from unknown generators.')
+						self.console_echo('Post-processing skipped', 'info', 'File contains gcode from an unknown/unidentified generator._N_Post processing has been skipped since gcode from unknown generators is allowed in your configuration.')
+						self.post_process_success = True
 						return True
 					
 					if printability != 'READY':
@@ -466,7 +431,6 @@ class RatOS:
 
 		except Exception as e:
 			raise
-
 		return self.post_process_success;
 
 
@@ -552,58 +516,6 @@ class RatOS:
 	
 	def get_status(self, eventtime):
 		return {'name': self.name, 'last_processed_file_result': self.last_processed_file_result}
-
-#####
-# Bed Mesh Profile Manager
-#####
-class BedMeshProfileManager:
-	def __init__(self, config, bedmesh):
-		self.name = "bed_mesh"
-		self.printer = config.get_printer()
-		self.gcode = self.printer.lookup_object('gcode')
-		self.bedmesh = bedmesh
-		self.profiles = {}
-		self.incompatible_profiles = []
-		# Fetch stored profiles from Config
-		stored_profs = config.get_prefix_sections(self.name)
-		stored_profs = [s for s in stored_profs
-						if s.get_name() != self.name]
-		for profile in stored_profs:
-			name = profile.get_name().split(' ', 1)[1]
-			version = profile.getint('version', 0)
-			if version != BedMesh.PROFILE_VERSION:
-				logging.info(
-					"bed_mesh: Profile [%s] not compatible with this version\n"
-					"of bed_mesh.  Profile Version: %d Current Version: %d "
-					% (name, version, BedMesh.PROFILE_VERSION))
-				self.incompatible_profiles.append(name)
-				continue
-			self.profiles[name] = {}
-			zvals = profile.getlists('points', seps=(',', '\n'), parser=float)
-			self.profiles[name]['points'] = zvals
-			self.profiles[name]['mesh_params'] = params = \
-				collections.OrderedDict()
-			for key, t in BedMesh.PROFILE_OPTIONS.items():
-				if t is int:
-					params[key] = profile.getint(key)
-				elif t is float:
-					params[key] = profile.getfloat(key)
-				elif t is str:
-					params[key] = profile.get(key)
-	def get_profiles(self):
-		return self.profiles
-	def load_profile(self, prof_name):
-		profile = self.profiles.get(prof_name, None)
-		if profile is None:
-			return None
-		probed_matrix = profile['points']
-		mesh_params = profile['mesh_params']
-		z_mesh = BedMesh.ZMesh(mesh_params, prof_name)
-		try:
-			z_mesh.build_mesh(probed_matrix)
-		except BedMesh.BedMeshError as e:
-			raise self.gcode.error(str(e))
-		return z_mesh
 
 #####
 # Loader

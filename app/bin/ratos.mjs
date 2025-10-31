@@ -958,7 +958,7 @@ var require_command = __commonJS({
     init_cjs_shim();
     var EventEmitter3 = __require("events").EventEmitter;
     var childProcess = __require("child_process");
-    var path10 = __require("path");
+    var path13 = __require("path");
     var fs3 = __require("fs");
     var process15 = __require("process");
     var { Argument: Argument2, humanReadableArgName } = require_argument();
@@ -1010,7 +1010,7 @@ var require_command = __commonJS({
           writeErr: (str) => process15.stderr.write(str),
           getOutHelpWidth: () => process15.stdout.isTTY ? process15.stdout.columns : void 0,
           getErrHelpWidth: () => process15.stderr.isTTY ? process15.stderr.columns : void 0,
-          outputError: (str, write) => write(str)
+          outputError: (str, write2) => write2(str)
         };
         this._hidden = false;
         this._hasHelpOption = true;
@@ -1791,10 +1791,10 @@ Expecting one of '${allowedValues.join("', '")}'`);
         let launchWithNode = false;
         const sourceExt = [".js", ".ts", ".tsx", ".mjs", ".cjs"];
         function findFile(baseDir, baseName) {
-          const localBin = path10.resolve(baseDir, baseName);
+          const localBin = path13.resolve(baseDir, baseName);
           if (fs3.existsSync(localBin))
             return localBin;
-          if (sourceExt.includes(path10.extname(baseName)))
+          if (sourceExt.includes(path13.extname(baseName)))
             return void 0;
           const foundExt = sourceExt.find((ext) => fs3.existsSync(`${localBin}${ext}`));
           if (foundExt)
@@ -1812,19 +1812,19 @@ Expecting one of '${allowedValues.join("', '")}'`);
           } catch (err) {
             resolvedScriptPath = this._scriptPath;
           }
-          executableDir = path10.resolve(path10.dirname(resolvedScriptPath), executableDir);
+          executableDir = path13.resolve(path13.dirname(resolvedScriptPath), executableDir);
         }
         if (executableDir) {
           let localFile = findFile(executableDir, executableFile);
           if (!localFile && !subcommand._executableFile && this._scriptPath) {
-            const legacyName = path10.basename(this._scriptPath, path10.extname(this._scriptPath));
+            const legacyName = path13.basename(this._scriptPath, path13.extname(this._scriptPath));
             if (legacyName !== this._name) {
               localFile = findFile(executableDir, `${legacyName}-${subcommand._name}`);
             }
           }
           executableFile = localFile || executableFile;
         }
-        launchWithNode = sourceExt.includes(path10.extname(executableFile));
+        launchWithNode = sourceExt.includes(path13.extname(executableFile));
         let proc;
         if (process15.platform !== "win32") {
           if (launchWithNode) {
@@ -2626,7 +2626,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @return {Command}
        */
       nameFromFilename(filename) {
-        this._name = path10.basename(filename, path10.extname(filename));
+        this._name = path13.basename(filename, path13.extname(filename));
         return this;
       }
       /**
@@ -2640,10 +2640,10 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @param {string} [path]
        * @return {string|null|Command}
        */
-      executableDir(path11) {
-        if (path11 === void 0)
+      executableDir(path14) {
+        if (path14 === void 0)
           return this._executableDir;
-        this._executableDir = path11;
+        this._executableDir = path14;
         return this;
       }
       /**
@@ -2665,13 +2665,13 @@ Expecting one of '${allowedValues.join("', '")}'`);
       _getHelpContext(contextOptions) {
         contextOptions = contextOptions || {};
         const context = { error: !!contextOptions.error };
-        let write;
+        let write2;
         if (context.error) {
-          write = (arg) => this._outputConfiguration.writeErr(arg);
+          write2 = (arg) => this._outputConfiguration.writeErr(arg);
         } else {
-          write = (arg) => this._outputConfiguration.writeOut(arg);
+          write2 = (arg) => this._outputConfiguration.writeOut(arg);
         }
-        context.write = contextOptions.write || write;
+        context.write = contextOptions.write || write2;
         context.command = this;
         return context;
       }
@@ -4200,11 +4200,11 @@ var require_react_development = __commonJS({
           var dispatcher = resolveDispatcher();
           return dispatcher.useReducer(reducer, initialArg, init);
         }
-        function useRef4(initialValue) {
+        function useRef5(initialValue) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
-        function useEffect17(create2, deps) {
+        function useEffect18(create2, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useEffect(create2, deps);
         }
@@ -4986,14 +4986,14 @@ var require_react_development = __commonJS({
         exports.useContext = useContext15;
         exports.useDebugValue = useDebugValue;
         exports.useDeferredValue = useDeferredValue;
-        exports.useEffect = useEffect17;
+        exports.useEffect = useEffect18;
         exports.useId = useId;
         exports.useImperativeHandle = useImperativeHandle;
         exports.useInsertionEffect = useInsertionEffect;
         exports.useLayoutEffect = useLayoutEffect2;
         exports.useMemo = useMemo16;
         exports.useReducer = useReducer6;
-        exports.useRef = useRef4;
+        exports.useRef = useRef5;
         exports.useState = useState14;
         exports.useSyncExternalStore = useSyncExternalStore2;
         exports.useTransition = useTransition;
@@ -5078,8 +5078,8 @@ var require_use_sync_external_store_shim_development = __commonJS({
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
         }
-        var React46 = require_react();
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var React49 = require_react();
+        var ReactSharedInternals = React49.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function error(format) {
           {
             {
@@ -5109,13 +5109,13 @@ var require_use_sync_external_store_shim_development = __commonJS({
           return x === y && (x !== 0 || 1 / x === 1 / y) || x !== x && y !== y;
         }
         var objectIs = typeof Object.is === "function" ? Object.is : is;
-        var useState14 = React46.useState, useEffect17 = React46.useEffect, useLayoutEffect2 = React46.useLayoutEffect, useDebugValue = React46.useDebugValue;
+        var useState14 = React49.useState, useEffect18 = React49.useEffect, useLayoutEffect2 = React49.useLayoutEffect, useDebugValue = React49.useDebugValue;
         var didWarnOld18Alpha = false;
         var didWarnUncachedGetSnapshot = false;
         function useSyncExternalStore2(subscribe, getSnapshot, getServerSnapshot) {
           {
             if (!didWarnOld18Alpha) {
-              if (React46.startTransition !== void 0) {
+              if (React49.startTransition !== void 0) {
                 didWarnOld18Alpha = true;
                 error("You are using an outdated, pre-release alpha of React 18 that does not support useSyncExternalStore. The use-sync-external-store shim will not work correctly. Upgrade to a newer pre-release.");
               }
@@ -5146,7 +5146,7 @@ var require_use_sync_external_store_shim_development = __commonJS({
               });
             }
           }, [subscribe, value, getSnapshot]);
-          useEffect17(function() {
+          useEffect18(function() {
             if (checkIfSnapshotChanged(inst)) {
               forceUpdate({
                 inst
@@ -5180,7 +5180,7 @@ var require_use_sync_external_store_shim_development = __commonJS({
         var canUseDOM = !!(typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined");
         var isServerEnvironment = !canUseDOM;
         var shim = isServerEnvironment ? useSyncExternalStore$12 : useSyncExternalStore2;
-        var useSyncExternalStore$2 = React46.useSyncExternalStore !== void 0 ? React46.useSyncExternalStore : shim;
+        var useSyncExternalStore$2 = React49.useSyncExternalStore !== void 0 ? React49.useSyncExternalStore : shim;
         exports.useSyncExternalStore = useSyncExternalStore$2;
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(new Error());
@@ -8273,11 +8273,11 @@ var require_react_dom_server_node_production_min = __commonJS({
       a.status = 3;
       bd(this, b, a);
     }
-    function cd(a, b, c) {
+    function cd2(a, b, c) {
       var d = a.blockedBoundary;
       a.blockedSegment.status = 3;
       null === d ? (b.allPendingTasks--, 2 !== b.status && (b.status = 2, null !== b.destination && b.destination.end())) : (d.pendingTasks--, d.forceClientRender || (d.forceClientRender = true, d.errorDigest = b.onError(void 0 === c ? Error("The render was aborted by the server without a reason.") : c), d.parentFlushed && b.clientRenderedBoundaries.push(d)), d.fallbackAbortableTasks.forEach(function(a2) {
-        return cd(a2, b, c);
+        return cd2(a2, b, c);
       }), d.fallbackAbortableTasks.clear(), b.allPendingTasks--, 0 === b.allPendingTasks && (a = b.onAllReady, a()));
     }
     function Zc(a, b) {
@@ -8559,7 +8559,7 @@ var require_react_dom_server_node_production_min = __commonJS({
       try {
         var c = a.abortableTasks;
         c.forEach(function(c2) {
-          return cd(c2, a, b);
+          return cd2(c2, a, b);
         });
         c.clear();
         null !== a.destination && dd(a, a.destination);
@@ -8665,10 +8665,10 @@ var require_react_dom_server_legacy_node_development = __commonJS({
     if (process.env.NODE_ENV !== "production") {
       (function() {
         "use strict";
-        var React46 = require_react();
+        var React49 = require_react();
         var stream = __require("stream");
         var ReactVersion = "18.2.0";
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React49.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             {
@@ -10564,7 +10564,7 @@ var require_react_dom_server_legacy_node_development = __commonJS({
         }
         function flattenOptionChildren(children) {
           var content = "";
-          React46.Children.forEach(children, function(child) {
+          React49.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -12648,7 +12648,7 @@ var require_react_dom_server_legacy_node_development = __commonJS({
           workInProgressHook.memoizedState = [nextValue, nextDeps];
           return nextValue;
         }
-        function useRef4(initialValue) {
+        function useRef5(initialValue) {
           currentlyRenderingComponent = resolveCurrentlyRenderingComponent();
           workInProgressHook = createWorkInProgressHook();
           var previousRef = workInProgressHook.memoizedState;
@@ -12739,7 +12739,7 @@ var require_react_dom_server_legacy_node_development = __commonJS({
           useContext: useContext15,
           useMemo: useMemo16,
           useReducer: useReducer6,
-          useRef: useRef4,
+          useRef: useRef5,
           useState: useState14,
           useInsertionEffect: noop5,
           useLayoutEffect: useLayoutEffect2,
@@ -14063,10 +14063,10 @@ var require_react_dom_server_node_development = __commonJS({
     if (process.env.NODE_ENV !== "production") {
       (function() {
         "use strict";
-        var React46 = require_react();
+        var React49 = require_react();
         var util4 = __require("util");
         var ReactVersion = "18.2.0";
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React49.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             {
@@ -16059,7 +16059,7 @@ var require_react_dom_server_node_development = __commonJS({
         }
         function flattenOptionChildren(children) {
           var content = "";
-          React46.Children.forEach(children, function(child) {
+          React49.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -18079,7 +18079,7 @@ var require_react_dom_server_node_development = __commonJS({
           workInProgressHook.memoizedState = [nextValue, nextDeps];
           return nextValue;
         }
-        function useRef4(initialValue) {
+        function useRef5(initialValue) {
           currentlyRenderingComponent = resolveCurrentlyRenderingComponent();
           workInProgressHook = createWorkInProgressHook();
           var previousRef = workInProgressHook.memoizedState;
@@ -18170,7 +18170,7 @@ var require_react_dom_server_node_development = __commonJS({
           useContext: useContext15,
           useMemo: useMemo16,
           useReducer: useReducer6,
-          useRef: useRef4,
+          useRef: useRef5,
           useState: useState14,
           useInsertionEffect: noop5,
           useLayoutEffect: useLayoutEffect2,
@@ -21323,10 +21323,10 @@ var require_react_reconciler_production_min = __commonJS({
         }
         return null;
       }
-      var bd = [], cd = 0, dd = null, ed = 0, fd = [], gd = 0, hd = null, id = 1, jd = "";
+      var bd = [], cd2 = 0, dd = null, ed = 0, fd = [], gd = 0, hd = null, id = 1, jd = "";
       function kd(a, b) {
-        bd[cd++] = ed;
-        bd[cd++] = dd;
+        bd[cd2++] = ed;
+        bd[cd2++] = dd;
         dd = a;
         ed = b;
       }
@@ -21356,7 +21356,7 @@ var require_react_reconciler_production_min = __commonJS({
       }
       function nd(a) {
         for (; a === dd; )
-          dd = bd[--cd], bd[cd] = null, ed = bd[--cd], bd[cd] = null;
+          dd = bd[--cd2], bd[cd2] = null, ed = bd[--cd2], bd[cd2] = null;
         for (; a === hd; )
           hd = fd[--gd], fd[gd] = null, jd = fd[--gd], fd[gd] = null, id = fd[--gd], fd[gd] = null;
       }
@@ -25885,9 +25885,9 @@ var require_react_reconciler_development = __commonJS({
       module.exports = function $$$reconciler($$$hostConfig) {
         var exports2 = {};
         "use strict";
-        var React46 = require_react();
+        var React49 = require_react();
         var Scheduler = require_scheduler();
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React49.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         var suppressWarning = false;
         function setSuppressWarning(newSuppressWarning) {
           {
@@ -29685,7 +29685,7 @@ var require_react_reconciler_development = __commonJS({
           }
         }
         var fakeInternalInstance = {};
-        var emptyRefsObject = new React46.Component().refs;
+        var emptyRefsObject = new React49.Component().refs;
         var didWarnAboutStateAssignmentForComponent;
         var didWarnAboutUninitializedState;
         var didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate;
@@ -40736,10 +40736,10 @@ var require_react_reconciler_development = __commonJS({
         var setErrorHandler = null;
         var setSuspenseHandler = null;
         {
-          var copyWithDeleteImpl = function(obj, path10, index2) {
-            var key = path10[index2];
+          var copyWithDeleteImpl = function(obj, path13, index2) {
+            var key = path13[index2];
             var updated = isArray(obj) ? obj.slice() : assign({}, obj);
-            if (index2 + 1 === path10.length) {
+            if (index2 + 1 === path13.length) {
               if (isArray(updated)) {
                 updated.splice(key, 1);
               } else {
@@ -40747,11 +40747,11 @@ var require_react_reconciler_development = __commonJS({
               }
               return updated;
             }
-            updated[key] = copyWithDeleteImpl(obj[key], path10, index2 + 1);
+            updated[key] = copyWithDeleteImpl(obj[key], path13, index2 + 1);
             return updated;
           };
-          var copyWithDelete = function(obj, path10) {
-            return copyWithDeleteImpl(obj, path10, 0);
+          var copyWithDelete = function(obj, path13) {
+            return copyWithDeleteImpl(obj, path13, 0);
           };
           var copyWithRenameImpl = function(obj, oldPath, newPath, index2) {
             var oldKey = oldPath[index2];
@@ -40789,17 +40789,17 @@ var require_react_reconciler_development = __commonJS({
             }
             return copyWithRenameImpl(obj, oldPath, newPath, 0);
           };
-          var copyWithSetImpl = function(obj, path10, index2, value) {
-            if (index2 >= path10.length) {
+          var copyWithSetImpl = function(obj, path13, index2, value) {
+            if (index2 >= path13.length) {
               return value;
             }
-            var key = path10[index2];
+            var key = path13[index2];
             var updated = isArray(obj) ? obj.slice() : assign({}, obj);
-            updated[key] = copyWithSetImpl(obj[key], path10, index2 + 1, value);
+            updated[key] = copyWithSetImpl(obj[key], path13, index2 + 1, value);
             return updated;
           };
-          var copyWithSet = function(obj, path10, value) {
-            return copyWithSetImpl(obj, path10, 0, value);
+          var copyWithSet = function(obj, path13, value) {
+            return copyWithSetImpl(obj, path13, 0, value);
           };
           var findHook = function(fiber, id) {
             var currentHook2 = fiber.memoizedState;
@@ -40809,10 +40809,10 @@ var require_react_reconciler_development = __commonJS({
             }
             return currentHook2;
           };
-          overrideHookState = function(fiber, id, path10, value) {
+          overrideHookState = function(fiber, id, path13, value) {
             var hook = findHook(fiber, id);
             if (hook !== null) {
-              var newState = copyWithSet(hook.memoizedState, path10, value);
+              var newState = copyWithSet(hook.memoizedState, path13, value);
               hook.memoizedState = newState;
               hook.baseState = newState;
               fiber.memoizedProps = assign({}, fiber.memoizedProps);
@@ -40822,10 +40822,10 @@ var require_react_reconciler_development = __commonJS({
               }
             }
           };
-          overrideHookStateDeletePath = function(fiber, id, path10) {
+          overrideHookStateDeletePath = function(fiber, id, path13) {
             var hook = findHook(fiber, id);
             if (hook !== null) {
-              var newState = copyWithDelete(hook.memoizedState, path10);
+              var newState = copyWithDelete(hook.memoizedState, path13);
               hook.memoizedState = newState;
               hook.baseState = newState;
               fiber.memoizedProps = assign({}, fiber.memoizedProps);
@@ -40848,8 +40848,8 @@ var require_react_reconciler_development = __commonJS({
               }
             }
           };
-          overrideProps = function(fiber, path10, value) {
-            fiber.pendingProps = copyWithSet(fiber.memoizedProps, path10, value);
+          overrideProps = function(fiber, path13, value) {
+            fiber.pendingProps = copyWithSet(fiber.memoizedProps, path13, value);
             if (fiber.alternate) {
               fiber.alternate.pendingProps = fiber.pendingProps;
             }
@@ -40858,8 +40858,8 @@ var require_react_reconciler_development = __commonJS({
               scheduleUpdateOnFiber(root, fiber, SyncLane, NoTimestamp);
             }
           };
-          overridePropsDeletePath = function(fiber, path10) {
-            fiber.pendingProps = copyWithDelete(fiber.memoizedProps, path10);
+          overridePropsDeletePath = function(fiber, path13) {
+            fiber.pendingProps = copyWithDelete(fiber.memoizedProps, path13);
             if (fiber.alternate) {
               fiber.alternate.pendingProps = fiber.pendingProps;
             }
@@ -45853,8 +45853,8 @@ var require_backend = __commonJS({
               }
               return false;
             }
-            function getInObject(object, path10) {
-              return path10.reduce(function(reduced, attr) {
+            function getInObject(object, path13) {
+              return path13.reduce(function(reduced, attr) {
                 if (reduced) {
                   if (hasOwnProperty.call(reduced, attr)) {
                     return reduced[attr];
@@ -45866,11 +45866,11 @@ var require_backend = __commonJS({
                 return null;
               }, object);
             }
-            function deletePathInObject(object, path10) {
-              var length = path10.length;
-              var last = path10[length - 1];
+            function deletePathInObject(object, path13) {
+              var length = path13.length;
+              var last = path13[length - 1];
               if (object != null) {
-                var parent = getInObject(object, path10.slice(0, length - 1));
+                var parent = getInObject(object, path13.slice(0, length - 1));
                 if (parent) {
                   if (src_isArray(parent)) {
                     parent.splice(last, 1);
@@ -45896,11 +45896,11 @@ var require_backend = __commonJS({
                 }
               }
             }
-            function setInObject(object, path10, value) {
-              var length = path10.length;
-              var last = path10[length - 1];
+            function setInObject(object, path13, value) {
+              var length = path13.length;
+              var last = path13[length - 1];
               if (object != null) {
-                var parent = getInObject(object, path10.slice(0, length - 1));
+                var parent = getInObject(object, path13.slice(0, length - 1));
                 if (parent) {
                   parent[last] = value;
                 }
@@ -46345,14 +46345,14 @@ var require_backend = __commonJS({
               return obj;
             }
             function cleanForBridge(data, isPathAllowed) {
-              var path10 = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : [];
+              var path13 = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : [];
               if (data !== null) {
                 var cleanedPaths = [];
                 var unserializablePaths = [];
                 var cleanedData = Object(_hydration__WEBPACK_IMPORTED_MODULE_1__[
                   /* dehydrate */
                   "a"
-                ])(data, cleanedPaths, unserializablePaths, path10, isPathAllowed);
+                ])(data, cleanedPaths, unserializablePaths, path13, isPathAllowed);
                 return {
                   data: cleanedData,
                   cleaned: cleanedPaths,
@@ -46373,14 +46373,14 @@ var require_backend = __commonJS({
                 Object(clipboard_js__WEBPACK_IMPORTED_MODULE_0__["copy"])(text);
               }
             }
-            function copyWithDelete(obj, path10) {
+            function copyWithDelete(obj, path13) {
               var index = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : 0;
-              var key = path10[index];
+              var key = path13[index];
               var updated = Object(shared_isArray__WEBPACK_IMPORTED_MODULE_2__[
                 /* default */
                 "a"
               ])(obj) ? obj.slice() : _objectSpread({}, obj);
-              if (index + 1 === path10.length) {
+              if (index + 1 === path13.length) {
                 if (Object(shared_isArray__WEBPACK_IMPORTED_MODULE_2__[
                   /* default */
                   "a"
@@ -46390,7 +46390,7 @@ var require_backend = __commonJS({
                   delete updated[key];
                 }
               } else {
-                updated[key] = copyWithDelete(obj[key], path10, index + 1);
+                updated[key] = copyWithDelete(obj[key], path13, index + 1);
               }
               return updated;
             }
@@ -46417,17 +46417,17 @@ var require_backend = __commonJS({
               }
               return updated;
             }
-            function copyWithSet(obj, path10, value) {
+            function copyWithSet(obj, path13, value) {
               var index = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : 0;
-              if (index >= path10.length) {
+              if (index >= path13.length) {
                 return value;
               }
-              var key = path10[index];
+              var key = path13[index];
               var updated = Object(shared_isArray__WEBPACK_IMPORTED_MODULE_2__[
                 /* default */
                 "a"
               ])(obj) ? obj.slice() : _objectSpread({}, obj);
-              updated[key] = copyWithSet(obj[key], path10, value, index + 1);
+              updated[key] = copyWithSet(obj[key], path13, value, index + 1);
               return updated;
             }
             function getEffectDurations(root) {
@@ -47013,8 +47013,8 @@ var require_backend = __commonJS({
               unserializable: Symbol("unserializable")
             };
             var LEVEL_THRESHOLD = 2;
-            function createDehydrated(type, inspectable, data, cleaned, path10) {
-              cleaned.push(path10);
+            function createDehydrated(type, inspectable, data, cleaned, path13) {
+              cleaned.push(path13);
               var dehydrated = {
                 inspectable,
                 type,
@@ -47038,7 +47038,7 @@ var require_backend = __commonJS({
               }
               return dehydrated;
             }
-            function dehydrate2(data, cleaned, unserializable, path10, isPathAllowed) {
+            function dehydrate2(data, cleaned, unserializable, path13, isPathAllowed) {
               var level = arguments.length > 5 && arguments[5] !== void 0 ? arguments[5] : 0;
               var type = Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
                 /* getDataType */
@@ -47047,7 +47047,7 @@ var require_backend = __commonJS({
               var isPathAllowedCheck;
               switch (type) {
                 case "html_element":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47062,7 +47062,7 @@ var require_backend = __commonJS({
                     type
                   };
                 case "function":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47077,14 +47077,14 @@ var require_backend = __commonJS({
                     type
                   };
                 case "string":
-                  isPathAllowedCheck = isPathAllowed(path10);
+                  isPathAllowedCheck = isPathAllowed(path13);
                   if (isPathAllowedCheck) {
                     return data;
                   } else {
                     return data.length <= 500 ? data : data.slice(0, 500) + "...";
                   }
                 case "bigint":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47099,7 +47099,7 @@ var require_backend = __commonJS({
                     type
                   };
                 case "symbol":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47114,7 +47114,7 @@ var require_backend = __commonJS({
                     type
                   };
                 case "react_element":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47133,7 +47133,7 @@ var require_backend = __commonJS({
                   };
                 case "array_buffer":
                 case "data_view":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47149,19 +47149,19 @@ var require_backend = __commonJS({
                     type
                   };
                 case "array":
-                  isPathAllowedCheck = isPathAllowed(path10);
+                  isPathAllowedCheck = isPathAllowed(path13);
                   if (level >= LEVEL_THRESHOLD && !isPathAllowedCheck) {
-                    return createDehydrated(type, true, data, cleaned, path10);
+                    return createDehydrated(type, true, data, cleaned, path13);
                   }
                   return data.map(function(item, i) {
-                    return dehydrate2(item, cleaned, unserializable, path10.concat([i]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
+                    return dehydrate2(item, cleaned, unserializable, path13.concat([i]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
                   });
                 case "html_all_collection":
                 case "typed_array":
                 case "iterator":
-                  isPathAllowedCheck = isPathAllowed(path10);
+                  isPathAllowedCheck = isPathAllowed(path13);
                   if (level >= LEVEL_THRESHOLD && !isPathAllowedCheck) {
-                    return createDehydrated(type, true, data, cleaned, path10);
+                    return createDehydrated(type, true, data, cleaned, path13);
                   } else {
                     var unserializableValue = {
                       unserializable: true,
@@ -47179,13 +47179,13 @@ var require_backend = __commonJS({
                       name: !data.constructor || data.constructor.name === "Object" ? "" : data.constructor.name
                     };
                     Array.from(data).forEach(function(item, i) {
-                      return unserializableValue[i] = dehydrate2(item, cleaned, unserializable, path10.concat([i]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
+                      return unserializableValue[i] = dehydrate2(item, cleaned, unserializable, path13.concat([i]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
                     });
-                    unserializable.push(path10);
+                    unserializable.push(path13);
                     return unserializableValue;
                   }
                 case "opaque_iterator":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47200,7 +47200,7 @@ var require_backend = __commonJS({
                     type
                   };
                 case "date":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47215,7 +47215,7 @@ var require_backend = __commonJS({
                     type
                   };
                 case "regexp":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     inspectable: false,
                     preview_short: Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47230,9 +47230,9 @@ var require_backend = __commonJS({
                     type
                   };
                 case "object":
-                  isPathAllowedCheck = isPathAllowed(path10);
+                  isPathAllowedCheck = isPathAllowed(path13);
                   if (level >= LEVEL_THRESHOLD && !isPathAllowedCheck) {
-                    return createDehydrated(type, true, data, cleaned, path10);
+                    return createDehydrated(type, true, data, cleaned, path13);
                   } else {
                     var object = {};
                     Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
@@ -47240,14 +47240,14 @@ var require_backend = __commonJS({
                       "c"
                     ])(data).forEach(function(key) {
                       var name = key.toString();
-                      object[name] = dehydrate2(data[key], cleaned, unserializable, path10.concat([name]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
+                      object[name] = dehydrate2(data[key], cleaned, unserializable, path13.concat([name]), isPathAllowed, isPathAllowedCheck ? 1 : level + 1);
                     });
                     return object;
                   }
                 case "infinity":
                 case "nan":
                 case "undefined":
-                  cleaned.push(path10);
+                  cleaned.push(path13);
                   return {
                     type
                   };
@@ -47255,11 +47255,11 @@ var require_backend = __commonJS({
                   return data;
               }
             }
-            function fillInPath(object, data, path10, value) {
+            function fillInPath(object, data, path13, value) {
               var target = Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
                 /* getInObject */
                 "h"
-              ])(object, path10);
+              ])(object, path13);
               if (target != null) {
                 if (!target[meta.unserializable]) {
                   delete target[meta.inspectable];
@@ -47274,9 +47274,9 @@ var require_backend = __commonJS({
               }
               if (value !== null && data.unserializable.length > 0) {
                 var unserializablePath = data.unserializable[0];
-                var isMatch = unserializablePath.length === path10.length;
-                for (var i = 0; i < path10.length; i++) {
-                  if (path10[i] !== unserializablePath[i]) {
+                var isMatch = unserializablePath.length === path13.length;
+                for (var i = 0; i < path13.length; i++) {
+                  if (path13[i] !== unserializablePath[i]) {
                     isMatch = false;
                     break;
                   }
@@ -47288,16 +47288,16 @@ var require_backend = __commonJS({
               Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
                 /* setInObject */
                 "l"
-              ])(object, path10, value);
+              ])(object, path13, value);
             }
             function hydrate2(object, cleaned, unserializable) {
-              cleaned.forEach(function(path10) {
-                var length = path10.length;
-                var last = path10[length - 1];
+              cleaned.forEach(function(path13) {
+                var length = path13.length;
+                var last = path13[length - 1];
                 var parent = Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
                   /* getInObject */
                   "h"
-                ])(object, path10.slice(0, length - 1));
+                ])(object, path13.slice(0, length - 1));
                 if (!parent || !parent.hasOwnProperty(last)) {
                   return;
                 }
@@ -47323,13 +47323,13 @@ var require_backend = __commonJS({
                   parent[last] = replaced;
                 }
               });
-              unserializable.forEach(function(path10) {
-                var length = path10.length;
-                var last = path10[length - 1];
+              unserializable.forEach(function(path13) {
+                var length = path13.length;
+                var last = path13[length - 1];
                 var parent = Object(_utils__WEBPACK_IMPORTED_MODULE_0__[
                   /* getInObject */
                   "h"
-                ])(object, path10.slice(0, length - 1));
+                ])(object, path13.slice(0, length - 1));
                 if (!parent || !parent.hasOwnProperty(last)) {
                   return;
                 }
@@ -51048,12 +51048,12 @@ var require_backend = __commonJS({
                 }
                 return alternate;
               }
-              function prepareViewAttributeSource(id, path10) {
+              function prepareViewAttributeSource(id, path13) {
                 if (isMostRecentlyInspectedElement(id)) {
                   window.$attribute = Object(utils[
                     "h"
                     /* getInObject */
-                  ])(mostRecentlyInspectedElement, path10);
+                  ])(mostRecentlyInspectedElement, path13);
                 }
               }
               function prepareViewElementSource(id) {
@@ -51307,9 +51307,9 @@ var require_backend = __commonJS({
               function isMostRecentlyInspectedElementCurrent(id) {
                 return isMostRecentlyInspectedElement(id) && !hasElementUpdatedSinceLastInspected;
               }
-              function mergeInspectedPaths(path10) {
+              function mergeInspectedPaths(path13) {
                 var current = currentlyInspectedPaths;
-                path10.forEach(function(key) {
+                path13.forEach(function(key) {
                   if (!current[key]) {
                     current[key] = {};
                   }
@@ -51317,16 +51317,16 @@ var require_backend = __commonJS({
                 });
               }
               function createIsPathAllowed(key, secondaryCategory) {
-                return function isPathAllowed(path10) {
+                return function isPathAllowed(path13) {
                   switch (secondaryCategory) {
                     case "hooks":
-                      if (path10.length === 1) {
+                      if (path13.length === 1) {
                         return true;
                       }
-                      if (path10[path10.length - 2] === "hookSource" && path10[path10.length - 1] === "fileName") {
+                      if (path13[path13.length - 2] === "hookSource" && path13[path13.length - 1] === "fileName") {
                         return true;
                       }
-                      if (path10[path10.length - 1] === "subHooks" || path10[path10.length - 2] === "subHooks") {
+                      if (path13[path13.length - 1] === "subHooks" || path13[path13.length - 2] === "subHooks") {
                         return true;
                       }
                       break;
@@ -51337,8 +51337,8 @@ var require_backend = __commonJS({
                   if (!current) {
                     return false;
                   }
-                  for (var i = 0; i < path10.length; i++) {
-                    current = current[path10[i]];
+                  for (var i = 0; i < path13.length; i++) {
+                    current = current[path13[i]];
                     if (!current) {
                       return false;
                     }
@@ -51387,19 +51387,19 @@ var require_backend = __commonJS({
                     break;
                 }
               }
-              function storeAsGlobal(id, path10, count) {
+              function storeAsGlobal(id, path13, count) {
                 if (isMostRecentlyInspectedElement(id)) {
                   var value = Object(utils[
                     "h"
                     /* getInObject */
-                  ])(mostRecentlyInspectedElement, path10);
+                  ])(mostRecentlyInspectedElement, path13);
                   var key = "$reactTemp".concat(count);
                   window[key] = value;
                   console.log(key);
                   console.log(value);
                 }
               }
-              function copyElementPath(id, path10) {
+              function copyElementPath(id, path13) {
                 if (isMostRecentlyInspectedElement(id)) {
                   Object(backend_utils[
                     "b"
@@ -51407,32 +51407,32 @@ var require_backend = __commonJS({
                   ])(Object(utils[
                     "h"
                     /* getInObject */
-                  ])(mostRecentlyInspectedElement, path10));
+                  ])(mostRecentlyInspectedElement, path13));
                 }
               }
-              function inspectElement(requestID, id, path10, forceFullData) {
-                if (path10 !== null) {
-                  mergeInspectedPaths(path10);
+              function inspectElement(requestID, id, path13, forceFullData) {
+                if (path13 !== null) {
+                  mergeInspectedPaths(path13);
                 }
                 if (isMostRecentlyInspectedElement(id) && !forceFullData) {
                   if (!hasElementUpdatedSinceLastInspected) {
-                    if (path10 !== null) {
+                    if (path13 !== null) {
                       var secondaryCategory = null;
-                      if (path10[0] === "hooks") {
+                      if (path13[0] === "hooks") {
                         secondaryCategory = "hooks";
                       }
                       return {
                         id,
                         responseID: requestID,
                         type: "hydrated-path",
-                        path: path10,
+                        path: path13,
                         value: Object(backend_utils[
                           "a"
                           /* cleanForBridge */
                         ])(Object(utils[
                           "h"
                           /* getInObject */
-                        ])(mostRecentlyInspectedElement, path10), createIsPathAllowed(null, secondaryCategory), path10)
+                        ])(mostRecentlyInspectedElement, path13), createIsPathAllowed(null, secondaryCategory), path13)
                       };
                     } else {
                       return {
@@ -51516,21 +51516,21 @@ var require_backend = __commonJS({
                   console.groupEnd();
                 }
               }
-              function deletePath(type, id, hookID, path10) {
+              function deletePath(type, id, hookID, path13) {
                 var fiber = findCurrentFiberUsingSlowPathById(id);
                 if (fiber !== null) {
                   var instance = fiber.stateNode;
                   switch (type) {
                     case "context":
-                      path10 = path10.slice(1);
+                      path13 = path13.slice(1);
                       switch (fiber.tag) {
                         case ClassComponent:
-                          if (path10.length === 0) {
+                          if (path13.length === 0) {
                           } else {
                             Object(utils[
                               "a"
                               /* deletePathInObject */
-                            ])(instance.context, path10);
+                            ])(instance.context, path13);
                           }
                           instance.forceUpdate();
                           break;
@@ -51540,19 +51540,19 @@ var require_backend = __commonJS({
                       break;
                     case "hooks":
                       if (typeof overrideHookStateDeletePath === "function") {
-                        overrideHookStateDeletePath(fiber, hookID, path10);
+                        overrideHookStateDeletePath(fiber, hookID, path13);
                       }
                       break;
                     case "props":
                       if (instance === null) {
                         if (typeof overridePropsDeletePath === "function") {
-                          overridePropsDeletePath(fiber, path10);
+                          overridePropsDeletePath(fiber, path13);
                         }
                       } else {
                         fiber.pendingProps = Object(backend_utils[
                           "c"
                           /* copyWithDelete */
-                        ])(instance.props, path10);
+                        ])(instance.props, path13);
                         instance.forceUpdate();
                       }
                       break;
@@ -51560,7 +51560,7 @@ var require_backend = __commonJS({
                       Object(utils[
                         "a"
                         /* deletePathInObject */
-                      ])(instance.state, path10);
+                      ])(instance.state, path13);
                       instance.forceUpdate();
                       break;
                   }
@@ -51617,22 +51617,22 @@ var require_backend = __commonJS({
                   }
                 }
               }
-              function overrideValueAtPath(type, id, hookID, path10, value) {
+              function overrideValueAtPath(type, id, hookID, path13, value) {
                 var fiber = findCurrentFiberUsingSlowPathById(id);
                 if (fiber !== null) {
                   var instance = fiber.stateNode;
                   switch (type) {
                     case "context":
-                      path10 = path10.slice(1);
+                      path13 = path13.slice(1);
                       switch (fiber.tag) {
                         case ClassComponent:
-                          if (path10.length === 0) {
+                          if (path13.length === 0) {
                             instance.context = value;
                           } else {
                             Object(utils[
                               "l"
                               /* setInObject */
-                            ])(instance.context, path10, value);
+                            ])(instance.context, path13, value);
                           }
                           instance.forceUpdate();
                           break;
@@ -51642,7 +51642,7 @@ var require_backend = __commonJS({
                       break;
                     case "hooks":
                       if (typeof overrideHookState === "function") {
-                        overrideHookState(fiber, hookID, path10, value);
+                        overrideHookState(fiber, hookID, path13, value);
                       }
                       break;
                     case "props":
@@ -51651,12 +51651,12 @@ var require_backend = __commonJS({
                           fiber.pendingProps = Object(backend_utils[
                             "e"
                             /* copyWithSet */
-                          ])(instance.props, path10, value);
+                          ])(instance.props, path13, value);
                           instance.forceUpdate();
                           break;
                         default:
                           if (typeof overrideProps === "function") {
-                            overrideProps(fiber, path10, value);
+                            overrideProps(fiber, path13, value);
                           }
                           break;
                       }
@@ -51667,7 +51667,7 @@ var require_backend = __commonJS({
                           Object(utils[
                             "l"
                             /* setInObject */
-                          ])(instance.state, path10, value);
+                          ])(instance.state, path13, value);
                           instance.forceUpdate();
                           break;
                       }
@@ -51841,13 +51841,13 @@ var require_backend = __commonJS({
               var trackedPathMatchFiber = null;
               var trackedPathMatchDepth = -1;
               var mightBeOnTrackedPath = false;
-              function setTrackedPath(path10) {
-                if (path10 === null) {
+              function setTrackedPath(path13) {
+                if (path13 === null) {
                   trackedPathMatchFiber = null;
                   trackedPathMatchDepth = -1;
                   mightBeOnTrackedPath = false;
                 }
-                trackedPath = path10;
+                trackedPath = path13;
               }
               function updateTrackedPathStateBeforeMount(fiber) {
                 if (trackedPath === null || !mightBeOnTrackedPath) {
@@ -54037,7 +54037,7 @@ var require_backend = __commonJS({
                 });
                 return a._currentValue;
               },
-              useEffect: function useEffect17(a) {
+              useEffect: function useEffect18(a) {
                 F();
                 z2.push({
                   primitive: "Effect",
@@ -54099,7 +54099,7 @@ var require_backend = __commonJS({
                 return [b, function() {
                 }];
               },
-              useRef: function useRef4(a) {
+              useRef: function useRef5(a) {
                 var b = F();
                 a = null !== b ? b.memoizedState : {
                   current: a
@@ -56152,12 +56152,12 @@ var require_backend = __commonJS({
                   }
                 });
                 bridge_defineProperty(_assertThisInitialized(_this), "overrideValueAtPath", function(_ref) {
-                  var id = _ref.id, path10 = _ref.path, rendererID = _ref.rendererID, type = _ref.type, value = _ref.value;
+                  var id = _ref.id, path13 = _ref.path, rendererID = _ref.rendererID, type = _ref.type, value = _ref.value;
                   switch (type) {
                     case "context":
                       _this.send("overrideContext", {
                         id,
-                        path: path10,
+                        path: path13,
                         rendererID,
                         wasForwarded: true,
                         value
@@ -56166,7 +56166,7 @@ var require_backend = __commonJS({
                     case "hooks":
                       _this.send("overrideHookState", {
                         id,
-                        path: path10,
+                        path: path13,
                         rendererID,
                         wasForwarded: true,
                         value
@@ -56175,7 +56175,7 @@ var require_backend = __commonJS({
                     case "props":
                       _this.send("overrideProps", {
                         id,
-                        path: path10,
+                        path: path13,
                         rendererID,
                         wasForwarded: true,
                         value
@@ -56184,7 +56184,7 @@ var require_backend = __commonJS({
                     case "state":
                       _this.send("overrideState", {
                         id,
-                        path: path10,
+                        path: path13,
                         rendererID,
                         wasForwarded: true,
                         value
@@ -56407,21 +56407,21 @@ var require_backend = __commonJS({
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "copyElementPath", function(_ref4) {
-                  var id = _ref4.id, path10 = _ref4.path, rendererID = _ref4.rendererID;
+                  var id = _ref4.id, path13 = _ref4.path, rendererID = _ref4.rendererID;
                   var renderer2 = _this._rendererInterfaces[rendererID];
                   if (renderer2 == null) {
                     console.warn('Invalid renderer id "'.concat(rendererID, '" for element "').concat(id, '"'));
                   } else {
-                    renderer2.copyElementPath(id, path10);
+                    renderer2.copyElementPath(id, path13);
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "deletePath", function(_ref5) {
-                  var hookID = _ref5.hookID, id = _ref5.id, path10 = _ref5.path, rendererID = _ref5.rendererID, type = _ref5.type;
+                  var hookID = _ref5.hookID, id = _ref5.id, path13 = _ref5.path, rendererID = _ref5.rendererID, type = _ref5.type;
                   var renderer2 = _this._rendererInterfaces[rendererID];
                   if (renderer2 == null) {
                     console.warn('Invalid renderer id "'.concat(rendererID, '" for element "').concat(id, '"'));
                   } else {
-                    renderer2.deletePath(type, id, hookID, path10);
+                    renderer2.deletePath(type, id, hookID, path13);
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "getBridgeProtocol", function() {
@@ -56452,12 +56452,12 @@ var require_backend = __commonJS({
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "inspectElement", function(_ref8) {
-                  var forceFullData = _ref8.forceFullData, id = _ref8.id, path10 = _ref8.path, rendererID = _ref8.rendererID, requestID = _ref8.requestID;
+                  var forceFullData = _ref8.forceFullData, id = _ref8.id, path13 = _ref8.path, rendererID = _ref8.rendererID, requestID = _ref8.requestID;
                   var renderer2 = _this._rendererInterfaces[rendererID];
                   if (renderer2 == null) {
                     console.warn('Invalid renderer id "'.concat(rendererID, '" for element "').concat(id, '"'));
                   } else {
-                    _this._bridge.send("inspectedElement", renderer2.inspectElement(requestID, id, path10, forceFullData));
+                    _this._bridge.send("inspectedElement", renderer2.inspectElement(requestID, id, path13, forceFullData));
                     if (_this._persistedSelectionMatch === null || _this._persistedSelectionMatch.id !== id) {
                       _this._persistedSelection = null;
                       _this._persistedSelectionMatch = null;
@@ -56494,20 +56494,20 @@ var require_backend = __commonJS({
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "overrideValueAtPath", function(_ref12) {
-                  var hookID = _ref12.hookID, id = _ref12.id, path10 = _ref12.path, rendererID = _ref12.rendererID, type = _ref12.type, value = _ref12.value;
+                  var hookID = _ref12.hookID, id = _ref12.id, path13 = _ref12.path, rendererID = _ref12.rendererID, type = _ref12.type, value = _ref12.value;
                   var renderer2 = _this._rendererInterfaces[rendererID];
                   if (renderer2 == null) {
                     console.warn('Invalid renderer id "'.concat(rendererID, '" for element "').concat(id, '"'));
                   } else {
-                    renderer2.overrideValueAtPath(type, id, hookID, path10, value);
+                    renderer2.overrideValueAtPath(type, id, hookID, path13, value);
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "overrideContext", function(_ref13) {
-                  var id = _ref13.id, path10 = _ref13.path, rendererID = _ref13.rendererID, wasForwarded = _ref13.wasForwarded, value = _ref13.value;
+                  var id = _ref13.id, path13 = _ref13.path, rendererID = _ref13.rendererID, wasForwarded = _ref13.wasForwarded, value = _ref13.value;
                   if (!wasForwarded) {
                     _this.overrideValueAtPath({
                       id,
-                      path: path10,
+                      path: path13,
                       rendererID,
                       type: "context",
                       value
@@ -56515,11 +56515,11 @@ var require_backend = __commonJS({
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "overrideHookState", function(_ref14) {
-                  var id = _ref14.id, hookID = _ref14.hookID, path10 = _ref14.path, rendererID = _ref14.rendererID, wasForwarded = _ref14.wasForwarded, value = _ref14.value;
+                  var id = _ref14.id, hookID = _ref14.hookID, path13 = _ref14.path, rendererID = _ref14.rendererID, wasForwarded = _ref14.wasForwarded, value = _ref14.value;
                   if (!wasForwarded) {
                     _this.overrideValueAtPath({
                       id,
-                      path: path10,
+                      path: path13,
                       rendererID,
                       type: "hooks",
                       value
@@ -56527,11 +56527,11 @@ var require_backend = __commonJS({
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "overrideProps", function(_ref15) {
-                  var id = _ref15.id, path10 = _ref15.path, rendererID = _ref15.rendererID, wasForwarded = _ref15.wasForwarded, value = _ref15.value;
+                  var id = _ref15.id, path13 = _ref15.path, rendererID = _ref15.rendererID, wasForwarded = _ref15.wasForwarded, value = _ref15.value;
                   if (!wasForwarded) {
                     _this.overrideValueAtPath({
                       id,
-                      path: path10,
+                      path: path13,
                       rendererID,
                       type: "props",
                       value
@@ -56539,11 +56539,11 @@ var require_backend = __commonJS({
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "overrideState", function(_ref16) {
-                  var id = _ref16.id, path10 = _ref16.path, rendererID = _ref16.rendererID, wasForwarded = _ref16.wasForwarded, value = _ref16.value;
+                  var id = _ref16.id, path13 = _ref16.path, rendererID = _ref16.rendererID, wasForwarded = _ref16.wasForwarded, value = _ref16.value;
                   if (!wasForwarded) {
                     _this.overrideValueAtPath({
                       id,
-                      path: path10,
+                      path: path13,
                       rendererID,
                       type: "state",
                       value
@@ -56613,12 +56613,12 @@ var require_backend = __commonJS({
                   _this._bridge.send("profilingStatus", _this._isProfiling);
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "storeAsGlobal", function(_ref18) {
-                  var count = _ref18.count, id = _ref18.id, path10 = _ref18.path, rendererID = _ref18.rendererID;
+                  var count = _ref18.count, id = _ref18.id, path13 = _ref18.path, rendererID = _ref18.rendererID;
                   var renderer2 = _this._rendererInterfaces[rendererID];
                   if (renderer2 == null) {
                     console.warn('Invalid renderer id "'.concat(rendererID, '" for element "').concat(id, '"'));
                   } else {
-                    renderer2.storeAsGlobal(id, path10, count);
+                    renderer2.storeAsGlobal(id, path13, count);
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "updateConsolePatchSettings", function(_ref19) {
@@ -56641,12 +56641,12 @@ var require_backend = __commonJS({
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "viewAttributeSource", function(_ref20) {
-                  var id = _ref20.id, path10 = _ref20.path, rendererID = _ref20.rendererID;
+                  var id = _ref20.id, path13 = _ref20.path, rendererID = _ref20.rendererID;
                   var renderer2 = _this._rendererInterfaces[rendererID];
                   if (renderer2 == null) {
                     console.warn('Invalid renderer id "'.concat(rendererID, '" for element "').concat(id, '"'));
                   } else {
-                    renderer2.prepareViewAttributeSource(id, path10);
+                    renderer2.prepareViewAttributeSource(id, path13);
                   }
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "viewElementSource", function(_ref21) {
@@ -56706,8 +56706,8 @@ var require_backend = __commonJS({
                 });
                 agent_defineProperty(agent_assertThisInitialized(_this), "_throttledPersistSelection", lodash_throttle_default()(function(rendererID, id) {
                   var renderer2 = _this._rendererInterfaces[rendererID];
-                  var path10 = renderer2 != null ? renderer2.getPathForElement(id) : null;
-                  if (path10 !== null) {
+                  var path13 = renderer2 != null ? renderer2.getPathForElement(id) : null;
+                  if (path13 !== null) {
                     Object(storage[
                       "e"
                       /* sessionStorageSetItem */
@@ -56716,7 +56716,7 @@ var require_backend = __commonJS({
                       /* SESSION_STORAGE_LAST_SELECTION_KEY */
                     ], JSON.stringify({
                       rendererID,
-                      path: path10
+                      path: path13
                     }));
                   } else {
                     Object(storage[
@@ -57741,9 +57741,9 @@ var require_backend = __commonJS({
               }
               var currentlyInspectedElementID = null;
               var currentlyInspectedPaths = {};
-              function mergeInspectedPaths(path10) {
+              function mergeInspectedPaths(path13) {
                 var current = currentlyInspectedPaths;
-                path10.forEach(function(key) {
+                path13.forEach(function(key) {
                   if (!current[key]) {
                     current[key] = {};
                   }
@@ -57751,13 +57751,13 @@ var require_backend = __commonJS({
                 });
               }
               function createIsPathAllowed(key) {
-                return function isPathAllowed(path10) {
+                return function isPathAllowed(path13) {
                   var current = currentlyInspectedPaths[key];
                   if (!current) {
                     return false;
                   }
-                  for (var i = 0; i < path10.length; i++) {
-                    current = current[path10[i]];
+                  for (var i = 0; i < path13.length; i++) {
+                    current = current[path13[i]];
                     if (!current) {
                       return false;
                     }
@@ -57813,20 +57813,20 @@ var require_backend = __commonJS({
                     break;
                 }
               }
-              function storeAsGlobal(id, path10, count) {
+              function storeAsGlobal(id, path13, count) {
                 var inspectedElement = inspectElementRaw(id);
                 if (inspectedElement !== null) {
                   var value = Object(src_utils[
                     "h"
                     /* getInObject */
-                  ])(inspectedElement, path10);
+                  ])(inspectedElement, path13);
                   var key = "$reactTemp".concat(count);
                   window[key] = value;
                   console.log(key);
                   console.log(value);
                 }
               }
-              function copyElementPath(id, path10) {
+              function copyElementPath(id, path13) {
                 var inspectedElement = inspectElementRaw(id);
                 if (inspectedElement !== null) {
                   Object(utils[
@@ -57835,10 +57835,10 @@ var require_backend = __commonJS({
                   ])(Object(src_utils[
                     "h"
                     /* getInObject */
-                  ])(inspectedElement, path10));
+                  ])(inspectedElement, path13));
                 }
               }
-              function inspectElement(requestID, id, path10, forceFullData) {
+              function inspectElement(requestID, id, path13, forceFullData) {
                 if (forceFullData || currentlyInspectedElementID !== id) {
                   currentlyInspectedElementID = id;
                   currentlyInspectedPaths = {};
@@ -57851,8 +57851,8 @@ var require_backend = __commonJS({
                     type: "not-found"
                   };
                 }
-                if (path10 !== null) {
-                  mergeInspectedPaths(path10);
+                if (path13 !== null) {
+                  mergeInspectedPaths(path13);
                 }
                 updateSelectedElement(id);
                 inspectedElement.context = Object(utils[
@@ -57992,13 +57992,13 @@ var require_backend = __commonJS({
                   console.groupEnd();
                 }
               }
-              function prepareViewAttributeSource(id, path10) {
+              function prepareViewAttributeSource(id, path13) {
                 var inspectedElement = inspectElementRaw(id);
                 if (inspectedElement !== null) {
                   window.$attribute = Object(src_utils[
                     "h"
                     /* getInObject */
-                  ])(inspectedElement, path10);
+                  ])(inspectedElement, path13);
                 }
               }
               function prepareViewElementSource(id) {
@@ -58014,7 +58014,7 @@ var require_backend = __commonJS({
                 }
                 global2.$type = element.type;
               }
-              function deletePath(type, id, hookID, path10) {
+              function deletePath(type, id, hookID, path13) {
                 var internalInstance = idToInternalInstanceMap.get(id);
                 if (internalInstance != null) {
                   var publicInstance = internalInstance._instance;
@@ -58024,7 +58024,7 @@ var require_backend = __commonJS({
                         Object(src_utils[
                           "a"
                           /* deletePathInObject */
-                        ])(publicInstance.context, path10);
+                        ])(publicInstance.context, path13);
                         forceUpdate(publicInstance);
                         break;
                       case "hooks":
@@ -58035,7 +58035,7 @@ var require_backend = __commonJS({
                           props: Object(utils[
                             "c"
                             /* copyWithDelete */
-                          ])(element.props, path10)
+                          ])(element.props, path13)
                         });
                         forceUpdate(publicInstance);
                         break;
@@ -58043,7 +58043,7 @@ var require_backend = __commonJS({
                         Object(src_utils[
                           "a"
                           /* deletePathInObject */
-                        ])(publicInstance.state, path10);
+                        ])(publicInstance.state, path13);
                         forceUpdate(publicInstance);
                         break;
                     }
@@ -58086,7 +58086,7 @@ var require_backend = __commonJS({
                   }
                 }
               }
-              function overrideValueAtPath(type, id, hookID, path10, value) {
+              function overrideValueAtPath(type, id, hookID, path13, value) {
                 var internalInstance = idToInternalInstanceMap.get(id);
                 if (internalInstance != null) {
                   var publicInstance = internalInstance._instance;
@@ -58096,7 +58096,7 @@ var require_backend = __commonJS({
                         Object(src_utils[
                           "l"
                           /* setInObject */
-                        ])(publicInstance.context, path10, value);
+                        ])(publicInstance.context, path13, value);
                         forceUpdate(publicInstance);
                         break;
                       case "hooks":
@@ -58107,7 +58107,7 @@ var require_backend = __commonJS({
                           props: Object(utils[
                             "e"
                             /* copyWithSet */
-                          ])(element.props, path10, value)
+                          ])(element.props, path13, value)
                         });
                         forceUpdate(publicInstance);
                         break;
@@ -58115,7 +58115,7 @@ var require_backend = __commonJS({
                         Object(src_utils[
                           "l"
                           /* setInObject */
-                        ])(publicInstance.state, path10, value);
+                        ])(publicInstance.state, path13, value);
                         forceUpdate(publicInstance);
                         break;
                     }
@@ -58154,7 +58154,7 @@ var require_backend = __commonJS({
               }
               function setTraceUpdatesEnabled(enabled) {
               }
-              function setTrackedPath(path10) {
+              function setTrackedPath(path13) {
               }
               function getOwnersList(id) {
                 return null;
@@ -60361,15 +60361,15 @@ var require_route = __commonJS({
       };
     }
     function wrapConversion(toModel, graph) {
-      var path10 = [graph[toModel].parent, toModel];
+      var path13 = [graph[toModel].parent, toModel];
       var fn = conversions[graph[toModel].parent][toModel];
       var cur = graph[toModel].parent;
       while (graph[cur].parent) {
-        path10.unshift(graph[cur].parent);
+        path13.unshift(graph[cur].parent);
         fn = link(conversions[graph[cur].parent][cur], fn);
         cur = graph[cur].parent;
       }
-      fn.conversion = path10;
+      fn.conversion = path13;
       return fn;
     }
     module.exports = function(fromModel) {
@@ -64314,13 +64314,13 @@ var require_hosts = __commonJS({
     var defaults = {
       sshtemplate: ({ domain, user, project, committish }) => `git@${domain}:${user}/${project}.git${maybeJoin("#", committish)}`,
       sshurltemplate: ({ domain, user, project, committish }) => `git+ssh://git@${domain}/${user}/${project}.git${maybeJoin("#", committish)}`,
-      edittemplate: ({ domain, user, project, committish, editpath, path: path10 }) => `https://${domain}/${user}/${project}${maybeJoin("/", editpath, "/", maybeEncode(committish || "HEAD"), "/", path10)}`,
+      edittemplate: ({ domain, user, project, committish, editpath, path: path13 }) => `https://${domain}/${user}/${project}${maybeJoin("/", editpath, "/", maybeEncode(committish || "HEAD"), "/", path13)}`,
       browsetemplate: ({ domain, user, project, committish, treepath }) => `https://${domain}/${user}/${project}${maybeJoin("/", treepath, "/", maybeEncode(committish))}`,
-      browsetreetemplate: ({ domain, user, project, committish, treepath, path: path10, fragment, hashformat }) => `https://${domain}/${user}/${project}/${treepath}/${maybeEncode(committish || "HEAD")}/${path10}${maybeJoin("#", hashformat(fragment || ""))}`,
-      browseblobtemplate: ({ domain, user, project, committish, blobpath, path: path10, fragment, hashformat }) => `https://${domain}/${user}/${project}/${blobpath}/${maybeEncode(committish || "HEAD")}/${path10}${maybeJoin("#", hashformat(fragment || ""))}`,
+      browsetreetemplate: ({ domain, user, project, committish, treepath, path: path13, fragment, hashformat }) => `https://${domain}/${user}/${project}/${treepath}/${maybeEncode(committish || "HEAD")}/${path13}${maybeJoin("#", hashformat(fragment || ""))}`,
+      browseblobtemplate: ({ domain, user, project, committish, blobpath, path: path13, fragment, hashformat }) => `https://${domain}/${user}/${project}/${blobpath}/${maybeEncode(committish || "HEAD")}/${path13}${maybeJoin("#", hashformat(fragment || ""))}`,
       docstemplate: ({ domain, user, project, treepath, committish }) => `https://${domain}/${user}/${project}${maybeJoin("/", treepath, "/", maybeEncode(committish))}#readme`,
       httpstemplate: ({ auth, domain, user, project, committish }) => `git+https://${maybeJoin(auth, "@")}${domain}/${user}/${project}.git${maybeJoin("#", committish)}`,
-      filetemplate: ({ domain, user, project, committish, path: path10 }) => `https://${domain}/${user}/${project}/raw/${maybeEncode(committish || "HEAD")}/${path10}`,
+      filetemplate: ({ domain, user, project, committish, path: path13 }) => `https://${domain}/${user}/${project}/raw/${maybeEncode(committish || "HEAD")}/${path13}`,
       shortcuttemplate: ({ type, user, project, committish }) => `${type}:${user}/${project}${maybeJoin("#", committish)}`,
       pathtemplate: ({ user, project, committish }) => `${user}/${project}${maybeJoin("#", committish)}`,
       bugstemplate: ({ domain, user, project }) => `https://${domain}/${user}/${project}/issues`,
@@ -64335,7 +64335,7 @@ var require_hosts = __commonJS({
       treepath: "tree",
       blobpath: "blob",
       editpath: "edit",
-      filetemplate: ({ auth, user, project, committish, path: path10 }) => `https://${maybeJoin(auth, "@")}raw.githubusercontent.com/${user}/${project}/${maybeEncode(committish || "HEAD")}/${path10}`,
+      filetemplate: ({ auth, user, project, committish, path: path13 }) => `https://${maybeJoin(auth, "@")}raw.githubusercontent.com/${user}/${project}/${maybeEncode(committish || "HEAD")}/${path13}`,
       gittemplate: ({ auth, domain, user, project, committish }) => `git://${maybeJoin(auth, "@")}${domain}/${user}/${project}.git${maybeJoin("#", committish)}`,
       tarballtemplate: ({ domain, user, project, committish }) => `https://codeload.${domain}/${user}/${project}/tar.gz/${maybeEncode(committish || "HEAD")}`,
       extract: (url2) => {
@@ -64361,7 +64361,7 @@ var require_hosts = __commonJS({
       treepath: "src",
       blobpath: "src",
       editpath: "?mode=edit",
-      edittemplate: ({ domain, user, project, committish, treepath, path: path10, editpath }) => `https://${domain}/${user}/${project}${maybeJoin("/", treepath, "/", maybeEncode(committish || "HEAD"), "/", path10, editpath)}`,
+      edittemplate: ({ domain, user, project, committish, treepath, path: path13, editpath }) => `https://${domain}/${user}/${project}${maybeJoin("/", treepath, "/", maybeEncode(committish || "HEAD"), "/", path13, editpath)}`,
       tarballtemplate: ({ domain, user, project, committish }) => `https://${domain}/${user}/${project}/get/${maybeEncode(committish || "HEAD")}.tar.gz`,
       extract: (url2) => {
         let [, user, project, aux] = url2.pathname.split("/", 4);
@@ -64386,11 +64386,11 @@ var require_hosts = __commonJS({
       httpstemplate: ({ auth, domain, user, project, committish }) => `git+https://${maybeJoin(auth, "@")}${domain}/${user}/${project}.git${maybeJoin("#", committish)}`,
       tarballtemplate: ({ domain, user, project, committish }) => `https://${domain}/${user}/${project}/repository/archive.tar.gz?ref=${maybeEncode(committish || "HEAD")}`,
       extract: (url2) => {
-        const path10 = url2.pathname.slice(1);
-        if (path10.includes("/-/") || path10.includes("/archive.tar.gz")) {
+        const path13 = url2.pathname.slice(1);
+        if (path13.includes("/-/") || path13.includes("/archive.tar.gz")) {
           return;
         }
-        const segments = path10.split("/");
+        const segments = path13.split("/");
         let project = segments.pop();
         if (project.endsWith(".git")) {
           project = project.slice(0, -4);
@@ -64410,11 +64410,11 @@ var require_hosts = __commonJS({
       sshurltemplate: ({ domain, project, committish }) => `git+ssh://git@${domain}/${project}.git${maybeJoin("#", committish)}`,
       edittemplate: ({ domain, user, project, committish, editpath }) => `https://${domain}/${user}/${project}${maybeJoin("/", maybeEncode(committish))}/${editpath}`,
       browsetemplate: ({ domain, project, committish }) => `https://${domain}/${project}${maybeJoin("/", maybeEncode(committish))}`,
-      browsetreetemplate: ({ domain, project, committish, path: path10, hashformat }) => `https://${domain}/${project}${maybeJoin("/", maybeEncode(committish))}${maybeJoin("#", hashformat(path10))}`,
-      browseblobtemplate: ({ domain, project, committish, path: path10, hashformat }) => `https://${domain}/${project}${maybeJoin("/", maybeEncode(committish))}${maybeJoin("#", hashformat(path10))}`,
+      browsetreetemplate: ({ domain, project, committish, path: path13, hashformat }) => `https://${domain}/${project}${maybeJoin("/", maybeEncode(committish))}${maybeJoin("#", hashformat(path13))}`,
+      browseblobtemplate: ({ domain, project, committish, path: path13, hashformat }) => `https://${domain}/${project}${maybeJoin("/", maybeEncode(committish))}${maybeJoin("#", hashformat(path13))}`,
       docstemplate: ({ domain, project, committish }) => `https://${domain}/${project}${maybeJoin("/", maybeEncode(committish))}`,
       httpstemplate: ({ domain, project, committish }) => `git+https://${domain}/${project}.git${maybeJoin("#", committish)}`,
-      filetemplate: ({ user, project, committish, path: path10 }) => `https://gist.githubusercontent.com/${user}/${project}/raw${maybeJoin("/", maybeEncode(committish))}/${path10}`,
+      filetemplate: ({ user, project, committish, path: path13 }) => `https://gist.githubusercontent.com/${user}/${project}/raw${maybeJoin("/", maybeEncode(committish))}/${path13}`,
       shortcuttemplate: ({ type, project, committish }) => `${type}:${project}${maybeJoin("#", committish)}`,
       pathtemplate: ({ project, committish }) => `${project}${maybeJoin("#", committish)}`,
       bugstemplate: ({ domain, project }) => `https://${domain}/${project}`,
@@ -64446,7 +64446,7 @@ var require_hosts = __commonJS({
       domain: "git.sr.ht",
       treepath: "tree",
       blobpath: "tree",
-      filetemplate: ({ domain, user, project, committish, path: path10 }) => `https://${domain}/${user}/${project}/blob/${maybeEncode(committish) || "HEAD"}/${path10}`,
+      filetemplate: ({ domain, user, project, committish, path: path13 }) => `https://${domain}/${user}/${project}/blob/${maybeEncode(committish) || "HEAD"}/${path13}`,
       httpstemplate: ({ domain, user, project, committish }) => `https://${domain}/${user}/${project}.git${maybeJoin("#", committish)}`,
       tarballtemplate: ({ domain, user, project, committish }) => `https://${domain}/${user}/${project}/archive/${maybeEncode(committish) || "HEAD"}.tar.gz`,
       bugstemplate: ({ user, project }) => null,
@@ -64700,25 +64700,25 @@ var require_lib4 = __commonJS({
       sshurl(opts) {
         return this.#fill(this.sshurltemplate, opts);
       }
-      browse(path10, ...args) {
-        if (typeof path10 !== "string") {
-          return this.#fill(this.browsetemplate, path10);
+      browse(path13, ...args) {
+        if (typeof path13 !== "string") {
+          return this.#fill(this.browsetemplate, path13);
         }
         if (typeof args[0] !== "string") {
-          return this.#fill(this.browsetreetemplate, { ...args[0], path: path10 });
+          return this.#fill(this.browsetreetemplate, { ...args[0], path: path13 });
         }
-        return this.#fill(this.browsetreetemplate, { ...args[1], fragment: args[0], path: path10 });
+        return this.#fill(this.browsetreetemplate, { ...args[1], fragment: args[0], path: path13 });
       }
       // If the path is known to be a file, then browseFile should be used. For some hosts
       // the url is the same as browse, but for others like GitHub a file can use both `/tree/`
       // and `/blob/` in the path. When using a default committish of `HEAD` then the `/tree/`
       // path will redirect to a specific commit. Using the `/blob/` path avoids this and
       // does not redirect to a different commit.
-      browseFile(path10, ...args) {
+      browseFile(path13, ...args) {
         if (typeof args[0] !== "string") {
-          return this.#fill(this.browseblobtemplate, { ...args[0], path: path10 });
+          return this.#fill(this.browseblobtemplate, { ...args[0], path: path13 });
         }
-        return this.#fill(this.browseblobtemplate, { ...args[1], fragment: args[0], path: path10 });
+        return this.#fill(this.browseblobtemplate, { ...args[1], fragment: args[0], path: path13 });
       }
       docs(opts) {
         return this.#fill(this.docstemplate, opts);
@@ -64741,11 +64741,11 @@ var require_lib4 = __commonJS({
       tarball(opts) {
         return this.#fill(this.tarballtemplate, { ...opts, noCommittish: false });
       }
-      file(path10, opts) {
-        return this.#fill(this.filetemplate, { ...opts, path: path10 });
+      file(path13, opts) {
+        return this.#fill(this.filetemplate, { ...opts, path: path13 });
       }
-      edit(path10, opts) {
-        return this.#fill(this.edittemplate, { ...opts, path: path10 });
+      edit(path13, opts) {
+        return this.#fill(this.edittemplate, { ...opts, path: path13 });
       }
       getDefaultRepresentation() {
         return this.default;
@@ -65703,8 +65703,4255 @@ var require_normalize = __commonJS({
   }
 });
 
-// ../node_modules/.pnpm/dotenv@16.3.1/node_modules/dotenv/package.json
+// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err-helpers.js
+var require_err_helpers = __commonJS({
+  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err-helpers.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var isErrorLike = (err) => {
+      return err && typeof err.message === "string";
+    };
+    var getErrorCause = (err) => {
+      if (!err)
+        return;
+      const cause = err.cause;
+      if (typeof cause === "function") {
+        const causeResult = err.cause();
+        return isErrorLike(causeResult) ? causeResult : void 0;
+      } else {
+        return isErrorLike(cause) ? cause : void 0;
+      }
+    };
+    var _stackWithCauses = (err, seen) => {
+      if (!isErrorLike(err))
+        return "";
+      const stack = err.stack || "";
+      if (seen.has(err)) {
+        return stack + "\ncauses have become circular...";
+      }
+      const cause = getErrorCause(err);
+      if (cause) {
+        seen.add(err);
+        return stack + "\ncaused by: " + _stackWithCauses(cause, seen);
+      } else {
+        return stack;
+      }
+    };
+    var stackWithCauses = (err) => _stackWithCauses(err, /* @__PURE__ */ new Set());
+    var _messageWithCauses = (err, seen, skip) => {
+      if (!isErrorLike(err))
+        return "";
+      const message = skip ? "" : err.message || "";
+      if (seen.has(err)) {
+        return message + ": ...";
+      }
+      const cause = getErrorCause(err);
+      if (cause) {
+        seen.add(err);
+        const skipIfVErrorStyleCause = typeof err.cause === "function";
+        return message + (skipIfVErrorStyleCause ? "" : ": ") + _messageWithCauses(cause, seen, skipIfVErrorStyleCause);
+      } else {
+        return message;
+      }
+    };
+    var messageWithCauses = (err) => _messageWithCauses(err, /* @__PURE__ */ new Set());
+    module.exports = {
+      isErrorLike,
+      getErrorCause,
+      stackWithCauses,
+      messageWithCauses
+    };
+  }
+});
+
+// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err.js
+var require_err = __commonJS({
+  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    module.exports = errSerializer;
+    var { messageWithCauses, stackWithCauses, isErrorLike } = require_err_helpers();
+    var { toString } = Object.prototype;
+    var seen = Symbol("circular-ref-tag");
+    var rawSymbol = Symbol("pino-raw-err-ref");
+    var pinoErrProto = Object.create({}, {
+      type: {
+        enumerable: true,
+        writable: true,
+        value: void 0
+      },
+      message: {
+        enumerable: true,
+        writable: true,
+        value: void 0
+      },
+      stack: {
+        enumerable: true,
+        writable: true,
+        value: void 0
+      },
+      aggregateErrors: {
+        enumerable: true,
+        writable: true,
+        value: void 0
+      },
+      raw: {
+        enumerable: false,
+        get: function() {
+          return this[rawSymbol];
+        },
+        set: function(val) {
+          this[rawSymbol] = val;
+        }
+      }
+    });
+    Object.defineProperty(pinoErrProto, rawSymbol, {
+      writable: true,
+      value: {}
+    });
+    function errSerializer(err) {
+      if (!isErrorLike(err)) {
+        return err;
+      }
+      err[seen] = void 0;
+      const _err = Object.create(pinoErrProto);
+      _err.type = toString.call(err.constructor) === "[object Function]" ? err.constructor.name : err.name;
+      _err.message = messageWithCauses(err);
+      _err.stack = stackWithCauses(err);
+      if (Array.isArray(err.errors)) {
+        _err.aggregateErrors = err.errors.map((err2) => errSerializer(err2));
+      }
+      for (const key in err) {
+        if (_err[key] === void 0) {
+          const val = err[key];
+          if (isErrorLike(val)) {
+            if (key !== "cause" && !Object.prototype.hasOwnProperty.call(val, seen)) {
+              _err[key] = errSerializer(val);
+            }
+          } else {
+            _err[key] = val;
+          }
+        }
+      }
+      delete err[seen];
+      _err.raw = err;
+      return _err;
+    }
+  }
+});
+
+// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/req.js
+var require_req = __commonJS({
+  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/req.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    module.exports = {
+      mapHttpRequest,
+      reqSerializer
+    };
+    var rawSymbol = Symbol("pino-raw-req-ref");
+    var pinoReqProto = Object.create({}, {
+      id: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      method: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      url: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      query: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      params: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      headers: {
+        enumerable: true,
+        writable: true,
+        value: {}
+      },
+      remoteAddress: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      remotePort: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      raw: {
+        enumerable: false,
+        get: function() {
+          return this[rawSymbol];
+        },
+        set: function(val) {
+          this[rawSymbol] = val;
+        }
+      }
+    });
+    Object.defineProperty(pinoReqProto, rawSymbol, {
+      writable: true,
+      value: {}
+    });
+    function reqSerializer(req) {
+      const connection = req.info || req.socket;
+      const _req = Object.create(pinoReqProto);
+      _req.id = typeof req.id === "function" ? req.id() : req.id || (req.info ? req.info.id : void 0);
+      _req.method = req.method;
+      if (req.originalUrl) {
+        _req.url = req.originalUrl;
+      } else {
+        const path13 = req.path;
+        _req.url = typeof path13 === "string" ? path13 : req.url ? req.url.path || req.url : void 0;
+      }
+      if (req.query) {
+        _req.query = req.query;
+      }
+      if (req.params) {
+        _req.params = req.params;
+      }
+      _req.headers = req.headers;
+      _req.remoteAddress = connection && connection.remoteAddress;
+      _req.remotePort = connection && connection.remotePort;
+      _req.raw = req.raw || req;
+      return _req;
+    }
+    function mapHttpRequest(req) {
+      return {
+        req: reqSerializer(req)
+      };
+    }
+  }
+});
+
+// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/res.js
+var require_res = __commonJS({
+  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/res.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    module.exports = {
+      mapHttpResponse,
+      resSerializer
+    };
+    var rawSymbol = Symbol("pino-raw-res-ref");
+    var pinoResProto = Object.create({}, {
+      statusCode: {
+        enumerable: true,
+        writable: true,
+        value: 0
+      },
+      headers: {
+        enumerable: true,
+        writable: true,
+        value: ""
+      },
+      raw: {
+        enumerable: false,
+        get: function() {
+          return this[rawSymbol];
+        },
+        set: function(val) {
+          this[rawSymbol] = val;
+        }
+      }
+    });
+    Object.defineProperty(pinoResProto, rawSymbol, {
+      writable: true,
+      value: {}
+    });
+    function resSerializer(res) {
+      const _res2 = Object.create(pinoResProto);
+      _res2.statusCode = res.headersSent ? res.statusCode : null;
+      _res2.headers = res.getHeaders ? res.getHeaders() : res._headers;
+      _res2.raw = res;
+      return _res2;
+    }
+    function mapHttpResponse(res) {
+      return {
+        res: resSerializer(res)
+      };
+    }
+  }
+});
+
+// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/index.js
+var require_pino_std_serializers = __commonJS({
+  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var errSerializer = require_err();
+    var reqSerializers = require_req();
+    var resSerializers = require_res();
+    module.exports = {
+      err: errSerializer,
+      mapHttpRequest: reqSerializers.mapHttpRequest,
+      mapHttpResponse: resSerializers.mapHttpResponse,
+      req: reqSerializers.reqSerializer,
+      res: resSerializers.resSerializer,
+      wrapErrorSerializer: function wrapErrorSerializer(customSerializer) {
+        if (customSerializer === errSerializer)
+          return customSerializer;
+        return function wrapErrSerializer(err) {
+          return customSerializer(errSerializer(err));
+        };
+      },
+      wrapRequestSerializer: function wrapRequestSerializer(customSerializer) {
+        if (customSerializer === reqSerializers.reqSerializer)
+          return customSerializer;
+        return function wrappedReqSerializer(req) {
+          return customSerializer(reqSerializers.reqSerializer(req));
+        };
+      },
+      wrapResponseSerializer: function wrapResponseSerializer(customSerializer) {
+        if (customSerializer === resSerializers.resSerializer)
+          return customSerializer;
+        return function wrappedResSerializer(res) {
+          return customSerializer(resSerializers.resSerializer(res));
+        };
+      }
+    };
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/caller.js
+var require_caller = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/caller.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    function noOpPrepareStackTrace(_2, stack) {
+      return stack;
+    }
+    module.exports = function getCallers() {
+      const originalPrepare = Error.prepareStackTrace;
+      Error.prepareStackTrace = noOpPrepareStackTrace;
+      const stack = new Error().stack;
+      Error.prepareStackTrace = originalPrepare;
+      if (!Array.isArray(stack)) {
+        return void 0;
+      }
+      const entries = stack.slice(2);
+      const fileNames = [];
+      for (const entry of entries) {
+        if (!entry) {
+          continue;
+        }
+        fileNames.push(entry.getFileName());
+      }
+      return fileNames;
+    };
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/validator.js
+var require_validator = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/validator.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var { createContext: createContext15, runInContext } = __require("vm");
+    module.exports = validator;
+    function validator(opts = {}) {
+      const {
+        ERR_PATHS_MUST_BE_STRINGS = () => "fast-redact - Paths must be (non-empty) strings",
+        ERR_INVALID_PATH = (s2) => `fast-redact \u2013 Invalid path (${s2})`
+      } = opts;
+      return function validate2({ paths }) {
+        paths.forEach((s2) => {
+          if (typeof s2 !== "string") {
+            throw Error(ERR_PATHS_MUST_BE_STRINGS());
+          }
+          try {
+            if (/〇/.test(s2))
+              throw Error();
+            const proxy = new Proxy({}, { get: () => proxy, set: () => {
+              throw Error();
+            } });
+            const expr = (s2[0] === "[" ? "" : ".") + s2.replace(/^\*/, "\u3007").replace(/\.\*/g, ".\u3007").replace(/\[\*\]/g, "[\u3007]");
+            if (/\n|\r|;/.test(expr))
+              throw Error();
+            if (/\/\*/.test(expr))
+              throw Error();
+            runInContext(`
+          (function () {
+            'use strict'
+            o${expr}
+            if ([o${expr}].length !== 1) throw Error()
+          })()
+        `, createContext15({ o: proxy, "\u3007": null }), {
+              codeGeneration: { strings: false, wasm: false }
+            });
+          } catch (e) {
+            throw Error(ERR_INVALID_PATH(s2));
+          }
+        });
+      };
+    }
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/rx.js
+var require_rx = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/rx.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    module.exports = /[^.[\]]+|\[((?:.)*?)\]/g;
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/parse.js
+var require_parse3 = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/parse.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var rx = require_rx();
+    module.exports = parse2;
+    function parse2({ paths }) {
+      const wildcards = [];
+      var wcLen = 0;
+      const secret = paths.reduce(function(o, strPath, ix) {
+        var path13 = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
+        const leadingBracket = strPath[0] === "[";
+        path13 = path13.map((p) => {
+          if (p[0] === "[")
+            return p.substr(1, p.length - 2);
+          else
+            return p;
+        });
+        const star = path13.indexOf("*");
+        if (star > -1) {
+          const before = path13.slice(0, star);
+          const beforeStr = before.join(".");
+          const after = path13.slice(star + 1, path13.length);
+          const nested = after.length > 0;
+          wcLen++;
+          wildcards.push({
+            before,
+            beforeStr,
+            after,
+            nested
+          });
+        } else {
+          o[strPath] = {
+            path: path13,
+            val: void 0,
+            precensored: false,
+            circle: "",
+            escPath: JSON.stringify(strPath),
+            leadingBracket
+          };
+        }
+        return o;
+      }, {});
+      return { wildcards, wcLen, secret };
+    }
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/redactor.js
+var require_redactor = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/redactor.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var rx = require_rx();
+    module.exports = redactor;
+    function redactor({ secret, serialize, wcLen, strict, isCensorFct, censorFctTakesPath }, state) {
+      const redact = Function("o", `
+    if (typeof o !== 'object' || o == null) {
+      ${strictImpl(strict, serialize)}
+    }
+    const { censor, secret } = this
+    ${redactTmpl(secret, isCensorFct, censorFctTakesPath)}
+    this.compileRestore()
+    ${dynamicRedactTmpl(wcLen > 0, isCensorFct, censorFctTakesPath)}
+    ${resultTmpl(serialize)}
+  `).bind(state);
+      if (serialize === false) {
+        redact.restore = (o) => state.restore(o);
+      }
+      return redact;
+    }
+    function redactTmpl(secret, isCensorFct, censorFctTakesPath) {
+      return Object.keys(secret).map((path13) => {
+        const { escPath, leadingBracket, path: arrPath } = secret[path13];
+        const skip = leadingBracket ? 1 : 0;
+        const delim = leadingBracket ? "" : ".";
+        const hops = [];
+        var match2;
+        while ((match2 = rx.exec(path13)) !== null) {
+          const [, ix] = match2;
+          const { index, input } = match2;
+          if (index > skip)
+            hops.push(input.substring(0, index - (ix ? 0 : 1)));
+        }
+        var existence = hops.map((p) => `o${delim}${p}`).join(" && ");
+        if (existence.length === 0)
+          existence += `o${delim}${path13} != null`;
+        else
+          existence += ` && o${delim}${path13} != null`;
+        const circularDetection = `
+      switch (true) {
+        ${hops.reverse().map((p) => `
+          case o${delim}${p} === censor:
+            secret[${escPath}].circle = ${JSON.stringify(p)}
+            break
+        `).join("\n")}
+      }
+    `;
+        const censorArgs = censorFctTakesPath ? `val, ${JSON.stringify(arrPath)}` : `val`;
+        return `
+      if (${existence}) {
+        const val = o${delim}${path13}
+        if (val === censor) {
+          secret[${escPath}].precensored = true
+        } else {
+          secret[${escPath}].val = val
+          o${delim}${path13} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
+          ${circularDetection}
+        }
+      }
+    `;
+      }).join("\n");
+    }
+    function dynamicRedactTmpl(hasWildcards, isCensorFct, censorFctTakesPath) {
+      return hasWildcards === true ? `
+    {
+      const { wildcards, wcLen, groupRedact, nestedRedact } = this
+      for (var i = 0; i < wcLen; i++) {
+        const { before, beforeStr, after, nested } = wildcards[i]
+        if (nested === true) {
+          secret[beforeStr] = secret[beforeStr] || []
+          nestedRedact(secret[beforeStr], o, before, after, censor, ${isCensorFct}, ${censorFctTakesPath})
+        } else secret[beforeStr] = groupRedact(o, before, censor, ${isCensorFct}, ${censorFctTakesPath})
+      }
+    }
+  ` : "";
+    }
+    function resultTmpl(serialize) {
+      return serialize === false ? `return o` : `
+    var s = this.serialize(o)
+    this.restore(o)
+    return s
+  `;
+    }
+    function strictImpl(strict, serialize) {
+      return strict === true ? `throw Error('fast-redact: primitives cannot be redacted')` : serialize === false ? `return o` : `return this.serialize(o)`;
+    }
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/modifiers.js
+var require_modifiers = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/modifiers.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    module.exports = {
+      groupRedact,
+      groupRestore,
+      nestedRedact,
+      nestedRestore
+    };
+    function groupRestore({ keys, values, target }) {
+      if (target == null)
+        return;
+      const length = keys.length;
+      for (var i = 0; i < length; i++) {
+        const k = keys[i];
+        target[k] = values[i];
+      }
+    }
+    function groupRedact(o, path13, censor, isCensorFct, censorFctTakesPath) {
+      const target = get(o, path13);
+      if (target == null)
+        return { keys: null, values: null, target: null, flat: true };
+      const keys = Object.keys(target);
+      const keysLength = keys.length;
+      const pathLength = path13.length;
+      const pathWithKey = censorFctTakesPath ? [...path13] : void 0;
+      const values = new Array(keysLength);
+      for (var i = 0; i < keysLength; i++) {
+        const key = keys[i];
+        values[i] = target[key];
+        if (censorFctTakesPath) {
+          pathWithKey[pathLength] = key;
+          target[key] = censor(target[key], pathWithKey);
+        } else if (isCensorFct) {
+          target[key] = censor(target[key]);
+        } else {
+          target[key] = censor;
+        }
+      }
+      return { keys, values, target, flat: true };
+    }
+    function nestedRestore(arr) {
+      const length = arr.length;
+      for (var i = 0; i < length; i++) {
+        const { key, target, value } = arr[i];
+        if (has(target, key)) {
+          target[key] = value;
+        }
+        if (typeof target === "object") {
+          const targetKeys = Object.keys(target);
+          for (var j = 0; j < targetKeys.length; j++) {
+            const tKey = targetKeys[j];
+            const subTarget = target[tKey];
+            if (has(subTarget, key)) {
+              subTarget[key] = value;
+            }
+          }
+        }
+      }
+    }
+    function nestedRedact(store, o, path13, ns, censor, isCensorFct, censorFctTakesPath) {
+      const target = get(o, path13);
+      if (target == null)
+        return;
+      const keys = Object.keys(target);
+      const keysLength = keys.length;
+      for (var i = 0; i < keysLength; i++) {
+        const key = keys[i];
+        const { value, parent, exists } = specialSet(target, key, path13, ns, censor, isCensorFct, censorFctTakesPath);
+        if (exists === true && parent !== null) {
+          store.push({ key: ns[ns.length - 1], target: parent, value });
+        }
+      }
+      return store;
+    }
+    function has(obj, prop) {
+      return obj !== void 0 && obj !== null ? "hasOwn" in Object ? Object.hasOwn(obj, prop) : Object.prototype.hasOwnProperty.call(obj, prop) : false;
+    }
+    function specialSet(o, k, path13, afterPath, censor, isCensorFct, censorFctTakesPath) {
+      const afterPathLen = afterPath.length;
+      const lastPathIndex = afterPathLen - 1;
+      const originalKey = k;
+      var i = -1;
+      var n2;
+      var nv;
+      var ov;
+      var oov = null;
+      var exists = true;
+      var wc = null;
+      ov = n2 = o[k];
+      if (typeof n2 !== "object")
+        return { value: null, parent: null, exists };
+      while (n2 != null && ++i < afterPathLen) {
+        k = afterPath[i];
+        oov = ov;
+        if (k !== "*" && !wc && !(typeof n2 === "object" && k in n2)) {
+          exists = false;
+          break;
+        }
+        if (k === "*") {
+          wc = k;
+          if (i !== lastPathIndex) {
+            continue;
+          }
+        }
+        if (wc) {
+          const wcKeys = Object.keys(n2);
+          for (var j = 0; j < wcKeys.length; j++) {
+            const wck = wcKeys[j];
+            const wcov = n2[wck];
+            const kIsWc = k === "*";
+            if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
+              if (kIsWc) {
+                ov = wcov;
+              } else {
+                ov = wcov[k];
+              }
+              nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path13, originalKey, ...afterPath]) : censor(ov) : censor;
+              if (kIsWc) {
+                n2[wck] = nv;
+              } else {
+                if (wcov[k] === nv) {
+                  exists = false;
+                } else {
+                  wcov[k] = nv === void 0 && censor !== void 0 || has(wcov, k) && nv === ov ? wcov[k] : nv;
+                }
+              }
+            }
+          }
+          wc = null;
+        } else {
+          ov = n2[k];
+          nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path13, originalKey, ...afterPath]) : censor(ov) : censor;
+          n2[k] = has(n2, k) && nv === ov || nv === void 0 && censor !== void 0 ? n2[k] : nv;
+          n2 = n2[k];
+        }
+        if (typeof n2 !== "object")
+          break;
+        if (ov === oov) {
+          exists = false;
+        }
+      }
+      return { value: ov, parent: oov, exists };
+    }
+    function get(o, p) {
+      var i = -1;
+      var l2 = p.length;
+      var n2 = o;
+      while (n2 != null && ++i < l2) {
+        n2 = n2[p[i]];
+      }
+      return n2;
+    }
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/restorer.js
+var require_restorer = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/restorer.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var { groupRestore, nestedRestore } = require_modifiers();
+    module.exports = restorer;
+    function restorer({ secret, wcLen }) {
+      return function compileRestore() {
+        if (this.restore)
+          return;
+        const paths = Object.keys(secret);
+        const resetters = resetTmpl(secret, paths);
+        const hasWildcards = wcLen > 0;
+        const state = hasWildcards ? { secret, groupRestore, nestedRestore } : { secret };
+        this.restore = Function(
+          "o",
+          restoreTmpl(resetters, paths, hasWildcards)
+        ).bind(state);
+      };
+    }
+    function resetTmpl(secret, paths) {
+      return paths.map((path13) => {
+        const { circle, escPath, leadingBracket } = secret[path13];
+        const delim = leadingBracket ? "" : ".";
+        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path13} = secret[${escPath}].val`;
+        const clear = `secret[${escPath}].val = undefined`;
+        return `
+      if (secret[${escPath}].val !== undefined) {
+        try { ${reset} } catch (e) {}
+        ${clear}
+      }
+    `;
+      }).join("");
+    }
+    function restoreTmpl(resetters, paths, hasWildcards) {
+      const dynamicReset = hasWildcards === true ? `
+    const keys = Object.keys(secret)
+    const len = keys.length
+    for (var i = len - 1; i >= ${paths.length}; i--) {
+      const k = keys[i]
+      const o = secret[k]
+      if (o.flat === true) this.groupRestore(o)
+      else this.nestedRestore(o)
+      secret[k] = null
+    }
+  ` : "";
+      return `
+    const secret = this.secret
+    ${dynamicReset}
+    ${resetters}
+    return o
+  `;
+    }
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/state.js
+var require_state = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/state.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    module.exports = state;
+    function state(o) {
+      const {
+        secret,
+        censor,
+        compileRestore,
+        serialize,
+        groupRedact,
+        nestedRedact,
+        wildcards,
+        wcLen
+      } = o;
+      const builder = [{ secret, censor, compileRestore }];
+      if (serialize !== false)
+        builder.push({ serialize });
+      if (wcLen > 0)
+        builder.push({ groupRedact, nestedRedact, wildcards, wcLen });
+      return Object.assign(...builder);
+    }
+  }
+});
+
+// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/index.js
+var require_fast_redact = __commonJS({
+  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var validator = require_validator();
+    var parse2 = require_parse3();
+    var redactor = require_redactor();
+    var restorer = require_restorer();
+    var { groupRedact, nestedRedact } = require_modifiers();
+    var state = require_state();
+    var rx = require_rx();
+    var validate2 = validator();
+    var noop5 = (o) => o;
+    noop5.restore = noop5;
+    var DEFAULT_CENSOR = "[REDACTED]";
+    fastRedact.rx = rx;
+    fastRedact.validator = validator;
+    module.exports = fastRedact;
+    function fastRedact(opts = {}) {
+      const paths = Array.from(new Set(opts.paths || []));
+      const serialize = "serialize" in opts ? opts.serialize === false ? opts.serialize : typeof opts.serialize === "function" ? opts.serialize : JSON.stringify : JSON.stringify;
+      const remove = opts.remove;
+      if (remove === true && serialize !== JSON.stringify) {
+        throw Error("fast-redact \u2013 remove option may only be set when serializer is JSON.stringify");
+      }
+      const censor = remove === true ? void 0 : "censor" in opts ? opts.censor : DEFAULT_CENSOR;
+      const isCensorFct = typeof censor === "function";
+      const censorFctTakesPath = isCensorFct && censor.length > 1;
+      if (paths.length === 0)
+        return serialize || noop5;
+      validate2({ paths, serialize, censor });
+      const { wildcards, wcLen, secret } = parse2({ paths, censor });
+      const compileRestore = restorer({ secret, wcLen });
+      const strict = "strict" in opts ? opts.strict : true;
+      return redactor({ secret, wcLen, serialize, strict, isCensorFct, censorFctTakesPath }, state({
+        secret,
+        censor,
+        compileRestore,
+        serialize,
+        groupRedact,
+        nestedRedact,
+        wildcards,
+        wcLen
+      }));
+    }
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/symbols.js
+var require_symbols = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/symbols.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var setLevelSym = Symbol("pino.setLevel");
+    var getLevelSym = Symbol("pino.getLevel");
+    var levelValSym = Symbol("pino.levelVal");
+    var useLevelLabelsSym = Symbol("pino.useLevelLabels");
+    var useOnlyCustomLevelsSym = Symbol("pino.useOnlyCustomLevels");
+    var mixinSym = Symbol("pino.mixin");
+    var lsCacheSym = Symbol("pino.lsCache");
+    var chindingsSym = Symbol("pino.chindings");
+    var asJsonSym = Symbol("pino.asJson");
+    var writeSym = Symbol("pino.write");
+    var redactFmtSym = Symbol("pino.redactFmt");
+    var timeSym = Symbol("pino.time");
+    var timeSliceIndexSym = Symbol("pino.timeSliceIndex");
+    var streamSym = Symbol("pino.stream");
+    var stringifySym = Symbol("pino.stringify");
+    var stringifySafeSym = Symbol("pino.stringifySafe");
+    var stringifiersSym = Symbol("pino.stringifiers");
+    var endSym = Symbol("pino.end");
+    var formatOptsSym = Symbol("pino.formatOpts");
+    var messageKeySym = Symbol("pino.messageKey");
+    var errorKeySym = Symbol("pino.errorKey");
+    var nestedKeySym = Symbol("pino.nestedKey");
+    var nestedKeyStrSym = Symbol("pino.nestedKeyStr");
+    var mixinMergeStrategySym = Symbol("pino.mixinMergeStrategy");
+    var msgPrefixSym = Symbol("pino.msgPrefix");
+    var wildcardFirstSym = Symbol("pino.wildcardFirst");
+    var serializersSym = Symbol.for("pino.serializers");
+    var formattersSym = Symbol.for("pino.formatters");
+    var hooksSym = Symbol.for("pino.hooks");
+    var needsMetadataGsym = Symbol.for("pino.metadata");
+    module.exports = {
+      setLevelSym,
+      getLevelSym,
+      levelValSym,
+      useLevelLabelsSym,
+      mixinSym,
+      lsCacheSym,
+      chindingsSym,
+      asJsonSym,
+      writeSym,
+      serializersSym,
+      redactFmtSym,
+      timeSym,
+      timeSliceIndexSym,
+      streamSym,
+      stringifySym,
+      stringifySafeSym,
+      stringifiersSym,
+      endSym,
+      formatOptsSym,
+      messageKeySym,
+      errorKeySym,
+      nestedKeySym,
+      wildcardFirstSym,
+      needsMetadataGsym,
+      useOnlyCustomLevelsSym,
+      formattersSym,
+      hooksSym,
+      nestedKeyStrSym,
+      mixinMergeStrategySym,
+      msgPrefixSym
+    };
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/redaction.js
+var require_redaction = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/redaction.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var fastRedact = require_fast_redact();
+    var { redactFmtSym, wildcardFirstSym } = require_symbols();
+    var { rx, validator } = fastRedact;
+    var validate2 = validator({
+      ERR_PATHS_MUST_BE_STRINGS: () => "pino \u2013 redacted paths must be strings",
+      ERR_INVALID_PATH: (s2) => `pino \u2013 redact paths array contains an invalid path (${s2})`
+    });
+    var CENSOR = "[Redacted]";
+    var strict = false;
+    function redaction(opts, serialize) {
+      const { paths, censor } = handle(opts);
+      const shape = paths.reduce((o, str) => {
+        rx.lastIndex = 0;
+        const first = rx.exec(str);
+        const next = rx.exec(str);
+        let ns = first[1] !== void 0 ? first[1].replace(/^(?:"|'|`)(.*)(?:"|'|`)$/, "$1") : first[0];
+        if (ns === "*") {
+          ns = wildcardFirstSym;
+        }
+        if (next === null) {
+          o[ns] = null;
+          return o;
+        }
+        if (o[ns] === null) {
+          return o;
+        }
+        const { index } = next;
+        const nextPath = `${str.substr(index, str.length - 1)}`;
+        o[ns] = o[ns] || [];
+        if (ns !== wildcardFirstSym && o[ns].length === 0) {
+          o[ns].push(...o[wildcardFirstSym] || []);
+        }
+        if (ns === wildcardFirstSym) {
+          Object.keys(o).forEach(function(k) {
+            if (o[k]) {
+              o[k].push(nextPath);
+            }
+          });
+        }
+        o[ns].push(nextPath);
+        return o;
+      }, {});
+      const result = {
+        [redactFmtSym]: fastRedact({ paths, censor, serialize, strict })
+      };
+      const topCensor = (...args) => {
+        return typeof censor === "function" ? serialize(censor(...args)) : serialize(censor);
+      };
+      return [...Object.keys(shape), ...Object.getOwnPropertySymbols(shape)].reduce((o, k) => {
+        if (shape[k] === null) {
+          o[k] = (value) => topCensor(value, [k]);
+        } else {
+          const wrappedCensor = typeof censor === "function" ? (value, path13) => {
+            return censor(value, [k, ...path13]);
+          } : censor;
+          o[k] = fastRedact({
+            paths: shape[k],
+            censor: wrappedCensor,
+            serialize,
+            strict
+          });
+        }
+        return o;
+      }, result);
+    }
+    function handle(opts) {
+      if (Array.isArray(opts)) {
+        opts = { paths: opts, censor: CENSOR };
+        validate2(opts);
+        return opts;
+      }
+      let { paths, censor = CENSOR, remove } = opts;
+      if (Array.isArray(paths) === false) {
+        throw Error("pino \u2013 redact must contain an array of strings");
+      }
+      if (remove === true)
+        censor = void 0;
+      validate2({ paths, censor });
+      return { paths, censor };
+    }
+    module.exports = redaction;
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/time.js
+var require_time = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/time.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var nullTime = () => "";
+    var epochTime = () => `,"time":${Date.now()}`;
+    var unixTime = () => `,"time":${Math.round(Date.now() / 1e3)}`;
+    var isoTime = () => `,"time":"${new Date(Date.now()).toISOString()}"`;
+    module.exports = { nullTime, epochTime, unixTime, isoTime };
+  }
+});
+
+// ../node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/index.js
+var require_quick_format_unescaped = __commonJS({
+  "../node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    function tryStringify(o) {
+      try {
+        return JSON.stringify(o);
+      } catch (e) {
+        return '"[Circular]"';
+      }
+    }
+    module.exports = format;
+    function format(f, args, opts) {
+      var ss = opts && opts.stringify || tryStringify;
+      var offset2 = 1;
+      if (typeof f === "object" && f !== null) {
+        var len = args.length + offset2;
+        if (len === 1)
+          return f;
+        var objects = new Array(len);
+        objects[0] = ss(f);
+        for (var index = 1; index < len; index++) {
+          objects[index] = ss(args[index]);
+        }
+        return objects.join(" ");
+      }
+      if (typeof f !== "string") {
+        return f;
+      }
+      var argLen = args.length;
+      if (argLen === 0)
+        return f;
+      var str = "";
+      var a = 1 - offset2;
+      var lastPos = -1;
+      var flen = f && f.length || 0;
+      for (var i = 0; i < flen; ) {
+        if (f.charCodeAt(i) === 37 && i + 1 < flen) {
+          lastPos = lastPos > -1 ? lastPos : 0;
+          switch (f.charCodeAt(i + 1)) {
+            case 100:
+            case 102:
+              if (a >= argLen)
+                break;
+              if (args[a] == null)
+                break;
+              if (lastPos < i)
+                str += f.slice(lastPos, i);
+              str += Number(args[a]);
+              lastPos = i + 2;
+              i++;
+              break;
+            case 105:
+              if (a >= argLen)
+                break;
+              if (args[a] == null)
+                break;
+              if (lastPos < i)
+                str += f.slice(lastPos, i);
+              str += Math.floor(Number(args[a]));
+              lastPos = i + 2;
+              i++;
+              break;
+            case 79:
+            case 111:
+            case 106:
+              if (a >= argLen)
+                break;
+              if (args[a] === void 0)
+                break;
+              if (lastPos < i)
+                str += f.slice(lastPos, i);
+              var type = typeof args[a];
+              if (type === "string") {
+                str += "'" + args[a] + "'";
+                lastPos = i + 2;
+                i++;
+                break;
+              }
+              if (type === "function") {
+                str += args[a].name || "<anonymous>";
+                lastPos = i + 2;
+                i++;
+                break;
+              }
+              str += ss(args[a]);
+              lastPos = i + 2;
+              i++;
+              break;
+            case 115:
+              if (a >= argLen)
+                break;
+              if (lastPos < i)
+                str += f.slice(lastPos, i);
+              str += String(args[a]);
+              lastPos = i + 2;
+              i++;
+              break;
+            case 37:
+              if (lastPos < i)
+                str += f.slice(lastPos, i);
+              str += "%";
+              lastPos = i + 2;
+              i++;
+              a--;
+              break;
+          }
+          ++a;
+        }
+        ++i;
+      }
+      if (lastPos === -1)
+        return f;
+      else if (lastPos < flen) {
+        str += f.slice(lastPos);
+      }
+      return str;
+    }
+  }
+});
+
+// ../node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep/index.js
+var require_atomic_sleep = __commonJS({
+  "../node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    if (typeof SharedArrayBuffer !== "undefined" && typeof Atomics !== "undefined") {
+      let sleep2 = function(ms) {
+        const valid = ms > 0 && ms < Infinity;
+        if (valid === false) {
+          if (typeof ms !== "number" && typeof ms !== "bigint") {
+            throw TypeError("sleep: ms must be a number");
+          }
+          throw RangeError("sleep: ms must be a number that is greater than 0 but less than Infinity");
+        }
+        Atomics.wait(nil, 0, 0, Number(ms));
+      };
+      const nil = new Int32Array(new SharedArrayBuffer(4));
+      module.exports = sleep2;
+    } else {
+      let sleep2 = function(ms) {
+        const valid = ms > 0 && ms < Infinity;
+        if (valid === false) {
+          if (typeof ms !== "number" && typeof ms !== "bigint") {
+            throw TypeError("sleep: ms must be a number");
+          }
+          throw RangeError("sleep: ms must be a number that is greater than 0 but less than Infinity");
+        }
+        const target = Date.now() + Number(ms);
+        while (target > Date.now()) {
+        }
+      };
+      module.exports = sleep2;
+    }
+  }
+});
+
+// ../node_modules/.pnpm/sonic-boom@3.7.0/node_modules/sonic-boom/index.js
+var require_sonic_boom = __commonJS({
+  "../node_modules/.pnpm/sonic-boom@3.7.0/node_modules/sonic-boom/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var fs3 = __require("fs");
+    var EventEmitter3 = __require("events");
+    var inherits = __require("util").inherits;
+    var path13 = __require("path");
+    var sleep2 = require_atomic_sleep();
+    var BUSY_WRITE_TIMEOUT = 100;
+    var kEmptyBuffer = Buffer.allocUnsafe(0);
+    var MAX_WRITE = 16 * 1024;
+    var kContentModeBuffer = "buffer";
+    var kContentModeUtf8 = "utf8";
+    function openFile(file, sonic) {
+      sonic._opening = true;
+      sonic._writing = true;
+      sonic._asyncDrainScheduled = false;
+      function fileOpened(err, fd) {
+        if (err) {
+          sonic._reopening = false;
+          sonic._writing = false;
+          sonic._opening = false;
+          if (sonic.sync) {
+            process.nextTick(() => {
+              if (sonic.listenerCount("error") > 0) {
+                sonic.emit("error", err);
+              }
+            });
+          } else {
+            sonic.emit("error", err);
+          }
+          return;
+        }
+        sonic.fd = fd;
+        sonic.file = file;
+        sonic._reopening = false;
+        sonic._opening = false;
+        sonic._writing = false;
+        if (sonic.sync) {
+          process.nextTick(() => sonic.emit("ready"));
+        } else {
+          sonic.emit("ready");
+        }
+        if (sonic._reopening || sonic.destroyed) {
+          return;
+        }
+        if (!sonic._writing && sonic._len > sonic.minLength || sonic._flushPending) {
+          sonic._actualWrite();
+        }
+      }
+      const flags = sonic.append ? "a" : "w";
+      const mode = sonic.mode;
+      if (sonic.sync) {
+        try {
+          if (sonic.mkdir)
+            fs3.mkdirSync(path13.dirname(file), { recursive: true });
+          const fd = fs3.openSync(file, flags, mode);
+          fileOpened(null, fd);
+        } catch (err) {
+          fileOpened(err);
+          throw err;
+        }
+      } else if (sonic.mkdir) {
+        fs3.mkdir(path13.dirname(file), { recursive: true }, (err) => {
+          if (err)
+            return fileOpened(err);
+          fs3.open(file, flags, mode, fileOpened);
+        });
+      } else {
+        fs3.open(file, flags, mode, fileOpened);
+      }
+    }
+    function SonicBoom(opts) {
+      if (!(this instanceof SonicBoom)) {
+        return new SonicBoom(opts);
+      }
+      let { fd, dest, minLength, maxLength, maxWrite, sync, append = true, mkdir, retryEAGAIN, fsync, contentMode, mode } = opts || {};
+      fd = fd || dest;
+      this._len = 0;
+      this.fd = -1;
+      this._bufs = [];
+      this._lens = [];
+      this._writing = false;
+      this._ending = false;
+      this._reopening = false;
+      this._asyncDrainScheduled = false;
+      this._flushPending = false;
+      this._hwm = Math.max(minLength || 0, 16387);
+      this.file = null;
+      this.destroyed = false;
+      this.minLength = minLength || 0;
+      this.maxLength = maxLength || 0;
+      this.maxWrite = maxWrite || MAX_WRITE;
+      this.sync = sync || false;
+      this.writable = true;
+      this._fsync = fsync || false;
+      this.append = append || false;
+      this.mode = mode;
+      this.retryEAGAIN = retryEAGAIN || (() => true);
+      this.mkdir = mkdir || false;
+      let fsWriteSync;
+      let fsWrite;
+      if (contentMode === kContentModeBuffer) {
+        this._writingBuf = kEmptyBuffer;
+        this.write = writeBuffer;
+        this.flush = flushBuffer;
+        this.flushSync = flushBufferSync;
+        this._actualWrite = actualWriteBuffer;
+        fsWriteSync = () => fs3.writeSync(this.fd, this._writingBuf);
+        fsWrite = () => fs3.write(this.fd, this._writingBuf, this.release);
+      } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
+        this._writingBuf = "";
+        this.write = write2;
+        this.flush = flush;
+        this.flushSync = flushSync;
+        this._actualWrite = actualWrite;
+        fsWriteSync = () => fs3.writeSync(this.fd, this._writingBuf, "utf8");
+        fsWrite = () => fs3.write(this.fd, this._writingBuf, "utf8", this.release);
+      } else {
+        throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
+      }
+      if (typeof fd === "number") {
+        this.fd = fd;
+        process.nextTick(() => this.emit("ready"));
+      } else if (typeof fd === "string") {
+        openFile(fd, this);
+      } else {
+        throw new Error("SonicBoom supports only file descriptors and files");
+      }
+      if (this.minLength >= this.maxWrite) {
+        throw new Error(`minLength should be smaller than maxWrite (${this.maxWrite})`);
+      }
+      this.release = (err, n2) => {
+        if (err) {
+          if ((err.code === "EAGAIN" || err.code === "EBUSY") && this.retryEAGAIN(err, this._writingBuf.length, this._len - this._writingBuf.length)) {
+            if (this.sync) {
+              try {
+                sleep2(BUSY_WRITE_TIMEOUT);
+                this.release(void 0, 0);
+              } catch (err2) {
+                this.release(err2);
+              }
+            } else {
+              setTimeout(fsWrite, BUSY_WRITE_TIMEOUT);
+            }
+          } else {
+            this._writing = false;
+            this.emit("error", err);
+          }
+          return;
+        }
+        this.emit("write", n2);
+        this._len -= n2;
+        if (this._len < 0) {
+          this._len = 0;
+        }
+        this._writingBuf = this._writingBuf.slice(n2);
+        if (this._writingBuf.length) {
+          if (!this.sync) {
+            fsWrite();
+            return;
+          }
+          try {
+            do {
+              const n3 = fsWriteSync();
+              this._len -= n3;
+              this._writingBuf = this._writingBuf.slice(n3);
+            } while (this._writingBuf.length);
+          } catch (err2) {
+            this.release(err2);
+            return;
+          }
+        }
+        if (this._fsync) {
+          fs3.fsyncSync(this.fd);
+        }
+        const len = this._len;
+        if (this._reopening) {
+          this._writing = false;
+          this._reopening = false;
+          this.reopen();
+        } else if (len > this.minLength) {
+          this._actualWrite();
+        } else if (this._ending) {
+          if (len > 0) {
+            this._actualWrite();
+          } else {
+            this._writing = false;
+            actualClose(this);
+          }
+        } else {
+          this._writing = false;
+          if (this.sync) {
+            if (!this._asyncDrainScheduled) {
+              this._asyncDrainScheduled = true;
+              process.nextTick(emitDrain, this);
+            }
+          } else {
+            this.emit("drain");
+          }
+        }
+      };
+      this.on("newListener", function(name) {
+        if (name === "drain") {
+          this._asyncDrainScheduled = false;
+        }
+      });
+    }
+    function emitDrain(sonic) {
+      const hasListeners = sonic.listenerCount("drain") > 0;
+      if (!hasListeners)
+        return;
+      sonic._asyncDrainScheduled = false;
+      sonic.emit("drain");
+    }
+    inherits(SonicBoom, EventEmitter3);
+    function mergeBuf(bufs, len) {
+      if (bufs.length === 0) {
+        return kEmptyBuffer;
+      }
+      if (bufs.length === 1) {
+        return bufs[0];
+      }
+      return Buffer.concat(bufs, len);
+    }
+    function write2(data) {
+      if (this.destroyed) {
+        throw new Error("SonicBoom destroyed");
+      }
+      const len = this._len + data.length;
+      const bufs = this._bufs;
+      if (this.maxLength && len > this.maxLength) {
+        this.emit("drop", data);
+        return this._len < this._hwm;
+      }
+      if (bufs.length === 0 || bufs[bufs.length - 1].length + data.length > this.maxWrite) {
+        bufs.push("" + data);
+      } else {
+        bufs[bufs.length - 1] += data;
+      }
+      this._len = len;
+      if (!this._writing && this._len >= this.minLength) {
+        this._actualWrite();
+      }
+      return this._len < this._hwm;
+    }
+    function writeBuffer(data) {
+      if (this.destroyed) {
+        throw new Error("SonicBoom destroyed");
+      }
+      const len = this._len + data.length;
+      const bufs = this._bufs;
+      const lens = this._lens;
+      if (this.maxLength && len > this.maxLength) {
+        this.emit("drop", data);
+        return this._len < this._hwm;
+      }
+      if (bufs.length === 0 || lens[lens.length - 1] + data.length > this.maxWrite) {
+        bufs.push([data]);
+        lens.push(data.length);
+      } else {
+        bufs[bufs.length - 1].push(data);
+        lens[lens.length - 1] += data.length;
+      }
+      this._len = len;
+      if (!this._writing && this._len >= this.minLength) {
+        this._actualWrite();
+      }
+      return this._len < this._hwm;
+    }
+    function callFlushCallbackOnDrain(cb) {
+      this._flushPending = true;
+      const onDrain = () => {
+        if (!this._fsync) {
+          fs3.fsync(this.fd, (err) => {
+            this._flushPending = false;
+            cb(err);
+          });
+        } else {
+          this._flushPending = false;
+          cb();
+        }
+        this.off("error", onError);
+      };
+      const onError = (err) => {
+        this._flushPending = false;
+        cb(err);
+        this.off("drain", onDrain);
+      };
+      this.once("drain", onDrain);
+      this.once("error", onError);
+    }
+    function flush(cb) {
+      if (cb != null && typeof cb !== "function") {
+        throw new Error("flush cb must be a function");
+      }
+      if (this.destroyed) {
+        const error = new Error("SonicBoom destroyed");
+        if (cb) {
+          cb(error);
+          return;
+        }
+        throw error;
+      }
+      if (this.minLength <= 0) {
+        cb?.();
+        return;
+      }
+      if (cb) {
+        callFlushCallbackOnDrain.call(this, cb);
+      }
+      if (this._writing) {
+        return;
+      }
+      if (this._bufs.length === 0) {
+        this._bufs.push("");
+      }
+      this._actualWrite();
+    }
+    function flushBuffer(cb) {
+      if (cb != null && typeof cb !== "function") {
+        throw new Error("flush cb must be a function");
+      }
+      if (this.destroyed) {
+        const error = new Error("SonicBoom destroyed");
+        if (cb) {
+          cb(error);
+          return;
+        }
+        throw error;
+      }
+      if (this.minLength <= 0) {
+        cb?.();
+        return;
+      }
+      if (cb) {
+        callFlushCallbackOnDrain.call(this, cb);
+      }
+      if (this._writing) {
+        return;
+      }
+      if (this._bufs.length === 0) {
+        this._bufs.push([]);
+        this._lens.push(0);
+      }
+      this._actualWrite();
+    }
+    SonicBoom.prototype.reopen = function(file) {
+      if (this.destroyed) {
+        throw new Error("SonicBoom destroyed");
+      }
+      if (this._opening) {
+        this.once("ready", () => {
+          this.reopen(file);
+        });
+        return;
+      }
+      if (this._ending) {
+        return;
+      }
+      if (!this.file) {
+        throw new Error("Unable to reopen a file descriptor, you must pass a file to SonicBoom");
+      }
+      this._reopening = true;
+      if (this._writing) {
+        return;
+      }
+      const fd = this.fd;
+      this.once("ready", () => {
+        if (fd !== this.fd) {
+          fs3.close(fd, (err) => {
+            if (err) {
+              return this.emit("error", err);
+            }
+          });
+        }
+      });
+      openFile(file || this.file, this);
+    };
+    SonicBoom.prototype.end = function() {
+      if (this.destroyed) {
+        throw new Error("SonicBoom destroyed");
+      }
+      if (this._opening) {
+        this.once("ready", () => {
+          this.end();
+        });
+        return;
+      }
+      if (this._ending) {
+        return;
+      }
+      this._ending = true;
+      if (this._writing) {
+        return;
+      }
+      if (this._len > 0 && this.fd >= 0) {
+        this._actualWrite();
+      } else {
+        actualClose(this);
+      }
+    };
+    function flushSync() {
+      if (this.destroyed) {
+        throw new Error("SonicBoom destroyed");
+      }
+      if (this.fd < 0) {
+        throw new Error("sonic boom is not ready yet");
+      }
+      if (!this._writing && this._writingBuf.length > 0) {
+        this._bufs.unshift(this._writingBuf);
+        this._writingBuf = "";
+      }
+      let buf = "";
+      while (this._bufs.length || buf) {
+        if (buf.length <= 0) {
+          buf = this._bufs[0];
+        }
+        try {
+          const n2 = fs3.writeSync(this.fd, buf, "utf8");
+          buf = buf.slice(n2);
+          this._len = Math.max(this._len - n2, 0);
+          if (buf.length <= 0) {
+            this._bufs.shift();
+          }
+        } catch (err) {
+          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
+          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
+            throw err;
+          }
+          sleep2(BUSY_WRITE_TIMEOUT);
+        }
+      }
+      try {
+        fs3.fsyncSync(this.fd);
+      } catch {
+      }
+    }
+    function flushBufferSync() {
+      if (this.destroyed) {
+        throw new Error("SonicBoom destroyed");
+      }
+      if (this.fd < 0) {
+        throw new Error("sonic boom is not ready yet");
+      }
+      if (!this._writing && this._writingBuf.length > 0) {
+        this._bufs.unshift([this._writingBuf]);
+        this._writingBuf = kEmptyBuffer;
+      }
+      let buf = kEmptyBuffer;
+      while (this._bufs.length || buf.length) {
+        if (buf.length <= 0) {
+          buf = mergeBuf(this._bufs[0], this._lens[0]);
+        }
+        try {
+          const n2 = fs3.writeSync(this.fd, buf);
+          buf = buf.subarray(n2);
+          this._len = Math.max(this._len - n2, 0);
+          if (buf.length <= 0) {
+            this._bufs.shift();
+            this._lens.shift();
+          }
+        } catch (err) {
+          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
+          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
+            throw err;
+          }
+          sleep2(BUSY_WRITE_TIMEOUT);
+        }
+      }
+    }
+    SonicBoom.prototype.destroy = function() {
+      if (this.destroyed) {
+        return;
+      }
+      actualClose(this);
+    };
+    function actualWrite() {
+      const release = this.release;
+      this._writing = true;
+      this._writingBuf = this._writingBuf || this._bufs.shift() || "";
+      if (this.sync) {
+        try {
+          const written = fs3.writeSync(this.fd, this._writingBuf, "utf8");
+          release(null, written);
+        } catch (err) {
+          release(err);
+        }
+      } else {
+        fs3.write(this.fd, this._writingBuf, "utf8", release);
+      }
+    }
+    function actualWriteBuffer() {
+      const release = this.release;
+      this._writing = true;
+      this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
+      if (this.sync) {
+        try {
+          const written = fs3.writeSync(this.fd, this._writingBuf);
+          release(null, written);
+        } catch (err) {
+          release(err);
+        }
+      } else {
+        fs3.write(this.fd, this._writingBuf, release);
+      }
+    }
+    function actualClose(sonic) {
+      if (sonic.fd === -1) {
+        sonic.once("ready", actualClose.bind(null, sonic));
+        return;
+      }
+      sonic.destroyed = true;
+      sonic._bufs = [];
+      sonic._lens = [];
+      fs3.fsync(sonic.fd, closeWrapped);
+      function closeWrapped() {
+        if (sonic.fd !== 1 && sonic.fd !== 2) {
+          fs3.close(sonic.fd, done);
+        } else {
+          done();
+        }
+      }
+      function done(err) {
+        if (err) {
+          sonic.emit("error", err);
+          return;
+        }
+        if (sonic._ending && !sonic._writing) {
+          sonic.emit("finish");
+        }
+        sonic.emit("close");
+      }
+    }
+    SonicBoom.SonicBoom = SonicBoom;
+    SonicBoom.default = SonicBoom;
+    module.exports = SonicBoom;
+  }
+});
+
+// ../node_modules/.pnpm/on-exit-leak-free@2.1.0/node_modules/on-exit-leak-free/index.js
+var require_on_exit_leak_free = __commonJS({
+  "../node_modules/.pnpm/on-exit-leak-free@2.1.0/node_modules/on-exit-leak-free/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var refs = {
+      exit: [],
+      beforeExit: []
+    };
+    var functions = {
+      exit: onExit,
+      beforeExit: onBeforeExit
+    };
+    var registry = new FinalizationRegistry(clear);
+    function install(event) {
+      if (refs[event].length > 0) {
+        return;
+      }
+      process.on(event, functions[event]);
+    }
+    function uninstall(event) {
+      if (refs[event].length > 0) {
+        return;
+      }
+      process.removeListener(event, functions[event]);
+    }
+    function onExit() {
+      callRefs("exit");
+    }
+    function onBeforeExit() {
+      callRefs("beforeExit");
+    }
+    function callRefs(event) {
+      for (const ref of refs[event]) {
+        const obj = ref.deref();
+        const fn = ref.fn;
+        if (obj !== void 0) {
+          fn(obj, event);
+        }
+      }
+    }
+    function clear(ref) {
+      for (const event of ["exit", "beforeExit"]) {
+        const index = refs[event].indexOf(ref);
+        refs[event].splice(index, index + 1);
+        uninstall(event);
+      }
+    }
+    function _register(event, obj, fn) {
+      if (obj === void 0) {
+        throw new Error("the object can't be undefined");
+      }
+      install(event);
+      const ref = new WeakRef(obj);
+      ref.fn = fn;
+      registry.register(obj, ref);
+      refs[event].push(ref);
+    }
+    function register(obj, fn) {
+      _register("exit", obj, fn);
+    }
+    function registerBeforeExit(obj, fn) {
+      _register("beforeExit", obj, fn);
+    }
+    function unregister(obj) {
+      registry.unregister(obj);
+      for (const event of ["exit", "beforeExit"]) {
+        refs[event] = refs[event].filter((ref) => {
+          const _obj = ref.deref();
+          return _obj && _obj !== obj;
+        });
+        uninstall(event);
+      }
+    }
+    module.exports = {
+      register,
+      registerBeforeExit,
+      unregister
+    };
+  }
+});
+
+// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/package.json
 var require_package = __commonJS({
+  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/package.json"(exports, module) {
+    module.exports = {
+      name: "thread-stream",
+      version: "2.3.0",
+      description: "A streaming way to send data to a Node.js Worker Thread",
+      main: "index.js",
+      types: "index.d.ts",
+      dependencies: {
+        "real-require": "^0.2.0"
+      },
+      devDependencies: {
+        "@types/node": "^18.0.0",
+        "@types/tap": "^15.0.0",
+        desm: "^1.3.0",
+        fastbench: "^1.0.1",
+        husky: "^8.0.1",
+        "sonic-boom": "^3.0.0",
+        standard: "^17.0.0",
+        tap: "^16.2.0",
+        "ts-node": "^10.8.0",
+        typescript: "^4.7.2",
+        "why-is-node-running": "^2.2.2"
+      },
+      scripts: {
+        test: "standard && npm run transpile && tap test/*.test.*js && tap --ts test/*.test.*ts",
+        "test:ci": "standard && npm run transpile && npm run test:ci:js && npm run test:ci:ts",
+        "test:ci:js": 'tap --no-check-coverage --coverage-report=lcovonly "test/**/*.test.*js"',
+        "test:ci:ts": 'tap --ts --no-check-coverage --coverage-report=lcovonly "test/**/*.test.*ts"',
+        "test:yarn": 'npm run transpile && tap "test/**/*.test.js" --no-check-coverage',
+        transpile: "sh ./test/ts/transpile.sh",
+        prepare: "husky install"
+      },
+      standard: { ignore: ["test/ts/**/*"] },
+      repository: {
+        type: "git",
+        url: "git+https://github.com/mcollina/thread-stream.git"
+      },
+      keywords: [
+        "worker",
+        "thread",
+        "threads",
+        "stream"
+      ],
+      author: "Matteo Collina <hello@matteocollina.com>",
+      license: "MIT",
+      bugs: {
+        url: "https://github.com/mcollina/thread-stream/issues"
+      },
+      homepage: "https://github.com/mcollina/thread-stream#readme"
+    };
+  }
+});
+
+// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/wait.js
+var require_wait = __commonJS({
+  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/wait.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var MAX_TIMEOUT = 1e3;
+    function wait(state, index, expected, timeout, done) {
+      const max = Date.now() + timeout;
+      let current = Atomics.load(state, index);
+      if (current === expected) {
+        done(null, "ok");
+        return;
+      }
+      let prior = current;
+      const check = (backoff) => {
+        if (Date.now() > max) {
+          done(null, "timed-out");
+        } else {
+          setTimeout(() => {
+            prior = current;
+            current = Atomics.load(state, index);
+            if (current === prior) {
+              check(backoff >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff * 2);
+            } else {
+              if (current === expected)
+                done(null, "ok");
+              else
+                done(null, "not-equal");
+            }
+          }, backoff);
+        }
+      };
+      check(1);
+    }
+    function waitDiff(state, index, expected, timeout, done) {
+      const max = Date.now() + timeout;
+      let current = Atomics.load(state, index);
+      if (current !== expected) {
+        done(null, "ok");
+        return;
+      }
+      const check = (backoff) => {
+        if (Date.now() > max) {
+          done(null, "timed-out");
+        } else {
+          setTimeout(() => {
+            current = Atomics.load(state, index);
+            if (current !== expected) {
+              done(null, "ok");
+            } else {
+              check(backoff >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff * 2);
+            }
+          }, backoff);
+        }
+      };
+      check(1);
+    }
+    module.exports = { wait, waitDiff };
+  }
+});
+
+// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/indexes.js
+var require_indexes = __commonJS({
+  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/indexes.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var WRITE_INDEX = 4;
+    var READ_INDEX = 8;
+    module.exports = {
+      WRITE_INDEX,
+      READ_INDEX
+    };
+  }
+});
+
+// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/index.js
+var require_thread_stream = __commonJS({
+  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var { version } = require_package();
+    var { EventEmitter: EventEmitter3 } = __require("events");
+    var { Worker } = __require("worker_threads");
+    var { join } = __require("path");
+    var { pathToFileURL } = __require("url");
+    var { wait } = require_wait();
+    var {
+      WRITE_INDEX,
+      READ_INDEX
+    } = require_indexes();
+    var buffer = __require("buffer");
+    var assert2 = __require("assert");
+    var kImpl = Symbol("kImpl");
+    var MAX_STRING = buffer.constants.MAX_STRING_LENGTH;
+    var FakeWeakRef = class {
+      constructor(value) {
+        this._value = value;
+      }
+      deref() {
+        return this._value;
+      }
+    };
+    var FinalizationRegistry2 = global.FinalizationRegistry || class FakeFinalizationRegistry {
+      register() {
+      }
+      unregister() {
+      }
+    };
+    var WeakRef2 = global.WeakRef || FakeWeakRef;
+    var registry = new FinalizationRegistry2((worker) => {
+      if (worker.exited) {
+        return;
+      }
+      worker.terminate();
+    });
+    function createWorker(stream, opts) {
+      const { filename, workerData } = opts;
+      const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join(__dirname, "lib", "worker.js");
+      const worker = new Worker(toExecute, {
+        ...opts.workerOpts,
+        trackUnmanagedFds: false,
+        workerData: {
+          filename: filename.indexOf("file://") === 0 ? filename : pathToFileURL(filename).href,
+          dataBuf: stream[kImpl].dataBuf,
+          stateBuf: stream[kImpl].stateBuf,
+          workerData: {
+            $context: {
+              threadStreamVersion: version
+            },
+            ...workerData
+          }
+        }
+      });
+      worker.stream = new FakeWeakRef(stream);
+      worker.on("message", onWorkerMessage);
+      worker.on("exit", onWorkerExit);
+      registry.register(stream, worker);
+      return worker;
+    }
+    function drain(stream) {
+      assert2(!stream[kImpl].sync);
+      if (stream[kImpl].needDrain) {
+        stream[kImpl].needDrain = false;
+        stream.emit("drain");
+      }
+    }
+    function nextFlush(stream) {
+      const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
+      let leftover = stream[kImpl].data.length - writeIndex;
+      if (leftover > 0) {
+        if (stream[kImpl].buf.length === 0) {
+          stream[kImpl].flushing = false;
+          if (stream[kImpl].ending) {
+            end(stream);
+          } else if (stream[kImpl].needDrain) {
+            process.nextTick(drain, stream);
+          }
+          return;
+        }
+        let toWrite = stream[kImpl].buf.slice(0, leftover);
+        let toWriteBytes = Buffer.byteLength(toWrite);
+        if (toWriteBytes <= leftover) {
+          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
+          write2(stream, toWrite, nextFlush.bind(null, stream));
+        } else {
+          stream.flush(() => {
+            if (stream.destroyed) {
+              return;
+            }
+            Atomics.store(stream[kImpl].state, READ_INDEX, 0);
+            Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
+            while (toWriteBytes > stream[kImpl].data.length) {
+              leftover = leftover / 2;
+              toWrite = stream[kImpl].buf.slice(0, leftover);
+              toWriteBytes = Buffer.byteLength(toWrite);
+            }
+            stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
+            write2(stream, toWrite, nextFlush.bind(null, stream));
+          });
+        }
+      } else if (leftover === 0) {
+        if (writeIndex === 0 && stream[kImpl].buf.length === 0) {
+          return;
+        }
+        stream.flush(() => {
+          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
+          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
+          nextFlush(stream);
+        });
+      } else {
+        destroy(stream, new Error("overwritten"));
+      }
+    }
+    function onWorkerMessage(msg) {
+      const stream = this.stream.deref();
+      if (stream === void 0) {
+        this.exited = true;
+        this.terminate();
+        return;
+      }
+      switch (msg.code) {
+        case "READY":
+          this.stream = new WeakRef2(stream);
+          stream.flush(() => {
+            stream[kImpl].ready = true;
+            stream.emit("ready");
+          });
+          break;
+        case "ERROR":
+          destroy(stream, msg.err);
+          break;
+        case "EVENT":
+          if (Array.isArray(msg.args)) {
+            stream.emit(msg.name, ...msg.args);
+          } else {
+            stream.emit(msg.name, msg.args);
+          }
+          break;
+        default:
+          destroy(stream, new Error("this should not happen: " + msg.code));
+      }
+    }
+    function onWorkerExit(code) {
+      const stream = this.stream.deref();
+      if (stream === void 0) {
+        return;
+      }
+      registry.unregister(stream);
+      stream.worker.exited = true;
+      stream.worker.off("exit", onWorkerExit);
+      destroy(stream, code !== 0 ? new Error("the worker thread exited") : null);
+    }
+    var ThreadStream = class extends EventEmitter3 {
+      constructor(opts = {}) {
+        super();
+        if (opts.bufferSize < 4) {
+          throw new Error("bufferSize must at least fit a 4-byte utf-8 char");
+        }
+        this[kImpl] = {};
+        this[kImpl].stateBuf = new SharedArrayBuffer(128);
+        this[kImpl].state = new Int32Array(this[kImpl].stateBuf);
+        this[kImpl].dataBuf = new SharedArrayBuffer(opts.bufferSize || 4 * 1024 * 1024);
+        this[kImpl].data = Buffer.from(this[kImpl].dataBuf);
+        this[kImpl].sync = opts.sync || false;
+        this[kImpl].ending = false;
+        this[kImpl].ended = false;
+        this[kImpl].needDrain = false;
+        this[kImpl].destroyed = false;
+        this[kImpl].flushing = false;
+        this[kImpl].ready = false;
+        this[kImpl].finished = false;
+        this[kImpl].errored = null;
+        this[kImpl].closed = false;
+        this[kImpl].buf = "";
+        this.worker = createWorker(this, opts);
+      }
+      write(data) {
+        if (this[kImpl].destroyed) {
+          error(this, new Error("the worker has exited"));
+          return false;
+        }
+        if (this[kImpl].ending) {
+          error(this, new Error("the worker is ending"));
+          return false;
+        }
+        if (this[kImpl].flushing && this[kImpl].buf.length + data.length >= MAX_STRING) {
+          try {
+            writeSync(this);
+            this[kImpl].flushing = true;
+          } catch (err) {
+            destroy(this, err);
+            return false;
+          }
+        }
+        this[kImpl].buf += data;
+        if (this[kImpl].sync) {
+          try {
+            writeSync(this);
+            return true;
+          } catch (err) {
+            destroy(this, err);
+            return false;
+          }
+        }
+        if (!this[kImpl].flushing) {
+          this[kImpl].flushing = true;
+          setImmediate(nextFlush, this);
+        }
+        this[kImpl].needDrain = this[kImpl].data.length - this[kImpl].buf.length - Atomics.load(this[kImpl].state, WRITE_INDEX) <= 0;
+        return !this[kImpl].needDrain;
+      }
+      end() {
+        if (this[kImpl].destroyed) {
+          return;
+        }
+        this[kImpl].ending = true;
+        end(this);
+      }
+      flush(cb) {
+        if (this[kImpl].destroyed) {
+          if (typeof cb === "function") {
+            process.nextTick(cb, new Error("the worker has exited"));
+          }
+          return;
+        }
+        const writeIndex = Atomics.load(this[kImpl].state, WRITE_INDEX);
+        wait(this[kImpl].state, READ_INDEX, writeIndex, Infinity, (err, res) => {
+          if (err) {
+            destroy(this, err);
+            process.nextTick(cb, err);
+            return;
+          }
+          if (res === "not-equal") {
+            this.flush(cb);
+            return;
+          }
+          process.nextTick(cb);
+        });
+      }
+      flushSync() {
+        if (this[kImpl].destroyed) {
+          return;
+        }
+        writeSync(this);
+        flushSync(this);
+      }
+      unref() {
+        this.worker.unref();
+      }
+      ref() {
+        this.worker.ref();
+      }
+      get ready() {
+        return this[kImpl].ready;
+      }
+      get destroyed() {
+        return this[kImpl].destroyed;
+      }
+      get closed() {
+        return this[kImpl].closed;
+      }
+      get writable() {
+        return !this[kImpl].destroyed && !this[kImpl].ending;
+      }
+      get writableEnded() {
+        return this[kImpl].ending;
+      }
+      get writableFinished() {
+        return this[kImpl].finished;
+      }
+      get writableNeedDrain() {
+        return this[kImpl].needDrain;
+      }
+      get writableObjectMode() {
+        return false;
+      }
+      get writableErrored() {
+        return this[kImpl].errored;
+      }
+    };
+    function error(stream, err) {
+      setImmediate(() => {
+        stream.emit("error", err);
+      });
+    }
+    function destroy(stream, err) {
+      if (stream[kImpl].destroyed) {
+        return;
+      }
+      stream[kImpl].destroyed = true;
+      if (err) {
+        stream[kImpl].errored = err;
+        error(stream, err);
+      }
+      if (!stream.worker.exited) {
+        stream.worker.terminate().catch(() => {
+        }).then(() => {
+          stream[kImpl].closed = true;
+          stream.emit("close");
+        });
+      } else {
+        setImmediate(() => {
+          stream[kImpl].closed = true;
+          stream.emit("close");
+        });
+      }
+    }
+    function write2(stream, data, cb) {
+      const current = Atomics.load(stream[kImpl].state, WRITE_INDEX);
+      const length = Buffer.byteLength(data);
+      stream[kImpl].data.write(data, current);
+      Atomics.store(stream[kImpl].state, WRITE_INDEX, current + length);
+      Atomics.notify(stream[kImpl].state, WRITE_INDEX);
+      cb();
+      return true;
+    }
+    function end(stream) {
+      if (stream[kImpl].ended || !stream[kImpl].ending || stream[kImpl].flushing) {
+        return;
+      }
+      stream[kImpl].ended = true;
+      try {
+        stream.flushSync();
+        let readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
+        Atomics.store(stream[kImpl].state, WRITE_INDEX, -1);
+        Atomics.notify(stream[kImpl].state, WRITE_INDEX);
+        let spins = 0;
+        while (readIndex !== -1) {
+          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
+          readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
+          if (readIndex === -2) {
+            destroy(stream, new Error("end() failed"));
+            return;
+          }
+          if (++spins === 10) {
+            destroy(stream, new Error("end() took too long (10s)"));
+            return;
+          }
+        }
+        process.nextTick(() => {
+          stream[kImpl].finished = true;
+          stream.emit("finish");
+        });
+      } catch (err) {
+        destroy(stream, err);
+      }
+    }
+    function writeSync(stream) {
+      const cb = () => {
+        if (stream[kImpl].ending) {
+          end(stream);
+        } else if (stream[kImpl].needDrain) {
+          process.nextTick(drain, stream);
+        }
+      };
+      stream[kImpl].flushing = false;
+      while (stream[kImpl].buf.length !== 0) {
+        const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
+        let leftover = stream[kImpl].data.length - writeIndex;
+        if (leftover === 0) {
+          flushSync(stream);
+          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
+          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
+          continue;
+        } else if (leftover < 0) {
+          throw new Error("overwritten");
+        }
+        let toWrite = stream[kImpl].buf.slice(0, leftover);
+        let toWriteBytes = Buffer.byteLength(toWrite);
+        if (toWriteBytes <= leftover) {
+          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
+          write2(stream, toWrite, cb);
+        } else {
+          flushSync(stream);
+          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
+          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
+          while (toWriteBytes > stream[kImpl].buf.length) {
+            leftover = leftover / 2;
+            toWrite = stream[kImpl].buf.slice(0, leftover);
+            toWriteBytes = Buffer.byteLength(toWrite);
+          }
+          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
+          write2(stream, toWrite, cb);
+        }
+      }
+    }
+    function flushSync(stream) {
+      if (stream[kImpl].flushing) {
+        throw new Error("unable to flush while flushing");
+      }
+      const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
+      let spins = 0;
+      while (true) {
+        const readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
+        if (readIndex === -2) {
+          throw Error("_flushSync failed");
+        }
+        if (readIndex !== writeIndex) {
+          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
+        } else {
+          break;
+        }
+        if (++spins === 10) {
+          throw new Error("_flushSync took too long (10s)");
+        }
+      }
+    }
+    module.exports = ThreadStream;
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/transport.js
+var require_transport = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/transport.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var { createRequire: createRequire2 } = __require("module");
+    var getCallers = require_caller();
+    var { join, isAbsolute, sep } = __require("path");
+    var sleep2 = require_atomic_sleep();
+    var onExit = require_on_exit_leak_free();
+    var ThreadStream = require_thread_stream();
+    function setupOnExit(stream) {
+      onExit.register(stream, autoEnd);
+      onExit.registerBeforeExit(stream, flush);
+      stream.on("close", function() {
+        onExit.unregister(stream);
+      });
+    }
+    function buildStream(filename, workerData, workerOpts) {
+      const stream = new ThreadStream({
+        filename,
+        workerData,
+        workerOpts
+      });
+      stream.on("ready", onReady);
+      stream.on("close", function() {
+        process.removeListener("exit", onExit2);
+      });
+      process.on("exit", onExit2);
+      function onReady() {
+        process.removeListener("exit", onExit2);
+        stream.unref();
+        if (workerOpts.autoEnd !== false) {
+          setupOnExit(stream);
+        }
+      }
+      function onExit2() {
+        if (stream.closed) {
+          return;
+        }
+        stream.flushSync();
+        sleep2(100);
+        stream.end();
+      }
+      return stream;
+    }
+    function autoEnd(stream) {
+      stream.ref();
+      stream.flushSync();
+      stream.end();
+      stream.once("close", function() {
+        stream.unref();
+      });
+    }
+    function flush(stream) {
+      stream.flushSync();
+    }
+    function transport(fullOptions) {
+      const { pipeline: pipeline2, targets, levels, dedupe, options = {}, worker = {}, caller = getCallers() } = fullOptions;
+      const callers = typeof caller === "string" ? [caller] : caller;
+      const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
+      let target = fullOptions.target;
+      if (target && targets) {
+        throw new Error("only one of target or targets can be specified");
+      }
+      if (targets) {
+        target = bundlerOverrides["pino-worker"] || join(__dirname, "worker.js");
+        options.targets = targets.map((dest) => {
+          return {
+            ...dest,
+            target: fixTarget(dest.target)
+          };
+        });
+      } else if (pipeline2) {
+        target = bundlerOverrides["pino-pipeline-worker"] || join(__dirname, "worker-pipeline.js");
+        options.targets = pipeline2.map((dest) => {
+          return {
+            ...dest,
+            target: fixTarget(dest.target)
+          };
+        });
+      }
+      if (levels) {
+        options.levels = levels;
+      }
+      if (dedupe) {
+        options.dedupe = dedupe;
+      }
+      return buildStream(fixTarget(target), options, worker);
+      function fixTarget(origin) {
+        origin = bundlerOverrides[origin] || origin;
+        if (isAbsolute(origin) || origin.indexOf("file://") === 0) {
+          return origin;
+        }
+        if (origin === "pino/file") {
+          return join(__dirname, "..", "file.js");
+        }
+        let fixTarget2;
+        for (const filePath of callers) {
+          try {
+            const context = filePath === "node:repl" ? process.cwd() + sep : filePath;
+            fixTarget2 = createRequire2(context).resolve(origin);
+            break;
+          } catch (err) {
+            continue;
+          }
+        }
+        if (!fixTarget2) {
+          throw new Error(`unable to determine transport target for "${origin}"`);
+        }
+        return fixTarget2;
+      }
+    }
+    module.exports = transport;
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/tools.js
+var require_tools = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/tools.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var format = require_quick_format_unescaped();
+    var { mapHttpRequest, mapHttpResponse } = require_pino_std_serializers();
+    var SonicBoom = require_sonic_boom();
+    var onExit = require_on_exit_leak_free();
+    var {
+      lsCacheSym,
+      chindingsSym,
+      writeSym,
+      serializersSym,
+      formatOptsSym,
+      endSym,
+      stringifiersSym,
+      stringifySym,
+      stringifySafeSym,
+      wildcardFirstSym,
+      nestedKeySym,
+      formattersSym,
+      messageKeySym,
+      errorKeySym,
+      nestedKeyStrSym,
+      msgPrefixSym
+    } = require_symbols();
+    var { isMainThread } = __require("worker_threads");
+    var transport = require_transport();
+    function noop5() {
+    }
+    function genLog(level, hook) {
+      if (!hook)
+        return LOG;
+      return function hookWrappedLog(...args) {
+        hook.call(this, args, LOG, level);
+      };
+      function LOG(o, ...n2) {
+        if (typeof o === "object") {
+          let msg = o;
+          if (o !== null) {
+            if (o.method && o.headers && o.socket) {
+              o = mapHttpRequest(o);
+            } else if (typeof o.setHeader === "function") {
+              o = mapHttpResponse(o);
+            }
+          }
+          let formatParams;
+          if (msg === null && n2.length === 0) {
+            formatParams = [null];
+          } else {
+            msg = n2.shift();
+            formatParams = n2;
+          }
+          if (typeof this[msgPrefixSym] === "string" && msg !== void 0 && msg !== null) {
+            msg = this[msgPrefixSym] + msg;
+          }
+          this[writeSym](o, format(msg, formatParams, this[formatOptsSym]), level);
+        } else {
+          let msg = o === void 0 ? n2.shift() : o;
+          if (typeof this[msgPrefixSym] === "string" && msg !== void 0 && msg !== null) {
+            msg = this[msgPrefixSym] + msg;
+          }
+          this[writeSym](null, format(msg, n2, this[formatOptsSym]), level);
+        }
+      }
+    }
+    function asString(str) {
+      let result = "";
+      let last = 0;
+      let found = false;
+      let point = 255;
+      const l2 = str.length;
+      if (l2 > 100) {
+        return JSON.stringify(str);
+      }
+      for (var i = 0; i < l2 && point >= 32; i++) {
+        point = str.charCodeAt(i);
+        if (point === 34 || point === 92) {
+          result += str.slice(last, i) + "\\";
+          last = i;
+          found = true;
+        }
+      }
+      if (!found) {
+        result = str;
+      } else {
+        result += str.slice(last);
+      }
+      return point < 32 ? JSON.stringify(str) : '"' + result + '"';
+    }
+    function asJson(obj, msg, num, time) {
+      const stringify3 = this[stringifySym];
+      const stringifySafe = this[stringifySafeSym];
+      const stringifiers = this[stringifiersSym];
+      const end = this[endSym];
+      const chindings = this[chindingsSym];
+      const serializers = this[serializersSym];
+      const formatters = this[formattersSym];
+      const messageKey = this[messageKeySym];
+      const errorKey = this[errorKeySym];
+      let data = this[lsCacheSym][num] + time;
+      data = data + chindings;
+      let value;
+      if (formatters.log) {
+        obj = formatters.log(obj);
+      }
+      const wildcardStringifier = stringifiers[wildcardFirstSym];
+      let propStr = "";
+      for (const key in obj) {
+        value = obj[key];
+        if (Object.prototype.hasOwnProperty.call(obj, key) && value !== void 0) {
+          if (serializers[key]) {
+            value = serializers[key](value);
+          } else if (key === errorKey && serializers.err) {
+            value = serializers.err(value);
+          }
+          const stringifier = stringifiers[key] || wildcardStringifier;
+          switch (typeof value) {
+            case "undefined":
+            case "function":
+              continue;
+            case "number":
+              if (Number.isFinite(value) === false) {
+                value = null;
+              }
+            case "boolean":
+              if (stringifier)
+                value = stringifier(value);
+              break;
+            case "string":
+              value = (stringifier || asString)(value);
+              break;
+            default:
+              value = (stringifier || stringify3)(value, stringifySafe);
+          }
+          if (value === void 0)
+            continue;
+          const strKey = asString(key);
+          propStr += "," + strKey + ":" + value;
+        }
+      }
+      let msgStr = "";
+      if (msg !== void 0) {
+        value = serializers[messageKey] ? serializers[messageKey](msg) : msg;
+        const stringifier = stringifiers[messageKey] || wildcardStringifier;
+        switch (typeof value) {
+          case "function":
+            break;
+          case "number":
+            if (Number.isFinite(value) === false) {
+              value = null;
+            }
+          case "boolean":
+            if (stringifier)
+              value = stringifier(value);
+            msgStr = ',"' + messageKey + '":' + value;
+            break;
+          case "string":
+            value = (stringifier || asString)(value);
+            msgStr = ',"' + messageKey + '":' + value;
+            break;
+          default:
+            value = (stringifier || stringify3)(value, stringifySafe);
+            msgStr = ',"' + messageKey + '":' + value;
+        }
+      }
+      if (this[nestedKeySym] && propStr) {
+        return data + this[nestedKeyStrSym] + propStr.slice(1) + "}" + msgStr + end;
+      } else {
+        return data + propStr + msgStr + end;
+      }
+    }
+    function asChindings(instance, bindings) {
+      let value;
+      let data = instance[chindingsSym];
+      const stringify3 = instance[stringifySym];
+      const stringifySafe = instance[stringifySafeSym];
+      const stringifiers = instance[stringifiersSym];
+      const wildcardStringifier = stringifiers[wildcardFirstSym];
+      const serializers = instance[serializersSym];
+      const formatter = instance[formattersSym].bindings;
+      bindings = formatter(bindings);
+      for (const key in bindings) {
+        value = bindings[key];
+        const valid = key !== "level" && key !== "serializers" && key !== "formatters" && key !== "customLevels" && bindings.hasOwnProperty(key) && value !== void 0;
+        if (valid === true) {
+          value = serializers[key] ? serializers[key](value) : value;
+          value = (stringifiers[key] || wildcardStringifier || stringify3)(value, stringifySafe);
+          if (value === void 0)
+            continue;
+          data += ',"' + key + '":' + value;
+        }
+      }
+      return data;
+    }
+    function hasBeenTampered(stream) {
+      return stream.write !== stream.constructor.prototype.write;
+    }
+    var hasNodeCodeCoverage = process.env.NODE_V8_COVERAGE || process.env.V8_COVERAGE;
+    function buildSafeSonicBoom(opts) {
+      const stream = new SonicBoom(opts);
+      stream.on("error", filterBrokenPipe);
+      if (!hasNodeCodeCoverage && !opts.sync && isMainThread) {
+        onExit.register(stream, autoEnd);
+        stream.on("close", function() {
+          onExit.unregister(stream);
+        });
+      }
+      return stream;
+      function filterBrokenPipe(err) {
+        if (err.code === "EPIPE") {
+          stream.write = noop5;
+          stream.end = noop5;
+          stream.flushSync = noop5;
+          stream.destroy = noop5;
+          return;
+        }
+        stream.removeListener("error", filterBrokenPipe);
+        stream.emit("error", err);
+      }
+    }
+    function autoEnd(stream, eventName) {
+      if (stream.destroyed) {
+        return;
+      }
+      if (eventName === "beforeExit") {
+        stream.flush();
+        stream.on("drain", function() {
+          stream.end();
+        });
+      } else {
+        stream.flushSync();
+      }
+    }
+    function createArgsNormalizer(defaultOptions) {
+      return function normalizeArgs(instance, caller, opts = {}, stream) {
+        if (typeof opts === "string") {
+          stream = buildSafeSonicBoom({ dest: opts });
+          opts = {};
+        } else if (typeof stream === "string") {
+          if (opts && opts.transport) {
+            throw Error("only one of option.transport or stream can be specified");
+          }
+          stream = buildSafeSonicBoom({ dest: stream });
+        } else if (opts instanceof SonicBoom || opts.writable || opts._writableState) {
+          stream = opts;
+          opts = {};
+        } else if (opts.transport) {
+          if (opts.transport instanceof SonicBoom || opts.transport.writable || opts.transport._writableState) {
+            throw Error("option.transport do not allow stream, please pass to option directly. e.g. pino(transport)");
+          }
+          if (opts.transport.targets && opts.transport.targets.length && opts.formatters && typeof opts.formatters.level === "function") {
+            throw Error("option.transport.targets do not allow custom level formatters");
+          }
+          let customLevels;
+          if (opts.customLevels) {
+            customLevels = opts.useOnlyCustomLevels ? opts.customLevels : Object.assign({}, opts.levels, opts.customLevels);
+          }
+          stream = transport({ caller, ...opts.transport, levels: customLevels });
+        }
+        opts = Object.assign({}, defaultOptions, opts);
+        opts.serializers = Object.assign({}, defaultOptions.serializers, opts.serializers);
+        opts.formatters = Object.assign({}, defaultOptions.formatters, opts.formatters);
+        if (opts.prettyPrint) {
+          throw new Error("prettyPrint option is no longer supported, see the pino-pretty package (https://github.com/pinojs/pino-pretty)");
+        }
+        const { enabled, onChild } = opts;
+        if (enabled === false)
+          opts.level = "silent";
+        if (!onChild)
+          opts.onChild = noop5;
+        if (!stream) {
+          if (!hasBeenTampered(process.stdout)) {
+            stream = buildSafeSonicBoom({ fd: process.stdout.fd || 1 });
+          } else {
+            stream = process.stdout;
+          }
+        }
+        return { opts, stream };
+      };
+    }
+    function stringify2(obj, stringifySafeFn) {
+      try {
+        return JSON.stringify(obj);
+      } catch (_2) {
+        try {
+          const stringify3 = stringifySafeFn || this[stringifySafeSym];
+          return stringify3(obj);
+        } catch (_3) {
+          return '"[unable to serialize, circular reference is too complex to analyze]"';
+        }
+      }
+    }
+    function buildFormatters(level, bindings, log2) {
+      return {
+        level,
+        bindings,
+        log: log2
+      };
+    }
+    function normalizeDestFileDescriptor(destination) {
+      const fd = Number(destination);
+      if (typeof destination === "string" && Number.isFinite(fd)) {
+        return fd;
+      }
+      if (destination === void 0) {
+        return 1;
+      }
+      return destination;
+    }
+    module.exports = {
+      noop: noop5,
+      buildSafeSonicBoom,
+      asChindings,
+      asJson,
+      genLog,
+      createArgsNormalizer,
+      stringify: stringify2,
+      buildFormatters,
+      normalizeDestFileDescriptor
+    };
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/levels.js
+var require_levels = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/levels.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var {
+      lsCacheSym,
+      levelValSym,
+      useOnlyCustomLevelsSym,
+      streamSym,
+      formattersSym,
+      hooksSym
+    } = require_symbols();
+    var { noop: noop5, genLog } = require_tools();
+    var levels = {
+      trace: 10,
+      debug: 20,
+      info: 30,
+      warn: 40,
+      error: 50,
+      fatal: 60
+    };
+    var levelMethods = {
+      fatal: (hook) => {
+        const logFatal = genLog(levels.fatal, hook);
+        return function(...args) {
+          const stream = this[streamSym];
+          logFatal.call(this, ...args);
+          if (typeof stream.flushSync === "function") {
+            try {
+              stream.flushSync();
+            } catch (e) {
+            }
+          }
+        };
+      },
+      error: (hook) => genLog(levels.error, hook),
+      warn: (hook) => genLog(levels.warn, hook),
+      info: (hook) => genLog(levels.info, hook),
+      debug: (hook) => genLog(levels.debug, hook),
+      trace: (hook) => genLog(levels.trace, hook)
+    };
+    var nums = Object.keys(levels).reduce((o, k) => {
+      o[levels[k]] = k;
+      return o;
+    }, {});
+    var initialLsCache = Object.keys(nums).reduce((o, k) => {
+      o[k] = '{"level":' + Number(k);
+      return o;
+    }, {});
+    function genLsCache(instance) {
+      const formatter = instance[formattersSym].level;
+      const { labels } = instance.levels;
+      const cache3 = {};
+      for (const label in labels) {
+        const level = formatter(labels[label], Number(label));
+        cache3[label] = JSON.stringify(level).slice(0, -1);
+      }
+      instance[lsCacheSym] = cache3;
+      return instance;
+    }
+    function isStandardLevel(level, useOnlyCustomLevels) {
+      if (useOnlyCustomLevels) {
+        return false;
+      }
+      switch (level) {
+        case "fatal":
+        case "error":
+        case "warn":
+        case "info":
+        case "debug":
+        case "trace":
+          return true;
+        default:
+          return false;
+      }
+    }
+    function setLevel(level) {
+      const { labels, values } = this.levels;
+      if (typeof level === "number") {
+        if (labels[level] === void 0)
+          throw Error("unknown level value" + level);
+        level = labels[level];
+      }
+      if (values[level] === void 0)
+        throw Error("unknown level " + level);
+      const preLevelVal = this[levelValSym];
+      const levelVal = this[levelValSym] = values[level];
+      const useOnlyCustomLevelsVal = this[useOnlyCustomLevelsSym];
+      const hook = this[hooksSym].logMethod;
+      for (const key in values) {
+        if (levelVal > values[key]) {
+          this[key] = noop5;
+          continue;
+        }
+        this[key] = isStandardLevel(key, useOnlyCustomLevelsVal) ? levelMethods[key](hook) : genLog(values[key], hook);
+      }
+      this.emit(
+        "level-change",
+        level,
+        levelVal,
+        labels[preLevelVal],
+        preLevelVal,
+        this
+      );
+    }
+    function getLevel(level) {
+      const { levels: levels2, levelVal } = this;
+      return levels2 && levels2.labels ? levels2.labels[levelVal] : "";
+    }
+    function isLevelEnabled(logLevel) {
+      const { values } = this.levels;
+      const logLevelVal = values[logLevel];
+      return logLevelVal !== void 0 && logLevelVal >= this[levelValSym];
+    }
+    function mappings(customLevels = null, useOnlyCustomLevels = false) {
+      const customNums = customLevels ? Object.keys(customLevels).reduce((o, k) => {
+        o[customLevels[k]] = k;
+        return o;
+      }, {}) : null;
+      const labels = Object.assign(
+        Object.create(Object.prototype, { Infinity: { value: "silent" } }),
+        useOnlyCustomLevels ? null : nums,
+        customNums
+      );
+      const values = Object.assign(
+        Object.create(Object.prototype, { silent: { value: Infinity } }),
+        useOnlyCustomLevels ? null : levels,
+        customLevels
+      );
+      return { labels, values };
+    }
+    function assertDefaultLevelFound(defaultLevel, customLevels, useOnlyCustomLevels) {
+      if (typeof defaultLevel === "number") {
+        const values = [].concat(
+          Object.keys(customLevels || {}).map((key) => customLevels[key]),
+          useOnlyCustomLevels ? [] : Object.keys(nums).map((level) => +level),
+          Infinity
+        );
+        if (!values.includes(defaultLevel)) {
+          throw Error(`default level:${defaultLevel} must be included in custom levels`);
+        }
+        return;
+      }
+      const labels = Object.assign(
+        Object.create(Object.prototype, { silent: { value: Infinity } }),
+        useOnlyCustomLevels ? null : levels,
+        customLevels
+      );
+      if (!(defaultLevel in labels)) {
+        throw Error(`default level:${defaultLevel} must be included in custom levels`);
+      }
+    }
+    function assertNoLevelCollisions(levels2, customLevels) {
+      const { labels, values } = levels2;
+      for (const k in customLevels) {
+        if (k in values) {
+          throw Error("levels cannot be overridden");
+        }
+        if (customLevels[k] in labels) {
+          throw Error("pre-existing level values cannot be used for new levels");
+        }
+      }
+    }
+    module.exports = {
+      initialLsCache,
+      genLsCache,
+      levelMethods,
+      getLevel,
+      setLevel,
+      isLevelEnabled,
+      mappings,
+      levels,
+      assertNoLevelCollisions,
+      assertDefaultLevelFound
+    };
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/meta.js
+var require_meta = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/meta.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    module.exports = { version: "8.17.2" };
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/proto.js
+var require_proto = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/proto.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var { EventEmitter: EventEmitter3 } = __require("events");
+    var {
+      lsCacheSym,
+      levelValSym,
+      setLevelSym,
+      getLevelSym,
+      chindingsSym,
+      parsedChindingsSym,
+      mixinSym,
+      asJsonSym,
+      writeSym,
+      mixinMergeStrategySym,
+      timeSym,
+      timeSliceIndexSym,
+      streamSym,
+      serializersSym,
+      formattersSym,
+      errorKeySym,
+      messageKeySym,
+      useOnlyCustomLevelsSym,
+      needsMetadataGsym,
+      redactFmtSym,
+      stringifySym,
+      formatOptsSym,
+      stringifiersSym,
+      msgPrefixSym
+    } = require_symbols();
+    var {
+      getLevel,
+      setLevel,
+      isLevelEnabled,
+      mappings,
+      initialLsCache,
+      genLsCache,
+      assertNoLevelCollisions
+    } = require_levels();
+    var {
+      asChindings,
+      asJson,
+      buildFormatters,
+      stringify: stringify2
+    } = require_tools();
+    var {
+      version
+    } = require_meta();
+    var redaction = require_redaction();
+    var constructor = class Pino {
+    };
+    var prototype = {
+      constructor,
+      child,
+      bindings,
+      setBindings,
+      flush,
+      isLevelEnabled,
+      version,
+      get level() {
+        return this[getLevelSym]();
+      },
+      set level(lvl) {
+        this[setLevelSym](lvl);
+      },
+      get levelVal() {
+        return this[levelValSym];
+      },
+      set levelVal(n2) {
+        throw Error("levelVal is read-only");
+      },
+      [lsCacheSym]: initialLsCache,
+      [writeSym]: write2,
+      [asJsonSym]: asJson,
+      [getLevelSym]: getLevel,
+      [setLevelSym]: setLevel
+    };
+    Object.setPrototypeOf(prototype, EventEmitter3.prototype);
+    module.exports = function() {
+      return Object.create(prototype);
+    };
+    var resetChildingsFormatter = (bindings2) => bindings2;
+    function child(bindings2, options) {
+      if (!bindings2) {
+        throw Error("missing bindings for child Pino");
+      }
+      options = options || {};
+      const serializers = this[serializersSym];
+      const formatters = this[formattersSym];
+      const instance = Object.create(this);
+      if (options.hasOwnProperty("serializers") === true) {
+        instance[serializersSym] = /* @__PURE__ */ Object.create(null);
+        for (const k in serializers) {
+          instance[serializersSym][k] = serializers[k];
+        }
+        const parentSymbols = Object.getOwnPropertySymbols(serializers);
+        for (var i = 0; i < parentSymbols.length; i++) {
+          const ks = parentSymbols[i];
+          instance[serializersSym][ks] = serializers[ks];
+        }
+        for (const bk in options.serializers) {
+          instance[serializersSym][bk] = options.serializers[bk];
+        }
+        const bindingsSymbols = Object.getOwnPropertySymbols(options.serializers);
+        for (var bi = 0; bi < bindingsSymbols.length; bi++) {
+          const bks = bindingsSymbols[bi];
+          instance[serializersSym][bks] = options.serializers[bks];
+        }
+      } else
+        instance[serializersSym] = serializers;
+      if (options.hasOwnProperty("formatters")) {
+        const { level, bindings: chindings, log: log2 } = options.formatters;
+        instance[formattersSym] = buildFormatters(
+          level || formatters.level,
+          chindings || resetChildingsFormatter,
+          log2 || formatters.log
+        );
+      } else {
+        instance[formattersSym] = buildFormatters(
+          formatters.level,
+          resetChildingsFormatter,
+          formatters.log
+        );
+      }
+      if (options.hasOwnProperty("customLevels") === true) {
+        assertNoLevelCollisions(this.levels, options.customLevels);
+        instance.levels = mappings(options.customLevels, instance[useOnlyCustomLevelsSym]);
+        genLsCache(instance);
+      }
+      if (typeof options.redact === "object" && options.redact !== null || Array.isArray(options.redact)) {
+        instance.redact = options.redact;
+        const stringifiers = redaction(instance.redact, stringify2);
+        const formatOpts = { stringify: stringifiers[redactFmtSym] };
+        instance[stringifySym] = stringify2;
+        instance[stringifiersSym] = stringifiers;
+        instance[formatOptsSym] = formatOpts;
+      }
+      if (typeof options.msgPrefix === "string") {
+        instance[msgPrefixSym] = (this[msgPrefixSym] || "") + options.msgPrefix;
+      }
+      instance[chindingsSym] = asChindings(instance, bindings2);
+      const childLevel = options.level || this.level;
+      instance[setLevelSym](childLevel);
+      this.onChild(instance);
+      return instance;
+    }
+    function bindings() {
+      const chindings = this[chindingsSym];
+      const chindingsJson = `{${chindings.substr(1)}}`;
+      const bindingsFromJson = JSON.parse(chindingsJson);
+      delete bindingsFromJson.pid;
+      delete bindingsFromJson.hostname;
+      return bindingsFromJson;
+    }
+    function setBindings(newBindings) {
+      const chindings = asChindings(this, newBindings);
+      this[chindingsSym] = chindings;
+      delete this[parsedChindingsSym];
+    }
+    function defaultMixinMergeStrategy(mergeObject, mixinObject) {
+      return Object.assign(mixinObject, mergeObject);
+    }
+    function write2(_obj, msg, num) {
+      const t = this[timeSym]();
+      const mixin = this[mixinSym];
+      const errorKey = this[errorKeySym];
+      const messageKey = this[messageKeySym];
+      const mixinMergeStrategy = this[mixinMergeStrategySym] || defaultMixinMergeStrategy;
+      let obj;
+      if (_obj === void 0 || _obj === null) {
+        obj = {};
+      } else if (_obj instanceof Error) {
+        obj = { [errorKey]: _obj };
+        if (msg === void 0) {
+          msg = _obj.message;
+        }
+      } else {
+        obj = _obj;
+        if (msg === void 0 && _obj[messageKey] === void 0 && _obj[errorKey]) {
+          msg = _obj[errorKey].message;
+        }
+      }
+      if (mixin) {
+        obj = mixinMergeStrategy(obj, mixin(obj, num, this));
+      }
+      const s2 = this[asJsonSym](obj, msg, num, t);
+      const stream = this[streamSym];
+      if (stream[needsMetadataGsym] === true) {
+        stream.lastLevel = num;
+        stream.lastObj = obj;
+        stream.lastMsg = msg;
+        stream.lastTime = t.slice(this[timeSliceIndexSym]);
+        stream.lastLogger = this;
+      }
+      stream.write(s2);
+    }
+    function noop5() {
+    }
+    function flush(cb) {
+      if (cb != null && typeof cb !== "function") {
+        throw Error("callback must be a function");
+      }
+      const stream = this[streamSym];
+      if (typeof stream.flush === "function") {
+        stream.flush(cb || noop5);
+      } else if (cb)
+        cb();
+    }
+  }
+});
+
+// ../node_modules/.pnpm/safe-stable-stringify@2.4.2/node_modules/safe-stable-stringify/index.js
+var require_safe_stable_stringify = __commonJS({
+  "../node_modules/.pnpm/safe-stable-stringify@2.4.2/node_modules/safe-stable-stringify/index.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var { hasOwnProperty: hasOwnProperty3 } = Object.prototype;
+    var stringify2 = configure();
+    stringify2.configure = configure;
+    stringify2.stringify = stringify2;
+    stringify2.default = stringify2;
+    exports.stringify = stringify2;
+    exports.configure = configure;
+    module.exports = stringify2;
+    var strEscapeSequencesRegExp = /[\u0000-\u001f\u0022\u005c\ud800-\udfff]|[\ud800-\udbff](?![\udc00-\udfff])|(?:[^\ud800-\udbff]|^)[\udc00-\udfff]/;
+    var strEscapeSequencesReplacer = new RegExp(strEscapeSequencesRegExp, "g");
+    var meta = [
+      "\\u0000",
+      "\\u0001",
+      "\\u0002",
+      "\\u0003",
+      "\\u0004",
+      "\\u0005",
+      "\\u0006",
+      "\\u0007",
+      "\\b",
+      "\\t",
+      "\\n",
+      "\\u000b",
+      "\\f",
+      "\\r",
+      "\\u000e",
+      "\\u000f",
+      "\\u0010",
+      "\\u0011",
+      "\\u0012",
+      "\\u0013",
+      "\\u0014",
+      "\\u0015",
+      "\\u0016",
+      "\\u0017",
+      "\\u0018",
+      "\\u0019",
+      "\\u001a",
+      "\\u001b",
+      "\\u001c",
+      "\\u001d",
+      "\\u001e",
+      "\\u001f",
+      "",
+      "",
+      '\\"',
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "\\\\"
+    ];
+    function escapeFn(str) {
+      if (str.length === 2) {
+        const charCode2 = str.charCodeAt(1);
+        return `${str[0]}\\u${charCode2.toString(16)}`;
+      }
+      const charCode = str.charCodeAt(0);
+      return meta.length > charCode ? meta[charCode] : `\\u${charCode.toString(16)}`;
+    }
+    function strEscape(str) {
+      if (str.length < 5e3 && !strEscapeSequencesRegExp.test(str)) {
+        return str;
+      }
+      if (str.length > 100) {
+        return str.replace(strEscapeSequencesReplacer, escapeFn);
+      }
+      let result = "";
+      let last = 0;
+      for (let i = 0; i < str.length; i++) {
+        const point = str.charCodeAt(i);
+        if (point === 34 || point === 92 || point < 32) {
+          result += `${str.slice(last, i)}${meta[point]}`;
+          last = i + 1;
+        } else if (point >= 55296 && point <= 57343) {
+          if (point <= 56319 && i + 1 < str.length) {
+            const nextPoint = str.charCodeAt(i + 1);
+            if (nextPoint >= 56320 && nextPoint <= 57343) {
+              i++;
+              continue;
+            }
+          }
+          result += `${str.slice(last, i)}\\u${point.toString(16)}`;
+          last = i + 1;
+        }
+      }
+      result += str.slice(last);
+      return result;
+    }
+    function insertSort(array) {
+      if (array.length > 200) {
+        return array.sort();
+      }
+      for (let i = 1; i < array.length; i++) {
+        const currentValue = array[i];
+        let position = i;
+        while (position !== 0 && array[position - 1] > currentValue) {
+          array[position] = array[position - 1];
+          position--;
+        }
+        array[position] = currentValue;
+      }
+      return array;
+    }
+    var typedArrayPrototypeGetSymbolToStringTag = Object.getOwnPropertyDescriptor(
+      Object.getPrototypeOf(
+        Object.getPrototypeOf(
+          new Int8Array()
+        )
+      ),
+      Symbol.toStringTag
+    ).get;
+    function isTypedArrayWithEntries(value) {
+      return typedArrayPrototypeGetSymbolToStringTag.call(value) !== void 0 && value.length !== 0;
+    }
+    function stringifyTypedArray(array, separator, maximumBreadth) {
+      if (array.length < maximumBreadth) {
+        maximumBreadth = array.length;
+      }
+      const whitespace = separator === "," ? "" : " ";
+      let res = `"0":${whitespace}${array[0]}`;
+      for (let i = 1; i < maximumBreadth; i++) {
+        res += `${separator}"${i}":${whitespace}${array[i]}`;
+      }
+      return res;
+    }
+    function getCircularValueOption(options) {
+      if (hasOwnProperty3.call(options, "circularValue")) {
+        const circularValue = options.circularValue;
+        if (typeof circularValue === "string") {
+          return `"${circularValue}"`;
+        }
+        if (circularValue == null) {
+          return circularValue;
+        }
+        if (circularValue === Error || circularValue === TypeError) {
+          return {
+            toString() {
+              throw new TypeError("Converting circular structure to JSON");
+            }
+          };
+        }
+        throw new TypeError('The "circularValue" argument must be of type string or the value null or undefined');
+      }
+      return '"[Circular]"';
+    }
+    function getBooleanOption(options, key) {
+      let value;
+      if (hasOwnProperty3.call(options, key)) {
+        value = options[key];
+        if (typeof value !== "boolean") {
+          throw new TypeError(`The "${key}" argument must be of type boolean`);
+        }
+      }
+      return value === void 0 ? true : value;
+    }
+    function getPositiveIntegerOption(options, key) {
+      let value;
+      if (hasOwnProperty3.call(options, key)) {
+        value = options[key];
+        if (typeof value !== "number") {
+          throw new TypeError(`The "${key}" argument must be of type number`);
+        }
+        if (!Number.isInteger(value)) {
+          throw new TypeError(`The "${key}" argument must be an integer`);
+        }
+        if (value < 1) {
+          throw new RangeError(`The "${key}" argument must be >= 1`);
+        }
+      }
+      return value === void 0 ? Infinity : value;
+    }
+    function getItemCount(number) {
+      if (number === 1) {
+        return "1 item";
+      }
+      return `${number} items`;
+    }
+    function getUniqueReplacerSet(replacerArray) {
+      const replacerSet = /* @__PURE__ */ new Set();
+      for (const value of replacerArray) {
+        if (typeof value === "string" || typeof value === "number") {
+          replacerSet.add(String(value));
+        }
+      }
+      return replacerSet;
+    }
+    function getStrictOption(options) {
+      if (hasOwnProperty3.call(options, "strict")) {
+        const value = options.strict;
+        if (typeof value !== "boolean") {
+          throw new TypeError('The "strict" argument must be of type boolean');
+        }
+        if (value) {
+          return (value2) => {
+            let message = `Object can not safely be stringified. Received type ${typeof value2}`;
+            if (typeof value2 !== "function")
+              message += ` (${value2.toString()})`;
+            throw new Error(message);
+          };
+        }
+      }
+    }
+    function configure(options) {
+      options = { ...options };
+      const fail = getStrictOption(options);
+      if (fail) {
+        if (options.bigint === void 0) {
+          options.bigint = false;
+        }
+        if (!("circularValue" in options)) {
+          options.circularValue = Error;
+        }
+      }
+      const circularValue = getCircularValueOption(options);
+      const bigint = getBooleanOption(options, "bigint");
+      const deterministic = getBooleanOption(options, "deterministic");
+      const maximumDepth = getPositiveIntegerOption(options, "maximumDepth");
+      const maximumBreadth = getPositiveIntegerOption(options, "maximumBreadth");
+      function stringifyFnReplacer(key, parent, stack, replacer, spacer, indentation) {
+        let value = parent[key];
+        if (typeof value === "object" && value !== null && typeof value.toJSON === "function") {
+          value = value.toJSON(key);
+        }
+        value = replacer.call(parent, key, value);
+        switch (typeof value) {
+          case "string":
+            return `"${strEscape(value)}"`;
+          case "object": {
+            if (value === null) {
+              return "null";
+            }
+            if (stack.indexOf(value) !== -1) {
+              return circularValue;
+            }
+            let res = "";
+            let join = ",";
+            const originalIndentation = indentation;
+            if (Array.isArray(value)) {
+              if (value.length === 0) {
+                return "[]";
+              }
+              if (maximumDepth < stack.length + 1) {
+                return '"[Array]"';
+              }
+              stack.push(value);
+              if (spacer !== "") {
+                indentation += spacer;
+                res += `
+${indentation}`;
+                join = `,
+${indentation}`;
+              }
+              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
+              let i = 0;
+              for (; i < maximumValuesToStringify - 1; i++) {
+                const tmp2 = stringifyFnReplacer(i, value, stack, replacer, spacer, indentation);
+                res += tmp2 !== void 0 ? tmp2 : "null";
+                res += join;
+              }
+              const tmp = stringifyFnReplacer(i, value, stack, replacer, spacer, indentation);
+              res += tmp !== void 0 ? tmp : "null";
+              if (value.length - 1 > maximumBreadth) {
+                const removedKeys = value.length - maximumBreadth - 1;
+                res += `${join}"... ${getItemCount(removedKeys)} not stringified"`;
+              }
+              if (spacer !== "") {
+                res += `
+${originalIndentation}`;
+              }
+              stack.pop();
+              return `[${res}]`;
+            }
+            let keys = Object.keys(value);
+            const keyLength = keys.length;
+            if (keyLength === 0) {
+              return "{}";
+            }
+            if (maximumDepth < stack.length + 1) {
+              return '"[Object]"';
+            }
+            let whitespace = "";
+            let separator = "";
+            if (spacer !== "") {
+              indentation += spacer;
+              join = `,
+${indentation}`;
+              whitespace = " ";
+            }
+            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
+            if (isTypedArrayWithEntries(value)) {
+              res += stringifyTypedArray(value, join, maximumBreadth);
+              keys = keys.slice(value.length);
+              maximumPropertiesToStringify -= value.length;
+              separator = join;
+            }
+            if (deterministic) {
+              keys = insertSort(keys);
+            }
+            stack.push(value);
+            for (let i = 0; i < maximumPropertiesToStringify; i++) {
+              const key2 = keys[i];
+              const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
+              if (tmp !== void 0) {
+                res += `${separator}"${strEscape(key2)}":${whitespace}${tmp}`;
+                separator = join;
+              }
+            }
+            if (keyLength > maximumBreadth) {
+              const removedKeys = keyLength - maximumBreadth;
+              res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
+              separator = join;
+            }
+            if (spacer !== "" && separator.length > 1) {
+              res = `
+${indentation}${res}
+${originalIndentation}`;
+            }
+            stack.pop();
+            return `{${res}}`;
+          }
+          case "number":
+            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
+          case "boolean":
+            return value === true ? "true" : "false";
+          case "undefined":
+            return void 0;
+          case "bigint":
+            if (bigint) {
+              return String(value);
+            }
+          default:
+            return fail ? fail(value) : void 0;
+        }
+      }
+      function stringifyArrayReplacer(key, value, stack, replacer, spacer, indentation) {
+        if (typeof value === "object" && value !== null && typeof value.toJSON === "function") {
+          value = value.toJSON(key);
+        }
+        switch (typeof value) {
+          case "string":
+            return `"${strEscape(value)}"`;
+          case "object": {
+            if (value === null) {
+              return "null";
+            }
+            if (stack.indexOf(value) !== -1) {
+              return circularValue;
+            }
+            const originalIndentation = indentation;
+            let res = "";
+            let join = ",";
+            if (Array.isArray(value)) {
+              if (value.length === 0) {
+                return "[]";
+              }
+              if (maximumDepth < stack.length + 1) {
+                return '"[Array]"';
+              }
+              stack.push(value);
+              if (spacer !== "") {
+                indentation += spacer;
+                res += `
+${indentation}`;
+                join = `,
+${indentation}`;
+              }
+              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
+              let i = 0;
+              for (; i < maximumValuesToStringify - 1; i++) {
+                const tmp2 = stringifyArrayReplacer(i, value[i], stack, replacer, spacer, indentation);
+                res += tmp2 !== void 0 ? tmp2 : "null";
+                res += join;
+              }
+              const tmp = stringifyArrayReplacer(i, value[i], stack, replacer, spacer, indentation);
+              res += tmp !== void 0 ? tmp : "null";
+              if (value.length - 1 > maximumBreadth) {
+                const removedKeys = value.length - maximumBreadth - 1;
+                res += `${join}"... ${getItemCount(removedKeys)} not stringified"`;
+              }
+              if (spacer !== "") {
+                res += `
+${originalIndentation}`;
+              }
+              stack.pop();
+              return `[${res}]`;
+            }
+            stack.push(value);
+            let whitespace = "";
+            if (spacer !== "") {
+              indentation += spacer;
+              join = `,
+${indentation}`;
+              whitespace = " ";
+            }
+            let separator = "";
+            for (const key2 of replacer) {
+              const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
+              if (tmp !== void 0) {
+                res += `${separator}"${strEscape(key2)}":${whitespace}${tmp}`;
+                separator = join;
+              }
+            }
+            if (spacer !== "" && separator.length > 1) {
+              res = `
+${indentation}${res}
+${originalIndentation}`;
+            }
+            stack.pop();
+            return `{${res}}`;
+          }
+          case "number":
+            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
+          case "boolean":
+            return value === true ? "true" : "false";
+          case "undefined":
+            return void 0;
+          case "bigint":
+            if (bigint) {
+              return String(value);
+            }
+          default:
+            return fail ? fail(value) : void 0;
+        }
+      }
+      function stringifyIndent(key, value, stack, spacer, indentation) {
+        switch (typeof value) {
+          case "string":
+            return `"${strEscape(value)}"`;
+          case "object": {
+            if (value === null) {
+              return "null";
+            }
+            if (typeof value.toJSON === "function") {
+              value = value.toJSON(key);
+              if (typeof value !== "object") {
+                return stringifyIndent(key, value, stack, spacer, indentation);
+              }
+              if (value === null) {
+                return "null";
+              }
+            }
+            if (stack.indexOf(value) !== -1) {
+              return circularValue;
+            }
+            const originalIndentation = indentation;
+            if (Array.isArray(value)) {
+              if (value.length === 0) {
+                return "[]";
+              }
+              if (maximumDepth < stack.length + 1) {
+                return '"[Array]"';
+              }
+              stack.push(value);
+              indentation += spacer;
+              let res2 = `
+${indentation}`;
+              const join2 = `,
+${indentation}`;
+              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
+              let i = 0;
+              for (; i < maximumValuesToStringify - 1; i++) {
+                const tmp2 = stringifyIndent(i, value[i], stack, spacer, indentation);
+                res2 += tmp2 !== void 0 ? tmp2 : "null";
+                res2 += join2;
+              }
+              const tmp = stringifyIndent(i, value[i], stack, spacer, indentation);
+              res2 += tmp !== void 0 ? tmp : "null";
+              if (value.length - 1 > maximumBreadth) {
+                const removedKeys = value.length - maximumBreadth - 1;
+                res2 += `${join2}"... ${getItemCount(removedKeys)} not stringified"`;
+              }
+              res2 += `
+${originalIndentation}`;
+              stack.pop();
+              return `[${res2}]`;
+            }
+            let keys = Object.keys(value);
+            const keyLength = keys.length;
+            if (keyLength === 0) {
+              return "{}";
+            }
+            if (maximumDepth < stack.length + 1) {
+              return '"[Object]"';
+            }
+            indentation += spacer;
+            const join = `,
+${indentation}`;
+            let res = "";
+            let separator = "";
+            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
+            if (isTypedArrayWithEntries(value)) {
+              res += stringifyTypedArray(value, join, maximumBreadth);
+              keys = keys.slice(value.length);
+              maximumPropertiesToStringify -= value.length;
+              separator = join;
+            }
+            if (deterministic) {
+              keys = insertSort(keys);
+            }
+            stack.push(value);
+            for (let i = 0; i < maximumPropertiesToStringify; i++) {
+              const key2 = keys[i];
+              const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
+              if (tmp !== void 0) {
+                res += `${separator}"${strEscape(key2)}": ${tmp}`;
+                separator = join;
+              }
+            }
+            if (keyLength > maximumBreadth) {
+              const removedKeys = keyLength - maximumBreadth;
+              res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
+              separator = join;
+            }
+            if (separator !== "") {
+              res = `
+${indentation}${res}
+${originalIndentation}`;
+            }
+            stack.pop();
+            return `{${res}}`;
+          }
+          case "number":
+            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
+          case "boolean":
+            return value === true ? "true" : "false";
+          case "undefined":
+            return void 0;
+          case "bigint":
+            if (bigint) {
+              return String(value);
+            }
+          default:
+            return fail ? fail(value) : void 0;
+        }
+      }
+      function stringifySimple(key, value, stack) {
+        switch (typeof value) {
+          case "string":
+            return `"${strEscape(value)}"`;
+          case "object": {
+            if (value === null) {
+              return "null";
+            }
+            if (typeof value.toJSON === "function") {
+              value = value.toJSON(key);
+              if (typeof value !== "object") {
+                return stringifySimple(key, value, stack);
+              }
+              if (value === null) {
+                return "null";
+              }
+            }
+            if (stack.indexOf(value) !== -1) {
+              return circularValue;
+            }
+            let res = "";
+            if (Array.isArray(value)) {
+              if (value.length === 0) {
+                return "[]";
+              }
+              if (maximumDepth < stack.length + 1) {
+                return '"[Array]"';
+              }
+              stack.push(value);
+              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
+              let i = 0;
+              for (; i < maximumValuesToStringify - 1; i++) {
+                const tmp2 = stringifySimple(i, value[i], stack);
+                res += tmp2 !== void 0 ? tmp2 : "null";
+                res += ",";
+              }
+              const tmp = stringifySimple(i, value[i], stack);
+              res += tmp !== void 0 ? tmp : "null";
+              if (value.length - 1 > maximumBreadth) {
+                const removedKeys = value.length - maximumBreadth - 1;
+                res += `,"... ${getItemCount(removedKeys)} not stringified"`;
+              }
+              stack.pop();
+              return `[${res}]`;
+            }
+            let keys = Object.keys(value);
+            const keyLength = keys.length;
+            if (keyLength === 0) {
+              return "{}";
+            }
+            if (maximumDepth < stack.length + 1) {
+              return '"[Object]"';
+            }
+            let separator = "";
+            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
+            if (isTypedArrayWithEntries(value)) {
+              res += stringifyTypedArray(value, ",", maximumBreadth);
+              keys = keys.slice(value.length);
+              maximumPropertiesToStringify -= value.length;
+              separator = ",";
+            }
+            if (deterministic) {
+              keys = insertSort(keys);
+            }
+            stack.push(value);
+            for (let i = 0; i < maximumPropertiesToStringify; i++) {
+              const key2 = keys[i];
+              const tmp = stringifySimple(key2, value[key2], stack);
+              if (tmp !== void 0) {
+                res += `${separator}"${strEscape(key2)}":${tmp}`;
+                separator = ",";
+              }
+            }
+            if (keyLength > maximumBreadth) {
+              const removedKeys = keyLength - maximumBreadth;
+              res += `${separator}"...":"${getItemCount(removedKeys)} not stringified"`;
+            }
+            stack.pop();
+            return `{${res}}`;
+          }
+          case "number":
+            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
+          case "boolean":
+            return value === true ? "true" : "false";
+          case "undefined":
+            return void 0;
+          case "bigint":
+            if (bigint) {
+              return String(value);
+            }
+          default:
+            return fail ? fail(value) : void 0;
+        }
+      }
+      function stringify3(value, replacer, space) {
+        if (arguments.length > 1) {
+          let spacer = "";
+          if (typeof space === "number") {
+            spacer = " ".repeat(Math.min(space, 10));
+          } else if (typeof space === "string") {
+            spacer = space.slice(0, 10);
+          }
+          if (replacer != null) {
+            if (typeof replacer === "function") {
+              return stringifyFnReplacer("", { "": value }, [], replacer, spacer, "");
+            }
+            if (Array.isArray(replacer)) {
+              return stringifyArrayReplacer("", value, [], getUniqueReplacerSet(replacer), spacer, "");
+            }
+          }
+          if (spacer.length !== 0) {
+            return stringifyIndent("", value, [], spacer, "");
+          }
+        }
+        return stringifySimple("", value, []);
+      }
+      return stringify3;
+    }
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/multistream.js
+var require_multistream = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/multistream.js"(exports, module) {
+    "use strict";
+    init_cjs_shim();
+    var metadata = Symbol.for("pino.metadata");
+    var { levels } = require_levels();
+    var DEFAULT_INFO_LEVEL = levels.info;
+    function multistream(streamsArray, opts) {
+      let counter = 0;
+      streamsArray = streamsArray || [];
+      opts = opts || { dedupe: false };
+      const streamLevels = Object.create(levels);
+      streamLevels.silent = Infinity;
+      if (opts.levels && typeof opts.levels === "object") {
+        Object.keys(opts.levels).forEach((i) => {
+          streamLevels[i] = opts.levels[i];
+        });
+      }
+      const res = {
+        write: write2,
+        add,
+        flushSync,
+        end,
+        minLevel: 0,
+        streams: [],
+        clone: clone3,
+        [metadata]: true,
+        streamLevels
+      };
+      if (Array.isArray(streamsArray)) {
+        streamsArray.forEach(add, res);
+      } else {
+        add.call(res, streamsArray);
+      }
+      streamsArray = null;
+      return res;
+      function write2(data) {
+        let dest;
+        const level = this.lastLevel;
+        const { streams } = this;
+        let recordedLevel = 0;
+        let stream;
+        for (let i = initLoopVar(streams.length, opts.dedupe); checkLoopVar(i, streams.length, opts.dedupe); i = adjustLoopVar(i, opts.dedupe)) {
+          dest = streams[i];
+          if (dest.level <= level) {
+            if (recordedLevel !== 0 && recordedLevel !== dest.level) {
+              break;
+            }
+            stream = dest.stream;
+            if (stream[metadata]) {
+              const { lastTime, lastMsg, lastObj, lastLogger } = this;
+              stream.lastLevel = level;
+              stream.lastTime = lastTime;
+              stream.lastMsg = lastMsg;
+              stream.lastObj = lastObj;
+              stream.lastLogger = lastLogger;
+            }
+            stream.write(data);
+            if (opts.dedupe) {
+              recordedLevel = dest.level;
+            }
+          } else if (!opts.dedupe) {
+            break;
+          }
+        }
+      }
+      function flushSync() {
+        for (const { stream } of this.streams) {
+          if (typeof stream.flushSync === "function") {
+            stream.flushSync();
+          }
+        }
+      }
+      function add(dest) {
+        if (!dest) {
+          return res;
+        }
+        const isStream = typeof dest.write === "function" || dest.stream;
+        const stream_ = dest.write ? dest : dest.stream;
+        if (!isStream) {
+          throw Error("stream object needs to implement either StreamEntry or DestinationStream interface");
+        }
+        const { streams, streamLevels: streamLevels2 } = this;
+        let level;
+        if (typeof dest.levelVal === "number") {
+          level = dest.levelVal;
+        } else if (typeof dest.level === "string") {
+          level = streamLevels2[dest.level];
+        } else if (typeof dest.level === "number") {
+          level = dest.level;
+        } else {
+          level = DEFAULT_INFO_LEVEL;
+        }
+        const dest_ = {
+          stream: stream_,
+          level,
+          levelVal: void 0,
+          id: counter++
+        };
+        streams.unshift(dest_);
+        streams.sort(compareByLevel);
+        this.minLevel = streams[0].level;
+        return res;
+      }
+      function end() {
+        for (const { stream } of this.streams) {
+          if (typeof stream.flushSync === "function") {
+            stream.flushSync();
+          }
+          stream.end();
+        }
+      }
+      function clone3(level) {
+        const streams = new Array(this.streams.length);
+        for (let i = 0; i < streams.length; i++) {
+          streams[i] = {
+            level,
+            stream: this.streams[i].stream
+          };
+        }
+        return {
+          write: write2,
+          add,
+          minLevel: level,
+          streams,
+          clone: clone3,
+          flushSync,
+          [metadata]: true
+        };
+      }
+    }
+    function compareByLevel(a, b) {
+      return a.level - b.level;
+    }
+    function initLoopVar(length, dedupe) {
+      return dedupe ? length - 1 : 0;
+    }
+    function adjustLoopVar(i, dedupe) {
+      return dedupe ? i - 1 : i + 1;
+    }
+    function checkLoopVar(i, length, dedupe) {
+      return dedupe ? i >= 0 : i < length;
+    }
+    module.exports = multistream;
+  }
+});
+
+// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/pino.js
+var require_pino = __commonJS({
+  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/pino.js"(exports, module) {
+    init_cjs_shim();
+    globalThis.__bundlerPathsOverrides = { ...globalThis.__bundlerPathsOverrides || {}, "thread-stream-worker": "./bin/thread-stream-worker.mjs", "pino-worker": "./bin/pino-worker.mjs", "pino/file": "./pino-file.mjs", "pino-pipeline-worker": "./bin/pino-pipeline-worker.mjs", "pino-pretty": "./bin/pino-pretty.mjs" };
+    var os2 = __require("os");
+    var stdSerializers = require_pino_std_serializers();
+    var caller = require_caller();
+    var redaction = require_redaction();
+    var time = require_time();
+    var proto3 = require_proto();
+    var symbols = require_symbols();
+    var { configure } = require_safe_stable_stringify();
+    var { assertDefaultLevelFound, mappings, genLsCache, levels } = require_levels();
+    var {
+      createArgsNormalizer,
+      asChindings,
+      buildSafeSonicBoom,
+      buildFormatters,
+      stringify: stringify2,
+      normalizeDestFileDescriptor,
+      noop: noop5
+    } = require_tools();
+    var { version } = require_meta();
+    var {
+      chindingsSym,
+      redactFmtSym,
+      serializersSym,
+      timeSym,
+      timeSliceIndexSym,
+      streamSym,
+      stringifySym,
+      stringifySafeSym,
+      stringifiersSym,
+      setLevelSym,
+      endSym,
+      formatOptsSym,
+      messageKeySym,
+      errorKeySym,
+      nestedKeySym,
+      mixinSym,
+      useOnlyCustomLevelsSym,
+      formattersSym,
+      hooksSym,
+      nestedKeyStrSym,
+      mixinMergeStrategySym,
+      msgPrefixSym
+    } = symbols;
+    var { epochTime, nullTime } = time;
+    var { pid } = process;
+    var hostname = os2.hostname();
+    var defaultErrorSerializer = stdSerializers.err;
+    var defaultOptions = {
+      level: "info",
+      levels,
+      messageKey: "msg",
+      errorKey: "err",
+      nestedKey: null,
+      enabled: true,
+      base: { pid, hostname },
+      serializers: Object.assign(/* @__PURE__ */ Object.create(null), {
+        err: defaultErrorSerializer
+      }),
+      formatters: Object.assign(/* @__PURE__ */ Object.create(null), {
+        bindings(bindings) {
+          return bindings;
+        },
+        level(label, number) {
+          return { level: number };
+        }
+      }),
+      hooks: {
+        logMethod: void 0
+      },
+      timestamp: epochTime,
+      name: void 0,
+      redact: null,
+      customLevels: null,
+      useOnlyCustomLevels: false,
+      depthLimit: 5,
+      edgeLimit: 100
+    };
+    var normalize = createArgsNormalizer(defaultOptions);
+    var serializers = Object.assign(/* @__PURE__ */ Object.create(null), stdSerializers);
+    function pino3(...args) {
+      const instance = {};
+      const { opts, stream } = normalize(instance, caller(), ...args);
+      const {
+        redact,
+        crlf,
+        serializers: serializers2,
+        timestamp,
+        messageKey,
+        errorKey,
+        nestedKey,
+        base,
+        name,
+        level,
+        customLevels,
+        mixin,
+        mixinMergeStrategy,
+        useOnlyCustomLevels,
+        formatters,
+        hooks,
+        depthLimit,
+        edgeLimit,
+        onChild,
+        msgPrefix
+      } = opts;
+      const stringifySafe = configure({
+        maximumDepth: depthLimit,
+        maximumBreadth: edgeLimit
+      });
+      const allFormatters = buildFormatters(
+        formatters.level,
+        formatters.bindings,
+        formatters.log
+      );
+      const stringifyFn = stringify2.bind({
+        [stringifySafeSym]: stringifySafe
+      });
+      const stringifiers = redact ? redaction(redact, stringifyFn) : {};
+      const formatOpts = redact ? { stringify: stringifiers[redactFmtSym] } : { stringify: stringifyFn };
+      const end = "}" + (crlf ? "\r\n" : "\n");
+      const coreChindings = asChindings.bind(null, {
+        [chindingsSym]: "",
+        [serializersSym]: serializers2,
+        [stringifiersSym]: stringifiers,
+        [stringifySym]: stringify2,
+        [stringifySafeSym]: stringifySafe,
+        [formattersSym]: allFormatters
+      });
+      let chindings = "";
+      if (base !== null) {
+        if (name === void 0) {
+          chindings = coreChindings(base);
+        } else {
+          chindings = coreChindings(Object.assign({}, base, { name }));
+        }
+      }
+      const time2 = timestamp instanceof Function ? timestamp : timestamp ? epochTime : nullTime;
+      const timeSliceIndex = time2().indexOf(":") + 1;
+      if (useOnlyCustomLevels && !customLevels)
+        throw Error("customLevels is required if useOnlyCustomLevels is set true");
+      if (mixin && typeof mixin !== "function")
+        throw Error(`Unknown mixin type "${typeof mixin}" - expected "function"`);
+      if (msgPrefix && typeof msgPrefix !== "string")
+        throw Error(`Unknown msgPrefix type "${typeof msgPrefix}" - expected "string"`);
+      assertDefaultLevelFound(level, customLevels, useOnlyCustomLevels);
+      const levels2 = mappings(customLevels, useOnlyCustomLevels);
+      Object.assign(instance, {
+        levels: levels2,
+        [useOnlyCustomLevelsSym]: useOnlyCustomLevels,
+        [streamSym]: stream,
+        [timeSym]: time2,
+        [timeSliceIndexSym]: timeSliceIndex,
+        [stringifySym]: stringify2,
+        [stringifySafeSym]: stringifySafe,
+        [stringifiersSym]: stringifiers,
+        [endSym]: end,
+        [formatOptsSym]: formatOpts,
+        [messageKeySym]: messageKey,
+        [errorKeySym]: errorKey,
+        [nestedKeySym]: nestedKey,
+        // protect against injection
+        [nestedKeyStrSym]: nestedKey ? `,${JSON.stringify(nestedKey)}:{` : "",
+        [serializersSym]: serializers2,
+        [mixinSym]: mixin,
+        [mixinMergeStrategySym]: mixinMergeStrategy,
+        [chindingsSym]: chindings,
+        [formattersSym]: allFormatters,
+        [hooksSym]: hooks,
+        silent: noop5,
+        onChild,
+        [msgPrefixSym]: msgPrefix
+      });
+      Object.setPrototypeOf(instance, proto3());
+      genLsCache(instance);
+      instance[setLevelSym](level);
+      return instance;
+    }
+    module.exports = pino3;
+    module.exports.destination = (dest = process.stdout.fd) => {
+      if (typeof dest === "object") {
+        dest.dest = normalizeDestFileDescriptor(dest.dest || process.stdout.fd);
+        return buildSafeSonicBoom(dest);
+      } else {
+        return buildSafeSonicBoom({ dest: normalizeDestFileDescriptor(dest), minLength: 0 });
+      }
+    };
+    module.exports.transport = require_transport();
+    module.exports.multistream = require_multistream();
+    module.exports.levels = mappings();
+    module.exports.stdSerializers = serializers;
+    module.exports.stdTimeFunctions = Object.assign({}, time);
+    module.exports.symbols = symbols;
+    module.exports.version = version;
+    module.exports.default = pino3;
+    module.exports.pino = pino3;
+  }
+});
+
+// ../node_modules/.pnpm/dotenv@16.3.1/node_modules/dotenv/package.json
+var require_package2 = __commonJS({
   "../node_modules/.pnpm/dotenv@16.3.1/node_modules/dotenv/package.json"(exports, module) {
     module.exports = {
       name: "dotenv",
@@ -65778,10 +70025,10 @@ var require_main = __commonJS({
   "../node_modules/.pnpm/dotenv@16.3.1/node_modules/dotenv/lib/main.js"(exports, module) {
     init_cjs_shim();
     var fs3 = __require("fs");
-    var path10 = __require("path");
+    var path13 = __require("path");
     var os2 = __require("os");
     var crypto = __require("crypto");
-    var packageJson = require_package();
+    var packageJson = require_package2();
     var version = packageJson.version;
     var LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg;
     function parse2(src) {
@@ -65870,14 +70117,14 @@ var require_main = __commonJS({
       return { ciphertext, key };
     }
     function _vaultPath(options) {
-      let dotenvPath = path10.resolve(process.cwd(), ".env");
+      let dotenvPath = path13.resolve(process.cwd(), ".env");
       if (options && options.path && options.path.length > 0) {
         dotenvPath = options.path;
       }
       return dotenvPath.endsWith(".vault") ? dotenvPath : `${dotenvPath}.vault`;
     }
     function _resolveHome(envPath) {
-      return envPath[0] === "~" ? path10.join(os2.homedir(), envPath.slice(1)) : envPath;
+      return envPath[0] === "~" ? path13.join(os2.homedir(), envPath.slice(1)) : envPath;
     }
     function _configVault(options) {
       _log("Loading env from encrypted .env.vault");
@@ -65890,7 +70137,7 @@ var require_main = __commonJS({
       return { parsed };
     }
     function configDotenv(options) {
-      let dotenvPath = path10.resolve(process.cwd(), ".env");
+      let dotenvPath = path13.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       const debug = Boolean(options && options.debug);
       if (options) {
@@ -67643,4250 +71890,107 @@ var require_cli_spinners = __commonJS({
   }
 });
 
-// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err-helpers.js
-var require_err_helpers = __commonJS({
-  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err-helpers.js"(exports, module) {
+// ../node_modules/.pnpm/deepmerge@4.3.1/node_modules/deepmerge/dist/cjs.js
+var require_cjs2 = __commonJS({
+  "../node_modules/.pnpm/deepmerge@4.3.1/node_modules/deepmerge/dist/cjs.js"(exports, module) {
     "use strict";
     init_cjs_shim();
-    var isErrorLike = (err) => {
-      return err && typeof err.message === "string";
+    var isMergeableObject = function isMergeableObject2(value) {
+      return isNonNullObject(value) && !isSpecial(value);
     };
-    var getErrorCause = (err) => {
-      if (!err)
-        return;
-      const cause = err.cause;
-      if (typeof cause === "function") {
-        const causeResult = err.cause();
-        return isErrorLike(causeResult) ? causeResult : void 0;
-      } else {
-        return isErrorLike(cause) ? cause : void 0;
-      }
-    };
-    var _stackWithCauses = (err, seen) => {
-      if (!isErrorLike(err))
-        return "";
-      const stack = err.stack || "";
-      if (seen.has(err)) {
-        return stack + "\ncauses have become circular...";
-      }
-      const cause = getErrorCause(err);
-      if (cause) {
-        seen.add(err);
-        return stack + "\ncaused by: " + _stackWithCauses(cause, seen);
-      } else {
-        return stack;
-      }
-    };
-    var stackWithCauses = (err) => _stackWithCauses(err, /* @__PURE__ */ new Set());
-    var _messageWithCauses = (err, seen, skip) => {
-      if (!isErrorLike(err))
-        return "";
-      const message = skip ? "" : err.message || "";
-      if (seen.has(err)) {
-        return message + ": ...";
-      }
-      const cause = getErrorCause(err);
-      if (cause) {
-        seen.add(err);
-        const skipIfVErrorStyleCause = typeof err.cause === "function";
-        return message + (skipIfVErrorStyleCause ? "" : ": ") + _messageWithCauses(cause, seen, skipIfVErrorStyleCause);
-      } else {
-        return message;
-      }
-    };
-    var messageWithCauses = (err) => _messageWithCauses(err, /* @__PURE__ */ new Set());
-    module.exports = {
-      isErrorLike,
-      getErrorCause,
-      stackWithCauses,
-      messageWithCauses
-    };
-  }
-});
-
-// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err.js
-var require_err = __commonJS({
-  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/err.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    module.exports = errSerializer;
-    var { messageWithCauses, stackWithCauses, isErrorLike } = require_err_helpers();
-    var { toString } = Object.prototype;
-    var seen = Symbol("circular-ref-tag");
-    var rawSymbol = Symbol("pino-raw-err-ref");
-    var pinoErrProto = Object.create({}, {
-      type: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      message: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      stack: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      aggregateErrors: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      raw: {
-        enumerable: false,
-        get: function() {
-          return this[rawSymbol];
-        },
-        set: function(val) {
-          this[rawSymbol] = val;
-        }
-      }
-    });
-    Object.defineProperty(pinoErrProto, rawSymbol, {
-      writable: true,
-      value: {}
-    });
-    function errSerializer(err) {
-      if (!isErrorLike(err)) {
-        return err;
-      }
-      err[seen] = void 0;
-      const _err = Object.create(pinoErrProto);
-      _err.type = toString.call(err.constructor) === "[object Function]" ? err.constructor.name : err.name;
-      _err.message = messageWithCauses(err);
-      _err.stack = stackWithCauses(err);
-      if (Array.isArray(err.errors)) {
-        _err.aggregateErrors = err.errors.map((err2) => errSerializer(err2));
-      }
-      for (const key in err) {
-        if (_err[key] === void 0) {
-          const val = err[key];
-          if (isErrorLike(val)) {
-            if (key !== "cause" && !Object.prototype.hasOwnProperty.call(val, seen)) {
-              _err[key] = errSerializer(val);
-            }
-          } else {
-            _err[key] = val;
-          }
-        }
-      }
-      delete err[seen];
-      _err.raw = err;
-      return _err;
+    function isNonNullObject(value) {
+      return !!value && typeof value === "object";
     }
-  }
-});
-
-// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/req.js
-var require_req = __commonJS({
-  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/req.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    module.exports = {
-      mapHttpRequest,
-      reqSerializer
-    };
-    var rawSymbol = Symbol("pino-raw-req-ref");
-    var pinoReqProto = Object.create({}, {
-      id: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      method: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      url: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      query: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      params: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      headers: {
-        enumerable: true,
-        writable: true,
-        value: {}
-      },
-      remoteAddress: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      remotePort: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      raw: {
-        enumerable: false,
-        get: function() {
-          return this[rawSymbol];
-        },
-        set: function(val) {
-          this[rawSymbol] = val;
-        }
+    function isSpecial(value) {
+      var stringValue = Object.prototype.toString.call(value);
+      return stringValue === "[object RegExp]" || stringValue === "[object Date]" || isReactElement(value);
+    }
+    var canUseSymbol = typeof Symbol === "function" && Symbol.for;
+    var REACT_ELEMENT_TYPE = canUseSymbol ? Symbol.for("react.element") : 60103;
+    function isReactElement(value) {
+      return value.$$typeof === REACT_ELEMENT_TYPE;
+    }
+    function emptyTarget(val) {
+      return Array.isArray(val) ? [] : {};
+    }
+    function cloneUnlessOtherwiseSpecified(value, options) {
+      return options.clone !== false && options.isMergeableObject(value) ? deepmerge2(emptyTarget(value), value, options) : value;
+    }
+    function defaultArrayMerge(target, source, options) {
+      return target.concat(source).map(function(element) {
+        return cloneUnlessOtherwiseSpecified(element, options);
+      });
+    }
+    function getMergeFunction(key, options) {
+      if (!options.customMerge) {
+        return deepmerge2;
       }
-    });
-    Object.defineProperty(pinoReqProto, rawSymbol, {
-      writable: true,
-      value: {}
-    });
-    function reqSerializer(req) {
-      const connection = req.info || req.socket;
-      const _req = Object.create(pinoReqProto);
-      _req.id = typeof req.id === "function" ? req.id() : req.id || (req.info ? req.info.id : void 0);
-      _req.method = req.method;
-      if (req.originalUrl) {
-        _req.url = req.originalUrl;
-      } else {
-        const path10 = req.path;
-        _req.url = typeof path10 === "string" ? path10 : req.url ? req.url.path || req.url : void 0;
-      }
-      if (req.query) {
-        _req.query = req.query;
-      }
-      if (req.params) {
-        _req.params = req.params;
-      }
-      _req.headers = req.headers;
-      _req.remoteAddress = connection && connection.remoteAddress;
-      _req.remotePort = connection && connection.remotePort;
-      _req.raw = req.raw || req;
-      return _req;
+      var customMerge = options.customMerge(key);
+      return typeof customMerge === "function" ? customMerge : deepmerge2;
     }
-    function mapHttpRequest(req) {
-      return {
-        req: reqSerializer(req)
-      };
+    function getEnumerableOwnPropertySymbols(target) {
+      return Object.getOwnPropertySymbols ? Object.getOwnPropertySymbols(target).filter(function(symbol) {
+        return Object.propertyIsEnumerable.call(target, symbol);
+      }) : [];
     }
-  }
-});
-
-// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/res.js
-var require_res = __commonJS({
-  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/lib/res.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    module.exports = {
-      mapHttpResponse,
-      resSerializer
-    };
-    var rawSymbol = Symbol("pino-raw-res-ref");
-    var pinoResProto = Object.create({}, {
-      statusCode: {
-        enumerable: true,
-        writable: true,
-        value: 0
-      },
-      headers: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      raw: {
-        enumerable: false,
-        get: function() {
-          return this[rawSymbol];
-        },
-        set: function(val) {
-          this[rawSymbol] = val;
-        }
-      }
-    });
-    Object.defineProperty(pinoResProto, rawSymbol, {
-      writable: true,
-      value: {}
-    });
-    function resSerializer(res) {
-      const _res2 = Object.create(pinoResProto);
-      _res2.statusCode = res.headersSent ? res.statusCode : null;
-      _res2.headers = res.getHeaders ? res.getHeaders() : res._headers;
-      _res2.raw = res;
-      return _res2;
+    function getKeys(target) {
+      return Object.keys(target).concat(getEnumerableOwnPropertySymbols(target));
     }
-    function mapHttpResponse(res) {
-      return {
-        res: resSerializer(res)
-      };
-    }
-  }
-});
-
-// ../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/index.js
-var require_pino_std_serializers = __commonJS({
-  "../node_modules/.pnpm/pino-std-serializers@6.1.0/node_modules/pino-std-serializers/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var errSerializer = require_err();
-    var reqSerializers = require_req();
-    var resSerializers = require_res();
-    module.exports = {
-      err: errSerializer,
-      mapHttpRequest: reqSerializers.mapHttpRequest,
-      mapHttpResponse: resSerializers.mapHttpResponse,
-      req: reqSerializers.reqSerializer,
-      res: resSerializers.resSerializer,
-      wrapErrorSerializer: function wrapErrorSerializer(customSerializer) {
-        if (customSerializer === errSerializer)
-          return customSerializer;
-        return function wrapErrSerializer(err) {
-          return customSerializer(errSerializer(err));
-        };
-      },
-      wrapRequestSerializer: function wrapRequestSerializer(customSerializer) {
-        if (customSerializer === reqSerializers.reqSerializer)
-          return customSerializer;
-        return function wrappedReqSerializer(req) {
-          return customSerializer(reqSerializers.reqSerializer(req));
-        };
-      },
-      wrapResponseSerializer: function wrapResponseSerializer(customSerializer) {
-        if (customSerializer === resSerializers.resSerializer)
-          return customSerializer;
-        return function wrappedResSerializer(res) {
-          return customSerializer(resSerializers.resSerializer(res));
-        };
-      }
-    };
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/caller.js
-var require_caller = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/caller.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    function noOpPrepareStackTrace(_2, stack) {
-      return stack;
-    }
-    module.exports = function getCallers() {
-      const originalPrepare = Error.prepareStackTrace;
-      Error.prepareStackTrace = noOpPrepareStackTrace;
-      const stack = new Error().stack;
-      Error.prepareStackTrace = originalPrepare;
-      if (!Array.isArray(stack)) {
-        return void 0;
-      }
-      const entries = stack.slice(2);
-      const fileNames = [];
-      for (const entry of entries) {
-        if (!entry) {
-          continue;
-        }
-        fileNames.push(entry.getFileName());
-      }
-      return fileNames;
-    };
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/validator.js
-var require_validator = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/validator.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var { createContext: createContext15, runInContext } = __require("vm");
-    module.exports = validator;
-    function validator(opts = {}) {
-      const {
-        ERR_PATHS_MUST_BE_STRINGS = () => "fast-redact - Paths must be (non-empty) strings",
-        ERR_INVALID_PATH = (s2) => `fast-redact \u2013 Invalid path (${s2})`
-      } = opts;
-      return function validate2({ paths }) {
-        paths.forEach((s2) => {
-          if (typeof s2 !== "string") {
-            throw Error(ERR_PATHS_MUST_BE_STRINGS());
-          }
-          try {
-            if (/〇/.test(s2))
-              throw Error();
-            const proxy = new Proxy({}, { get: () => proxy, set: () => {
-              throw Error();
-            } });
-            const expr = (s2[0] === "[" ? "" : ".") + s2.replace(/^\*/, "\u3007").replace(/\.\*/g, ".\u3007").replace(/\[\*\]/g, "[\u3007]");
-            if (/\n|\r|;/.test(expr))
-              throw Error();
-            if (/\/\*/.test(expr))
-              throw Error();
-            runInContext(`
-          (function () {
-            'use strict'
-            o${expr}
-            if ([o${expr}].length !== 1) throw Error()
-          })()
-        `, createContext15({ o: proxy, "\u3007": null }), {
-              codeGeneration: { strings: false, wasm: false }
-            });
-          } catch (e) {
-            throw Error(ERR_INVALID_PATH(s2));
-          }
-        });
-      };
-    }
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/rx.js
-var require_rx = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/rx.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    module.exports = /[^.[\]]+|\[((?:.)*?)\]/g;
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/parse.js
-var require_parse3 = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/parse.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var rx = require_rx();
-    module.exports = parse2;
-    function parse2({ paths }) {
-      const wildcards = [];
-      var wcLen = 0;
-      const secret = paths.reduce(function(o, strPath, ix) {
-        var path10 = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
-        const leadingBracket = strPath[0] === "[";
-        path10 = path10.map((p) => {
-          if (p[0] === "[")
-            return p.substr(1, p.length - 2);
-          else
-            return p;
-        });
-        const star = path10.indexOf("*");
-        if (star > -1) {
-          const before = path10.slice(0, star);
-          const beforeStr = before.join(".");
-          const after = path10.slice(star + 1, path10.length);
-          const nested = after.length > 0;
-          wcLen++;
-          wildcards.push({
-            before,
-            beforeStr,
-            after,
-            nested
-          });
-        } else {
-          o[strPath] = {
-            path: path10,
-            val: void 0,
-            precensored: false,
-            circle: "",
-            escPath: JSON.stringify(strPath),
-            leadingBracket
-          };
-        }
-        return o;
-      }, {});
-      return { wildcards, wcLen, secret };
-    }
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/redactor.js
-var require_redactor = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/redactor.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var rx = require_rx();
-    module.exports = redactor;
-    function redactor({ secret, serialize, wcLen, strict, isCensorFct, censorFctTakesPath }, state) {
-      const redact = Function("o", `
-    if (typeof o !== 'object' || o == null) {
-      ${strictImpl(strict, serialize)}
-    }
-    const { censor, secret } = this
-    ${redactTmpl(secret, isCensorFct, censorFctTakesPath)}
-    this.compileRestore()
-    ${dynamicRedactTmpl(wcLen > 0, isCensorFct, censorFctTakesPath)}
-    ${resultTmpl(serialize)}
-  `).bind(state);
-      if (serialize === false) {
-        redact.restore = (o) => state.restore(o);
-      }
-      return redact;
-    }
-    function redactTmpl(secret, isCensorFct, censorFctTakesPath) {
-      return Object.keys(secret).map((path10) => {
-        const { escPath, leadingBracket, path: arrPath } = secret[path10];
-        const skip = leadingBracket ? 1 : 0;
-        const delim = leadingBracket ? "" : ".";
-        const hops = [];
-        var match2;
-        while ((match2 = rx.exec(path10)) !== null) {
-          const [, ix] = match2;
-          const { index, input } = match2;
-          if (index > skip)
-            hops.push(input.substring(0, index - (ix ? 0 : 1)));
-        }
-        var existence = hops.map((p) => `o${delim}${p}`).join(" && ");
-        if (existence.length === 0)
-          existence += `o${delim}${path10} != null`;
-        else
-          existence += ` && o${delim}${path10} != null`;
-        const circularDetection = `
-      switch (true) {
-        ${hops.reverse().map((p) => `
-          case o${delim}${p} === censor:
-            secret[${escPath}].circle = ${JSON.stringify(p)}
-            break
-        `).join("\n")}
-      }
-    `;
-        const censorArgs = censorFctTakesPath ? `val, ${JSON.stringify(arrPath)}` : `val`;
-        return `
-      if (${existence}) {
-        const val = o${delim}${path10}
-        if (val === censor) {
-          secret[${escPath}].precensored = true
-        } else {
-          secret[${escPath}].val = val
-          o${delim}${path10} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
-          ${circularDetection}
-        }
-      }
-    `;
-      }).join("\n");
-    }
-    function dynamicRedactTmpl(hasWildcards, isCensorFct, censorFctTakesPath) {
-      return hasWildcards === true ? `
-    {
-      const { wildcards, wcLen, groupRedact, nestedRedact } = this
-      for (var i = 0; i < wcLen; i++) {
-        const { before, beforeStr, after, nested } = wildcards[i]
-        if (nested === true) {
-          secret[beforeStr] = secret[beforeStr] || []
-          nestedRedact(secret[beforeStr], o, before, after, censor, ${isCensorFct}, ${censorFctTakesPath})
-        } else secret[beforeStr] = groupRedact(o, before, censor, ${isCensorFct}, ${censorFctTakesPath})
-      }
-    }
-  ` : "";
-    }
-    function resultTmpl(serialize) {
-      return serialize === false ? `return o` : `
-    var s = this.serialize(o)
-    this.restore(o)
-    return s
-  `;
-    }
-    function strictImpl(strict, serialize) {
-      return strict === true ? `throw Error('fast-redact: primitives cannot be redacted')` : serialize === false ? `return o` : `return this.serialize(o)`;
-    }
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/modifiers.js
-var require_modifiers = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/modifiers.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    module.exports = {
-      groupRedact,
-      groupRestore,
-      nestedRedact,
-      nestedRestore
-    };
-    function groupRestore({ keys, values, target }) {
-      if (target == null)
-        return;
-      const length = keys.length;
-      for (var i = 0; i < length; i++) {
-        const k = keys[i];
-        target[k] = values[i];
-      }
-    }
-    function groupRedact(o, path10, censor, isCensorFct, censorFctTakesPath) {
-      const target = get(o, path10);
-      if (target == null)
-        return { keys: null, values: null, target: null, flat: true };
-      const keys = Object.keys(target);
-      const keysLength = keys.length;
-      const pathLength = path10.length;
-      const pathWithKey = censorFctTakesPath ? [...path10] : void 0;
-      const values = new Array(keysLength);
-      for (var i = 0; i < keysLength; i++) {
-        const key = keys[i];
-        values[i] = target[key];
-        if (censorFctTakesPath) {
-          pathWithKey[pathLength] = key;
-          target[key] = censor(target[key], pathWithKey);
-        } else if (isCensorFct) {
-          target[key] = censor(target[key]);
-        } else {
-          target[key] = censor;
-        }
-      }
-      return { keys, values, target, flat: true };
-    }
-    function nestedRestore(arr) {
-      const length = arr.length;
-      for (var i = 0; i < length; i++) {
-        const { key, target, value } = arr[i];
-        if (has(target, key)) {
-          target[key] = value;
-        }
-        if (typeof target === "object") {
-          const targetKeys = Object.keys(target);
-          for (var j = 0; j < targetKeys.length; j++) {
-            const tKey = targetKeys[j];
-            const subTarget = target[tKey];
-            if (has(subTarget, key)) {
-              subTarget[key] = value;
-            }
-          }
-        }
-      }
-    }
-    function nestedRedact(store, o, path10, ns, censor, isCensorFct, censorFctTakesPath) {
-      const target = get(o, path10);
-      if (target == null)
-        return;
-      const keys = Object.keys(target);
-      const keysLength = keys.length;
-      for (var i = 0; i < keysLength; i++) {
-        const key = keys[i];
-        const { value, parent, exists } = specialSet(target, key, path10, ns, censor, isCensorFct, censorFctTakesPath);
-        if (exists === true && parent !== null) {
-          store.push({ key: ns[ns.length - 1], target: parent, value });
-        }
-      }
-      return store;
-    }
-    function has(obj, prop) {
-      return obj !== void 0 && obj !== null ? "hasOwn" in Object ? Object.hasOwn(obj, prop) : Object.prototype.hasOwnProperty.call(obj, prop) : false;
-    }
-    function specialSet(o, k, path10, afterPath, censor, isCensorFct, censorFctTakesPath) {
-      const afterPathLen = afterPath.length;
-      const lastPathIndex = afterPathLen - 1;
-      const originalKey = k;
-      var i = -1;
-      var n2;
-      var nv;
-      var ov;
-      var oov = null;
-      var exists = true;
-      var wc = null;
-      ov = n2 = o[k];
-      if (typeof n2 !== "object")
-        return { value: null, parent: null, exists };
-      while (n2 != null && ++i < afterPathLen) {
-        k = afterPath[i];
-        oov = ov;
-        if (k !== "*" && !wc && !(typeof n2 === "object" && k in n2)) {
-          exists = false;
-          break;
-        }
-        if (k === "*") {
-          wc = k;
-          if (i !== lastPathIndex) {
-            continue;
-          }
-        }
-        if (wc) {
-          const wcKeys = Object.keys(n2);
-          for (var j = 0; j < wcKeys.length; j++) {
-            const wck = wcKeys[j];
-            const wcov = n2[wck];
-            const kIsWc = k === "*";
-            if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
-              if (kIsWc) {
-                ov = wcov;
-              } else {
-                ov = wcov[k];
-              }
-              nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path10, originalKey, ...afterPath]) : censor(ov) : censor;
-              if (kIsWc) {
-                n2[wck] = nv;
-              } else {
-                if (wcov[k] === nv) {
-                  exists = false;
-                } else {
-                  wcov[k] = nv === void 0 && censor !== void 0 || has(wcov, k) && nv === ov ? wcov[k] : nv;
-                }
-              }
-            }
-          }
-          wc = null;
-        } else {
-          ov = n2[k];
-          nv = i !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path10, originalKey, ...afterPath]) : censor(ov) : censor;
-          n2[k] = has(n2, k) && nv === ov || nv === void 0 && censor !== void 0 ? n2[k] : nv;
-          n2 = n2[k];
-        }
-        if (typeof n2 !== "object")
-          break;
-        if (ov === oov) {
-          exists = false;
-        }
-      }
-      return { value: ov, parent: oov, exists };
-    }
-    function get(o, p) {
-      var i = -1;
-      var l2 = p.length;
-      var n2 = o;
-      while (n2 != null && ++i < l2) {
-        n2 = n2[p[i]];
-      }
-      return n2;
-    }
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/restorer.js
-var require_restorer = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/restorer.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var { groupRestore, nestedRestore } = require_modifiers();
-    module.exports = restorer;
-    function restorer({ secret, wcLen }) {
-      return function compileRestore() {
-        if (this.restore)
-          return;
-        const paths = Object.keys(secret);
-        const resetters = resetTmpl(secret, paths);
-        const hasWildcards = wcLen > 0;
-        const state = hasWildcards ? { secret, groupRestore, nestedRestore } : { secret };
-        this.restore = Function(
-          "o",
-          restoreTmpl(resetters, paths, hasWildcards)
-        ).bind(state);
-      };
-    }
-    function resetTmpl(secret, paths) {
-      return paths.map((path10) => {
-        const { circle, escPath, leadingBracket } = secret[path10];
-        const delim = leadingBracket ? "" : ".";
-        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path10} = secret[${escPath}].val`;
-        const clear = `secret[${escPath}].val = undefined`;
-        return `
-      if (secret[${escPath}].val !== undefined) {
-        try { ${reset} } catch (e) {}
-        ${clear}
-      }
-    `;
-      }).join("");
-    }
-    function restoreTmpl(resetters, paths, hasWildcards) {
-      const dynamicReset = hasWildcards === true ? `
-    const keys = Object.keys(secret)
-    const len = keys.length
-    for (var i = len - 1; i >= ${paths.length}; i--) {
-      const k = keys[i]
-      const o = secret[k]
-      if (o.flat === true) this.groupRestore(o)
-      else this.nestedRestore(o)
-      secret[k] = null
-    }
-  ` : "";
-      return `
-    const secret = this.secret
-    ${dynamicReset}
-    ${resetters}
-    return o
-  `;
-    }
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/state.js
-var require_state = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/lib/state.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    module.exports = state;
-    function state(o) {
-      const {
-        secret,
-        censor,
-        compileRestore,
-        serialize,
-        groupRedact,
-        nestedRedact,
-        wildcards,
-        wcLen
-      } = o;
-      const builder = [{ secret, censor, compileRestore }];
-      if (serialize !== false)
-        builder.push({ serialize });
-      if (wcLen > 0)
-        builder.push({ groupRedact, nestedRedact, wildcards, wcLen });
-      return Object.assign(...builder);
-    }
-  }
-});
-
-// ../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/index.js
-var require_fast_redact = __commonJS({
-  "../node_modules/.pnpm/fast-redact@3.1.2/node_modules/fast-redact/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var validator = require_validator();
-    var parse2 = require_parse3();
-    var redactor = require_redactor();
-    var restorer = require_restorer();
-    var { groupRedact, nestedRedact } = require_modifiers();
-    var state = require_state();
-    var rx = require_rx();
-    var validate2 = validator();
-    var noop5 = (o) => o;
-    noop5.restore = noop5;
-    var DEFAULT_CENSOR = "[REDACTED]";
-    fastRedact.rx = rx;
-    fastRedact.validator = validator;
-    module.exports = fastRedact;
-    function fastRedact(opts = {}) {
-      const paths = Array.from(new Set(opts.paths || []));
-      const serialize = "serialize" in opts ? opts.serialize === false ? opts.serialize : typeof opts.serialize === "function" ? opts.serialize : JSON.stringify : JSON.stringify;
-      const remove = opts.remove;
-      if (remove === true && serialize !== JSON.stringify) {
-        throw Error("fast-redact \u2013 remove option may only be set when serializer is JSON.stringify");
-      }
-      const censor = remove === true ? void 0 : "censor" in opts ? opts.censor : DEFAULT_CENSOR;
-      const isCensorFct = typeof censor === "function";
-      const censorFctTakesPath = isCensorFct && censor.length > 1;
-      if (paths.length === 0)
-        return serialize || noop5;
-      validate2({ paths, serialize, censor });
-      const { wildcards, wcLen, secret } = parse2({ paths, censor });
-      const compileRestore = restorer({ secret, wcLen });
-      const strict = "strict" in opts ? opts.strict : true;
-      return redactor({ secret, wcLen, serialize, strict, isCensorFct, censorFctTakesPath }, state({
-        secret,
-        censor,
-        compileRestore,
-        serialize,
-        groupRedact,
-        nestedRedact,
-        wildcards,
-        wcLen
-      }));
-    }
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/symbols.js
-var require_symbols = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/symbols.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var setLevelSym = Symbol("pino.setLevel");
-    var getLevelSym = Symbol("pino.getLevel");
-    var levelValSym = Symbol("pino.levelVal");
-    var useLevelLabelsSym = Symbol("pino.useLevelLabels");
-    var useOnlyCustomLevelsSym = Symbol("pino.useOnlyCustomLevels");
-    var mixinSym = Symbol("pino.mixin");
-    var lsCacheSym = Symbol("pino.lsCache");
-    var chindingsSym = Symbol("pino.chindings");
-    var asJsonSym = Symbol("pino.asJson");
-    var writeSym = Symbol("pino.write");
-    var redactFmtSym = Symbol("pino.redactFmt");
-    var timeSym = Symbol("pino.time");
-    var timeSliceIndexSym = Symbol("pino.timeSliceIndex");
-    var streamSym = Symbol("pino.stream");
-    var stringifySym = Symbol("pino.stringify");
-    var stringifySafeSym = Symbol("pino.stringifySafe");
-    var stringifiersSym = Symbol("pino.stringifiers");
-    var endSym = Symbol("pino.end");
-    var formatOptsSym = Symbol("pino.formatOpts");
-    var messageKeySym = Symbol("pino.messageKey");
-    var errorKeySym = Symbol("pino.errorKey");
-    var nestedKeySym = Symbol("pino.nestedKey");
-    var nestedKeyStrSym = Symbol("pino.nestedKeyStr");
-    var mixinMergeStrategySym = Symbol("pino.mixinMergeStrategy");
-    var msgPrefixSym = Symbol("pino.msgPrefix");
-    var wildcardFirstSym = Symbol("pino.wildcardFirst");
-    var serializersSym = Symbol.for("pino.serializers");
-    var formattersSym = Symbol.for("pino.formatters");
-    var hooksSym = Symbol.for("pino.hooks");
-    var needsMetadataGsym = Symbol.for("pino.metadata");
-    module.exports = {
-      setLevelSym,
-      getLevelSym,
-      levelValSym,
-      useLevelLabelsSym,
-      mixinSym,
-      lsCacheSym,
-      chindingsSym,
-      asJsonSym,
-      writeSym,
-      serializersSym,
-      redactFmtSym,
-      timeSym,
-      timeSliceIndexSym,
-      streamSym,
-      stringifySym,
-      stringifySafeSym,
-      stringifiersSym,
-      endSym,
-      formatOptsSym,
-      messageKeySym,
-      errorKeySym,
-      nestedKeySym,
-      wildcardFirstSym,
-      needsMetadataGsym,
-      useOnlyCustomLevelsSym,
-      formattersSym,
-      hooksSym,
-      nestedKeyStrSym,
-      mixinMergeStrategySym,
-      msgPrefixSym
-    };
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/redaction.js
-var require_redaction = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/redaction.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var fastRedact = require_fast_redact();
-    var { redactFmtSym, wildcardFirstSym } = require_symbols();
-    var { rx, validator } = fastRedact;
-    var validate2 = validator({
-      ERR_PATHS_MUST_BE_STRINGS: () => "pino \u2013 redacted paths must be strings",
-      ERR_INVALID_PATH: (s2) => `pino \u2013 redact paths array contains an invalid path (${s2})`
-    });
-    var CENSOR = "[Redacted]";
-    var strict = false;
-    function redaction(opts, serialize) {
-      const { paths, censor } = handle(opts);
-      const shape = paths.reduce((o, str) => {
-        rx.lastIndex = 0;
-        const first = rx.exec(str);
-        const next = rx.exec(str);
-        let ns = first[1] !== void 0 ? first[1].replace(/^(?:"|'|`)(.*)(?:"|'|`)$/, "$1") : first[0];
-        if (ns === "*") {
-          ns = wildcardFirstSym;
-        }
-        if (next === null) {
-          o[ns] = null;
-          return o;
-        }
-        if (o[ns] === null) {
-          return o;
-        }
-        const { index } = next;
-        const nextPath = `${str.substr(index, str.length - 1)}`;
-        o[ns] = o[ns] || [];
-        if (ns !== wildcardFirstSym && o[ns].length === 0) {
-          o[ns].push(...o[wildcardFirstSym] || []);
-        }
-        if (ns === wildcardFirstSym) {
-          Object.keys(o).forEach(function(k) {
-            if (o[k]) {
-              o[k].push(nextPath);
-            }
-          });
-        }
-        o[ns].push(nextPath);
-        return o;
-      }, {});
-      const result = {
-        [redactFmtSym]: fastRedact({ paths, censor, serialize, strict })
-      };
-      const topCensor = (...args) => {
-        return typeof censor === "function" ? serialize(censor(...args)) : serialize(censor);
-      };
-      return [...Object.keys(shape), ...Object.getOwnPropertySymbols(shape)].reduce((o, k) => {
-        if (shape[k] === null) {
-          o[k] = (value) => topCensor(value, [k]);
-        } else {
-          const wrappedCensor = typeof censor === "function" ? (value, path10) => {
-            return censor(value, [k, ...path10]);
-          } : censor;
-          o[k] = fastRedact({
-            paths: shape[k],
-            censor: wrappedCensor,
-            serialize,
-            strict
-          });
-        }
-        return o;
-      }, result);
-    }
-    function handle(opts) {
-      if (Array.isArray(opts)) {
-        opts = { paths: opts, censor: CENSOR };
-        validate2(opts);
-        return opts;
-      }
-      let { paths, censor = CENSOR, remove } = opts;
-      if (Array.isArray(paths) === false) {
-        throw Error("pino \u2013 redact must contain an array of strings");
-      }
-      if (remove === true)
-        censor = void 0;
-      validate2({ paths, censor });
-      return { paths, censor };
-    }
-    module.exports = redaction;
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/time.js
-var require_time = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/time.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var nullTime = () => "";
-    var epochTime = () => `,"time":${Date.now()}`;
-    var unixTime = () => `,"time":${Math.round(Date.now() / 1e3)}`;
-    var isoTime = () => `,"time":"${new Date(Date.now()).toISOString()}"`;
-    module.exports = { nullTime, epochTime, unixTime, isoTime };
-  }
-});
-
-// ../node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/index.js
-var require_quick_format_unescaped = __commonJS({
-  "../node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    function tryStringify(o) {
+    function propertyIsOnObject(object, property) {
       try {
-        return JSON.stringify(o);
-      } catch (e) {
-        return '"[Circular]"';
-      }
-    }
-    module.exports = format;
-    function format(f, args, opts) {
-      var ss = opts && opts.stringify || tryStringify;
-      var offset2 = 1;
-      if (typeof f === "object" && f !== null) {
-        var len = args.length + offset2;
-        if (len === 1)
-          return f;
-        var objects = new Array(len);
-        objects[0] = ss(f);
-        for (var index = 1; index < len; index++) {
-          objects[index] = ss(args[index]);
-        }
-        return objects.join(" ");
-      }
-      if (typeof f !== "string") {
-        return f;
-      }
-      var argLen = args.length;
-      if (argLen === 0)
-        return f;
-      var str = "";
-      var a = 1 - offset2;
-      var lastPos = -1;
-      var flen = f && f.length || 0;
-      for (var i = 0; i < flen; ) {
-        if (f.charCodeAt(i) === 37 && i + 1 < flen) {
-          lastPos = lastPos > -1 ? lastPos : 0;
-          switch (f.charCodeAt(i + 1)) {
-            case 100:
-            case 102:
-              if (a >= argLen)
-                break;
-              if (args[a] == null)
-                break;
-              if (lastPos < i)
-                str += f.slice(lastPos, i);
-              str += Number(args[a]);
-              lastPos = i + 2;
-              i++;
-              break;
-            case 105:
-              if (a >= argLen)
-                break;
-              if (args[a] == null)
-                break;
-              if (lastPos < i)
-                str += f.slice(lastPos, i);
-              str += Math.floor(Number(args[a]));
-              lastPos = i + 2;
-              i++;
-              break;
-            case 79:
-            case 111:
-            case 106:
-              if (a >= argLen)
-                break;
-              if (args[a] === void 0)
-                break;
-              if (lastPos < i)
-                str += f.slice(lastPos, i);
-              var type = typeof args[a];
-              if (type === "string") {
-                str += "'" + args[a] + "'";
-                lastPos = i + 2;
-                i++;
-                break;
-              }
-              if (type === "function") {
-                str += args[a].name || "<anonymous>";
-                lastPos = i + 2;
-                i++;
-                break;
-              }
-              str += ss(args[a]);
-              lastPos = i + 2;
-              i++;
-              break;
-            case 115:
-              if (a >= argLen)
-                break;
-              if (lastPos < i)
-                str += f.slice(lastPos, i);
-              str += String(args[a]);
-              lastPos = i + 2;
-              i++;
-              break;
-            case 37:
-              if (lastPos < i)
-                str += f.slice(lastPos, i);
-              str += "%";
-              lastPos = i + 2;
-              i++;
-              a--;
-              break;
-          }
-          ++a;
-        }
-        ++i;
-      }
-      if (lastPos === -1)
-        return f;
-      else if (lastPos < flen) {
-        str += f.slice(lastPos);
-      }
-      return str;
-    }
-  }
-});
-
-// ../node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep/index.js
-var require_atomic_sleep = __commonJS({
-  "../node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    if (typeof SharedArrayBuffer !== "undefined" && typeof Atomics !== "undefined") {
-      let sleep2 = function(ms) {
-        const valid = ms > 0 && ms < Infinity;
-        if (valid === false) {
-          if (typeof ms !== "number" && typeof ms !== "bigint") {
-            throw TypeError("sleep: ms must be a number");
-          }
-          throw RangeError("sleep: ms must be a number that is greater than 0 but less than Infinity");
-        }
-        Atomics.wait(nil, 0, 0, Number(ms));
-      };
-      const nil = new Int32Array(new SharedArrayBuffer(4));
-      module.exports = sleep2;
-    } else {
-      let sleep2 = function(ms) {
-        const valid = ms > 0 && ms < Infinity;
-        if (valid === false) {
-          if (typeof ms !== "number" && typeof ms !== "bigint") {
-            throw TypeError("sleep: ms must be a number");
-          }
-          throw RangeError("sleep: ms must be a number that is greater than 0 but less than Infinity");
-        }
-        const target = Date.now() + Number(ms);
-        while (target > Date.now()) {
-        }
-      };
-      module.exports = sleep2;
-    }
-  }
-});
-
-// ../node_modules/.pnpm/sonic-boom@3.7.0/node_modules/sonic-boom/index.js
-var require_sonic_boom = __commonJS({
-  "../node_modules/.pnpm/sonic-boom@3.7.0/node_modules/sonic-boom/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var fs3 = __require("fs");
-    var EventEmitter3 = __require("events");
-    var inherits = __require("util").inherits;
-    var path10 = __require("path");
-    var sleep2 = require_atomic_sleep();
-    var BUSY_WRITE_TIMEOUT = 100;
-    var kEmptyBuffer = Buffer.allocUnsafe(0);
-    var MAX_WRITE = 16 * 1024;
-    var kContentModeBuffer = "buffer";
-    var kContentModeUtf8 = "utf8";
-    function openFile(file, sonic) {
-      sonic._opening = true;
-      sonic._writing = true;
-      sonic._asyncDrainScheduled = false;
-      function fileOpened(err, fd) {
-        if (err) {
-          sonic._reopening = false;
-          sonic._writing = false;
-          sonic._opening = false;
-          if (sonic.sync) {
-            process.nextTick(() => {
-              if (sonic.listenerCount("error") > 0) {
-                sonic.emit("error", err);
-              }
-            });
-          } else {
-            sonic.emit("error", err);
-          }
-          return;
-        }
-        sonic.fd = fd;
-        sonic.file = file;
-        sonic._reopening = false;
-        sonic._opening = false;
-        sonic._writing = false;
-        if (sonic.sync) {
-          process.nextTick(() => sonic.emit("ready"));
-        } else {
-          sonic.emit("ready");
-        }
-        if (sonic._reopening || sonic.destroyed) {
-          return;
-        }
-        if (!sonic._writing && sonic._len > sonic.minLength || sonic._flushPending) {
-          sonic._actualWrite();
-        }
-      }
-      const flags = sonic.append ? "a" : "w";
-      const mode = sonic.mode;
-      if (sonic.sync) {
-        try {
-          if (sonic.mkdir)
-            fs3.mkdirSync(path10.dirname(file), { recursive: true });
-          const fd = fs3.openSync(file, flags, mode);
-          fileOpened(null, fd);
-        } catch (err) {
-          fileOpened(err);
-          throw err;
-        }
-      } else if (sonic.mkdir) {
-        fs3.mkdir(path10.dirname(file), { recursive: true }, (err) => {
-          if (err)
-            return fileOpened(err);
-          fs3.open(file, flags, mode, fileOpened);
-        });
-      } else {
-        fs3.open(file, flags, mode, fileOpened);
-      }
-    }
-    function SonicBoom(opts) {
-      if (!(this instanceof SonicBoom)) {
-        return new SonicBoom(opts);
-      }
-      let { fd, dest, minLength, maxLength, maxWrite, sync, append = true, mkdir, retryEAGAIN, fsync, contentMode, mode } = opts || {};
-      fd = fd || dest;
-      this._len = 0;
-      this.fd = -1;
-      this._bufs = [];
-      this._lens = [];
-      this._writing = false;
-      this._ending = false;
-      this._reopening = false;
-      this._asyncDrainScheduled = false;
-      this._flushPending = false;
-      this._hwm = Math.max(minLength || 0, 16387);
-      this.file = null;
-      this.destroyed = false;
-      this.minLength = minLength || 0;
-      this.maxLength = maxLength || 0;
-      this.maxWrite = maxWrite || MAX_WRITE;
-      this.sync = sync || false;
-      this.writable = true;
-      this._fsync = fsync || false;
-      this.append = append || false;
-      this.mode = mode;
-      this.retryEAGAIN = retryEAGAIN || (() => true);
-      this.mkdir = mkdir || false;
-      let fsWriteSync;
-      let fsWrite;
-      if (contentMode === kContentModeBuffer) {
-        this._writingBuf = kEmptyBuffer;
-        this.write = writeBuffer;
-        this.flush = flushBuffer;
-        this.flushSync = flushBufferSync;
-        this._actualWrite = actualWriteBuffer;
-        fsWriteSync = () => fs3.writeSync(this.fd, this._writingBuf);
-        fsWrite = () => fs3.write(this.fd, this._writingBuf, this.release);
-      } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
-        this._writingBuf = "";
-        this.write = write;
-        this.flush = flush;
-        this.flushSync = flushSync;
-        this._actualWrite = actualWrite;
-        fsWriteSync = () => fs3.writeSync(this.fd, this._writingBuf, "utf8");
-        fsWrite = () => fs3.write(this.fd, this._writingBuf, "utf8", this.release);
-      } else {
-        throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
-      }
-      if (typeof fd === "number") {
-        this.fd = fd;
-        process.nextTick(() => this.emit("ready"));
-      } else if (typeof fd === "string") {
-        openFile(fd, this);
-      } else {
-        throw new Error("SonicBoom supports only file descriptors and files");
-      }
-      if (this.minLength >= this.maxWrite) {
-        throw new Error(`minLength should be smaller than maxWrite (${this.maxWrite})`);
-      }
-      this.release = (err, n2) => {
-        if (err) {
-          if ((err.code === "EAGAIN" || err.code === "EBUSY") && this.retryEAGAIN(err, this._writingBuf.length, this._len - this._writingBuf.length)) {
-            if (this.sync) {
-              try {
-                sleep2(BUSY_WRITE_TIMEOUT);
-                this.release(void 0, 0);
-              } catch (err2) {
-                this.release(err2);
-              }
-            } else {
-              setTimeout(fsWrite, BUSY_WRITE_TIMEOUT);
-            }
-          } else {
-            this._writing = false;
-            this.emit("error", err);
-          }
-          return;
-        }
-        this.emit("write", n2);
-        this._len -= n2;
-        if (this._len < 0) {
-          this._len = 0;
-        }
-        this._writingBuf = this._writingBuf.slice(n2);
-        if (this._writingBuf.length) {
-          if (!this.sync) {
-            fsWrite();
-            return;
-          }
-          try {
-            do {
-              const n3 = fsWriteSync();
-              this._len -= n3;
-              this._writingBuf = this._writingBuf.slice(n3);
-            } while (this._writingBuf.length);
-          } catch (err2) {
-            this.release(err2);
-            return;
-          }
-        }
-        if (this._fsync) {
-          fs3.fsyncSync(this.fd);
-        }
-        const len = this._len;
-        if (this._reopening) {
-          this._writing = false;
-          this._reopening = false;
-          this.reopen();
-        } else if (len > this.minLength) {
-          this._actualWrite();
-        } else if (this._ending) {
-          if (len > 0) {
-            this._actualWrite();
-          } else {
-            this._writing = false;
-            actualClose(this);
-          }
-        } else {
-          this._writing = false;
-          if (this.sync) {
-            if (!this._asyncDrainScheduled) {
-              this._asyncDrainScheduled = true;
-              process.nextTick(emitDrain, this);
-            }
-          } else {
-            this.emit("drain");
-          }
-        }
-      };
-      this.on("newListener", function(name) {
-        if (name === "drain") {
-          this._asyncDrainScheduled = false;
-        }
-      });
-    }
-    function emitDrain(sonic) {
-      const hasListeners = sonic.listenerCount("drain") > 0;
-      if (!hasListeners)
-        return;
-      sonic._asyncDrainScheduled = false;
-      sonic.emit("drain");
-    }
-    inherits(SonicBoom, EventEmitter3);
-    function mergeBuf(bufs, len) {
-      if (bufs.length === 0) {
-        return kEmptyBuffer;
-      }
-      if (bufs.length === 1) {
-        return bufs[0];
-      }
-      return Buffer.concat(bufs, len);
-    }
-    function write(data) {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      const len = this._len + data.length;
-      const bufs = this._bufs;
-      if (this.maxLength && len > this.maxLength) {
-        this.emit("drop", data);
-        return this._len < this._hwm;
-      }
-      if (bufs.length === 0 || bufs[bufs.length - 1].length + data.length > this.maxWrite) {
-        bufs.push("" + data);
-      } else {
-        bufs[bufs.length - 1] += data;
-      }
-      this._len = len;
-      if (!this._writing && this._len >= this.minLength) {
-        this._actualWrite();
-      }
-      return this._len < this._hwm;
-    }
-    function writeBuffer(data) {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      const len = this._len + data.length;
-      const bufs = this._bufs;
-      const lens = this._lens;
-      if (this.maxLength && len > this.maxLength) {
-        this.emit("drop", data);
-        return this._len < this._hwm;
-      }
-      if (bufs.length === 0 || lens[lens.length - 1] + data.length > this.maxWrite) {
-        bufs.push([data]);
-        lens.push(data.length);
-      } else {
-        bufs[bufs.length - 1].push(data);
-        lens[lens.length - 1] += data.length;
-      }
-      this._len = len;
-      if (!this._writing && this._len >= this.minLength) {
-        this._actualWrite();
-      }
-      return this._len < this._hwm;
-    }
-    function callFlushCallbackOnDrain(cb) {
-      this._flushPending = true;
-      const onDrain = () => {
-        if (!this._fsync) {
-          fs3.fsync(this.fd, (err) => {
-            this._flushPending = false;
-            cb(err);
-          });
-        } else {
-          this._flushPending = false;
-          cb();
-        }
-        this.off("error", onError);
-      };
-      const onError = (err) => {
-        this._flushPending = false;
-        cb(err);
-        this.off("drain", onDrain);
-      };
-      this.once("drain", onDrain);
-      this.once("error", onError);
-    }
-    function flush(cb) {
-      if (cb != null && typeof cb !== "function") {
-        throw new Error("flush cb must be a function");
-      }
-      if (this.destroyed) {
-        const error = new Error("SonicBoom destroyed");
-        if (cb) {
-          cb(error);
-          return;
-        }
-        throw error;
-      }
-      if (this.minLength <= 0) {
-        cb?.();
-        return;
-      }
-      if (cb) {
-        callFlushCallbackOnDrain.call(this, cb);
-      }
-      if (this._writing) {
-        return;
-      }
-      if (this._bufs.length === 0) {
-        this._bufs.push("");
-      }
-      this._actualWrite();
-    }
-    function flushBuffer(cb) {
-      if (cb != null && typeof cb !== "function") {
-        throw new Error("flush cb must be a function");
-      }
-      if (this.destroyed) {
-        const error = new Error("SonicBoom destroyed");
-        if (cb) {
-          cb(error);
-          return;
-        }
-        throw error;
-      }
-      if (this.minLength <= 0) {
-        cb?.();
-        return;
-      }
-      if (cb) {
-        callFlushCallbackOnDrain.call(this, cb);
-      }
-      if (this._writing) {
-        return;
-      }
-      if (this._bufs.length === 0) {
-        this._bufs.push([]);
-        this._lens.push(0);
-      }
-      this._actualWrite();
-    }
-    SonicBoom.prototype.reopen = function(file) {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this._opening) {
-        this.once("ready", () => {
-          this.reopen(file);
-        });
-        return;
-      }
-      if (this._ending) {
-        return;
-      }
-      if (!this.file) {
-        throw new Error("Unable to reopen a file descriptor, you must pass a file to SonicBoom");
-      }
-      this._reopening = true;
-      if (this._writing) {
-        return;
-      }
-      const fd = this.fd;
-      this.once("ready", () => {
-        if (fd !== this.fd) {
-          fs3.close(fd, (err) => {
-            if (err) {
-              return this.emit("error", err);
-            }
-          });
-        }
-      });
-      openFile(file || this.file, this);
-    };
-    SonicBoom.prototype.end = function() {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this._opening) {
-        this.once("ready", () => {
-          this.end();
-        });
-        return;
-      }
-      if (this._ending) {
-        return;
-      }
-      this._ending = true;
-      if (this._writing) {
-        return;
-      }
-      if (this._len > 0 && this.fd >= 0) {
-        this._actualWrite();
-      } else {
-        actualClose(this);
-      }
-    };
-    function flushSync() {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this.fd < 0) {
-        throw new Error("sonic boom is not ready yet");
-      }
-      if (!this._writing && this._writingBuf.length > 0) {
-        this._bufs.unshift(this._writingBuf);
-        this._writingBuf = "";
-      }
-      let buf = "";
-      while (this._bufs.length || buf) {
-        if (buf.length <= 0) {
-          buf = this._bufs[0];
-        }
-        try {
-          const n2 = fs3.writeSync(this.fd, buf, "utf8");
-          buf = buf.slice(n2);
-          this._len = Math.max(this._len - n2, 0);
-          if (buf.length <= 0) {
-            this._bufs.shift();
-          }
-        } catch (err) {
-          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
-            throw err;
-          }
-          sleep2(BUSY_WRITE_TIMEOUT);
-        }
-      }
-      try {
-        fs3.fsyncSync(this.fd);
-      } catch {
-      }
-    }
-    function flushBufferSync() {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this.fd < 0) {
-        throw new Error("sonic boom is not ready yet");
-      }
-      if (!this._writing && this._writingBuf.length > 0) {
-        this._bufs.unshift([this._writingBuf]);
-        this._writingBuf = kEmptyBuffer;
-      }
-      let buf = kEmptyBuffer;
-      while (this._bufs.length || buf.length) {
-        if (buf.length <= 0) {
-          buf = mergeBuf(this._bufs[0], this._lens[0]);
-        }
-        try {
-          const n2 = fs3.writeSync(this.fd, buf);
-          buf = buf.subarray(n2);
-          this._len = Math.max(this._len - n2, 0);
-          if (buf.length <= 0) {
-            this._bufs.shift();
-            this._lens.shift();
-          }
-        } catch (err) {
-          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
-            throw err;
-          }
-          sleep2(BUSY_WRITE_TIMEOUT);
-        }
-      }
-    }
-    SonicBoom.prototype.destroy = function() {
-      if (this.destroyed) {
-        return;
-      }
-      actualClose(this);
-    };
-    function actualWrite() {
-      const release = this.release;
-      this._writing = true;
-      this._writingBuf = this._writingBuf || this._bufs.shift() || "";
-      if (this.sync) {
-        try {
-          const written = fs3.writeSync(this.fd, this._writingBuf, "utf8");
-          release(null, written);
-        } catch (err) {
-          release(err);
-        }
-      } else {
-        fs3.write(this.fd, this._writingBuf, "utf8", release);
-      }
-    }
-    function actualWriteBuffer() {
-      const release = this.release;
-      this._writing = true;
-      this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
-      if (this.sync) {
-        try {
-          const written = fs3.writeSync(this.fd, this._writingBuf);
-          release(null, written);
-        } catch (err) {
-          release(err);
-        }
-      } else {
-        fs3.write(this.fd, this._writingBuf, release);
-      }
-    }
-    function actualClose(sonic) {
-      if (sonic.fd === -1) {
-        sonic.once("ready", actualClose.bind(null, sonic));
-        return;
-      }
-      sonic.destroyed = true;
-      sonic._bufs = [];
-      sonic._lens = [];
-      fs3.fsync(sonic.fd, closeWrapped);
-      function closeWrapped() {
-        if (sonic.fd !== 1 && sonic.fd !== 2) {
-          fs3.close(sonic.fd, done);
-        } else {
-          done();
-        }
-      }
-      function done(err) {
-        if (err) {
-          sonic.emit("error", err);
-          return;
-        }
-        if (sonic._ending && !sonic._writing) {
-          sonic.emit("finish");
-        }
-        sonic.emit("close");
-      }
-    }
-    SonicBoom.SonicBoom = SonicBoom;
-    SonicBoom.default = SonicBoom;
-    module.exports = SonicBoom;
-  }
-});
-
-// ../node_modules/.pnpm/on-exit-leak-free@2.1.0/node_modules/on-exit-leak-free/index.js
-var require_on_exit_leak_free = __commonJS({
-  "../node_modules/.pnpm/on-exit-leak-free@2.1.0/node_modules/on-exit-leak-free/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var refs = {
-      exit: [],
-      beforeExit: []
-    };
-    var functions = {
-      exit: onExit,
-      beforeExit: onBeforeExit
-    };
-    var registry = new FinalizationRegistry(clear);
-    function install(event) {
-      if (refs[event].length > 0) {
-        return;
-      }
-      process.on(event, functions[event]);
-    }
-    function uninstall(event) {
-      if (refs[event].length > 0) {
-        return;
-      }
-      process.removeListener(event, functions[event]);
-    }
-    function onExit() {
-      callRefs("exit");
-    }
-    function onBeforeExit() {
-      callRefs("beforeExit");
-    }
-    function callRefs(event) {
-      for (const ref of refs[event]) {
-        const obj = ref.deref();
-        const fn = ref.fn;
-        if (obj !== void 0) {
-          fn(obj, event);
-        }
-      }
-    }
-    function clear(ref) {
-      for (const event of ["exit", "beforeExit"]) {
-        const index = refs[event].indexOf(ref);
-        refs[event].splice(index, index + 1);
-        uninstall(event);
-      }
-    }
-    function _register(event, obj, fn) {
-      if (obj === void 0) {
-        throw new Error("the object can't be undefined");
-      }
-      install(event);
-      const ref = new WeakRef(obj);
-      ref.fn = fn;
-      registry.register(obj, ref);
-      refs[event].push(ref);
-    }
-    function register(obj, fn) {
-      _register("exit", obj, fn);
-    }
-    function registerBeforeExit(obj, fn) {
-      _register("beforeExit", obj, fn);
-    }
-    function unregister(obj) {
-      registry.unregister(obj);
-      for (const event of ["exit", "beforeExit"]) {
-        refs[event] = refs[event].filter((ref) => {
-          const _obj = ref.deref();
-          return _obj && _obj !== obj;
-        });
-        uninstall(event);
-      }
-    }
-    module.exports = {
-      register,
-      registerBeforeExit,
-      unregister
-    };
-  }
-});
-
-// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/package.json
-var require_package2 = __commonJS({
-  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/package.json"(exports, module) {
-    module.exports = {
-      name: "thread-stream",
-      version: "2.3.0",
-      description: "A streaming way to send data to a Node.js Worker Thread",
-      main: "index.js",
-      types: "index.d.ts",
-      dependencies: {
-        "real-require": "^0.2.0"
-      },
-      devDependencies: {
-        "@types/node": "^18.0.0",
-        "@types/tap": "^15.0.0",
-        desm: "^1.3.0",
-        fastbench: "^1.0.1",
-        husky: "^8.0.1",
-        "sonic-boom": "^3.0.0",
-        standard: "^17.0.0",
-        tap: "^16.2.0",
-        "ts-node": "^10.8.0",
-        typescript: "^4.7.2",
-        "why-is-node-running": "^2.2.2"
-      },
-      scripts: {
-        test: "standard && npm run transpile && tap test/*.test.*js && tap --ts test/*.test.*ts",
-        "test:ci": "standard && npm run transpile && npm run test:ci:js && npm run test:ci:ts",
-        "test:ci:js": 'tap --no-check-coverage --coverage-report=lcovonly "test/**/*.test.*js"',
-        "test:ci:ts": 'tap --ts --no-check-coverage --coverage-report=lcovonly "test/**/*.test.*ts"',
-        "test:yarn": 'npm run transpile && tap "test/**/*.test.js" --no-check-coverage',
-        transpile: "sh ./test/ts/transpile.sh",
-        prepare: "husky install"
-      },
-      standard: { ignore: ["test/ts/**/*"] },
-      repository: {
-        type: "git",
-        url: "git+https://github.com/mcollina/thread-stream.git"
-      },
-      keywords: [
-        "worker",
-        "thread",
-        "threads",
-        "stream"
-      ],
-      author: "Matteo Collina <hello@matteocollina.com>",
-      license: "MIT",
-      bugs: {
-        url: "https://github.com/mcollina/thread-stream/issues"
-      },
-      homepage: "https://github.com/mcollina/thread-stream#readme"
-    };
-  }
-});
-
-// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/wait.js
-var require_wait = __commonJS({
-  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/wait.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var MAX_TIMEOUT = 1e3;
-    function wait(state, index, expected, timeout, done) {
-      const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
-      if (current === expected) {
-        done(null, "ok");
-        return;
-      }
-      let prior = current;
-      const check = (backoff) => {
-        if (Date.now() > max) {
-          done(null, "timed-out");
-        } else {
-          setTimeout(() => {
-            prior = current;
-            current = Atomics.load(state, index);
-            if (current === prior) {
-              check(backoff >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff * 2);
-            } else {
-              if (current === expected)
-                done(null, "ok");
-              else
-                done(null, "not-equal");
-            }
-          }, backoff);
-        }
-      };
-      check(1);
-    }
-    function waitDiff(state, index, expected, timeout, done) {
-      const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
-      if (current !== expected) {
-        done(null, "ok");
-        return;
-      }
-      const check = (backoff) => {
-        if (Date.now() > max) {
-          done(null, "timed-out");
-        } else {
-          setTimeout(() => {
-            current = Atomics.load(state, index);
-            if (current !== expected) {
-              done(null, "ok");
-            } else {
-              check(backoff >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff * 2);
-            }
-          }, backoff);
-        }
-      };
-      check(1);
-    }
-    module.exports = { wait, waitDiff };
-  }
-});
-
-// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/indexes.js
-var require_indexes = __commonJS({
-  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/lib/indexes.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var WRITE_INDEX = 4;
-    var READ_INDEX = 8;
-    module.exports = {
-      WRITE_INDEX,
-      READ_INDEX
-    };
-  }
-});
-
-// ../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/index.js
-var require_thread_stream = __commonJS({
-  "../node_modules/.pnpm/thread-stream@2.3.0/node_modules/thread-stream/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var { version } = require_package2();
-    var { EventEmitter: EventEmitter3 } = __require("events");
-    var { Worker } = __require("worker_threads");
-    var { join } = __require("path");
-    var { pathToFileURL } = __require("url");
-    var { wait } = require_wait();
-    var {
-      WRITE_INDEX,
-      READ_INDEX
-    } = require_indexes();
-    var buffer = __require("buffer");
-    var assert2 = __require("assert");
-    var kImpl = Symbol("kImpl");
-    var MAX_STRING = buffer.constants.MAX_STRING_LENGTH;
-    var FakeWeakRef = class {
-      constructor(value) {
-        this._value = value;
-      }
-      deref() {
-        return this._value;
-      }
-    };
-    var FinalizationRegistry2 = global.FinalizationRegistry || class FakeFinalizationRegistry {
-      register() {
-      }
-      unregister() {
-      }
-    };
-    var WeakRef2 = global.WeakRef || FakeWeakRef;
-    var registry = new FinalizationRegistry2((worker) => {
-      if (worker.exited) {
-        return;
-      }
-      worker.terminate();
-    });
-    function createWorker(stream, opts) {
-      const { filename, workerData } = opts;
-      const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join(__dirname, "lib", "worker.js");
-      const worker = new Worker(toExecute, {
-        ...opts.workerOpts,
-        trackUnmanagedFds: false,
-        workerData: {
-          filename: filename.indexOf("file://") === 0 ? filename : pathToFileURL(filename).href,
-          dataBuf: stream[kImpl].dataBuf,
-          stateBuf: stream[kImpl].stateBuf,
-          workerData: {
-            $context: {
-              threadStreamVersion: version
-            },
-            ...workerData
-          }
-        }
-      });
-      worker.stream = new FakeWeakRef(stream);
-      worker.on("message", onWorkerMessage);
-      worker.on("exit", onWorkerExit);
-      registry.register(stream, worker);
-      return worker;
-    }
-    function drain(stream) {
-      assert2(!stream[kImpl].sync);
-      if (stream[kImpl].needDrain) {
-        stream[kImpl].needDrain = false;
-        stream.emit("drain");
-      }
-    }
-    function nextFlush(stream) {
-      const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-      let leftover = stream[kImpl].data.length - writeIndex;
-      if (leftover > 0) {
-        if (stream[kImpl].buf.length === 0) {
-          stream[kImpl].flushing = false;
-          if (stream[kImpl].ending) {
-            end(stream);
-          } else if (stream[kImpl].needDrain) {
-            process.nextTick(drain, stream);
-          }
-          return;
-        }
-        let toWrite = stream[kImpl].buf.slice(0, leftover);
-        let toWriteBytes = Buffer.byteLength(toWrite);
-        if (toWriteBytes <= leftover) {
-          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-          write(stream, toWrite, nextFlush.bind(null, stream));
-        } else {
-          stream.flush(() => {
-            if (stream.destroyed) {
-              return;
-            }
-            Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-            Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-            while (toWriteBytes > stream[kImpl].data.length) {
-              leftover = leftover / 2;
-              toWrite = stream[kImpl].buf.slice(0, leftover);
-              toWriteBytes = Buffer.byteLength(toWrite);
-            }
-            stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-            write(stream, toWrite, nextFlush.bind(null, stream));
-          });
-        }
-      } else if (leftover === 0) {
-        if (writeIndex === 0 && stream[kImpl].buf.length === 0) {
-          return;
-        }
-        stream.flush(() => {
-          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-          nextFlush(stream);
-        });
-      } else {
-        destroy(stream, new Error("overwritten"));
-      }
-    }
-    function onWorkerMessage(msg) {
-      const stream = this.stream.deref();
-      if (stream === void 0) {
-        this.exited = true;
-        this.terminate();
-        return;
-      }
-      switch (msg.code) {
-        case "READY":
-          this.stream = new WeakRef2(stream);
-          stream.flush(() => {
-            stream[kImpl].ready = true;
-            stream.emit("ready");
-          });
-          break;
-        case "ERROR":
-          destroy(stream, msg.err);
-          break;
-        case "EVENT":
-          if (Array.isArray(msg.args)) {
-            stream.emit(msg.name, ...msg.args);
-          } else {
-            stream.emit(msg.name, msg.args);
-          }
-          break;
-        default:
-          destroy(stream, new Error("this should not happen: " + msg.code));
-      }
-    }
-    function onWorkerExit(code) {
-      const stream = this.stream.deref();
-      if (stream === void 0) {
-        return;
-      }
-      registry.unregister(stream);
-      stream.worker.exited = true;
-      stream.worker.off("exit", onWorkerExit);
-      destroy(stream, code !== 0 ? new Error("the worker thread exited") : null);
-    }
-    var ThreadStream = class extends EventEmitter3 {
-      constructor(opts = {}) {
-        super();
-        if (opts.bufferSize < 4) {
-          throw new Error("bufferSize must at least fit a 4-byte utf-8 char");
-        }
-        this[kImpl] = {};
-        this[kImpl].stateBuf = new SharedArrayBuffer(128);
-        this[kImpl].state = new Int32Array(this[kImpl].stateBuf);
-        this[kImpl].dataBuf = new SharedArrayBuffer(opts.bufferSize || 4 * 1024 * 1024);
-        this[kImpl].data = Buffer.from(this[kImpl].dataBuf);
-        this[kImpl].sync = opts.sync || false;
-        this[kImpl].ending = false;
-        this[kImpl].ended = false;
-        this[kImpl].needDrain = false;
-        this[kImpl].destroyed = false;
-        this[kImpl].flushing = false;
-        this[kImpl].ready = false;
-        this[kImpl].finished = false;
-        this[kImpl].errored = null;
-        this[kImpl].closed = false;
-        this[kImpl].buf = "";
-        this.worker = createWorker(this, opts);
-      }
-      write(data) {
-        if (this[kImpl].destroyed) {
-          error(this, new Error("the worker has exited"));
-          return false;
-        }
-        if (this[kImpl].ending) {
-          error(this, new Error("the worker is ending"));
-          return false;
-        }
-        if (this[kImpl].flushing && this[kImpl].buf.length + data.length >= MAX_STRING) {
-          try {
-            writeSync(this);
-            this[kImpl].flushing = true;
-          } catch (err) {
-            destroy(this, err);
-            return false;
-          }
-        }
-        this[kImpl].buf += data;
-        if (this[kImpl].sync) {
-          try {
-            writeSync(this);
-            return true;
-          } catch (err) {
-            destroy(this, err);
-            return false;
-          }
-        }
-        if (!this[kImpl].flushing) {
-          this[kImpl].flushing = true;
-          setImmediate(nextFlush, this);
-        }
-        this[kImpl].needDrain = this[kImpl].data.length - this[kImpl].buf.length - Atomics.load(this[kImpl].state, WRITE_INDEX) <= 0;
-        return !this[kImpl].needDrain;
-      }
-      end() {
-        if (this[kImpl].destroyed) {
-          return;
-        }
-        this[kImpl].ending = true;
-        end(this);
-      }
-      flush(cb) {
-        if (this[kImpl].destroyed) {
-          if (typeof cb === "function") {
-            process.nextTick(cb, new Error("the worker has exited"));
-          }
-          return;
-        }
-        const writeIndex = Atomics.load(this[kImpl].state, WRITE_INDEX);
-        wait(this[kImpl].state, READ_INDEX, writeIndex, Infinity, (err, res) => {
-          if (err) {
-            destroy(this, err);
-            process.nextTick(cb, err);
-            return;
-          }
-          if (res === "not-equal") {
-            this.flush(cb);
-            return;
-          }
-          process.nextTick(cb);
-        });
-      }
-      flushSync() {
-        if (this[kImpl].destroyed) {
-          return;
-        }
-        writeSync(this);
-        flushSync(this);
-      }
-      unref() {
-        this.worker.unref();
-      }
-      ref() {
-        this.worker.ref();
-      }
-      get ready() {
-        return this[kImpl].ready;
-      }
-      get destroyed() {
-        return this[kImpl].destroyed;
-      }
-      get closed() {
-        return this[kImpl].closed;
-      }
-      get writable() {
-        return !this[kImpl].destroyed && !this[kImpl].ending;
-      }
-      get writableEnded() {
-        return this[kImpl].ending;
-      }
-      get writableFinished() {
-        return this[kImpl].finished;
-      }
-      get writableNeedDrain() {
-        return this[kImpl].needDrain;
-      }
-      get writableObjectMode() {
+        return property in object;
+      } catch (_2) {
         return false;
       }
-      get writableErrored() {
-        return this[kImpl].errored;
-      }
-    };
-    function error(stream, err) {
-      setImmediate(() => {
-        stream.emit("error", err);
-      });
     }
-    function destroy(stream, err) {
-      if (stream[kImpl].destroyed) {
-        return;
-      }
-      stream[kImpl].destroyed = true;
-      if (err) {
-        stream[kImpl].errored = err;
-        error(stream, err);
-      }
-      if (!stream.worker.exited) {
-        stream.worker.terminate().catch(() => {
-        }).then(() => {
-          stream[kImpl].closed = true;
-          stream.emit("close");
-        });
-      } else {
-        setImmediate(() => {
-          stream[kImpl].closed = true;
-          stream.emit("close");
+    function propertyIsUnsafe(target, key) {
+      return propertyIsOnObject(target, key) && !(Object.hasOwnProperty.call(target, key) && Object.propertyIsEnumerable.call(target, key));
+    }
+    function mergeObject(target, source, options) {
+      var destination = {};
+      if (options.isMergeableObject(target)) {
+        getKeys(target).forEach(function(key) {
+          destination[key] = cloneUnlessOtherwiseSpecified(target[key], options);
         });
       }
-    }
-    function write(stream, data, cb) {
-      const current = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-      const length = Buffer.byteLength(data);
-      stream[kImpl].data.write(data, current);
-      Atomics.store(stream[kImpl].state, WRITE_INDEX, current + length);
-      Atomics.notify(stream[kImpl].state, WRITE_INDEX);
-      cb();
-      return true;
-    }
-    function end(stream) {
-      if (stream[kImpl].ended || !stream[kImpl].ending || stream[kImpl].flushing) {
-        return;
-      }
-      stream[kImpl].ended = true;
-      try {
-        stream.flushSync();
-        let readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-        Atomics.store(stream[kImpl].state, WRITE_INDEX, -1);
-        Atomics.notify(stream[kImpl].state, WRITE_INDEX);
-        let spins = 0;
-        while (readIndex !== -1) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
-          readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-          if (readIndex === -2) {
-            destroy(stream, new Error("end() failed"));
-            return;
-          }
-          if (++spins === 10) {
-            destroy(stream, new Error("end() took too long (10s)"));
-            return;
-          }
-        }
-        process.nextTick(() => {
-          stream[kImpl].finished = true;
-          stream.emit("finish");
-        });
-      } catch (err) {
-        destroy(stream, err);
-      }
-    }
-    function writeSync(stream) {
-      const cb = () => {
-        if (stream[kImpl].ending) {
-          end(stream);
-        } else if (stream[kImpl].needDrain) {
-          process.nextTick(drain, stream);
-        }
-      };
-      stream[kImpl].flushing = false;
-      while (stream[kImpl].buf.length !== 0) {
-        const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-        let leftover = stream[kImpl].data.length - writeIndex;
-        if (leftover === 0) {
-          flushSync(stream);
-          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-          continue;
-        } else if (leftover < 0) {
-          throw new Error("overwritten");
-        }
-        let toWrite = stream[kImpl].buf.slice(0, leftover);
-        let toWriteBytes = Buffer.byteLength(toWrite);
-        if (toWriteBytes <= leftover) {
-          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-          write(stream, toWrite, cb);
-        } else {
-          flushSync(stream);
-          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-          while (toWriteBytes > stream[kImpl].buf.length) {
-            leftover = leftover / 2;
-            toWrite = stream[kImpl].buf.slice(0, leftover);
-            toWriteBytes = Buffer.byteLength(toWrite);
-          }
-          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-          write(stream, toWrite, cb);
-        }
-      }
-    }
-    function flushSync(stream) {
-      if (stream[kImpl].flushing) {
-        throw new Error("unable to flush while flushing");
-      }
-      const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-      let spins = 0;
-      while (true) {
-        const readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-        if (readIndex === -2) {
-          throw Error("_flushSync failed");
-        }
-        if (readIndex !== writeIndex) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
-        } else {
-          break;
-        }
-        if (++spins === 10) {
-          throw new Error("_flushSync took too long (10s)");
-        }
-      }
-    }
-    module.exports = ThreadStream;
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/transport.js
-var require_transport = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/transport.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var { createRequire: createRequire2 } = __require("module");
-    var getCallers = require_caller();
-    var { join, isAbsolute, sep } = __require("path");
-    var sleep2 = require_atomic_sleep();
-    var onExit = require_on_exit_leak_free();
-    var ThreadStream = require_thread_stream();
-    function setupOnExit(stream) {
-      onExit.register(stream, autoEnd);
-      onExit.registerBeforeExit(stream, flush);
-      stream.on("close", function() {
-        onExit.unregister(stream);
-      });
-    }
-    function buildStream(filename, workerData, workerOpts) {
-      const stream = new ThreadStream({
-        filename,
-        workerData,
-        workerOpts
-      });
-      stream.on("ready", onReady);
-      stream.on("close", function() {
-        process.removeListener("exit", onExit2);
-      });
-      process.on("exit", onExit2);
-      function onReady() {
-        process.removeListener("exit", onExit2);
-        stream.unref();
-        if (workerOpts.autoEnd !== false) {
-          setupOnExit(stream);
-        }
-      }
-      function onExit2() {
-        if (stream.closed) {
+      getKeys(source).forEach(function(key) {
+        if (propertyIsUnsafe(target, key)) {
           return;
         }
-        stream.flushSync();
-        sleep2(100);
-        stream.end();
-      }
-      return stream;
-    }
-    function autoEnd(stream) {
-      stream.ref();
-      stream.flushSync();
-      stream.end();
-      stream.once("close", function() {
-        stream.unref();
-      });
-    }
-    function flush(stream) {
-      stream.flushSync();
-    }
-    function transport(fullOptions) {
-      const { pipeline: pipeline2, targets, levels, dedupe, options = {}, worker = {}, caller = getCallers() } = fullOptions;
-      const callers = typeof caller === "string" ? [caller] : caller;
-      const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      let target = fullOptions.target;
-      if (target && targets) {
-        throw new Error("only one of target or targets can be specified");
-      }
-      if (targets) {
-        target = bundlerOverrides["pino-worker"] || join(__dirname, "worker.js");
-        options.targets = targets.map((dest) => {
-          return {
-            ...dest,
-            target: fixTarget(dest.target)
-          };
-        });
-      } else if (pipeline2) {
-        target = bundlerOverrides["pino-pipeline-worker"] || join(__dirname, "worker-pipeline.js");
-        options.targets = pipeline2.map((dest) => {
-          return {
-            ...dest,
-            target: fixTarget(dest.target)
-          };
-        });
-      }
-      if (levels) {
-        options.levels = levels;
-      }
-      if (dedupe) {
-        options.dedupe = dedupe;
-      }
-      return buildStream(fixTarget(target), options, worker);
-      function fixTarget(origin) {
-        origin = bundlerOverrides[origin] || origin;
-        if (isAbsolute(origin) || origin.indexOf("file://") === 0) {
-          return origin;
-        }
-        if (origin === "pino/file") {
-          return join(__dirname, "..", "file.js");
-        }
-        let fixTarget2;
-        for (const filePath of callers) {
-          try {
-            const context = filePath === "node:repl" ? process.cwd() + sep : filePath;
-            fixTarget2 = createRequire2(context).resolve(origin);
-            break;
-          } catch (err) {
-            continue;
-          }
-        }
-        if (!fixTarget2) {
-          throw new Error(`unable to determine transport target for "${origin}"`);
-        }
-        return fixTarget2;
-      }
-    }
-    module.exports = transport;
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/tools.js
-var require_tools = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/tools.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var format = require_quick_format_unescaped();
-    var { mapHttpRequest, mapHttpResponse } = require_pino_std_serializers();
-    var SonicBoom = require_sonic_boom();
-    var onExit = require_on_exit_leak_free();
-    var {
-      lsCacheSym,
-      chindingsSym,
-      writeSym,
-      serializersSym,
-      formatOptsSym,
-      endSym,
-      stringifiersSym,
-      stringifySym,
-      stringifySafeSym,
-      wildcardFirstSym,
-      nestedKeySym,
-      formattersSym,
-      messageKeySym,
-      errorKeySym,
-      nestedKeyStrSym,
-      msgPrefixSym
-    } = require_symbols();
-    var { isMainThread } = __require("worker_threads");
-    var transport = require_transport();
-    function noop5() {
-    }
-    function genLog(level, hook) {
-      if (!hook)
-        return LOG;
-      return function hookWrappedLog(...args) {
-        hook.call(this, args, LOG, level);
-      };
-      function LOG(o, ...n2) {
-        if (typeof o === "object") {
-          let msg = o;
-          if (o !== null) {
-            if (o.method && o.headers && o.socket) {
-              o = mapHttpRequest(o);
-            } else if (typeof o.setHeader === "function") {
-              o = mapHttpResponse(o);
-            }
-          }
-          let formatParams;
-          if (msg === null && n2.length === 0) {
-            formatParams = [null];
-          } else {
-            msg = n2.shift();
-            formatParams = n2;
-          }
-          if (typeof this[msgPrefixSym] === "string" && msg !== void 0 && msg !== null) {
-            msg = this[msgPrefixSym] + msg;
-          }
-          this[writeSym](o, format(msg, formatParams, this[formatOptsSym]), level);
+        if (propertyIsOnObject(target, key) && options.isMergeableObject(source[key])) {
+          destination[key] = getMergeFunction(key, options)(target[key], source[key], options);
         } else {
-          let msg = o === void 0 ? n2.shift() : o;
-          if (typeof this[msgPrefixSym] === "string" && msg !== void 0 && msg !== null) {
-            msg = this[msgPrefixSym] + msg;
-          }
-          this[writeSym](null, format(msg, n2, this[formatOptsSym]), level);
+          destination[key] = cloneUnlessOtherwiseSpecified(source[key], options);
         }
-      }
-    }
-    function asString(str) {
-      let result = "";
-      let last = 0;
-      let found = false;
-      let point = 255;
-      const l2 = str.length;
-      if (l2 > 100) {
-        return JSON.stringify(str);
-      }
-      for (var i = 0; i < l2 && point >= 32; i++) {
-        point = str.charCodeAt(i);
-        if (point === 34 || point === 92) {
-          result += str.slice(last, i) + "\\";
-          last = i;
-          found = true;
-        }
-      }
-      if (!found) {
-        result = str;
-      } else {
-        result += str.slice(last);
-      }
-      return point < 32 ? JSON.stringify(str) : '"' + result + '"';
-    }
-    function asJson(obj, msg, num, time) {
-      const stringify3 = this[stringifySym];
-      const stringifySafe = this[stringifySafeSym];
-      const stringifiers = this[stringifiersSym];
-      const end = this[endSym];
-      const chindings = this[chindingsSym];
-      const serializers = this[serializersSym];
-      const formatters = this[formattersSym];
-      const messageKey = this[messageKeySym];
-      const errorKey = this[errorKeySym];
-      let data = this[lsCacheSym][num] + time;
-      data = data + chindings;
-      let value;
-      if (formatters.log) {
-        obj = formatters.log(obj);
-      }
-      const wildcardStringifier = stringifiers[wildcardFirstSym];
-      let propStr = "";
-      for (const key in obj) {
-        value = obj[key];
-        if (Object.prototype.hasOwnProperty.call(obj, key) && value !== void 0) {
-          if (serializers[key]) {
-            value = serializers[key](value);
-          } else if (key === errorKey && serializers.err) {
-            value = serializers.err(value);
-          }
-          const stringifier = stringifiers[key] || wildcardStringifier;
-          switch (typeof value) {
-            case "undefined":
-            case "function":
-              continue;
-            case "number":
-              if (Number.isFinite(value) === false) {
-                value = null;
-              }
-            case "boolean":
-              if (stringifier)
-                value = stringifier(value);
-              break;
-            case "string":
-              value = (stringifier || asString)(value);
-              break;
-            default:
-              value = (stringifier || stringify3)(value, stringifySafe);
-          }
-          if (value === void 0)
-            continue;
-          const strKey = asString(key);
-          propStr += "," + strKey + ":" + value;
-        }
-      }
-      let msgStr = "";
-      if (msg !== void 0) {
-        value = serializers[messageKey] ? serializers[messageKey](msg) : msg;
-        const stringifier = stringifiers[messageKey] || wildcardStringifier;
-        switch (typeof value) {
-          case "function":
-            break;
-          case "number":
-            if (Number.isFinite(value) === false) {
-              value = null;
-            }
-          case "boolean":
-            if (stringifier)
-              value = stringifier(value);
-            msgStr = ',"' + messageKey + '":' + value;
-            break;
-          case "string":
-            value = (stringifier || asString)(value);
-            msgStr = ',"' + messageKey + '":' + value;
-            break;
-          default:
-            value = (stringifier || stringify3)(value, stringifySafe);
-            msgStr = ',"' + messageKey + '":' + value;
-        }
-      }
-      if (this[nestedKeySym] && propStr) {
-        return data + this[nestedKeyStrSym] + propStr.slice(1) + "}" + msgStr + end;
-      } else {
-        return data + propStr + msgStr + end;
-      }
-    }
-    function asChindings(instance, bindings) {
-      let value;
-      let data = instance[chindingsSym];
-      const stringify3 = instance[stringifySym];
-      const stringifySafe = instance[stringifySafeSym];
-      const stringifiers = instance[stringifiersSym];
-      const wildcardStringifier = stringifiers[wildcardFirstSym];
-      const serializers = instance[serializersSym];
-      const formatter = instance[formattersSym].bindings;
-      bindings = formatter(bindings);
-      for (const key in bindings) {
-        value = bindings[key];
-        const valid = key !== "level" && key !== "serializers" && key !== "formatters" && key !== "customLevels" && bindings.hasOwnProperty(key) && value !== void 0;
-        if (valid === true) {
-          value = serializers[key] ? serializers[key](value) : value;
-          value = (stringifiers[key] || wildcardStringifier || stringify3)(value, stringifySafe);
-          if (value === void 0)
-            continue;
-          data += ',"' + key + '":' + value;
-        }
-      }
-      return data;
-    }
-    function hasBeenTampered(stream) {
-      return stream.write !== stream.constructor.prototype.write;
-    }
-    var hasNodeCodeCoverage = process.env.NODE_V8_COVERAGE || process.env.V8_COVERAGE;
-    function buildSafeSonicBoom(opts) {
-      const stream = new SonicBoom(opts);
-      stream.on("error", filterBrokenPipe);
-      if (!hasNodeCodeCoverage && !opts.sync && isMainThread) {
-        onExit.register(stream, autoEnd);
-        stream.on("close", function() {
-          onExit.unregister(stream);
-        });
-      }
-      return stream;
-      function filterBrokenPipe(err) {
-        if (err.code === "EPIPE") {
-          stream.write = noop5;
-          stream.end = noop5;
-          stream.flushSync = noop5;
-          stream.destroy = noop5;
-          return;
-        }
-        stream.removeListener("error", filterBrokenPipe);
-        stream.emit("error", err);
-      }
-    }
-    function autoEnd(stream, eventName) {
-      if (stream.destroyed) {
-        return;
-      }
-      if (eventName === "beforeExit") {
-        stream.flush();
-        stream.on("drain", function() {
-          stream.end();
-        });
-      } else {
-        stream.flushSync();
-      }
-    }
-    function createArgsNormalizer(defaultOptions) {
-      return function normalizeArgs(instance, caller, opts = {}, stream) {
-        if (typeof opts === "string") {
-          stream = buildSafeSonicBoom({ dest: opts });
-          opts = {};
-        } else if (typeof stream === "string") {
-          if (opts && opts.transport) {
-            throw Error("only one of option.transport or stream can be specified");
-          }
-          stream = buildSafeSonicBoom({ dest: stream });
-        } else if (opts instanceof SonicBoom || opts.writable || opts._writableState) {
-          stream = opts;
-          opts = {};
-        } else if (opts.transport) {
-          if (opts.transport instanceof SonicBoom || opts.transport.writable || opts.transport._writableState) {
-            throw Error("option.transport do not allow stream, please pass to option directly. e.g. pino(transport)");
-          }
-          if (opts.transport.targets && opts.transport.targets.length && opts.formatters && typeof opts.formatters.level === "function") {
-            throw Error("option.transport.targets do not allow custom level formatters");
-          }
-          let customLevels;
-          if (opts.customLevels) {
-            customLevels = opts.useOnlyCustomLevels ? opts.customLevels : Object.assign({}, opts.levels, opts.customLevels);
-          }
-          stream = transport({ caller, ...opts.transport, levels: customLevels });
-        }
-        opts = Object.assign({}, defaultOptions, opts);
-        opts.serializers = Object.assign({}, defaultOptions.serializers, opts.serializers);
-        opts.formatters = Object.assign({}, defaultOptions.formatters, opts.formatters);
-        if (opts.prettyPrint) {
-          throw new Error("prettyPrint option is no longer supported, see the pino-pretty package (https://github.com/pinojs/pino-pretty)");
-        }
-        const { enabled, onChild } = opts;
-        if (enabled === false)
-          opts.level = "silent";
-        if (!onChild)
-          opts.onChild = noop5;
-        if (!stream) {
-          if (!hasBeenTampered(process.stdout)) {
-            stream = buildSafeSonicBoom({ fd: process.stdout.fd || 1 });
-          } else {
-            stream = process.stdout;
-          }
-        }
-        return { opts, stream };
-      };
-    }
-    function stringify2(obj, stringifySafeFn) {
-      try {
-        return JSON.stringify(obj);
-      } catch (_2) {
-        try {
-          const stringify3 = stringifySafeFn || this[stringifySafeSym];
-          return stringify3(obj);
-        } catch (_3) {
-          return '"[unable to serialize, circular reference is too complex to analyze]"';
-        }
-      }
-    }
-    function buildFormatters(level, bindings, log2) {
-      return {
-        level,
-        bindings,
-        log: log2
-      };
-    }
-    function normalizeDestFileDescriptor(destination) {
-      const fd = Number(destination);
-      if (typeof destination === "string" && Number.isFinite(fd)) {
-        return fd;
-      }
-      if (destination === void 0) {
-        return 1;
-      }
+      });
       return destination;
     }
-    module.exports = {
-      noop: noop5,
-      buildSafeSonicBoom,
-      asChindings,
-      asJson,
-      genLog,
-      createArgsNormalizer,
-      stringify: stringify2,
-      buildFormatters,
-      normalizeDestFileDescriptor
-    };
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/levels.js
-var require_levels = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/levels.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var {
-      lsCacheSym,
-      levelValSym,
-      useOnlyCustomLevelsSym,
-      streamSym,
-      formattersSym,
-      hooksSym
-    } = require_symbols();
-    var { noop: noop5, genLog } = require_tools();
-    var levels = {
-      trace: 10,
-      debug: 20,
-      info: 30,
-      warn: 40,
-      error: 50,
-      fatal: 60
-    };
-    var levelMethods = {
-      fatal: (hook) => {
-        const logFatal = genLog(levels.fatal, hook);
-        return function(...args) {
-          const stream = this[streamSym];
-          logFatal.call(this, ...args);
-          if (typeof stream.flushSync === "function") {
-            try {
-              stream.flushSync();
-            } catch (e) {
-            }
-          }
-        };
-      },
-      error: (hook) => genLog(levels.error, hook),
-      warn: (hook) => genLog(levels.warn, hook),
-      info: (hook) => genLog(levels.info, hook),
-      debug: (hook) => genLog(levels.debug, hook),
-      trace: (hook) => genLog(levels.trace, hook)
-    };
-    var nums = Object.keys(levels).reduce((o, k) => {
-      o[levels[k]] = k;
-      return o;
-    }, {});
-    var initialLsCache = Object.keys(nums).reduce((o, k) => {
-      o[k] = '{"level":' + Number(k);
-      return o;
-    }, {});
-    function genLsCache(instance) {
-      const formatter = instance[formattersSym].level;
-      const { labels } = instance.levels;
-      const cache3 = {};
-      for (const label in labels) {
-        const level = formatter(labels[label], Number(label));
-        cache3[label] = JSON.stringify(level).slice(0, -1);
-      }
-      instance[lsCacheSym] = cache3;
-      return instance;
-    }
-    function isStandardLevel(level, useOnlyCustomLevels) {
-      if (useOnlyCustomLevels) {
-        return false;
-      }
-      switch (level) {
-        case "fatal":
-        case "error":
-        case "warn":
-        case "info":
-        case "debug":
-        case "trace":
-          return true;
-        default:
-          return false;
-      }
-    }
-    function setLevel(level) {
-      const { labels, values } = this.levels;
-      if (typeof level === "number") {
-        if (labels[level] === void 0)
-          throw Error("unknown level value" + level);
-        level = labels[level];
-      }
-      if (values[level] === void 0)
-        throw Error("unknown level " + level);
-      const preLevelVal = this[levelValSym];
-      const levelVal = this[levelValSym] = values[level];
-      const useOnlyCustomLevelsVal = this[useOnlyCustomLevelsSym];
-      const hook = this[hooksSym].logMethod;
-      for (const key in values) {
-        if (levelVal > values[key]) {
-          this[key] = noop5;
-          continue;
-        }
-        this[key] = isStandardLevel(key, useOnlyCustomLevelsVal) ? levelMethods[key](hook) : genLog(values[key], hook);
-      }
-      this.emit(
-        "level-change",
-        level,
-        levelVal,
-        labels[preLevelVal],
-        preLevelVal,
-        this
-      );
-    }
-    function getLevel(level) {
-      const { levels: levels2, levelVal } = this;
-      return levels2 && levels2.labels ? levels2.labels[levelVal] : "";
-    }
-    function isLevelEnabled(logLevel) {
-      const { values } = this.levels;
-      const logLevelVal = values[logLevel];
-      return logLevelVal !== void 0 && logLevelVal >= this[levelValSym];
-    }
-    function mappings(customLevels = null, useOnlyCustomLevels = false) {
-      const customNums = customLevels ? Object.keys(customLevels).reduce((o, k) => {
-        o[customLevels[k]] = k;
-        return o;
-      }, {}) : null;
-      const labels = Object.assign(
-        Object.create(Object.prototype, { Infinity: { value: "silent" } }),
-        useOnlyCustomLevels ? null : nums,
-        customNums
-      );
-      const values = Object.assign(
-        Object.create(Object.prototype, { silent: { value: Infinity } }),
-        useOnlyCustomLevels ? null : levels,
-        customLevels
-      );
-      return { labels, values };
-    }
-    function assertDefaultLevelFound(defaultLevel, customLevels, useOnlyCustomLevels) {
-      if (typeof defaultLevel === "number") {
-        const values = [].concat(
-          Object.keys(customLevels || {}).map((key) => customLevels[key]),
-          useOnlyCustomLevels ? [] : Object.keys(nums).map((level) => +level),
-          Infinity
-        );
-        if (!values.includes(defaultLevel)) {
-          throw Error(`default level:${defaultLevel} must be included in custom levels`);
-        }
-        return;
-      }
-      const labels = Object.assign(
-        Object.create(Object.prototype, { silent: { value: Infinity } }),
-        useOnlyCustomLevels ? null : levels,
-        customLevels
-      );
-      if (!(defaultLevel in labels)) {
-        throw Error(`default level:${defaultLevel} must be included in custom levels`);
-      }
-    }
-    function assertNoLevelCollisions(levels2, customLevels) {
-      const { labels, values } = levels2;
-      for (const k in customLevels) {
-        if (k in values) {
-          throw Error("levels cannot be overridden");
-        }
-        if (customLevels[k] in labels) {
-          throw Error("pre-existing level values cannot be used for new levels");
-        }
-      }
-    }
-    module.exports = {
-      initialLsCache,
-      genLsCache,
-      levelMethods,
-      getLevel,
-      setLevel,
-      isLevelEnabled,
-      mappings,
-      levels,
-      assertNoLevelCollisions,
-      assertDefaultLevelFound
-    };
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/meta.js
-var require_meta = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/meta.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    module.exports = { version: "8.17.2" };
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/proto.js
-var require_proto = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/proto.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var { EventEmitter: EventEmitter3 } = __require("events");
-    var {
-      lsCacheSym,
-      levelValSym,
-      setLevelSym,
-      getLevelSym,
-      chindingsSym,
-      parsedChindingsSym,
-      mixinSym,
-      asJsonSym,
-      writeSym,
-      mixinMergeStrategySym,
-      timeSym,
-      timeSliceIndexSym,
-      streamSym,
-      serializersSym,
-      formattersSym,
-      errorKeySym,
-      messageKeySym,
-      useOnlyCustomLevelsSym,
-      needsMetadataGsym,
-      redactFmtSym,
-      stringifySym,
-      formatOptsSym,
-      stringifiersSym,
-      msgPrefixSym
-    } = require_symbols();
-    var {
-      getLevel,
-      setLevel,
-      isLevelEnabled,
-      mappings,
-      initialLsCache,
-      genLsCache,
-      assertNoLevelCollisions
-    } = require_levels();
-    var {
-      asChindings,
-      asJson,
-      buildFormatters,
-      stringify: stringify2
-    } = require_tools();
-    var {
-      version
-    } = require_meta();
-    var redaction = require_redaction();
-    var constructor = class Pino {
-    };
-    var prototype = {
-      constructor,
-      child,
-      bindings,
-      setBindings,
-      flush,
-      isLevelEnabled,
-      version,
-      get level() {
-        return this[getLevelSym]();
-      },
-      set level(lvl) {
-        this[setLevelSym](lvl);
-      },
-      get levelVal() {
-        return this[levelValSym];
-      },
-      set levelVal(n2) {
-        throw Error("levelVal is read-only");
-      },
-      [lsCacheSym]: initialLsCache,
-      [writeSym]: write,
-      [asJsonSym]: asJson,
-      [getLevelSym]: getLevel,
-      [setLevelSym]: setLevel
-    };
-    Object.setPrototypeOf(prototype, EventEmitter3.prototype);
-    module.exports = function() {
-      return Object.create(prototype);
-    };
-    var resetChildingsFormatter = (bindings2) => bindings2;
-    function child(bindings2, options) {
-      if (!bindings2) {
-        throw Error("missing bindings for child Pino");
-      }
+    function deepmerge2(target, source, options) {
       options = options || {};
-      const serializers = this[serializersSym];
-      const formatters = this[formattersSym];
-      const instance = Object.create(this);
-      if (options.hasOwnProperty("serializers") === true) {
-        instance[serializersSym] = /* @__PURE__ */ Object.create(null);
-        for (const k in serializers) {
-          instance[serializersSym][k] = serializers[k];
-        }
-        const parentSymbols = Object.getOwnPropertySymbols(serializers);
-        for (var i = 0; i < parentSymbols.length; i++) {
-          const ks = parentSymbols[i];
-          instance[serializersSym][ks] = serializers[ks];
-        }
-        for (const bk in options.serializers) {
-          instance[serializersSym][bk] = options.serializers[bk];
-        }
-        const bindingsSymbols = Object.getOwnPropertySymbols(options.serializers);
-        for (var bi = 0; bi < bindingsSymbols.length; bi++) {
-          const bks = bindingsSymbols[bi];
-          instance[serializersSym][bks] = options.serializers[bks];
-        }
-      } else
-        instance[serializersSym] = serializers;
-      if (options.hasOwnProperty("formatters")) {
-        const { level, bindings: chindings, log: log2 } = options.formatters;
-        instance[formattersSym] = buildFormatters(
-          level || formatters.level,
-          chindings || resetChildingsFormatter,
-          log2 || formatters.log
-        );
+      options.arrayMerge = options.arrayMerge || defaultArrayMerge;
+      options.isMergeableObject = options.isMergeableObject || isMergeableObject;
+      options.cloneUnlessOtherwiseSpecified = cloneUnlessOtherwiseSpecified;
+      var sourceIsArray = Array.isArray(source);
+      var targetIsArray = Array.isArray(target);
+      var sourceAndTargetTypesMatch = sourceIsArray === targetIsArray;
+      if (!sourceAndTargetTypesMatch) {
+        return cloneUnlessOtherwiseSpecified(source, options);
+      } else if (sourceIsArray) {
+        return options.arrayMerge(target, source, options);
       } else {
-        instance[formattersSym] = buildFormatters(
-          formatters.level,
-          resetChildingsFormatter,
-          formatters.log
-        );
-      }
-      if (options.hasOwnProperty("customLevels") === true) {
-        assertNoLevelCollisions(this.levels, options.customLevels);
-        instance.levels = mappings(options.customLevels, instance[useOnlyCustomLevelsSym]);
-        genLsCache(instance);
-      }
-      if (typeof options.redact === "object" && options.redact !== null || Array.isArray(options.redact)) {
-        instance.redact = options.redact;
-        const stringifiers = redaction(instance.redact, stringify2);
-        const formatOpts = { stringify: stringifiers[redactFmtSym] };
-        instance[stringifySym] = stringify2;
-        instance[stringifiersSym] = stringifiers;
-        instance[formatOptsSym] = formatOpts;
-      }
-      if (typeof options.msgPrefix === "string") {
-        instance[msgPrefixSym] = (this[msgPrefixSym] || "") + options.msgPrefix;
-      }
-      instance[chindingsSym] = asChindings(instance, bindings2);
-      const childLevel = options.level || this.level;
-      instance[setLevelSym](childLevel);
-      this.onChild(instance);
-      return instance;
-    }
-    function bindings() {
-      const chindings = this[chindingsSym];
-      const chindingsJson = `{${chindings.substr(1)}}`;
-      const bindingsFromJson = JSON.parse(chindingsJson);
-      delete bindingsFromJson.pid;
-      delete bindingsFromJson.hostname;
-      return bindingsFromJson;
-    }
-    function setBindings(newBindings) {
-      const chindings = asChindings(this, newBindings);
-      this[chindingsSym] = chindings;
-      delete this[parsedChindingsSym];
-    }
-    function defaultMixinMergeStrategy(mergeObject, mixinObject) {
-      return Object.assign(mixinObject, mergeObject);
-    }
-    function write(_obj, msg, num) {
-      const t = this[timeSym]();
-      const mixin = this[mixinSym];
-      const errorKey = this[errorKeySym];
-      const messageKey = this[messageKeySym];
-      const mixinMergeStrategy = this[mixinMergeStrategySym] || defaultMixinMergeStrategy;
-      let obj;
-      if (_obj === void 0 || _obj === null) {
-        obj = {};
-      } else if (_obj instanceof Error) {
-        obj = { [errorKey]: _obj };
-        if (msg === void 0) {
-          msg = _obj.message;
-        }
-      } else {
-        obj = _obj;
-        if (msg === void 0 && _obj[messageKey] === void 0 && _obj[errorKey]) {
-          msg = _obj[errorKey].message;
-        }
-      }
-      if (mixin) {
-        obj = mixinMergeStrategy(obj, mixin(obj, num, this));
-      }
-      const s2 = this[asJsonSym](obj, msg, num, t);
-      const stream = this[streamSym];
-      if (stream[needsMetadataGsym] === true) {
-        stream.lastLevel = num;
-        stream.lastObj = obj;
-        stream.lastMsg = msg;
-        stream.lastTime = t.slice(this[timeSliceIndexSym]);
-        stream.lastLogger = this;
-      }
-      stream.write(s2);
-    }
-    function noop5() {
-    }
-    function flush(cb) {
-      if (cb != null && typeof cb !== "function") {
-        throw Error("callback must be a function");
-      }
-      const stream = this[streamSym];
-      if (typeof stream.flush === "function") {
-        stream.flush(cb || noop5);
-      } else if (cb)
-        cb();
-    }
-  }
-});
-
-// ../node_modules/.pnpm/safe-stable-stringify@2.4.2/node_modules/safe-stable-stringify/index.js
-var require_safe_stable_stringify = __commonJS({
-  "../node_modules/.pnpm/safe-stable-stringify@2.4.2/node_modules/safe-stable-stringify/index.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var { hasOwnProperty: hasOwnProperty3 } = Object.prototype;
-    var stringify2 = configure();
-    stringify2.configure = configure;
-    stringify2.stringify = stringify2;
-    stringify2.default = stringify2;
-    exports.stringify = stringify2;
-    exports.configure = configure;
-    module.exports = stringify2;
-    var strEscapeSequencesRegExp = /[\u0000-\u001f\u0022\u005c\ud800-\udfff]|[\ud800-\udbff](?![\udc00-\udfff])|(?:[^\ud800-\udbff]|^)[\udc00-\udfff]/;
-    var strEscapeSequencesReplacer = new RegExp(strEscapeSequencesRegExp, "g");
-    var meta = [
-      "\\u0000",
-      "\\u0001",
-      "\\u0002",
-      "\\u0003",
-      "\\u0004",
-      "\\u0005",
-      "\\u0006",
-      "\\u0007",
-      "\\b",
-      "\\t",
-      "\\n",
-      "\\u000b",
-      "\\f",
-      "\\r",
-      "\\u000e",
-      "\\u000f",
-      "\\u0010",
-      "\\u0011",
-      "\\u0012",
-      "\\u0013",
-      "\\u0014",
-      "\\u0015",
-      "\\u0016",
-      "\\u0017",
-      "\\u0018",
-      "\\u0019",
-      "\\u001a",
-      "\\u001b",
-      "\\u001c",
-      "\\u001d",
-      "\\u001e",
-      "\\u001f",
-      "",
-      "",
-      '\\"',
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "\\\\"
-    ];
-    function escapeFn(str) {
-      if (str.length === 2) {
-        const charCode2 = str.charCodeAt(1);
-        return `${str[0]}\\u${charCode2.toString(16)}`;
-      }
-      const charCode = str.charCodeAt(0);
-      return meta.length > charCode ? meta[charCode] : `\\u${charCode.toString(16)}`;
-    }
-    function strEscape(str) {
-      if (str.length < 5e3 && !strEscapeSequencesRegExp.test(str)) {
-        return str;
-      }
-      if (str.length > 100) {
-        return str.replace(strEscapeSequencesReplacer, escapeFn);
-      }
-      let result = "";
-      let last = 0;
-      for (let i = 0; i < str.length; i++) {
-        const point = str.charCodeAt(i);
-        if (point === 34 || point === 92 || point < 32) {
-          result += `${str.slice(last, i)}${meta[point]}`;
-          last = i + 1;
-        } else if (point >= 55296 && point <= 57343) {
-          if (point <= 56319 && i + 1 < str.length) {
-            const nextPoint = str.charCodeAt(i + 1);
-            if (nextPoint >= 56320 && nextPoint <= 57343) {
-              i++;
-              continue;
-            }
-          }
-          result += `${str.slice(last, i)}\\u${point.toString(16)}`;
-          last = i + 1;
-        }
-      }
-      result += str.slice(last);
-      return result;
-    }
-    function insertSort(array) {
-      if (array.length > 200) {
-        return array.sort();
-      }
-      for (let i = 1; i < array.length; i++) {
-        const currentValue = array[i];
-        let position = i;
-        while (position !== 0 && array[position - 1] > currentValue) {
-          array[position] = array[position - 1];
-          position--;
-        }
-        array[position] = currentValue;
-      }
-      return array;
-    }
-    var typedArrayPrototypeGetSymbolToStringTag = Object.getOwnPropertyDescriptor(
-      Object.getPrototypeOf(
-        Object.getPrototypeOf(
-          new Int8Array()
-        )
-      ),
-      Symbol.toStringTag
-    ).get;
-    function isTypedArrayWithEntries(value) {
-      return typedArrayPrototypeGetSymbolToStringTag.call(value) !== void 0 && value.length !== 0;
-    }
-    function stringifyTypedArray(array, separator, maximumBreadth) {
-      if (array.length < maximumBreadth) {
-        maximumBreadth = array.length;
-      }
-      const whitespace = separator === "," ? "" : " ";
-      let res = `"0":${whitespace}${array[0]}`;
-      for (let i = 1; i < maximumBreadth; i++) {
-        res += `${separator}"${i}":${whitespace}${array[i]}`;
-      }
-      return res;
-    }
-    function getCircularValueOption(options) {
-      if (hasOwnProperty3.call(options, "circularValue")) {
-        const circularValue = options.circularValue;
-        if (typeof circularValue === "string") {
-          return `"${circularValue}"`;
-        }
-        if (circularValue == null) {
-          return circularValue;
-        }
-        if (circularValue === Error || circularValue === TypeError) {
-          return {
-            toString() {
-              throw new TypeError("Converting circular structure to JSON");
-            }
-          };
-        }
-        throw new TypeError('The "circularValue" argument must be of type string or the value null or undefined');
-      }
-      return '"[Circular]"';
-    }
-    function getBooleanOption(options, key) {
-      let value;
-      if (hasOwnProperty3.call(options, key)) {
-        value = options[key];
-        if (typeof value !== "boolean") {
-          throw new TypeError(`The "${key}" argument must be of type boolean`);
-        }
-      }
-      return value === void 0 ? true : value;
-    }
-    function getPositiveIntegerOption(options, key) {
-      let value;
-      if (hasOwnProperty3.call(options, key)) {
-        value = options[key];
-        if (typeof value !== "number") {
-          throw new TypeError(`The "${key}" argument must be of type number`);
-        }
-        if (!Number.isInteger(value)) {
-          throw new TypeError(`The "${key}" argument must be an integer`);
-        }
-        if (value < 1) {
-          throw new RangeError(`The "${key}" argument must be >= 1`);
-        }
-      }
-      return value === void 0 ? Infinity : value;
-    }
-    function getItemCount(number) {
-      if (number === 1) {
-        return "1 item";
-      }
-      return `${number} items`;
-    }
-    function getUniqueReplacerSet(replacerArray) {
-      const replacerSet = /* @__PURE__ */ new Set();
-      for (const value of replacerArray) {
-        if (typeof value === "string" || typeof value === "number") {
-          replacerSet.add(String(value));
-        }
-      }
-      return replacerSet;
-    }
-    function getStrictOption(options) {
-      if (hasOwnProperty3.call(options, "strict")) {
-        const value = options.strict;
-        if (typeof value !== "boolean") {
-          throw new TypeError('The "strict" argument must be of type boolean');
-        }
-        if (value) {
-          return (value2) => {
-            let message = `Object can not safely be stringified. Received type ${typeof value2}`;
-            if (typeof value2 !== "function")
-              message += ` (${value2.toString()})`;
-            throw new Error(message);
-          };
-        }
+        return mergeObject(target, source, options);
       }
     }
-    function configure(options) {
-      options = { ...options };
-      const fail = getStrictOption(options);
-      if (fail) {
-        if (options.bigint === void 0) {
-          options.bigint = false;
-        }
-        if (!("circularValue" in options)) {
-          options.circularValue = Error;
-        }
+    deepmerge2.all = function deepmergeAll(array, options) {
+      if (!Array.isArray(array)) {
+        throw new Error("first argument should be an array");
       }
-      const circularValue = getCircularValueOption(options);
-      const bigint = getBooleanOption(options, "bigint");
-      const deterministic = getBooleanOption(options, "deterministic");
-      const maximumDepth = getPositiveIntegerOption(options, "maximumDepth");
-      const maximumBreadth = getPositiveIntegerOption(options, "maximumBreadth");
-      function stringifyFnReplacer(key, parent, stack, replacer, spacer, indentation) {
-        let value = parent[key];
-        if (typeof value === "object" && value !== null && typeof value.toJSON === "function") {
-          value = value.toJSON(key);
-        }
-        value = replacer.call(parent, key, value);
-        switch (typeof value) {
-          case "string":
-            return `"${strEscape(value)}"`;
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            let res = "";
-            let join = ",";
-            const originalIndentation = indentation;
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              if (spacer !== "") {
-                indentation += spacer;
-                res += `
-${indentation}`;
-                join = `,
-${indentation}`;
-              }
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifyFnReplacer(i, value, stack, replacer, spacer, indentation);
-                res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join;
-              }
-              const tmp = stringifyFnReplacer(i, value, stack, replacer, spacer, indentation);
-              res += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join}"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              if (spacer !== "") {
-                res += `
-${originalIndentation}`;
-              }
-              stack.pop();
-              return `[${res}]`;
-            }
-            let keys = Object.keys(value);
-            const keyLength = keys.length;
-            if (keyLength === 0) {
-              return "{}";
-            }
-            if (maximumDepth < stack.length + 1) {
-              return '"[Object]"';
-            }
-            let whitespace = "";
-            let separator = "";
-            if (spacer !== "") {
-              indentation += spacer;
-              join = `,
-${indentation}`;
-              whitespace = " ";
-            }
-            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
-            if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join, maximumBreadth);
-              keys = keys.slice(value.length);
-              maximumPropertiesToStringify -= value.length;
-              separator = join;
-            }
-            if (deterministic) {
-              keys = insertSort(keys);
-            }
-            stack.push(value);
-            for (let i = 0; i < maximumPropertiesToStringify; i++) {
-              const key2 = keys[i];
-              const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
-              if (tmp !== void 0) {
-                res += `${separator}"${strEscape(key2)}":${whitespace}${tmp}`;
-                separator = join;
-              }
-            }
-            if (keyLength > maximumBreadth) {
-              const removedKeys = keyLength - maximumBreadth;
-              res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join;
-            }
-            if (spacer !== "" && separator.length > 1) {
-              res = `
-${indentation}${res}
-${originalIndentation}`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringifyArrayReplacer(key, value, stack, replacer, spacer, indentation) {
-        if (typeof value === "object" && value !== null && typeof value.toJSON === "function") {
-          value = value.toJSON(key);
-        }
-        switch (typeof value) {
-          case "string":
-            return `"${strEscape(value)}"`;
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            const originalIndentation = indentation;
-            let res = "";
-            let join = ",";
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              if (spacer !== "") {
-                indentation += spacer;
-                res += `
-${indentation}`;
-                join = `,
-${indentation}`;
-              }
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifyArrayReplacer(i, value[i], stack, replacer, spacer, indentation);
-                res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join;
-              }
-              const tmp = stringifyArrayReplacer(i, value[i], stack, replacer, spacer, indentation);
-              res += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join}"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              if (spacer !== "") {
-                res += `
-${originalIndentation}`;
-              }
-              stack.pop();
-              return `[${res}]`;
-            }
-            stack.push(value);
-            let whitespace = "";
-            if (spacer !== "") {
-              indentation += spacer;
-              join = `,
-${indentation}`;
-              whitespace = " ";
-            }
-            let separator = "";
-            for (const key2 of replacer) {
-              const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
-              if (tmp !== void 0) {
-                res += `${separator}"${strEscape(key2)}":${whitespace}${tmp}`;
-                separator = join;
-              }
-            }
-            if (spacer !== "" && separator.length > 1) {
-              res = `
-${indentation}${res}
-${originalIndentation}`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringifyIndent(key, value, stack, spacer, indentation) {
-        switch (typeof value) {
-          case "string":
-            return `"${strEscape(value)}"`;
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (typeof value.toJSON === "function") {
-              value = value.toJSON(key);
-              if (typeof value !== "object") {
-                return stringifyIndent(key, value, stack, spacer, indentation);
-              }
-              if (value === null) {
-                return "null";
-              }
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            const originalIndentation = indentation;
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              indentation += spacer;
-              let res2 = `
-${indentation}`;
-              const join2 = `,
-${indentation}`;
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifyIndent(i, value[i], stack, spacer, indentation);
-                res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join2;
-              }
-              const tmp = stringifyIndent(i, value[i], stack, spacer, indentation);
-              res2 += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join2}"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              res2 += `
-${originalIndentation}`;
-              stack.pop();
-              return `[${res2}]`;
-            }
-            let keys = Object.keys(value);
-            const keyLength = keys.length;
-            if (keyLength === 0) {
-              return "{}";
-            }
-            if (maximumDepth < stack.length + 1) {
-              return '"[Object]"';
-            }
-            indentation += spacer;
-            const join = `,
-${indentation}`;
-            let res = "";
-            let separator = "";
-            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
-            if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join, maximumBreadth);
-              keys = keys.slice(value.length);
-              maximumPropertiesToStringify -= value.length;
-              separator = join;
-            }
-            if (deterministic) {
-              keys = insertSort(keys);
-            }
-            stack.push(value);
-            for (let i = 0; i < maximumPropertiesToStringify; i++) {
-              const key2 = keys[i];
-              const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
-              if (tmp !== void 0) {
-                res += `${separator}"${strEscape(key2)}": ${tmp}`;
-                separator = join;
-              }
-            }
-            if (keyLength > maximumBreadth) {
-              const removedKeys = keyLength - maximumBreadth;
-              res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join;
-            }
-            if (separator !== "") {
-              res = `
-${indentation}${res}
-${originalIndentation}`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringifySimple(key, value, stack) {
-        switch (typeof value) {
-          case "string":
-            return `"${strEscape(value)}"`;
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (typeof value.toJSON === "function") {
-              value = value.toJSON(key);
-              if (typeof value !== "object") {
-                return stringifySimple(key, value, stack);
-              }
-              if (value === null) {
-                return "null";
-              }
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            let res = "";
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifySimple(i, value[i], stack);
-                res += tmp2 !== void 0 ? tmp2 : "null";
-                res += ",";
-              }
-              const tmp = stringifySimple(i, value[i], stack);
-              res += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res += `,"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              stack.pop();
-              return `[${res}]`;
-            }
-            let keys = Object.keys(value);
-            const keyLength = keys.length;
-            if (keyLength === 0) {
-              return "{}";
-            }
-            if (maximumDepth < stack.length + 1) {
-              return '"[Object]"';
-            }
-            let separator = "";
-            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
-            if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, ",", maximumBreadth);
-              keys = keys.slice(value.length);
-              maximumPropertiesToStringify -= value.length;
-              separator = ",";
-            }
-            if (deterministic) {
-              keys = insertSort(keys);
-            }
-            stack.push(value);
-            for (let i = 0; i < maximumPropertiesToStringify; i++) {
-              const key2 = keys[i];
-              const tmp = stringifySimple(key2, value[key2], stack);
-              if (tmp !== void 0) {
-                res += `${separator}"${strEscape(key2)}":${tmp}`;
-                separator = ",";
-              }
-            }
-            if (keyLength > maximumBreadth) {
-              const removedKeys = keyLength - maximumBreadth;
-              res += `${separator}"...":"${getItemCount(removedKeys)} not stringified"`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringify3(value, replacer, space) {
-        if (arguments.length > 1) {
-          let spacer = "";
-          if (typeof space === "number") {
-            spacer = " ".repeat(Math.min(space, 10));
-          } else if (typeof space === "string") {
-            spacer = space.slice(0, 10);
-          }
-          if (replacer != null) {
-            if (typeof replacer === "function") {
-              return stringifyFnReplacer("", { "": value }, [], replacer, spacer, "");
-            }
-            if (Array.isArray(replacer)) {
-              return stringifyArrayReplacer("", value, [], getUniqueReplacerSet(replacer), spacer, "");
-            }
-          }
-          if (spacer.length !== 0) {
-            return stringifyIndent("", value, [], spacer, "");
-          }
-        }
-        return stringifySimple("", value, []);
-      }
-      return stringify3;
-    }
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/multistream.js
-var require_multistream = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/lib/multistream.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var metadata = Symbol.for("pino.metadata");
-    var { levels } = require_levels();
-    var DEFAULT_INFO_LEVEL = levels.info;
-    function multistream(streamsArray, opts) {
-      let counter = 0;
-      streamsArray = streamsArray || [];
-      opts = opts || { dedupe: false };
-      const streamLevels = Object.create(levels);
-      streamLevels.silent = Infinity;
-      if (opts.levels && typeof opts.levels === "object") {
-        Object.keys(opts.levels).forEach((i) => {
-          streamLevels[i] = opts.levels[i];
-        });
-      }
-      const res = {
-        write,
-        add,
-        flushSync,
-        end,
-        minLevel: 0,
-        streams: [],
-        clone: clone3,
-        [metadata]: true,
-        streamLevels
-      };
-      if (Array.isArray(streamsArray)) {
-        streamsArray.forEach(add, res);
-      } else {
-        add.call(res, streamsArray);
-      }
-      streamsArray = null;
-      return res;
-      function write(data) {
-        let dest;
-        const level = this.lastLevel;
-        const { streams } = this;
-        let recordedLevel = 0;
-        let stream;
-        for (let i = initLoopVar(streams.length, opts.dedupe); checkLoopVar(i, streams.length, opts.dedupe); i = adjustLoopVar(i, opts.dedupe)) {
-          dest = streams[i];
-          if (dest.level <= level) {
-            if (recordedLevel !== 0 && recordedLevel !== dest.level) {
-              break;
-            }
-            stream = dest.stream;
-            if (stream[metadata]) {
-              const { lastTime, lastMsg, lastObj, lastLogger } = this;
-              stream.lastLevel = level;
-              stream.lastTime = lastTime;
-              stream.lastMsg = lastMsg;
-              stream.lastObj = lastObj;
-              stream.lastLogger = lastLogger;
-            }
-            stream.write(data);
-            if (opts.dedupe) {
-              recordedLevel = dest.level;
-            }
-          } else if (!opts.dedupe) {
-            break;
-          }
-        }
-      }
-      function flushSync() {
-        for (const { stream } of this.streams) {
-          if (typeof stream.flushSync === "function") {
-            stream.flushSync();
-          }
-        }
-      }
-      function add(dest) {
-        if (!dest) {
-          return res;
-        }
-        const isStream = typeof dest.write === "function" || dest.stream;
-        const stream_ = dest.write ? dest : dest.stream;
-        if (!isStream) {
-          throw Error("stream object needs to implement either StreamEntry or DestinationStream interface");
-        }
-        const { streams, streamLevels: streamLevels2 } = this;
-        let level;
-        if (typeof dest.levelVal === "number") {
-          level = dest.levelVal;
-        } else if (typeof dest.level === "string") {
-          level = streamLevels2[dest.level];
-        } else if (typeof dest.level === "number") {
-          level = dest.level;
-        } else {
-          level = DEFAULT_INFO_LEVEL;
-        }
-        const dest_ = {
-          stream: stream_,
-          level,
-          levelVal: void 0,
-          id: counter++
-        };
-        streams.unshift(dest_);
-        streams.sort(compareByLevel);
-        this.minLevel = streams[0].level;
-        return res;
-      }
-      function end() {
-        for (const { stream } of this.streams) {
-          if (typeof stream.flushSync === "function") {
-            stream.flushSync();
-          }
-          stream.end();
-        }
-      }
-      function clone3(level) {
-        const streams = new Array(this.streams.length);
-        for (let i = 0; i < streams.length; i++) {
-          streams[i] = {
-            level,
-            stream: this.streams[i].stream
-          };
-        }
-        return {
-          write,
-          add,
-          minLevel: level,
-          streams,
-          clone: clone3,
-          flushSync,
-          [metadata]: true
-        };
-      }
-    }
-    function compareByLevel(a, b) {
-      return a.level - b.level;
-    }
-    function initLoopVar(length, dedupe) {
-      return dedupe ? length - 1 : 0;
-    }
-    function adjustLoopVar(i, dedupe) {
-      return dedupe ? i - 1 : i + 1;
-    }
-    function checkLoopVar(i, length, dedupe) {
-      return dedupe ? i >= 0 : i < length;
-    }
-    module.exports = multistream;
-  }
-});
-
-// ../node_modules/.pnpm/pino@8.17.2/node_modules/pino/pino.js
-var require_pino = __commonJS({
-  "../node_modules/.pnpm/pino@8.17.2/node_modules/pino/pino.js"(exports, module) {
-    init_cjs_shim();
-    globalThis.__bundlerPathsOverrides = { ...globalThis.__bundlerPathsOverrides || {}, "thread-stream-worker": "./bin/thread-stream-worker.mjs", "pino-worker": "./bin/pino-worker.mjs", "pino/file": "./pino-file.mjs", "pino-pipeline-worker": "./bin/pino-pipeline-worker.mjs", "pino-pretty": "./bin/pino-pretty.mjs" };
-    var os2 = __require("os");
-    var stdSerializers = require_pino_std_serializers();
-    var caller = require_caller();
-    var redaction = require_redaction();
-    var time = require_time();
-    var proto3 = require_proto();
-    var symbols = require_symbols();
-    var { configure } = require_safe_stable_stringify();
-    var { assertDefaultLevelFound, mappings, genLsCache, levels } = require_levels();
-    var {
-      createArgsNormalizer,
-      asChindings,
-      buildSafeSonicBoom,
-      buildFormatters,
-      stringify: stringify2,
-      normalizeDestFileDescriptor,
-      noop: noop5
-    } = require_tools();
-    var { version } = require_meta();
-    var {
-      chindingsSym,
-      redactFmtSym,
-      serializersSym,
-      timeSym,
-      timeSliceIndexSym,
-      streamSym,
-      stringifySym,
-      stringifySafeSym,
-      stringifiersSym,
-      setLevelSym,
-      endSym,
-      formatOptsSym,
-      messageKeySym,
-      errorKeySym,
-      nestedKeySym,
-      mixinSym,
-      useOnlyCustomLevelsSym,
-      formattersSym,
-      hooksSym,
-      nestedKeyStrSym,
-      mixinMergeStrategySym,
-      msgPrefixSym
-    } = symbols;
-    var { epochTime, nullTime } = time;
-    var { pid } = process;
-    var hostname = os2.hostname();
-    var defaultErrorSerializer = stdSerializers.err;
-    var defaultOptions = {
-      level: "info",
-      levels,
-      messageKey: "msg",
-      errorKey: "err",
-      nestedKey: null,
-      enabled: true,
-      base: { pid, hostname },
-      serializers: Object.assign(/* @__PURE__ */ Object.create(null), {
-        err: defaultErrorSerializer
-      }),
-      formatters: Object.assign(/* @__PURE__ */ Object.create(null), {
-        bindings(bindings) {
-          return bindings;
-        },
-        level(label, number) {
-          return { level: number };
-        }
-      }),
-      hooks: {
-        logMethod: void 0
-      },
-      timestamp: epochTime,
-      name: void 0,
-      redact: null,
-      customLevels: null,
-      useOnlyCustomLevels: false,
-      depthLimit: 5,
-      edgeLimit: 100
+      return array.reduce(function(prev, next) {
+        return deepmerge2(prev, next, options);
+      }, {});
     };
-    var normalize = createArgsNormalizer(defaultOptions);
-    var serializers = Object.assign(/* @__PURE__ */ Object.create(null), stdSerializers);
-    function pino3(...args) {
-      const instance = {};
-      const { opts, stream } = normalize(instance, caller(), ...args);
-      const {
-        redact,
-        crlf,
-        serializers: serializers2,
-        timestamp,
-        messageKey,
-        errorKey,
-        nestedKey,
-        base,
-        name,
-        level,
-        customLevels,
-        mixin,
-        mixinMergeStrategy,
-        useOnlyCustomLevels,
-        formatters,
-        hooks,
-        depthLimit,
-        edgeLimit,
-        onChild,
-        msgPrefix
-      } = opts;
-      const stringifySafe = configure({
-        maximumDepth: depthLimit,
-        maximumBreadth: edgeLimit
-      });
-      const allFormatters = buildFormatters(
-        formatters.level,
-        formatters.bindings,
-        formatters.log
-      );
-      const stringifyFn = stringify2.bind({
-        [stringifySafeSym]: stringifySafe
-      });
-      const stringifiers = redact ? redaction(redact, stringifyFn) : {};
-      const formatOpts = redact ? { stringify: stringifiers[redactFmtSym] } : { stringify: stringifyFn };
-      const end = "}" + (crlf ? "\r\n" : "\n");
-      const coreChindings = asChindings.bind(null, {
-        [chindingsSym]: "",
-        [serializersSym]: serializers2,
-        [stringifiersSym]: stringifiers,
-        [stringifySym]: stringify2,
-        [stringifySafeSym]: stringifySafe,
-        [formattersSym]: allFormatters
-      });
-      let chindings = "";
-      if (base !== null) {
-        if (name === void 0) {
-          chindings = coreChindings(base);
-        } else {
-          chindings = coreChindings(Object.assign({}, base, { name }));
-        }
-      }
-      const time2 = timestamp instanceof Function ? timestamp : timestamp ? epochTime : nullTime;
-      const timeSliceIndex = time2().indexOf(":") + 1;
-      if (useOnlyCustomLevels && !customLevels)
-        throw Error("customLevels is required if useOnlyCustomLevels is set true");
-      if (mixin && typeof mixin !== "function")
-        throw Error(`Unknown mixin type "${typeof mixin}" - expected "function"`);
-      if (msgPrefix && typeof msgPrefix !== "string")
-        throw Error(`Unknown msgPrefix type "${typeof msgPrefix}" - expected "string"`);
-      assertDefaultLevelFound(level, customLevels, useOnlyCustomLevels);
-      const levels2 = mappings(customLevels, useOnlyCustomLevels);
-      Object.assign(instance, {
-        levels: levels2,
-        [useOnlyCustomLevelsSym]: useOnlyCustomLevels,
-        [streamSym]: stream,
-        [timeSym]: time2,
-        [timeSliceIndexSym]: timeSliceIndex,
-        [stringifySym]: stringify2,
-        [stringifySafeSym]: stringifySafe,
-        [stringifiersSym]: stringifiers,
-        [endSym]: end,
-        [formatOptsSym]: formatOpts,
-        [messageKeySym]: messageKey,
-        [errorKeySym]: errorKey,
-        [nestedKeySym]: nestedKey,
-        // protect against injection
-        [nestedKeyStrSym]: nestedKey ? `,${JSON.stringify(nestedKey)}:{` : "",
-        [serializersSym]: serializers2,
-        [mixinSym]: mixin,
-        [mixinMergeStrategySym]: mixinMergeStrategy,
-        [chindingsSym]: chindings,
-        [formattersSym]: allFormatters,
-        [hooksSym]: hooks,
-        silent: noop5,
-        onChild,
-        [msgPrefixSym]: msgPrefix
-      });
-      Object.setPrototypeOf(instance, proto3());
-      genLsCache(instance);
-      instance[setLevelSym](level);
-      return instance;
-    }
-    module.exports = pino3;
-    module.exports.destination = (dest = process.stdout.fd) => {
-      if (typeof dest === "object") {
-        dest.dest = normalizeDestFileDescriptor(dest.dest || process.stdout.fd);
-        return buildSafeSonicBoom(dest);
-      } else {
-        return buildSafeSonicBoom({ dest: normalizeDestFileDescriptor(dest), minLength: 0 });
-      }
-    };
-    module.exports.transport = require_transport();
-    module.exports.multistream = require_multistream();
-    module.exports.levels = mappings();
-    module.exports.stdSerializers = serializers;
-    module.exports.stdTimeFunctions = Object.assign({}, time);
-    module.exports.symbols = symbols;
-    module.exports.version = version;
-    module.exports.default = pino3;
-    module.exports.pino = pino3;
+    var deepmerge_1 = deepmerge2;
+    module.exports = deepmerge_1;
   }
 });
 
@@ -74941,7 +75045,7 @@ var require_buffer_list = __commonJS({
     "use strict";
     init_cjs_shim();
     var { StringPrototypeSlice, SymbolIterator, TypedArrayPrototypeSet, Uint8Array: Uint8Array2 } = require_primordials();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { inspect } = require_util();
     module.exports = class BufferList {
       constructor() {
@@ -74997,8 +75101,8 @@ var require_buffer_list = __commonJS({
       }
       concat(n2) {
         if (this.length === 0)
-          return Buffer2.alloc(0);
-        const ret = Buffer2.allocUnsafe(n2 >>> 0);
+          return Buffer3.alloc(0);
+        const ret = Buffer3.allocUnsafe(n2 >>> 0);
         let p = this.head;
         let i = 0;
         while (p) {
@@ -75061,7 +75165,7 @@ var require_buffer_list = __commonJS({
       }
       // Consumes a specified amount of bytes from the buffered data.
       _getBuffer(n2) {
-        const ret = Buffer2.allocUnsafe(n2);
+        const ret = Buffer3.allocUnsafe(n2);
         const retLen = n2;
         let p = this.head;
         let c = 0;
@@ -75142,11 +75246,11 @@ var require_from = __commonJS({
     init_cjs_shim();
     var process15 = require_process();
     var { PromisePrototypeThen, SymbolAsyncIterator, SymbolIterator } = require_primordials();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { ERR_INVALID_ARG_TYPE, ERR_STREAM_NULL_VALUES } = require_errors().codes;
     function from(Readable, iterable, opts) {
       let iterator;
-      if (typeof iterable === "string" || iterable instanceof Buffer2) {
+      if (typeof iterable === "string" || iterable instanceof Buffer3) {
         return new Readable({
           objectMode: true,
           ...opts,
@@ -75253,7 +75357,7 @@ var require_readable = __commonJS({
     Readable.ReadableState = ReadableState;
     var { EventEmitter: EE } = __require("events");
     var { Stream: Stream2, prependListener } = require_legacy();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { addAbortSignal } = require_add_abort_signal();
     var eos = require_end_of_stream2();
     var debug = require_util().debuglog("stream", (fn) => {
@@ -75366,13 +75470,13 @@ var require_readable = __commonJS({
           encoding = encoding || state.defaultEncoding;
           if (state.encoding !== encoding) {
             if (addToFront && state.encoding) {
-              chunk = Buffer2.from(chunk, encoding).toString(state.encoding);
+              chunk = Buffer3.from(chunk, encoding).toString(state.encoding);
             } else {
-              chunk = Buffer2.from(chunk, encoding);
+              chunk = Buffer3.from(chunk, encoding);
               encoding = "";
             }
           }
-        } else if (chunk instanceof Buffer2) {
+        } else if (chunk instanceof Buffer3) {
           encoding = "";
         } else if (Stream2._isUint8Array(chunk)) {
           chunk = Stream2._uint8ArrayToBuffer(chunk);
@@ -76204,7 +76308,7 @@ var require_writable = __commonJS({
     Writable2.WritableState = WritableState;
     var { EventEmitter: EE } = __require("events");
     var Stream2 = require_legacy().Stream;
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var destroyImpl = require_destroy();
     var { addAbortSignal } = require_add_abort_signal();
     var { getHighWaterMark, getDefaultHighWaterMark } = require_state2();
@@ -76326,7 +76430,7 @@ var require_writable = __commonJS({
       } else {
         if (!encoding)
           encoding = state.defaultEncoding;
-        else if (encoding !== "buffer" && !Buffer2.isEncoding(encoding))
+        else if (encoding !== "buffer" && !Buffer3.isEncoding(encoding))
           throw new ERR_UNKNOWN_ENCODING(encoding);
         if (typeof cb !== "function")
           cb = nop;
@@ -76336,10 +76440,10 @@ var require_writable = __commonJS({
       } else if (!state.objectMode) {
         if (typeof chunk === "string") {
           if (state.decodeStrings !== false) {
-            chunk = Buffer2.from(chunk, encoding);
+            chunk = Buffer3.from(chunk, encoding);
             encoding = "buffer";
           }
-        } else if (chunk instanceof Buffer2) {
+        } else if (chunk instanceof Buffer3) {
           encoding = "buffer";
         } else if (Stream2._isUint8Array(chunk)) {
           chunk = Stream2._uint8ArrayToBuffer(chunk);
@@ -76379,7 +76483,7 @@ var require_writable = __commonJS({
     Writable2.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
       if (typeof encoding === "string")
         encoding = StringPrototypeToLowerCase(encoding);
-      if (!Buffer2.isEncoding(encoding))
+      if (!Buffer3.isEncoding(encoding))
         throw new ERR_UNKNOWN_ENCODING(encoding);
       this._writableState.defaultEncoding = encoding;
       return this;
@@ -76898,12 +77002,12 @@ var require_duplexify = __commonJS({
         });
       }
       if (typeof body === "function") {
-        const { value, write, final, destroy } = fromAsyncGen(body);
+        const { value, write: write2, final, destroy } = fromAsyncGen(body);
         if (isIterable(value)) {
           return from(Duplexify, value, {
             // TODO (ronag): highWaterMark?
             objectMode: true,
-            write,
+            write: write2,
             final,
             destroy
           });
@@ -76927,7 +77031,7 @@ var require_duplexify = __commonJS({
             // TODO (ronag): highWaterMark?
             objectMode: true,
             readable: false,
-            write,
+            write: write2,
             final(cb) {
               final(async () => {
                 try {
@@ -77931,7 +78035,7 @@ var require_promises = __commonJS({
 var require_stream2 = __commonJS({
   "../node_modules/.pnpm/readable-stream@4.3.0/node_modules/readable-stream/lib/stream.js"(exports, module) {
     init_cjs_shim();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { ObjectDefineProperty, ObjectKeys, ReflectApply } = require_primordials();
     var {
       promisify: { custom: customPromisify }
@@ -78040,7 +78144,7 @@ var require_stream2 = __commonJS({
       return value instanceof Uint8Array;
     };
     Stream2._uint8ArrayToBuffer = function _uint8ArrayToBuffer(chunk) {
-      return Buffer2.from(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+      return Buffer3.from(chunk.buffer, chunk.byteOffset, chunk.byteLength);
     };
   }
 });
@@ -78432,7 +78536,7 @@ var require_sonic_boom2 = __commonJS({
     var fs3 = __require("fs");
     var EventEmitter3 = __require("events");
     var inherits = __require("util").inherits;
-    var path10 = __require("path");
+    var path13 = __require("path");
     var sleep2 = require_atomic_sleep();
     var BUSY_WRITE_TIMEOUT = 100;
     var MAX_WRITE = 16 * 1024;
@@ -78478,7 +78582,7 @@ var require_sonic_boom2 = __commonJS({
       if (sonic.sync) {
         try {
           if (sonic.mkdir)
-            fs3.mkdirSync(path10.dirname(file), { recursive: true });
+            fs3.mkdirSync(path13.dirname(file), { recursive: true });
           const fd = fs3.openSync(file, flags, mode);
           fileOpened(null, fd);
         } catch (err) {
@@ -78486,7 +78590,7 @@ var require_sonic_boom2 = __commonJS({
           throw err;
         }
       } else if (sonic.mkdir) {
-        fs3.mkdir(path10.dirname(file), { recursive: true }, (err) => {
+        fs3.mkdir(path13.dirname(file), { recursive: true }, (err) => {
           if (err)
             return fileOpened(err);
           fs3.open(file, flags, mode, fileOpened);
@@ -78955,7 +79059,7 @@ var require_delete_log_property = __commonJS({
 });
 
 // ../node_modules/.pnpm/fast-copy@3.0.0/node_modules/fast-copy/dist/cjs/index.cjs
-var require_cjs2 = __commonJS({
+var require_cjs3 = __commonJS({
   "../node_modules/.pnpm/fast-copy@3.0.0/node_modules/fast-copy/dist/cjs/index.cjs"(exports) {
     "use strict";
     init_cjs_shim();
@@ -79268,7 +79372,7 @@ var require_filter_log = __commonJS({
     "use strict";
     init_cjs_shim();
     module.exports = filterLog;
-    var { createCopier } = require_cjs2();
+    var { createCopier } = require_cjs3();
     var fastCopy = createCopier({});
     var deleteLogProperty = require_delete_log_property();
     function filterLog({ log: log2, context }) {
@@ -79705,7 +79809,7 @@ var require_parse_factory_options = __commonJS({
     var handleCustomLevelsOpts = require_handle_custom_levels_opts();
     var handleCustomLevelsNamesOpts = require_handle_custom_levels_names_opts();
     function parseFactoryOptions(options) {
-      const EOL = options.crlf ? "\r\n" : "\n";
+      const EOL2 = options.crlf ? "\r\n" : "\n";
       const IDENT = "    ";
       const {
         customPrettifiers,
@@ -79746,7 +79850,7 @@ var require_parse_factory_options = __commonJS({
       const colorizer = colors(options.colorize, customColors, useOnlyCustomProps);
       const objectColorizer = options.colorizeObjects ? colorizer : colors(false, [], false);
       return {
-        EOL,
+        EOL: EOL2,
         IDENT,
         colorizer,
         customColors,
@@ -80697,33 +80801,33 @@ var require_safe_buffer = __commonJS({
   "../node_modules/.pnpm/safe-buffer@5.1.2/node_modules/safe-buffer/index.js"(exports, module) {
     init_cjs_shim();
     var buffer = __require("buffer");
-    var Buffer2 = buffer.Buffer;
+    var Buffer3 = buffer.Buffer;
     function copyProps(src, dst) {
       for (var key in src) {
         dst[key] = src[key];
       }
     }
-    if (Buffer2.from && Buffer2.alloc && Buffer2.allocUnsafe && Buffer2.allocUnsafeSlow) {
+    if (Buffer3.from && Buffer3.alloc && Buffer3.allocUnsafe && Buffer3.allocUnsafeSlow) {
       module.exports = buffer;
     } else {
       copyProps(buffer, exports);
       exports.Buffer = SafeBuffer;
     }
     function SafeBuffer(arg, encodingOrOffset, length) {
-      return Buffer2(arg, encodingOrOffset, length);
+      return Buffer3(arg, encodingOrOffset, length);
     }
-    copyProps(Buffer2, SafeBuffer);
+    copyProps(Buffer3, SafeBuffer);
     SafeBuffer.from = function(arg, encodingOrOffset, length) {
       if (typeof arg === "number") {
         throw new TypeError("Argument must not be a number");
       }
-      return Buffer2(arg, encodingOrOffset, length);
+      return Buffer3(arg, encodingOrOffset, length);
     };
     SafeBuffer.alloc = function(size, fill, encoding) {
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      var buf = Buffer2(size);
+      var buf = Buffer3(size);
       if (fill !== void 0) {
         if (typeof encoding === "string") {
           buf.fill(fill, encoding);
@@ -80739,7 +80843,7 @@ var require_safe_buffer = __commonJS({
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      return Buffer2(size);
+      return Buffer3(size);
     };
     SafeBuffer.allocUnsafeSlow = function(size) {
       if (typeof size !== "number") {
@@ -80880,7 +80984,7 @@ var require_BufferList = __commonJS({
         throw new TypeError("Cannot call a class as a function");
       }
     }
-    var Buffer2 = require_safe_buffer().Buffer;
+    var Buffer3 = require_safe_buffer().Buffer;
     var util4 = __require("util");
     function copyBuffer(src, target, offset2) {
       src.copy(target, offset2);
@@ -80935,8 +81039,8 @@ var require_BufferList = __commonJS({
       };
       BufferList.prototype.concat = function concat(n2) {
         if (this.length === 0)
-          return Buffer2.alloc(0);
-        var ret = Buffer2.allocUnsafe(n2 >>> 0);
+          return Buffer3.alloc(0);
+        var ret = Buffer3.allocUnsafe(n2 >>> 0);
         var p = this.head;
         var i = 0;
         while (p) {
@@ -81059,14 +81163,14 @@ var require_stream_writable = __commonJS({
       deprecate: require_node()
     };
     var Stream2 = require_stream3();
-    var Buffer2 = require_safe_buffer().Buffer;
+    var Buffer3 = require_safe_buffer().Buffer;
     var OurUint8Array = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
     };
     function _uint8ArrayToBuffer(chunk) {
-      return Buffer2.from(chunk);
+      return Buffer3.from(chunk);
     }
     function _isUint8Array(obj) {
-      return Buffer2.isBuffer(obj) || obj instanceof OurUint8Array;
+      return Buffer3.isBuffer(obj) || obj instanceof OurUint8Array;
     }
     var destroyImpl = require_destroy2();
     util4.inherits(Writable2, Stream2);
@@ -81198,7 +81302,7 @@ var require_stream_writable = __commonJS({
       var state = this._writableState;
       var ret = false;
       var isBuf = !state.objectMode && _isUint8Array(chunk);
-      if (isBuf && !Buffer2.isBuffer(chunk)) {
+      if (isBuf && !Buffer3.isBuffer(chunk)) {
         chunk = _uint8ArrayToBuffer(chunk);
       }
       if (typeof encoding === "function") {
@@ -81241,7 +81345,7 @@ var require_stream_writable = __commonJS({
     };
     function decodeChunk(state, chunk, encoding) {
       if (!state.objectMode && state.decodeStrings !== false && typeof chunk === "string") {
-        chunk = Buffer2.from(chunk, encoding);
+        chunk = Buffer3.from(chunk, encoding);
       }
       return chunk;
     }
@@ -81593,8 +81697,8 @@ var require_string_decoder = __commonJS({
   "../node_modules/.pnpm/string_decoder@1.1.1/node_modules/string_decoder/lib/string_decoder.js"(exports) {
     "use strict";
     init_cjs_shim();
-    var Buffer2 = require_safe_buffer().Buffer;
-    var isEncoding = Buffer2.isEncoding || function(encoding) {
+    var Buffer3 = require_safe_buffer().Buffer;
+    var isEncoding = Buffer3.isEncoding || function(encoding) {
       encoding = "" + encoding;
       switch (encoding && encoding.toLowerCase()) {
         case "hex":
@@ -81644,7 +81748,7 @@ var require_string_decoder = __commonJS({
     }
     function normalizeEncoding(enc) {
       var nenc = _normalizeEncoding(enc);
-      if (typeof nenc !== "string" && (Buffer2.isEncoding === isEncoding || !isEncoding(enc)))
+      if (typeof nenc !== "string" && (Buffer3.isEncoding === isEncoding || !isEncoding(enc)))
         throw new Error("Unknown encoding: " + enc);
       return nenc || enc;
     }
@@ -81674,7 +81778,7 @@ var require_string_decoder = __commonJS({
       }
       this.lastNeed = 0;
       this.lastTotal = 0;
-      this.lastChar = Buffer2.allocUnsafe(nb);
+      this.lastChar = Buffer3.allocUnsafe(nb);
     }
     StringDecoder.prototype.write = function(buf) {
       if (buf.length === 0)
@@ -81864,14 +81968,14 @@ var require_stream_readable = __commonJS({
       return emitter.listeners(type).length;
     };
     var Stream2 = require_stream3();
-    var Buffer2 = require_safe_buffer().Buffer;
+    var Buffer3 = require_safe_buffer().Buffer;
     var OurUint8Array = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
     };
     function _uint8ArrayToBuffer(chunk) {
-      return Buffer2.from(chunk);
+      return Buffer3.from(chunk);
     }
     function _isUint8Array(obj) {
-      return Buffer2.isBuffer(obj) || obj instanceof OurUint8Array;
+      return Buffer3.isBuffer(obj) || obj instanceof OurUint8Array;
     }
     var util4 = Object.create(require_util2());
     util4.inherits = require_inherits();
@@ -81982,7 +82086,7 @@ var require_stream_readable = __commonJS({
         if (typeof chunk === "string") {
           encoding = encoding || state.defaultEncoding;
           if (encoding !== state.encoding) {
-            chunk = Buffer2.from(chunk, encoding);
+            chunk = Buffer3.from(chunk, encoding);
             encoding = "";
           }
           skipChunkCheck = true;
@@ -82007,7 +82111,7 @@ var require_stream_readable = __commonJS({
         if (er) {
           stream.emit("error", er);
         } else if (state.objectMode || chunk && chunk.length > 0) {
-          if (typeof chunk !== "string" && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer2.prototype) {
+          if (typeof chunk !== "string" && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer3.prototype) {
             chunk = _uint8ArrayToBuffer(chunk);
           }
           if (addToFront) {
@@ -82554,7 +82658,7 @@ var require_stream_readable = __commonJS({
       return ret;
     }
     function copyFromBuffer(n2, list) {
-      var ret = Buffer2.allocUnsafe(n2);
+      var ret = Buffer3.allocUnsafe(n2);
       var p = list.head;
       var c = 1;
       p.data.copy(ret);
@@ -82929,7 +83033,7 @@ var require_progress_stream = __commonJS({
         delta = 0;
         tr.emit("progress", update);
       };
-      var write = function(chunk, enc, callback) {
+      var write2 = function(chunk, enc, callback) {
         var len = options.objectMode ? 1 : chunk.length;
         transferred += len;
         delta += len;
@@ -82943,7 +83047,7 @@ var require_progress_stream = __commonJS({
         emit(true);
         callback();
       };
-      var tr = through(options.objectMode ? { objectMode: true, highWaterMark: 16 } : {}, write, end);
+      var tr = through(options.objectMode ? { objectMode: true, highWaterMark: 16 } : {}, write2, end);
       var onlength = function(newLength) {
         length = newLength;
         update.length = length;
@@ -84891,110 +84995,6 @@ var require_dist = __commonJS({
   }
 });
 
-// ../node_modules/.pnpm/deepmerge@4.3.1/node_modules/deepmerge/dist/cjs.js
-var require_cjs3 = __commonJS({
-  "../node_modules/.pnpm/deepmerge@4.3.1/node_modules/deepmerge/dist/cjs.js"(exports, module) {
-    "use strict";
-    init_cjs_shim();
-    var isMergeableObject = function isMergeableObject2(value) {
-      return isNonNullObject(value) && !isSpecial(value);
-    };
-    function isNonNullObject(value) {
-      return !!value && typeof value === "object";
-    }
-    function isSpecial(value) {
-      var stringValue = Object.prototype.toString.call(value);
-      return stringValue === "[object RegExp]" || stringValue === "[object Date]" || isReactElement(value);
-    }
-    var canUseSymbol = typeof Symbol === "function" && Symbol.for;
-    var REACT_ELEMENT_TYPE = canUseSymbol ? Symbol.for("react.element") : 60103;
-    function isReactElement(value) {
-      return value.$$typeof === REACT_ELEMENT_TYPE;
-    }
-    function emptyTarget(val) {
-      return Array.isArray(val) ? [] : {};
-    }
-    function cloneUnlessOtherwiseSpecified(value, options) {
-      return options.clone !== false && options.isMergeableObject(value) ? deepmerge2(emptyTarget(value), value, options) : value;
-    }
-    function defaultArrayMerge(target, source, options) {
-      return target.concat(source).map(function(element) {
-        return cloneUnlessOtherwiseSpecified(element, options);
-      });
-    }
-    function getMergeFunction(key, options) {
-      if (!options.customMerge) {
-        return deepmerge2;
-      }
-      var customMerge = options.customMerge(key);
-      return typeof customMerge === "function" ? customMerge : deepmerge2;
-    }
-    function getEnumerableOwnPropertySymbols(target) {
-      return Object.getOwnPropertySymbols ? Object.getOwnPropertySymbols(target).filter(function(symbol) {
-        return Object.propertyIsEnumerable.call(target, symbol);
-      }) : [];
-    }
-    function getKeys(target) {
-      return Object.keys(target).concat(getEnumerableOwnPropertySymbols(target));
-    }
-    function propertyIsOnObject(object, property) {
-      try {
-        return property in object;
-      } catch (_2) {
-        return false;
-      }
-    }
-    function propertyIsUnsafe(target, key) {
-      return propertyIsOnObject(target, key) && !(Object.hasOwnProperty.call(target, key) && Object.propertyIsEnumerable.call(target, key));
-    }
-    function mergeObject(target, source, options) {
-      var destination = {};
-      if (options.isMergeableObject(target)) {
-        getKeys(target).forEach(function(key) {
-          destination[key] = cloneUnlessOtherwiseSpecified(target[key], options);
-        });
-      }
-      getKeys(source).forEach(function(key) {
-        if (propertyIsUnsafe(target, key)) {
-          return;
-        }
-        if (propertyIsOnObject(target, key) && options.isMergeableObject(source[key])) {
-          destination[key] = getMergeFunction(key, options)(target[key], source[key], options);
-        } else {
-          destination[key] = cloneUnlessOtherwiseSpecified(source[key], options);
-        }
-      });
-      return destination;
-    }
-    function deepmerge2(target, source, options) {
-      options = options || {};
-      options.arrayMerge = options.arrayMerge || defaultArrayMerge;
-      options.isMergeableObject = options.isMergeableObject || isMergeableObject;
-      options.cloneUnlessOtherwiseSpecified = cloneUnlessOtherwiseSpecified;
-      var sourceIsArray = Array.isArray(source);
-      var targetIsArray = Array.isArray(target);
-      var sourceAndTargetTypesMatch = sourceIsArray === targetIsArray;
-      if (!sourceAndTargetTypesMatch) {
-        return cloneUnlessOtherwiseSpecified(source, options);
-      } else if (sourceIsArray) {
-        return options.arrayMerge(target, source, options);
-      } else {
-        return mergeObject(target, source, options);
-      }
-    }
-    deepmerge2.all = function deepmergeAll(array, options) {
-      if (!Array.isArray(array)) {
-        throw new Error("first argument should be an array");
-      }
-      return array.reduce(function(prev, next) {
-        return deepmerge2(prev, next, options);
-      }, {});
-    };
-    var deepmerge_1 = deepmerge2;
-    module.exports = deepmerge_1;
-  }
-});
-
 // ratos.tsx
 init_cjs_shim();
 
@@ -85273,22 +85273,22 @@ var TRPC_ERROR_CODES_BY_NUMBER = invert(TRPC_ERROR_CODES_BY_KEY);
 var TRPC_ERROR_CODES_BY_NUMBER2 = invert(TRPC_ERROR_CODES_BY_KEY);
 var noop = () => {
 };
-function createInnerProxy(callback, path10) {
+function createInnerProxy(callback, path13) {
   const proxy = new Proxy(noop, {
     get(_obj, key) {
       if (typeof key !== "string" || key === "then") {
         return void 0;
       }
       return createInnerProxy(callback, [
-        ...path10,
+        ...path13,
         key
       ]);
     },
     apply(_1, _2, args) {
-      const isApply = path10[path10.length - 1] === "apply";
+      const isApply = path13[path13.length - 1] === "apply";
       return callback({
         args: isApply ? args.length >= 2 ? args[1] : [] : args,
-        path: isApply ? path10.slice(0, -1) : path10
+        path: isApply ? path13.slice(0, -1) : path13
       });
     }
   });
@@ -85707,13 +85707,13 @@ function createHTTPBatchLink(requester) {
           if (maxURLLength === Infinity) {
             return true;
           }
-          const path10 = batchOps.map((op) => op.path).join(",");
+          const path13 = batchOps.map((op) => op.path).join(",");
           const inputs = batchOps.map((op) => op.input);
           const url2 = getUrl({
             ...resolvedOpts,
             runtime,
             type,
-            path: path10,
+            path: path13,
             inputs
           });
           return url2.length <= maxURLLength;
@@ -85771,11 +85771,11 @@ function createHTTPBatchLink(requester) {
 }
 var batchRequester = (requesterOpts) => {
   return (batchOps) => {
-    const path10 = batchOps.map((op) => op.path).join(",");
+    const path13 = batchOps.map((op) => op.path).join(",");
     const inputs = batchOps.map((op) => op.input);
     const { promise, cancel } = jsonHttpRequester({
       ...requesterOpts,
-      path: path10,
+      path: path13,
       inputs,
       headers() {
         if (!requesterOpts.opts.headers) {
@@ -85810,12 +85810,12 @@ function httpLinkFactory(factoryOpts) {
   return (opts) => {
     const resolvedOpts = resolveHTTPLinkOptions(opts);
     return (runtime) => ({ op }) => observable((observer) => {
-      const { path: path10, input, type } = op;
+      const { path: path13, input, type } = op;
       const { promise, cancel } = factoryOpts.requester({
         ...resolvedOpts,
         runtime,
         type,
-        path: path10,
+        path: path13,
         input,
         headers() {
           if (!opts.headers) {
@@ -85867,13 +85867,13 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@trpc+client@10.45.1_@trpc+server@10.45.1/node_modules/@trpc/client/dist/index.mjs
 var TRPCUntypedClient = class {
-  $request({ type, input, path: path10, context = {} }) {
+  $request({ type, input, path: path13, context = {} }) {
     const chain$ = createChain({
       links: this.links,
       op: {
         id: ++this.requestId,
         type,
-        path: path10,
+        path: path13,
         input,
         context
       }
@@ -85893,28 +85893,28 @@ var TRPCUntypedClient = class {
     });
     return abortablePromise;
   }
-  query(path10, input, opts) {
+  query(path13, input, opts) {
     return this.requestAsPromise({
       type: "query",
-      path: path10,
+      path: path13,
       input,
       context: opts?.context,
       signal: opts?.signal
     });
   }
-  mutation(path10, input, opts) {
+  mutation(path13, input, opts) {
     return this.requestAsPromise({
       type: "mutation",
-      path: path10,
+      path: path13,
       input,
       context: opts?.context,
       signal: opts?.signal
     });
   }
-  subscription(path10, input, opts) {
+  subscription(path13, input, opts) {
     const observable$ = this.$request({
       type: "subscription",
-      path: path10,
+      path: path13,
       input,
       context: opts?.context
     });
@@ -85990,10 +85990,10 @@ function createTRPCClientProxy(client) {
     if (key === "__untypedClient") {
       return client;
     }
-    return createRecursiveProxy(({ path: path10, args }) => {
+    return createRecursiveProxy(({ path: path13, args }) => {
       const pathCopy = [
         key,
-        ...path10
+        ...path13
       ];
       const procedureType = clientCallTypeToProcedureType(pathCopy.pop());
       const fullPath = pathCopy.join(".");
@@ -86104,12 +86104,12 @@ var streamingJsonHttpRequester = (opts, onSingle) => {
 var streamRequester = (requesterOpts) => {
   const textDecoder = getTextDecoder(requesterOpts.opts.textDecoder);
   return (batchOps, unitResolver) => {
-    const path10 = batchOps.map((op) => op.path).join(",");
+    const path13 = batchOps.map((op) => op.path).join(",");
     const inputs = batchOps.map((op) => op.input);
     const { cancel, promise } = streamingJsonHttpRequester({
       ...requesterOpts,
       textDecoder,
-      path: path10,
+      path: path13,
       inputs,
       headers() {
         if (!requesterOpts.opts.headers) {
@@ -89188,8 +89188,8 @@ function getArrayQueryKey(queryKey, type) {
   const queryKeyArrayed = Array.isArray(queryKey) ? queryKey : [
     queryKey
   ];
-  const [path10, input] = queryKeyArrayed;
-  const arrayPath = typeof path10 !== "string" || path10 === "" ? [] : path10.split(".");
+  const [path13, input] = queryKeyArrayed;
+  const arrayPath = typeof path13 !== "string" || path13 === "" ? [] : path13.split(".");
   if (!input && (!type || type === "any"))
     return arrayPath.length ? [
       arrayPath
@@ -89209,12 +89209,12 @@ function getArrayQueryKey(queryKey, type) {
 
 // ../node_modules/.pnpm/@trpc+react-query@10.45.1_@tanstack+react-query@4.36.1_react-dom@18.2.0_react@18.2.0__react@1_imzujfin52fnt6zpsqmunjdtru/node_modules/@trpc/react-query/dist/createHooksInternal-063195fc.mjs
 var import_react = __toESM(require_react(), 1);
-function getQueryKeyInternal(path10, input) {
-  if (path10.length)
+function getQueryKeyInternal(path13, input) {
+  if (path13.length)
     return input === void 0 ? [
-      path10
+      path13
     ] : [
-      path10,
+      path13,
       input
     ];
   return [];
@@ -89227,12 +89227,12 @@ function createReactProxyDecoration(name, hooks) {
       ...opts.path
     ];
     const lastArg = pathCopy.pop();
-    const path10 = pathCopy.join(".");
+    const path13 = pathCopy.join(".");
     if (lastArg === "useMutation") {
-      return hooks[lastArg](path10, ...args);
+      return hooks[lastArg](path13, ...args);
     }
     const [input, ...rest] = args;
-    const queryKey = getQueryKeyInternal(path10, input);
+    const queryKey = getQueryKeyInternal(path13, input);
     if (lastArg === "getQueryKey") {
       return getArrayQueryKey(queryKey, rest[0] ?? "any");
     }
@@ -89273,10 +89273,10 @@ function createReactQueryUtilsProxy(context) {
     if (contextProps.includes(contextName)) {
       return context[contextName];
     }
-    return createRecursiveProxy(({ path: path10, args }) => {
+    return createRecursiveProxy(({ path: path13, args }) => {
       const pathCopy = [
         key,
-        ...path10
+        ...path13
       ];
       const utilName = pathCopy.pop();
       const fullPath = pathCopy.join(".");
@@ -89326,13 +89326,13 @@ function createReactQueryUtilsProxy(context) {
 }
 function createUseQueriesProxy(client) {
   return createRecursiveProxy((opts) => {
-    const path10 = opts.path.join(".");
+    const path13 = opts.path.join(".");
     const [input, _opts] = opts.args;
-    const queryKey = getQueryKeyInternal(path10, input);
+    const queryKey = getQueryKeyInternal(path13, input);
     const options = {
       queryKey,
       queryFn: () => {
-        return client.query(path10, input, _opts?.trpc);
+        return client.query(path13, input, _opts?.trpc);
       },
       ..._opts
     };
@@ -89340,19 +89340,19 @@ function createUseQueriesProxy(client) {
   });
 }
 function getClientArgs(pathAndInput, opts) {
-  const [path10, input] = pathAndInput;
+  const [path13, input] = pathAndInput;
   return [
-    path10,
+    path13,
     input,
     opts?.trpc
   ];
 }
 function useHookResult(value) {
-  const { path: path10 } = value;
+  const { path: path13 } = value;
   return (0, import_react.useMemo)(() => ({
-    path: path10
+    path: path13
   }), [
-    path10
+    path13
   ]);
 }
 function createRootHooks(config) {
@@ -89390,13 +89390,13 @@ function createRootHooks(config) {
             ...opts,
             queryKey: getArrayQueryKey(pathAndInput, "infinite"),
             queryFn: ({ pageParam }) => {
-              const [path10, input] = pathAndInput;
+              const [path13, input] = pathAndInput;
               const actualInput = {
                 ...input,
                 cursor: pageParam
               };
               return client.query(...getClientArgs([
-                path10,
+                path13,
                 actualInput
               ], opts));
             }
@@ -89420,13 +89420,13 @@ function createRootHooks(config) {
             ...opts,
             queryKey: getArrayQueryKey(pathAndInput, "infinite"),
             queryFn: ({ pageParam }) => {
-              const [path10, input] = pathAndInput;
+              const [path13, input] = pathAndInput;
               const actualInput = {
                 ...input,
                 cursor: pageParam
               };
               return client.query(...getClientArgs([
-                path10,
+                path13,
                 actualInput
               ], opts));
             }
@@ -89552,12 +89552,12 @@ function createRootHooks(config) {
     });
     return hook;
   }
-  function useMutation$1(path10, opts) {
+  function useMutation$1(path13, opts) {
     const { client } = useContext15();
     const queryClient = useQueryClient({
       context: ReactQueryContext
     });
-    const actualPath = Array.isArray(path10) ? path10[0] : path10;
+    const actualPath = Array.isArray(path13) ? path13[0] : path13;
     const defaultOpts = queryClient.getMutationDefaults([
       actualPath.split(".")
     ]);
@@ -89597,9 +89597,9 @@ function createRootHooks(config) {
       if (!enabled) {
         return;
       }
-      const [path10, input] = pathAndInput;
+      const [path13, input] = pathAndInput;
       let isStopped = false;
-      const subscription = client.subscription(path10, input ?? void 0, {
+      const subscription = client.subscription(path13, input ?? void 0, {
         onStarted: () => {
           if (!isStopped) {
             optsRef.current.onStarted?.();
@@ -89626,7 +89626,7 @@ function createRootHooks(config) {
     ]);
   }
   function useInfiniteQuery$1(pathAndInput, opts) {
-    const [path10, input] = pathAndInput;
+    const [path13, input] = pathAndInput;
     const { client, ssrState, prefetchInfiniteQuery, queryClient, abortOnUnmount } = useContext15();
     const defaultOpts = queryClient.getQueryDefaults(getArrayQueryKey(pathAndInput, "infinite"));
     if (typeof window === "undefined" && ssrState === "prepass" && opts?.trpc?.ssr !== false && (opts?.enabled ?? defaultOpts?.enabled) !== false && !queryClient.getQueryCache().find(getArrayQueryKey(pathAndInput, "infinite"))) {
@@ -89658,14 +89658,14 @@ function createRootHooks(config) {
           cursor: queryFunctionContext.pageParam ?? opts?.initialCursor
         };
         return client.query(...getClientArgs([
-          path10,
+          path13,
           actualInput
         ], actualOpts));
       },
       context: ReactQueryContext
     });
     hook.trpc = useHookResult({
-      path: path10
+      path: path13
     });
     return hook;
   }
@@ -89995,9 +89995,9 @@ var proxyClient = createTRPCProxyClient({
 });
 
 // commands.tsx
-var import_react65 = __toESM(require_react(), 1);
-import { stat as stat3 } from "node:fs/promises";
-import path9 from "path";
+var import_react68 = __toESM(require_react(), 1);
+import { stat as stat4 } from "node:fs/promises";
+import path12 from "path";
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/index.js
 init_cjs_shim();
@@ -93996,8 +93996,8 @@ function Text({ color, backgroundColor, dimColor = false, bold = false, italic =
 }
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/components/ErrorOverview.js
-var cleanupPath = (path10) => {
-  return path10?.replace(`file://${cwd()}/`, "");
+var cleanupPath = (path13) => {
+  return path13?.replace(`file://${cwd()}/`, "");
 };
 var stackUtils = new import_stack_utils.default({
   cwd: cwd(),
@@ -94678,6 +94678,9 @@ var import_react20 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/parse-keypress.js
 init_cjs_shim();
+import { Buffer as Buffer2 } from "node:buffer";
+var metaKeyCodeRe = /^(?:\x1b)([a-zA-Z0-9])$/;
+var fnKeyRe = /^(?:\x1b+)(O|N|\[|\[\[)(?:(\d+)(?:;(\d+))?([~^$])|(?:1;)?(\d+)?([a-zA-Z]))/;
 var keyName = {
   /* xterm/gnome ESC O letter */
   OP: "f1",
@@ -94760,10 +94763,179 @@ var keyName = {
   "[Z": "tab"
 };
 var nonAlphanumericKeys = [...Object.values(keyName), "backspace"];
+var isShiftKey = (code) => {
+  return [
+    "[a",
+    "[b",
+    "[c",
+    "[d",
+    "[e",
+    "[2$",
+    "[3$",
+    "[5$",
+    "[6$",
+    "[7$",
+    "[8$",
+    "[Z"
+  ].includes(code);
+};
+var isCtrlKey = (code) => {
+  return [
+    "Oa",
+    "Ob",
+    "Oc",
+    "Od",
+    "Oe",
+    "[2^",
+    "[3^",
+    "[5^",
+    "[6^",
+    "[7^",
+    "[8^"
+  ].includes(code);
+};
+var parseKeypress = (s2 = "") => {
+  let parts;
+  if (Buffer2.isBuffer(s2)) {
+    if (s2[0] > 127 && s2[1] === void 0) {
+      s2[0] -= 128;
+      s2 = "\x1B" + String(s2);
+    } else {
+      s2 = String(s2);
+    }
+  } else if (s2 !== void 0 && typeof s2 !== "string") {
+    s2 = String(s2);
+  } else if (!s2) {
+    s2 = "";
+  }
+  const key = {
+    name: "",
+    ctrl: false,
+    meta: false,
+    shift: false,
+    option: false,
+    sequence: s2,
+    raw: s2
+  };
+  key.sequence = key.sequence || s2 || key.name;
+  if (s2 === "\r") {
+    key.raw = void 0;
+    key.name = "return";
+  } else if (s2 === "\n") {
+    key.name = "enter";
+  } else if (s2 === "	") {
+    key.name = "tab";
+  } else if (s2 === "\b" || s2 === "\x1B\b") {
+    key.name = "backspace";
+    key.meta = s2.charAt(0) === "\x1B";
+  } else if (s2 === "\x7F" || s2 === "\x1B\x7F") {
+    key.name = "delete";
+    key.meta = s2.charAt(0) === "\x1B";
+  } else if (s2 === "\x1B" || s2 === "\x1B\x1B") {
+    key.name = "escape";
+    key.meta = s2.length === 2;
+  } else if (s2 === " " || s2 === "\x1B ") {
+    key.name = "space";
+    key.meta = s2.length === 2;
+  } else if (s2 <= "") {
+    key.name = String.fromCharCode(s2.charCodeAt(0) + "a".charCodeAt(0) - 1);
+    key.ctrl = true;
+  } else if (s2.length === 1 && s2 >= "0" && s2 <= "9") {
+    key.name = "number";
+  } else if (s2.length === 1 && s2 >= "a" && s2 <= "z") {
+    key.name = s2;
+  } else if (s2.length === 1 && s2 >= "A" && s2 <= "Z") {
+    key.name = s2.toLowerCase();
+    key.shift = true;
+  } else if (parts = metaKeyCodeRe.exec(s2)) {
+    key.meta = true;
+    key.shift = /^[A-Z]$/.test(parts[1]);
+  } else if (parts = fnKeyRe.exec(s2)) {
+    const segs = [...s2];
+    if (segs[0] === "\x1B" && segs[1] === "\x1B") {
+      key.option = true;
+    }
+    const code = [parts[1], parts[2], parts[4], parts[6]].filter(Boolean).join("");
+    const modifier = (parts[3] || parts[5] || 1) - 1;
+    key.ctrl = !!(modifier & 4);
+    key.meta = !!(modifier & 10);
+    key.shift = !!(modifier & 1);
+    key.code = code;
+    key.name = keyName[code];
+    key.shift = isShiftKey(code) || key.shift;
+    key.ctrl = isCtrlKey(code) || key.ctrl;
+  }
+  return key;
+};
+var parse_keypress_default = parseKeypress;
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/hooks/use-stdin.js
 init_cjs_shim();
 var import_react19 = __toESM(require_react(), 1);
+var useStdin = () => (0, import_react19.useContext)(StdinContext_default);
+var use_stdin_default = useStdin;
+
+// ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/hooks/use-input.js
+var useInput = (inputHandler, options = {}) => {
+  const { stdin, setRawMode, internal_exitOnCtrlC, internal_eventEmitter } = use_stdin_default();
+  (0, import_react20.useEffect)(() => {
+    if (options.isActive === false) {
+      return;
+    }
+    setRawMode(true);
+    return () => {
+      setRawMode(false);
+    };
+  }, [options.isActive, setRawMode]);
+  (0, import_react20.useEffect)(() => {
+    if (options.isActive === false) {
+      return;
+    }
+    const handleData = (data) => {
+      const keypress = parse_keypress_default(data);
+      const key = {
+        upArrow: keypress.name === "up",
+        downArrow: keypress.name === "down",
+        leftArrow: keypress.name === "left",
+        rightArrow: keypress.name === "right",
+        pageDown: keypress.name === "pagedown",
+        pageUp: keypress.name === "pageup",
+        return: keypress.name === "return",
+        escape: keypress.name === "escape",
+        ctrl: keypress.ctrl,
+        shift: keypress.shift,
+        tab: keypress.name === "tab",
+        backspace: keypress.name === "backspace",
+        delete: keypress.name === "delete",
+        // `parseKeypress` parses \u001B\u001B[A (meta + up arrow) as meta = false
+        // but with option = true, so we need to take this into account here
+        // to avoid breaking changes in Ink.
+        // TODO(vadimdemedes): consider removing this in the next major version.
+        meta: keypress.meta || keypress.name === "escape" || keypress.option
+      };
+      let input = keypress.ctrl ? keypress.name : keypress.sequence;
+      if (nonAlphanumericKeys.includes(keypress.name)) {
+        input = "";
+      }
+      if (input.startsWith("\x1B")) {
+        input = input.slice(1);
+      }
+      if (input.length === 1 && typeof input[0] === "string" && input[0].toUpperCase() === input[0]) {
+        key.shift = true;
+      }
+      if (!(input === "c" && key.ctrl) || !internal_exitOnCtrlC) {
+        reconciler_default.batchedUpdates(() => {
+          inputHandler(input, key);
+        });
+      }
+    };
+    internal_eventEmitter?.on("input", handleData);
+    return () => {
+      internal_eventEmitter?.removeListener("input", handleData);
+    };
+  }, [options.isActive, stdin, internal_exitOnCtrlC, inputHandler]);
+};
+var use_input_default = useInput;
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/hooks/use-app.js
 init_cjs_shim();
@@ -94797,7 +94969,7 @@ var measure_element_default = measureElement;
 init_cjs_shim();
 var import_react26 = __toESM(require_react(), 1);
 var Container = (props) => {
-  return /* @__PURE__ */ import_react26.default.createElement(Box_default, { padding: 2, flexDirection: "column" }, props.children);
+  return /* @__PURE__ */ import_react26.default.createElement(Box_default, { paddingTop: 1, paddingBottom: 1, paddingLeft: 2, paddingRight: 2, flexDirection: "column" }, props.children);
 };
 
 // components/status.tsx
@@ -94986,13 +95158,41 @@ async function readPackageUp(options) {
 
 // commands.tsx
 import { $ as $3, echo as echo3, which } from "zx";
-import { existsSync as existsSync6 } from "node:fs";
+import { existsSync as existsSync10 } from "node:fs";
 
 // util.tsx
 init_cjs_shim();
-import { $, chalk as chalk2, echo, path as path5 } from "zx";
+import { $, chalk as chalk2, echo, path as path7, ProcessPromise } from "zx";
+var import_react29 = __toESM(require_react(), 1);
 import { realpath } from "node:fs/promises";
-import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+
+// ../app/_helpers/signal.ts
+init_cjs_shim();
+var import_react28 = __toESM(require_react());
+function createSignal() {
+  const subscribers = /* @__PURE__ */ new Set();
+  const signal = (eventOrListener) => {
+    if (typeof eventOrListener === "function") {
+      subscribers.add(eventOrListener);
+      return () => {
+        subscribers.delete(eventOrListener);
+      };
+    } else {
+      subscribers.forEach((listener) => listener(eventOrListener));
+    }
+  };
+  return signal;
+}
+function useSignal(signal, listener) {
+  (0, import_react28.useEffect)(() => {
+    const unsubscribe = signal(listener);
+    return unsubscribe;
+  }, [signal, listener]);
+}
+
+// ../server/helpers/logger.ts
+init_cjs_shim();
+var import_pino = __toESM(require_pino());
 
 // ../env/schema.mjs
 init_cjs_shim();
@@ -95346,8 +95546,8 @@ function getErrorMap() {
   return overrideErrorMap;
 }
 var makeIssue = (params) => {
-  const { data, path: path10, errorMaps, issueData } = params;
-  const fullPath = [...path10, ...issueData.path || []];
+  const { data, path: path13, errorMaps, issueData } = params;
+  const fullPath = [...path13, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -95446,11 +95646,11 @@ var errorUtil;
   errorUtil2.toString = (message) => typeof message === "string" ? message : message === null || message === void 0 ? void 0 : message.message;
 })(errorUtil || (errorUtil = {}));
 var ParseInputLazyPath = class {
-  constructor(parent, value, path10, key) {
+  constructor(parent, value, path13, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path10;
+    this._path = path13;
     this._key = key;
   }
   get path() {
@@ -98751,9 +98951,84 @@ var clientEnv = {
   NEXT_PUBLIC_KLIPPER_HOSTNAME: process.env.NEXT_PUBLIC_KLIPPER_HOSTNAME
 };
 
+// ../helpers/logger.ts
+init_cjs_shim();
+var globalPinoOpts = {
+  timestamp: true,
+  level: process.env.NODE_ENV === "development" ? "debug" : "info"
+};
+
+// ../server/helpers/logger.ts
+import { existsSync as existsSync2 } from "fs";
+import path5 from "path";
+var logger = null;
+var getLogger = () => {
+  if (logger != null) {
+    return logger;
+  }
+  const environment = serverSchema.parse(process.env);
+  const logDirExists = existsSync2(path5.dirname(environment.LOG_FILE));
+  const fallbackPath = "/var/log/ratos-server.log";
+  const logFile = logDirExists ? environment.LOG_FILE : fallbackPath;
+  if (!logDirExists) {
+    if (!existsSync2(path5.dirname(fallbackPath))) {
+      console.warn("Neither configured nor fallback log directories exist. Logging may fail.");
+    }
+    console.warn("server logger logFile directory does not exist, using default", logFile);
+  }
+  const transportOption = process.env.NODE_ENV === "development" ? void 0 : {
+    target: "pino/file",
+    options: { destination: logFile, append: true }
+  };
+  logger = (0, import_pino.default)({ ...globalPinoOpts, transport: transportOption });
+  return logger;
+};
+
+// ../server/helpers/utils.ts
+init_cjs_shim();
+var import_dotenv = __toESM(require_main());
+import { existsSync as existsSync3, readFileSync as readFileSync2 } from "node:fs";
+import path6 from "node:path";
+var alreadyLoaded = false;
+function resetEnvironment() {
+  alreadyLoaded = false;
+}
+function loadEnvironment(filePath) {
+  if (alreadyLoaded) {
+    return serverSchema.parse(process.env);
+  }
+  let envFilePath;
+  if (filePath) {
+    envFilePath = filePath;
+  } else if (process.env.NODE_ENV === "test") {
+    if (existsSync3("./.env.test.local")) {
+      envFilePath = "./.env.test.local";
+    } else if (existsSync3("./.env.test")) {
+      envFilePath = "./.env.test";
+    } else if (existsSync3("./.env.local")) {
+      envFilePath = "./.env.local";
+    } else {
+      envFilePath = "./.env";
+    }
+  } else {
+    envFilePath = existsSync3("./.env.local") ? ".env.local" : ".env";
+  }
+  if (!existsSync3(envFilePath)) {
+    throw new Error(`Environment file ${path6.resolve(envFilePath)} not found`);
+  }
+  const envFile = readFileSync2(envFilePath, "utf8");
+  const defaultNodeEnv = process.env.NODE_ENV === "test" ? "test" : "production";
+  const env3 = serverSchema.parse({ NODE_ENV: defaultNodeEnv, ...import_dotenv.default.parse(envFile) });
+  import_dotenv.default.populate(process.env, env3, { override: true });
+  alreadyLoaded = true;
+  return env3;
+}
+function reloadEnvironment(filePath) {
+  resetEnvironment();
+  return loadEnvironment(filePath);
+}
+
 // util.tsx
-var import_dotenv = __toESM(require_main(), 1);
-var import_react28 = __toESM(require_react(), 1);
 var reservedWords = [
   "if",
   "then",
@@ -98879,18 +99154,20 @@ function formatCmd(cmd) {
   return out + "\n";
 }
 var ensureSudo = async () => {
-  echo("Checking for sudo permissions. If you're prompted for a password, please enter it.");
+  render_default(
+    /* @__PURE__ */ import_react29.default.createElement(Container, null, /* @__PURE__ */ import_react29.default.createElement(Text, null, "Checking for sudo permissions. If you're prompted for a password, please enter it."))
+  );
   await $({ verbose: false, quiet: false })`sudo echo "Sudo permissions acquired"`;
 };
 function renderError(str, options = { exitCode: 1 }) {
   render_default(
-    /* @__PURE__ */ import_react28.default.createElement(Container, null, /* @__PURE__ */ import_react28.default.createElement(Status, { results: { message: str, result: "error" } }))
+    /* @__PURE__ */ import_react29.default.createElement(Container, null, /* @__PURE__ */ import_react29.default.createElement(Status, { results: { message: str, result: "error" } }))
   );
   process.exit(options.exitCode);
 }
 function renderApiResults(results) {
   render_default(
-    /* @__PURE__ */ import_react28.default.createElement(Container, null, /* @__PURE__ */ import_react28.default.createElement(Status, { results }))
+    /* @__PURE__ */ import_react29.default.createElement(Container, null, /* @__PURE__ */ import_react29.default.createElement(Status, { results }))
   );
 }
 function errorColor(str) {
@@ -98910,53 +99187,53 @@ async function getRealPath(program3, p) {
     }
   }
   try {
-    return await realpath(path5.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), p));
+    return await realpath(path7.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), p));
   } catch (e) {
     if (e instanceof Error && "code" in e && e.code === "ENOENT" && "path" in e) {
-      return await realpath(path5.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), path5.dirname(p))) + path5.sep + path5.basename(p);
+      return await realpath(path7.resolve(process.env.RATOS_BIN_CWD ?? program3.getOptionValue("cwd"), path7.dirname(p))) + path7.sep + path7.basename(p);
     }
     throw e;
   }
 }
-var alreadyLoaded = false;
-function loadEnvironment() {
-  if (alreadyLoaded) {
-    return serverSchema.parse(process.env);
-  }
-  const envFilePath = existsSync2("./.env.local") ? ".env.local" : ".env";
-  const envFile2 = readFileSync2(envFilePath, "utf8");
-  const env3 = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv.default.parse(envFile2) });
-  import_dotenv.default.populate(process.env, env3);
-  alreadyLoaded = true;
-  return env3;
-}
+var wrapZx = (scoped$, cmdSignal) => {
+  const $$ = Object.assign(
+    scoped$,
+    (...args) => {
+      const res = scoped$(...args);
+      if (res instanceof ProcessPromise) {
+        return res.then((result) => {
+          cmdSignal(null);
+          return result;
+        });
+      } else {
+        return wrapZx(res, cmdSignal);
+      }
+    },
+    {
+      sync: (...args) => {
+        throw new Error("Synchronous execution is not supported.");
+      }
+    }
+  );
+  return $$;
+};
+var constructSignalShell = () => {
+  const cmdSignal = createSignal();
+  let scoped$ = $({
+    quiet: true,
+    log(entry) {
+      if (entry.kind === "cmd") {
+        cmdSignal(entry.cmd);
+        getLogger().info("Running command: " + entry.cmd);
+      }
+    }
+  });
+  const $$ = wrapZx(scoped$, cmdSignal);
+  return { cmdSignal, $: $$ };
+};
 
 // components/install-progress.tsx
 init_cjs_shim();
-
-// ../app/_helpers/signal.ts
-init_cjs_shim();
-var import_react29 = __toESM(require_react());
-function createSignal() {
-  const subscribers = /* @__PURE__ */ new Set();
-  const signal = (eventOrListener) => {
-    if (typeof eventOrListener === "function") {
-      subscribers.add(eventOrListener);
-      return () => {
-        subscribers.delete(eventOrListener);
-      };
-    } else {
-      subscribers.forEach((listener) => listener(eventOrListener));
-    }
-  };
-  return signal;
-}
-function useSignal(signal, listener) {
-  (0, import_react29.useEffect)(() => {
-    const unsubscribe = signal(listener);
-    return unsubscribe;
-  }, [signal, listener]);
-}
 
 // ../node_modules/.pnpm/ink-spinner@5.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0__react@18.2.0/node_modules/ink-spinner/build/index.js
 init_cjs_shim();
@@ -98981,61 +99258,1132 @@ function Spinner({ type = "dots" }) {
 var build_default = Spinner;
 
 // components/install-progress.tsx
+var import_react62 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/badge.js
+init_cjs_shim();
+var import_react32 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/theme.js
+init_cjs_shim();
 var import_react31 = __toESM(require_react(), 1);
+var import_deepmerge = __toESM(require_cjs2(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/theme.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/figures@6.1.0/node_modules/figures/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/is-unicode-supported@2.1.0/node_modules/is-unicode-supported/index.js
+init_cjs_shim();
+import process14 from "node:process";
+function isUnicodeSupported() {
+  const { env: env3 } = process14;
+  const { TERM, TERM_PROGRAM } = env3;
+  if (process14.platform !== "win32") {
+    return TERM !== "linux";
+  }
+  return Boolean(env3.WT_SESSION) || Boolean(env3.TERMINUS_SUBLIME) || env3.ConEmuTask === "{cmd::Cmder}" || TERM_PROGRAM === "Terminus-Sublime" || TERM_PROGRAM === "vscode" || TERM === "xterm-256color" || TERM === "alacritty" || TERM === "rxvt-unicode" || TERM === "rxvt-unicode-256color" || env3.TERMINAL_EMULATOR === "JetBrains-JediTerm";
+}
+
+// ../node_modules/.pnpm/figures@6.1.0/node_modules/figures/index.js
+var common = {
+  circleQuestionMark: "(?)",
+  questionMarkPrefix: "(?)",
+  square: "\u2588",
+  squareDarkShade: "\u2593",
+  squareMediumShade: "\u2592",
+  squareLightShade: "\u2591",
+  squareTop: "\u2580",
+  squareBottom: "\u2584",
+  squareLeft: "\u258C",
+  squareRight: "\u2590",
+  squareCenter: "\u25A0",
+  bullet: "\u25CF",
+  dot: "\u2024",
+  ellipsis: "\u2026",
+  pointerSmall: "\u203A",
+  triangleUp: "\u25B2",
+  triangleUpSmall: "\u25B4",
+  triangleDown: "\u25BC",
+  triangleDownSmall: "\u25BE",
+  triangleLeftSmall: "\u25C2",
+  triangleRightSmall: "\u25B8",
+  home: "\u2302",
+  heart: "\u2665",
+  musicNote: "\u266A",
+  musicNoteBeamed: "\u266B",
+  arrowUp: "\u2191",
+  arrowDown: "\u2193",
+  arrowLeft: "\u2190",
+  arrowRight: "\u2192",
+  arrowLeftRight: "\u2194",
+  arrowUpDown: "\u2195",
+  almostEqual: "\u2248",
+  notEqual: "\u2260",
+  lessOrEqual: "\u2264",
+  greaterOrEqual: "\u2265",
+  identical: "\u2261",
+  infinity: "\u221E",
+  subscriptZero: "\u2080",
+  subscriptOne: "\u2081",
+  subscriptTwo: "\u2082",
+  subscriptThree: "\u2083",
+  subscriptFour: "\u2084",
+  subscriptFive: "\u2085",
+  subscriptSix: "\u2086",
+  subscriptSeven: "\u2087",
+  subscriptEight: "\u2088",
+  subscriptNine: "\u2089",
+  oneHalf: "\xBD",
+  oneThird: "\u2153",
+  oneQuarter: "\xBC",
+  oneFifth: "\u2155",
+  oneSixth: "\u2159",
+  oneEighth: "\u215B",
+  twoThirds: "\u2154",
+  twoFifths: "\u2156",
+  threeQuarters: "\xBE",
+  threeFifths: "\u2157",
+  threeEighths: "\u215C",
+  fourFifths: "\u2158",
+  fiveSixths: "\u215A",
+  fiveEighths: "\u215D",
+  sevenEighths: "\u215E",
+  line: "\u2500",
+  lineBold: "\u2501",
+  lineDouble: "\u2550",
+  lineDashed0: "\u2504",
+  lineDashed1: "\u2505",
+  lineDashed2: "\u2508",
+  lineDashed3: "\u2509",
+  lineDashed4: "\u254C",
+  lineDashed5: "\u254D",
+  lineDashed6: "\u2574",
+  lineDashed7: "\u2576",
+  lineDashed8: "\u2578",
+  lineDashed9: "\u257A",
+  lineDashed10: "\u257C",
+  lineDashed11: "\u257E",
+  lineDashed12: "\u2212",
+  lineDashed13: "\u2013",
+  lineDashed14: "\u2010",
+  lineDashed15: "\u2043",
+  lineVertical: "\u2502",
+  lineVerticalBold: "\u2503",
+  lineVerticalDouble: "\u2551",
+  lineVerticalDashed0: "\u2506",
+  lineVerticalDashed1: "\u2507",
+  lineVerticalDashed2: "\u250A",
+  lineVerticalDashed3: "\u250B",
+  lineVerticalDashed4: "\u254E",
+  lineVerticalDashed5: "\u254F",
+  lineVerticalDashed6: "\u2575",
+  lineVerticalDashed7: "\u2577",
+  lineVerticalDashed8: "\u2579",
+  lineVerticalDashed9: "\u257B",
+  lineVerticalDashed10: "\u257D",
+  lineVerticalDashed11: "\u257F",
+  lineDownLeft: "\u2510",
+  lineDownLeftArc: "\u256E",
+  lineDownBoldLeftBold: "\u2513",
+  lineDownBoldLeft: "\u2512",
+  lineDownLeftBold: "\u2511",
+  lineDownDoubleLeftDouble: "\u2557",
+  lineDownDoubleLeft: "\u2556",
+  lineDownLeftDouble: "\u2555",
+  lineDownRight: "\u250C",
+  lineDownRightArc: "\u256D",
+  lineDownBoldRightBold: "\u250F",
+  lineDownBoldRight: "\u250E",
+  lineDownRightBold: "\u250D",
+  lineDownDoubleRightDouble: "\u2554",
+  lineDownDoubleRight: "\u2553",
+  lineDownRightDouble: "\u2552",
+  lineUpLeft: "\u2518",
+  lineUpLeftArc: "\u256F",
+  lineUpBoldLeftBold: "\u251B",
+  lineUpBoldLeft: "\u251A",
+  lineUpLeftBold: "\u2519",
+  lineUpDoubleLeftDouble: "\u255D",
+  lineUpDoubleLeft: "\u255C",
+  lineUpLeftDouble: "\u255B",
+  lineUpRight: "\u2514",
+  lineUpRightArc: "\u2570",
+  lineUpBoldRightBold: "\u2517",
+  lineUpBoldRight: "\u2516",
+  lineUpRightBold: "\u2515",
+  lineUpDoubleRightDouble: "\u255A",
+  lineUpDoubleRight: "\u2559",
+  lineUpRightDouble: "\u2558",
+  lineUpDownLeft: "\u2524",
+  lineUpBoldDownBoldLeftBold: "\u252B",
+  lineUpBoldDownBoldLeft: "\u2528",
+  lineUpDownLeftBold: "\u2525",
+  lineUpBoldDownLeftBold: "\u2529",
+  lineUpDownBoldLeftBold: "\u252A",
+  lineUpDownBoldLeft: "\u2527",
+  lineUpBoldDownLeft: "\u2526",
+  lineUpDoubleDownDoubleLeftDouble: "\u2563",
+  lineUpDoubleDownDoubleLeft: "\u2562",
+  lineUpDownLeftDouble: "\u2561",
+  lineUpDownRight: "\u251C",
+  lineUpBoldDownBoldRightBold: "\u2523",
+  lineUpBoldDownBoldRight: "\u2520",
+  lineUpDownRightBold: "\u251D",
+  lineUpBoldDownRightBold: "\u2521",
+  lineUpDownBoldRightBold: "\u2522",
+  lineUpDownBoldRight: "\u251F",
+  lineUpBoldDownRight: "\u251E",
+  lineUpDoubleDownDoubleRightDouble: "\u2560",
+  lineUpDoubleDownDoubleRight: "\u255F",
+  lineUpDownRightDouble: "\u255E",
+  lineDownLeftRight: "\u252C",
+  lineDownBoldLeftBoldRightBold: "\u2533",
+  lineDownLeftBoldRightBold: "\u252F",
+  lineDownBoldLeftRight: "\u2530",
+  lineDownBoldLeftBoldRight: "\u2531",
+  lineDownBoldLeftRightBold: "\u2532",
+  lineDownLeftRightBold: "\u252E",
+  lineDownLeftBoldRight: "\u252D",
+  lineDownDoubleLeftDoubleRightDouble: "\u2566",
+  lineDownDoubleLeftRight: "\u2565",
+  lineDownLeftDoubleRightDouble: "\u2564",
+  lineUpLeftRight: "\u2534",
+  lineUpBoldLeftBoldRightBold: "\u253B",
+  lineUpLeftBoldRightBold: "\u2537",
+  lineUpBoldLeftRight: "\u2538",
+  lineUpBoldLeftBoldRight: "\u2539",
+  lineUpBoldLeftRightBold: "\u253A",
+  lineUpLeftRightBold: "\u2536",
+  lineUpLeftBoldRight: "\u2535",
+  lineUpDoubleLeftDoubleRightDouble: "\u2569",
+  lineUpDoubleLeftRight: "\u2568",
+  lineUpLeftDoubleRightDouble: "\u2567",
+  lineUpDownLeftRight: "\u253C",
+  lineUpBoldDownBoldLeftBoldRightBold: "\u254B",
+  lineUpDownBoldLeftBoldRightBold: "\u2548",
+  lineUpBoldDownLeftBoldRightBold: "\u2547",
+  lineUpBoldDownBoldLeftRightBold: "\u254A",
+  lineUpBoldDownBoldLeftBoldRight: "\u2549",
+  lineUpBoldDownLeftRight: "\u2540",
+  lineUpDownBoldLeftRight: "\u2541",
+  lineUpDownLeftBoldRight: "\u253D",
+  lineUpDownLeftRightBold: "\u253E",
+  lineUpBoldDownBoldLeftRight: "\u2542",
+  lineUpDownLeftBoldRightBold: "\u253F",
+  lineUpBoldDownLeftBoldRight: "\u2543",
+  lineUpBoldDownLeftRightBold: "\u2544",
+  lineUpDownBoldLeftBoldRight: "\u2545",
+  lineUpDownBoldLeftRightBold: "\u2546",
+  lineUpDoubleDownDoubleLeftDoubleRightDouble: "\u256C",
+  lineUpDoubleDownDoubleLeftRight: "\u256B",
+  lineUpDownLeftDoubleRightDouble: "\u256A",
+  lineCross: "\u2573",
+  lineBackslash: "\u2572",
+  lineSlash: "\u2571"
+};
+var specialMainSymbols = {
+  tick: "\u2714",
+  info: "\u2139",
+  warning: "\u26A0",
+  cross: "\u2718",
+  squareSmall: "\u25FB",
+  squareSmallFilled: "\u25FC",
+  circle: "\u25EF",
+  circleFilled: "\u25C9",
+  circleDotted: "\u25CC",
+  circleDouble: "\u25CE",
+  circleCircle: "\u24DE",
+  circleCross: "\u24E7",
+  circlePipe: "\u24BE",
+  radioOn: "\u25C9",
+  radioOff: "\u25EF",
+  checkboxOn: "\u2612",
+  checkboxOff: "\u2610",
+  checkboxCircleOn: "\u24E7",
+  checkboxCircleOff: "\u24BE",
+  pointer: "\u276F",
+  triangleUpOutline: "\u25B3",
+  triangleLeft: "\u25C0",
+  triangleRight: "\u25B6",
+  lozenge: "\u25C6",
+  lozengeOutline: "\u25C7",
+  hamburger: "\u2630",
+  smiley: "\u32E1",
+  mustache: "\u0DF4",
+  star: "\u2605",
+  play: "\u25B6",
+  nodejs: "\u2B22",
+  oneSeventh: "\u2150",
+  oneNinth: "\u2151",
+  oneTenth: "\u2152"
+};
+var specialFallbackSymbols = {
+  tick: "\u221A",
+  info: "i",
+  warning: "\u203C",
+  cross: "\xD7",
+  squareSmall: "\u25A1",
+  squareSmallFilled: "\u25A0",
+  circle: "( )",
+  circleFilled: "(*)",
+  circleDotted: "( )",
+  circleDouble: "( )",
+  circleCircle: "(\u25CB)",
+  circleCross: "(\xD7)",
+  circlePipe: "(\u2502)",
+  radioOn: "(*)",
+  radioOff: "( )",
+  checkboxOn: "[\xD7]",
+  checkboxOff: "[ ]",
+  checkboxCircleOn: "(\xD7)",
+  checkboxCircleOff: "( )",
+  pointer: ">",
+  triangleUpOutline: "\u2206",
+  triangleLeft: "\u25C4",
+  triangleRight: "\u25BA",
+  lozenge: "\u2666",
+  lozengeOutline: "\u25CA",
+  hamburger: "\u2261",
+  smiley: "\u263A",
+  mustache: "\u250C\u2500\u2510",
+  star: "\u2736",
+  play: "\u25BA",
+  nodejs: "\u2666",
+  oneSeventh: "1/7",
+  oneNinth: "1/9",
+  oneTenth: "1/10"
+};
+var mainSymbols = { ...common, ...specialMainSymbols };
+var fallbackSymbols = { ...common, ...specialFallbackSymbols };
+var shouldUseMain = isUnicodeSupported();
+var figures = shouldUseMain ? mainSymbols : fallbackSymbols;
+var figures_default = figures;
+var replacements = Object.entries(specialMainSymbols);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/theme.js
+var colorByVariant = {
+  info: "blue",
+  success: "green",
+  error: "red",
+  warning: "yellow"
+};
+var theme = {
+  styles: {
+    container: ({ variant }) => ({
+      flexGrow: 1,
+      borderStyle: "round",
+      borderColor: colorByVariant[variant],
+      gap: 1,
+      paddingX: 1
+    }),
+    iconContainer: () => ({
+      flexShrink: 0
+    }),
+    icon: ({ variant }) => ({
+      color: colorByVariant[variant]
+    }),
+    content: () => ({
+      flexShrink: 1,
+      flexGrow: 1,
+      minWidth: 0,
+      flexDirection: "column",
+      gap: 1
+    }),
+    title: () => ({
+      bold: true
+    }),
+    message: () => ({})
+  },
+  config({ variant }) {
+    let icon;
+    if (variant === "info") {
+      icon = figures_default.info;
+    }
+    if (variant === "success") {
+      icon = figures_default.tick;
+    }
+    if (variant === "error") {
+      icon = figures_default.cross;
+    }
+    if (variant === "warning") {
+      icon = figures_default.warning;
+    }
+    return { icon };
+  }
+};
+var theme_default = theme;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/theme.js
+init_cjs_shim();
+var theme2 = {
+  styles: {
+    container: ({ color }) => ({
+      backgroundColor: color
+    }),
+    label: () => ({
+      color: "black"
+    })
+  }
+};
+var theme_default2 = theme2;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/theme.js
+init_cjs_shim();
+var theme3 = {
+  styles: {
+    input: ({ isFocused }) => ({
+      dimColor: !isFocused
+    })
+  }
+};
+var theme_default3 = theme3;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/theme.js
+init_cjs_shim();
+var theme4 = {
+  styles: {
+    container: () => ({
+      flexDirection: "column"
+    }),
+    option: ({ isFocused }) => ({
+      gap: 1,
+      paddingLeft: isFocused ? 0 : 2
+    }),
+    selectedIndicator: () => ({
+      color: "green"
+    }),
+    focusIndicator: () => ({
+      color: "blue"
+    }),
+    label({ isFocused, isSelected }) {
+      let color;
+      if (isSelected) {
+        color = "green";
+      }
+      if (isFocused) {
+        color = "blue";
+      }
+      return { color };
+    },
+    highlightedText: () => ({
+      bold: true
+    })
+  }
+};
+var theme_default4 = theme4;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/theme.js
+init_cjs_shim();
+var theme5 = {
+  styles: {
+    list: () => ({
+      flexDirection: "column"
+    }),
+    listItem: () => ({
+      gap: 1
+    }),
+    marker: () => ({
+      dimColor: true
+    }),
+    content: () => ({
+      flexDirection: "column"
+    })
+  }
+};
+var theme_default5 = theme5;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/theme.js
+init_cjs_shim();
+var theme6 = {
+  styles: {
+    container: () => ({
+      flexGrow: 1,
+      minWidth: 0
+    }),
+    completed: () => ({
+      color: "magenta"
+    }),
+    remaining: () => ({
+      dimColor: true
+    })
+  },
+  config: () => ({
+    // Character for rendering a completed bar
+    completedCharacter: figures_default.square,
+    // Character for rendering a remaining bar
+    remainingCharacter: figures_default.squareLightShade
+  })
+};
+var theme_default6 = theme6;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/theme.js
+init_cjs_shim();
+var theme7 = {
+  styles: {
+    container: () => ({
+      flexDirection: "column"
+    }),
+    option: ({ isFocused }) => ({
+      gap: 1,
+      paddingLeft: isFocused ? 0 : 2
+    }),
+    selectedIndicator: () => ({
+      color: "green"
+    }),
+    focusIndicator: () => ({
+      color: "blue"
+    }),
+    label({ isFocused, isSelected }) {
+      let color;
+      if (isSelected) {
+        color = "green";
+      }
+      if (isFocused) {
+        color = "blue";
+      }
+      return { color };
+    },
+    highlightedText: () => ({
+      bold: true
+    })
+  }
+};
+var theme_default7 = theme7;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/theme.js
+init_cjs_shim();
+var theme8 = {
+  styles: {
+    container: () => ({
+      gap: 1
+    }),
+    frame: () => ({
+      color: "blue"
+    }),
+    label: () => ({})
+  }
+};
+var theme_default8 = theme8;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/theme.js
+init_cjs_shim();
+var colorByVariant2 = {
+  success: "green",
+  error: "red",
+  warning: "yellow",
+  info: "blue"
+};
+var iconByVariant = {
+  success: figures_default.tick,
+  error: figures_default.cross,
+  warning: figures_default.warning,
+  info: figures_default.info
+};
+var theme9 = {
+  styles: {
+    container: () => ({
+      gap: 1
+    }),
+    iconContainer: () => ({
+      flexShrink: 0
+    }),
+    icon: ({ variant }) => ({
+      color: colorByVariant2[variant]
+    }),
+    message: () => ({})
+  },
+  config: ({ variant }) => ({
+    icon: iconByVariant[variant]
+  })
+};
+var theme_default9 = theme9;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/theme.js
+init_cjs_shim();
+var theme10 = {
+  styles: {
+    list: () => ({
+      flexDirection: "column"
+    }),
+    listItem: () => ({
+      gap: 1
+    }),
+    marker: () => ({
+      dimColor: true
+    }),
+    content: () => ({
+      flexDirection: "column"
+    })
+  },
+  config: () => ({
+    marker: figures_default.line
+  })
+};
+var theme_default10 = theme10;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/theme.js
+init_cjs_shim();
+var theme11 = {
+  styles: {
+    value: () => ({})
+  }
+};
+var theme_default11 = theme11;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/theme.js
+init_cjs_shim();
+var theme12 = {
+  styles: {
+    value: () => ({})
+  }
+};
+var theme_default12 = theme12;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/theme.js
+init_cjs_shim();
+var theme13 = {
+  styles: {
+    value: () => ({})
+  }
+};
+var theme_default13 = theme13;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/theme.js
+var defaultTheme = {
+  components: {
+    Alert: theme_default,
+    Badge: theme_default2,
+    ConfirmInput: theme_default3,
+    MultiSelect: theme_default4,
+    OrderedList: theme_default5,
+    ProgressBar: theme_default6,
+    Select: theme_default7,
+    Spinner: theme_default8,
+    StatusMessage: theme_default9,
+    UnorderedList: theme_default10,
+    TextInput: theme_default11,
+    EmailInput: theme_default12,
+    PasswordInput: theme_default13
+  }
+};
+var ThemeContext = (0, import_react31.createContext)(defaultTheme);
+var useComponentTheme = (component) => {
+  const theme14 = (0, import_react31.useContext)(ThemeContext);
+  return theme14.components[component];
+};
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/confirm-input.js
+init_cjs_shim();
+var import_react33 = __toESM(require_react(), 1);
+function ConfirmInput({ isDisabled = false, defaultChoice = "confirm", submitOnEnter = true, onConfirm, onCancel }) {
+  use_input_default((input, key) => {
+    if (input.toLowerCase() === "y") {
+      onConfirm();
+    }
+    if (input.toLowerCase() === "n") {
+      onCancel();
+    }
+    if (key.return && submitOnEnter) {
+      if (defaultChoice === "confirm") {
+        onConfirm();
+      } else {
+        onCancel();
+      }
+    }
+  }, { isActive: !isDisabled });
+  const { styles: styles5 } = useComponentTheme("ConfirmInput");
+  return import_react33.default.createElement(Text, { ...styles5.input({ isFocused: !isDisabled }) }, defaultChoice === "confirm" ? "Y/n" : "y/N");
+}
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
+init_cjs_shim();
+var import_react37 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
+init_cjs_shim();
+var import_react35 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
+init_cjs_shim();
+var import_react34 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/constants.js
+init_cjs_shim();
+var defaultMarker = figures_default.line;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
+var UnorderedListItemContext = (0, import_react34.createContext)({
+  marker: defaultMarker
+});
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
+function UnorderedListItem({ children }) {
+  const { marker } = (0, import_react35.useContext)(UnorderedListItemContext);
+  const { styles: styles5 } = useComponentTheme("UnorderedList");
+  return import_react35.default.createElement(
+    Box_default,
+    { ...styles5.listItem() },
+    import_react35.default.createElement(Text, { ...styles5.marker() }, marker),
+    import_react35.default.createElement(Box_default, { ...styles5.content() }, children)
+  );
+}
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-context.js
+init_cjs_shim();
+var import_react36 = __toESM(require_react(), 1);
+var UnorderedListContext = (0, import_react36.createContext)({
+  depth: 0
+});
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
+function UnorderedList({ children }) {
+  const { depth } = (0, import_react37.useContext)(UnorderedListContext);
+  const { styles: styles5, config } = useComponentTheme("UnorderedList");
+  const listContext = (0, import_react37.useMemo)(() => ({
+    depth: depth + 1
+  }), [depth]);
+  const listItemContext = (0, import_react37.useMemo)(() => {
+    const { marker } = config();
+    if (typeof marker === "string") {
+      return { marker };
+    }
+    if (Array.isArray(marker)) {
+      return {
+        marker: marker[depth] ?? marker.at(-1) ?? defaultMarker
+      };
+    }
+    return {
+      marker: defaultMarker
+    };
+  }, [config, depth]);
+  return import_react37.default.createElement(
+    UnorderedListContext.Provider,
+    { value: listContext },
+    import_react37.default.createElement(
+      UnorderedListItemContext.Provider,
+      { value: listItemContext },
+      import_react37.default.createElement(Box_default, { ...styles5.list() }, children)
+    )
+  );
+}
+UnorderedList.Item = UnorderedListItem;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select.js
+init_cjs_shim();
+var import_react40 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select-option.js
+init_cjs_shim();
+var import_react38 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/use-multi-select-state.js
+init_cjs_shim();
+var import_react39 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/lib/option-map.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/use-multi-select.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/progress-bar.js
+init_cjs_shim();
+var import_react41 = __toESM(require_react(), 1);
+function ProgressBar({ value }) {
+  const [width, setWidth] = (0, import_react41.useState)(0);
+  const [ref, setRef] = (0, import_react41.useState)(null);
+  if (ref) {
+    const dimensions = measure_element_default(ref);
+    if (dimensions.width !== width) {
+      setWidth(dimensions.width);
+    }
+  }
+  const progress2 = Math.min(100, Math.max(0, value));
+  const complete = Math.round(progress2 / 100 * width);
+  const remaining = width - complete;
+  const { styles: styles5, config } = useComponentTheme("ProgressBar");
+  return import_react41.default.createElement(
+    Box_default,
+    { ref: setRef, ...styles5.container() },
+    complete > 0 && import_react41.default.createElement(Text, { ...styles5.completed() }, config().completedCharacter.repeat(complete)),
+    remaining > 0 && import_react41.default.createElement(Text, { ...styles5.remaining() }, config().remainingCharacter.repeat(remaining))
+  );
+}
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select.js
+init_cjs_shim();
+var import_react44 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select-option.js
+init_cjs_shim();
+var import_react42 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select-state.js
+init_cjs_shim();
+var import_react43 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/spinner.js
+init_cjs_shim();
+var import_react46 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/use-spinner.js
+init_cjs_shim();
+var import_react45 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/text-input.js
+init_cjs_shim();
+var import_react49 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input-state.js
+init_cjs_shim();
+var import_react47 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input.js
+init_cjs_shim();
+var import_react48 = __toESM(require_react(), 1);
+var cursor = source_default.inverse(" ");
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
+init_cjs_shim();
+var import_react53 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
+init_cjs_shim();
+var import_react51 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item-context.js
+init_cjs_shim();
+var import_react50 = __toESM(require_react(), 1);
+var OrderedListItemContext = (0, import_react50.createContext)({
+  marker: figures_default.line
+});
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
+function OrderedListItem({ children }) {
+  const { marker } = (0, import_react51.useContext)(OrderedListItemContext);
+  const { styles: styles5 } = useComponentTheme("OrderedList");
+  return import_react51.default.createElement(
+    Box_default,
+    { ...styles5.listItem() },
+    import_react51.default.createElement(Text, { ...styles5.marker() }, marker),
+    import_react51.default.createElement(Box_default, { ...styles5.content() }, children)
+  );
+}
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-context.js
+init_cjs_shim();
+var import_react52 = __toESM(require_react(), 1);
+var OrderedListContext = (0, import_react52.createContext)({
+  marker: ""
+});
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
+function OrderedList({ children }) {
+  const { marker: parentMarker } = (0, import_react53.useContext)(OrderedListContext);
+  const { styles: styles5 } = useComponentTheme("OrderedList");
+  let numberOfItems = 0;
+  for (const child of import_react53.default.Children.toArray(children)) {
+    if (!(0, import_react53.isValidElement)(child) || child.type !== OrderedListItem) {
+      continue;
+    }
+    numberOfItems++;
+  }
+  const maxMarkerWidth = String(numberOfItems).length;
+  return import_react53.default.createElement(Box_default, { ...styles5.list() }, import_react53.default.Children.map(children, (child, index) => {
+    if (!(0, import_react53.isValidElement)(child) || child.type !== OrderedListItem) {
+      return child;
+    }
+    const paddedMarker = `${String(index + 1).padStart(maxMarkerWidth)}.`;
+    const marker = `${parentMarker}${paddedMarker}`;
+    return (
+      // eslint-disable-next-line react/jsx-no-constructed-context-values
+      import_react53.default.createElement(
+        OrderedListContext.Provider,
+        { value: { marker } },
+        import_react53.default.createElement(OrderedListItemContext.Provider, { value: { marker } }, child)
+      )
+    );
+  }));
+}
+OrderedList.Item = OrderedListItem;
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/password-input.js
+init_cjs_shim();
+var import_react56 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input-state.js
+init_cjs_shim();
+var import_react54 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input.js
+init_cjs_shim();
+var import_react55 = __toESM(require_react(), 1);
+var cursor2 = source_default.inverse(" ");
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/status-message.js
+init_cjs_shim();
+var import_react57 = __toESM(require_react(), 1);
+function StatusMessage({ children, variant }) {
+  const { styles: styles5, config } = useComponentTheme("StatusMessage");
+  return import_react57.default.createElement(
+    Box_default,
+    { ...styles5.container() },
+    import_react57.default.createElement(
+      Box_default,
+      { ...styles5.iconContainer() },
+      import_react57.default.createElement(Text, { ...styles5.icon({ variant }) }, config({ variant }).icon)
+    ),
+    import_react57.default.createElement(Text, { ...styles5.message() }, children)
+  );
+}
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/alert.js
+init_cjs_shim();
+var import_react58 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/index.js
+init_cjs_shim();
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/email-input.js
+init_cjs_shim();
+var import_react61 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input-state.js
+init_cjs_shim();
+var import_react59 = __toESM(require_react(), 1);
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input.js
+init_cjs_shim();
+var import_react60 = __toESM(require_react(), 1);
+var cursor3 = source_default.inverse(" ");
+
+// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/types.js
+init_cjs_shim();
+
+// components/install-progress.tsx
+var actionsToSteps = (actions) => {
+  return actions.map((action) => ({
+    name: action.name,
+    status: action.status,
+    prompt: action.prompt
+  }));
+};
+var populateActionStatus = (actions) => {
+  return actions.map((action) => ({
+    ...action,
+    status: "pending"
+  }));
+};
+var skipActionIfAborted = (execute) => {
+  return async (...args) => {
+    const abortSignal = args[0];
+    if (abortSignal.aborted) {
+      return { newName: `${args[1].stepName} (Aborted)`, stepStatus: "error" };
+    }
+    return await execute(...args);
+  };
+};
+var InstallProgress = (props) => {
+  const cmdSignalRef = (0, import_react62.useRef)(props.cmdSignal);
+  const isInitiated = (0, import_react62.useRef)(false);
+  const actions = (0, import_react62.useRef)(populateActionStatus(props.steps));
+  const [steps, setSteps] = (0, import_react62.useState)(actionsToSteps(actions.current));
+  const [warnings, setWarnings] = (0, import_react62.useState)([]);
+  const [errors, setErrors] = (0, import_react62.useState)([]);
+  const [status, setStatus] = (0, import_react62.useState)(props.initialStatusText);
+  const [statusColor, setStatusColor] = (0, import_react62.useState)(props.initialStatusColor ?? "white");
+  const [isPaused, setIsPaused] = (0, import_react62.useState)(false);
+  const onStepUnpaused = (0, import_react62.useCallback)((confirmed, step) => {
+    if (confirmed) {
+      setIsPaused(false);
+    } else {
+      renderError(`Installation aborted at step "${step.name}"`);
+    }
+  }, []);
+  (0, import_react62.useEffect)(() => {
+    if (isPaused) {
+      isInitiated.current = false;
+    }
+    if (isInitiated.current) {
+      return;
+    }
+    let abortController = new AbortController();
+    let pausedInLoop = false;
+    setSteps(actionsToSteps(actions.current));
+    setStatus(props.initialStatusText);
+    setStatusColor(props.initialStatusColor ?? "white");
+    setWarnings([]);
+    setErrors([]);
+    const runSteps = async () => {
+      while (actions.current.some((step) => step.status === "pending" || step.status === "paused")) {
+        const nextStep = actions.current.find((step) => step.status === "pending" || step.status === "paused");
+        if (!nextStep) {
+          setStatusColor("green");
+          break;
+        }
+        const index = actions.current.indexOf(nextStep);
+        const wasPaused = nextStep.status === "paused";
+        actions.current[index].status = nextStep.prompt && nextStep.status !== "paused" ? "paused" : "running";
+        setSteps(actionsToSteps(actions.current));
+        if (nextStep.prompt && !wasPaused) {
+          setIsPaused(true);
+          pausedInLoop = true;
+          isInitiated.current = false;
+          setSteps(actionsToSteps(actions.current));
+          break;
+        }
+        try {
+          const result = await nextStep.execute(abortController.signal, {
+            insertStep: (step) => {
+              actions.current.splice(index + 1, 0, step);
+              setSteps(actionsToSteps(actions.current));
+            },
+            appendStep: (step) => {
+              actions.current.push(step);
+              setSteps(actionsToSteps(actions.current));
+            },
+            pushWarning: (warning) => setWarnings((prev) => [...prev, warning]),
+            pushError: (error) => setErrors((prev) => [...prev, error]),
+            cmdSignal: cmdSignalRef.current,
+            stepName: nextStep.name
+          });
+          actions.current[index] = {
+            ...actions.current[index],
+            status: result.stepStatus,
+            name: result.newName ?? actions.current[index].name
+          };
+          setSteps(actionsToSteps(actions.current));
+        } catch (error) {
+          setErrors((prev) => [
+            ...prev,
+            error instanceof Error ? `Error in step "${actions.current[index].name}":
+${error.message}` : `Unknown error occurred in step "${actions.current[index].name}"`
+          ]);
+          actions.current[index] = {
+            ...actions.current[index],
+            status: "error",
+            name: actions.current[index].name
+          };
+          abortController.abort();
+          setSteps(actionsToSteps(actions.current));
+          break;
+        }
+      }
+    };
+    if (!isPaused) {
+      isInitiated.current = true;
+      runSteps();
+    }
+    return () => {
+      if (!pausedInLoop) {
+        abortController.abort();
+      }
+    };
+  }, [props.initialStatusText, props.initialStatusColor, isPaused]);
+  return /* @__PURE__ */ import_react62.default.createElement(
+    InstallProgressUI,
+    {
+      steps,
+      warnings,
+      errors,
+      cmdSignal: cmdSignalRef.current,
+      status,
+      statusColor,
+      onStepUnpaused
+    }
+  );
+};
 var InstallProgressUI = (props) => {
-  const [currentCmd, setCurrentCmd] = (0, import_react31.useState)(null);
+  const [currentCmd, setCurrentCmd] = (0, import_react62.useState)(null);
   useSignal(
     props.cmdSignal,
-    (0, import_react31.useCallback)((cmd) => {
+    (0, import_react62.useCallback)((cmd) => {
       setCurrentCmd(cmd);
     }, [])
   );
-  return /* @__PURE__ */ import_react31.default.createElement(Container, null, /* @__PURE__ */ import_react31.default.createElement(Box_default, { flexDirection: "column", rowGap: 0 }, /* @__PURE__ */ import_react31.default.createElement(Box_default, { marginBottom: 1, flexDirection: "column" }, /* @__PURE__ */ import_react31.default.createElement(Text, { color: props.statusColor ?? "white", dimColor: false, bold: true }, ["red", "redBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true }, "\u2718", "  ") : ["green", "greenBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true }, "\u2713", "  ") : "   ", props.status), props.stepText && props.stepTextBeforeSteps && /* @__PURE__ */ import_react31.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react31.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react31.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react31.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), /* @__PURE__ */ import_react31.default.createElement(Static, { items: props.warnings ?? [] }, (warning) => /* @__PURE__ */ import_react31.default.createElement(Text, { color: "yellow", dimColor: true, key: warning, bold: false }, "   ", warning)), /* @__PURE__ */ import_react31.default.createElement(Static, { items: props.errors ?? [] }, (error) => /* @__PURE__ */ import_react31.default.createElement(Text, { color: "red", dimColor: true, key: error, bold: false }, "   ", error)), props.steps && props.steps.map((step) => /* @__PURE__ */ import_react31.default.createElement(Text, { key: step.name }, step.status === "running" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true }, /* @__PURE__ */ import_react31.default.createElement(build_default, { type: "dots" }), "  "), step.status === "success" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "green" }, "\u2713", "  "), step.status === "error" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "red" }, "\u2718", "  "), step.status === "warning" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "yellow" }, "\u26A0", "  "), step.status === "pending" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "gray" }, "\u2022", "  "), /* @__PURE__ */ import_react31.default.createElement(Text, { color: "gray", bold: false }, step.name))), props.stepText && !props.stepTextBeforeSteps && /* @__PURE__ */ import_react31.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react31.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react31.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react31.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), currentCmd && /* @__PURE__ */ import_react31.default.createElement(Box_default, { marginTop: 1, flexDirection: "column" }, /* @__PURE__ */ import_react31.default.createElement(Text, { color: "white" }, "Running: ", /* @__PURE__ */ import_react31.default.createElement(Transform, { transform: formatCmd }, currentCmd))));
+  const pausedStep = props.steps?.find((step) => step.status === "paused");
+  return /* @__PURE__ */ import_react62.default.createElement(Container, null, /* @__PURE__ */ import_react62.default.createElement(Box_default, { flexDirection: "column", rowGap: 0 }, /* @__PURE__ */ import_react62.default.createElement(Box_default, { marginBottom: 1, flexDirection: "column" }, /* @__PURE__ */ import_react62.default.createElement(Text, { color: props.statusColor ?? "white", dimColor: false, bold: true }, ["red", "redBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true }, "\u2718", "  ") : ["green", "greenBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true }, "\u2713", "  ") : /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true }, "\u25B6", "  "), props.status), props.stepText && props.stepTextBeforeSteps && /* @__PURE__ */ import_react62.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react62.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react62.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react62.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), /* @__PURE__ */ import_react62.default.createElement(Static, { items: props.warnings ?? [] }, (warning) => /* @__PURE__ */ import_react62.default.createElement(Text, { color: "yellow", dimColor: true, key: warning, bold: false }, "   ", warning)), /* @__PURE__ */ import_react62.default.createElement(Static, { items: props.errors ?? [] }, (error) => /* @__PURE__ */ import_react62.default.createElement(Text, { color: "red", dimColor: true, key: error, bold: false }, "   ", error)), props.steps && props.steps.map((step) => /* @__PURE__ */ import_react62.default.createElement(Text, { key: step.name }, step.status === "running" && /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true }, /* @__PURE__ */ import_react62.default.createElement(build_default, { type: "dots" }), "  "), step.status === "success" && /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true, color: "green" }, "\u2713", "  "), step.status === "error" && /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true, color: "red" }, "\u2718", "  "), step.status === "warning" && /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true, color: "yellow" }, "\u26A0", "  "), step.status === "pending" && /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true, color: "gray" }, "\u2022", "  "), step.status === "paused" && /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true, color: "yellow" }, "\u23F8", "  "), step.status === "skipped" && /* @__PURE__ */ import_react62.default.createElement(Text, { bold: true, color: "gray" }, "\u23ED", "  "), /* @__PURE__ */ import_react62.default.createElement(Text, { color: "gray", bold: false }, step.name))), props.stepText && !props.stepTextBeforeSteps && /* @__PURE__ */ import_react62.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react62.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react62.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react62.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), currentCmd && !pausedStep && /* @__PURE__ */ import_react62.default.createElement(Box_default, { marginTop: 1, flexDirection: "column" }, /* @__PURE__ */ import_react62.default.createElement(Text, { color: "white" }, "Running: ", /* @__PURE__ */ import_react62.default.createElement(Transform, { transform: formatCmd }, currentCmd))), pausedStep && /* @__PURE__ */ import_react62.default.createElement(Box_default, { marginTop: 1, flexDirection: "column" }, /* @__PURE__ */ import_react62.default.createElement(Text, { color: "yellowBright", bold: true }, pausedStep.prompt ?? "Continue?", " ", /* @__PURE__ */ import_react62.default.createElement(
+    ConfirmInput,
+    {
+      defaultChoice: "cancel",
+      onConfirm: () => props.onStepUnpaused?.(true, pausedStep),
+      onCancel: () => props.onStepUnpaused?.(false, pausedStep)
+    }
+  ))));
 };
 
 // logger.ts
 init_cjs_shim();
-var import_pino = __toESM(require_pino(), 1);
-
-// ../helpers/logger.ts
-init_cjs_shim();
-var globalPinoOpts = {
-  timestamp: true,
-  level: process.env.NODE_ENV === "development" ? "debug" : "info"
-};
-
-// logger.ts
-var import_dotenv2 = __toESM(require_main(), 1);
+var import_pino2 = __toESM(require_pino(), 1);
 var import_pino_pretty = __toESM(require_pino_pretty(), 1);
-import { existsSync as existsSync3, readFileSync as readFileSync3 } from "fs";
-import path6 from "path";
+import { existsSync as existsSync4 } from "fs";
+import path8 from "path";
 var prettyStream = (0, import_pino_pretty.default)({
   levelFirst: true,
   colorize: true,
   ignore: "hostname,pid"
 });
-var logger = null;
-var envFile = existsSync3("./.env.local") ? readFileSync3(".env.local") : readFileSync3(".env");
-var getLogger = () => {
-  if (logger != null) {
-    return logger;
+var logger2 = null;
+var getLogger2 = () => {
+  if (logger2 != null) {
+    return logger2;
   }
-  const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv2.default.parse(envFile) });
-  const logDirExists = existsSync3(path6.dirname(environment.LOG_FILE));
+  const environment = loadEnvironment();
+  const logDirExists = existsSync4(path8.dirname(environment.LOG_FILE));
   const logFile = logDirExists ? environment.LOG_FILE : "/var/log/ratos-cli.log";
   if (!logDirExists) {
     console.warn("cli logger logFile directory does not exist, using default", logFile);
   }
-  const transportOption = process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" ? void 0 : {
-    target: "pino/file",
-    options: { destination: environment.LOG_FILE, append: true }
-  };
-  if (transportOption == null) {
-    logger = (0, import_pino.pino)({ ...globalPinoOpts }, prettyStream).child({ source: "cli" });
+  if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+    logger2 = (0, import_pino2.pino)({ ...globalPinoOpts }, prettyStream).child({ source: "cli" });
   } else {
-    logger = (0, import_pino.pino)({ ...globalPinoOpts, transport: transportOption }).child({ source: "cli" });
+    logger2 = (0, import_pino2.pino)({ ...globalPinoOpts }, import_pino2.pino.destination({ dest: logFile, sync: true })).child({
+      source: "cli"
+    });
   }
-  return logger;
+  return logger2;
 };
 
 // commands/frontend.tsx
@@ -99071,11 +100419,11 @@ var findSection = (section, content) => {
 };
 
 // commands/frontend.tsx
-import { readFile as readFile2, writeFile } from "node:fs/promises";
-import { existsSync as existsSync4 } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { existsSync as existsSync5 } from "node:fs";
 import { $ as $2 } from "zx";
-var import_dotenv3 = __toESM(require_main(), 1);
-var import_react32 = __toESM(require_react(), 1);
+var import_dotenv2 = __toESM(require_main(), 1);
+var import_react63 = __toESM(require_react(), 1);
 var frontend = (program3) => {
   const frontend2 = program3.command("frontend").description("Switch between klipper frontend UIs");
   const fluidConfigFile = `/etc/nginx/sites-available/fluidd`;
@@ -99090,22 +100438,22 @@ var frontend = (program3) => {
       log(entry) {
         if (entry.kind === "cmd") {
           cmdSignal(entry.cmd);
-          getLogger().info("Running command: " + entry.cmd);
+          getLogger2().info("Running command: " + entry.cmd);
         }
       }
     });
-    const envFile2 = existsSync4("./.env.local") ? await readFile2(".env.local") : await readFile2(".env");
-    const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv3.default.parse(envFile2) });
+    const envFile = existsSync5("./.env.local") ? await readFile(".env.local") : await readFile(".env");
+    const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv2.default.parse(envFile) });
     const hostname = (await $$`tr -d " \t\n\r" < /etc/hostname`).text();
     const warnings = [];
     const errors = [];
     const steps = [];
     const moonrakerConfig = environment.KLIPPER_CONFIG_PATH + "/moonraker.conf";
-    let moonrakerConfigContents = await readFile2(moonrakerConfig, "utf-8");
-    let { rerender } = render_default(/* @__PURE__ */ import_react32.default.createElement(InstallProgressUI, { status: "Installing fluidd..", cmdSignal, steps }));
-    if (!existsSync4(mainsailConfigFile)) {
+    let moonrakerConfigContents = await readFile(moonrakerConfig, "utf-8");
+    let { rerender } = render_default(/* @__PURE__ */ import_react63.default.createElement(InstallProgressUI, { status: "Installing fluidd..", cmdSignal, steps }));
+    if (!existsSync5(mainsailConfigFile)) {
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99119,9 +100467,9 @@ var frontend = (program3) => {
         )
       );
     } else {
-      if (!existsSync4(`/home/${environment.USER}/fluidd`)) {
+      if (!existsSync5(`/home/${environment.USER}/fluidd`)) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99137,7 +100485,7 @@ var frontend = (program3) => {
         await $$`wget https://github.com/Rat-OS/fluidd/releases/latest/download/fluidd.zip -O /tmp/fluidd.zip`;
         steps.push({ name: "Download RatOS Fluidd", status: "success" });
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99159,9 +100507,9 @@ var frontend = (program3) => {
           status: "warning"
         });
       }
-      if (!existsSync4(`/home/${environment.USER}/printer_data/config/.fluidd-theme`)) {
+      if (!existsSync5(`/home/${environment.USER}/printer_data/config/.fluidd-theme`)) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99185,7 +100533,7 @@ var frontend = (program3) => {
       const fluiddSection = findSection("update_manager Fluidd", moonrakerConfigContents);
       if (fluiddSection != null) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99204,7 +100552,7 @@ var frontend = (program3) => {
         steps.push({ name: "Existing Fluidd update manager entries removed", status: "warning" });
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99229,7 +100577,7 @@ ${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}info_tags:
       const fluiddThemeSection = findSection("update_manager FluiddTheme", moonrakerConfigContents);
       if (fluiddThemeSection != null) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99248,7 +100596,7 @@ ${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}info_tags:
         steps.push({ name: "Existing Fluidd Theme update manager entries removed", status: "warning" });
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99272,9 +100620,9 @@ info_tags:
 	desc: Experimental: RatOS Fluidd Theme`;
       moonrakerConfigContents += fluiddThemeUpdateSection;
       steps.push({ name: "New Fluidd Theme update manager entry added", status: "success" });
-      if (!existsSync4("/etc/nginx/sites-available/fluidd")) {
+      if (!existsSync5("/etc/nginx/sites-available/fluidd")) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99287,7 +100635,7 @@ info_tags:
             }
           )
         );
-        if (existsSync4("/etc/nginx/sites-enabled/fluidd")) {
+        if (existsSync5("/etc/nginx/sites-enabled/fluidd")) {
           await $$`sudo rm /etc/nginx/sites-enabled/fluidd`;
           steps.push({ name: "Old nginx fluidd configuration removed", status: "success" });
         }
@@ -99296,7 +100644,7 @@ info_tags:
         steps.push({ name: "Nginx fluidd configuration created", status: "success" });
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99310,12 +100658,12 @@ info_tags:
         )
       );
       await $$`sudo ln -s ${fluidConfigFile} /etc/nginx/sites-enabled/fluidd`;
-      if (existsSync4("/etc/nginx/sites-enabled/mainsail")) {
+      if (existsSync5("/etc/nginx/sites-enabled/mainsail")) {
         await $$`sudo rm /etc/nginx/sites-enabled/mainsail`;
       }
       steps.push({ name: "Nginx configuration updated", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99330,7 +100678,7 @@ info_tags:
       );
       const nginxValidation = await $$({ nothrow: true })`sudo nginx -t`;
       if (nginxValidation.exitCode !== 0) {
-        getLogger().error(
+        getLogger2().error(
           { stderr: nginxValidation.stderr, stdout: nginxValidation.stdout },
           "nginx validation failed during fluidd installation"
         );
@@ -99342,7 +100690,7 @@ info_tags:
           warnings.push(nginxValidation.stdout);
         }
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99361,7 +100709,7 @@ info_tags:
         steps.push({ name: "Restored previous mainsail configuration", status: "success" });
         cmdSignal(null);
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react63.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99379,7 +100727,7 @@ info_tags:
         return;
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99396,7 +100744,7 @@ info_tags:
       steps.push({ name: "Nginx reloaded", status: "success" });
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99412,7 +100760,7 @@ info_tags:
       await writeFile(moonrakerConfig, moonrakerConfigContents);
       steps.push({ name: "Moonraker configuration written to disk", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99429,7 +100777,7 @@ info_tags:
       cmdSignal(null);
       steps.push({ name: "Moonraker restarted", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99460,17 +100808,17 @@ info_tags:
     let warnings = [];
     let errors = [];
     const steps = [];
-    const envFile2 = existsSync4("./.env.local") ? await readFile2(".env.local") : await readFile2(".env");
-    const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv3.default.parse(envFile2) });
+    const envFile = existsSync5("./.env.local") ? await readFile(".env.local") : await readFile(".env");
+    const environment = serverSchema.parse({ NODE_ENV: "production", ...import_dotenv2.default.parse(envFile) });
     const moonrakerConfig = environment.KLIPPER_CONFIG_PATH + "/moonraker.conf";
-    let moonrakerConfigContents = await readFile2(moonrakerConfig, "utf-8");
+    let moonrakerConfigContents = await readFile(moonrakerConfig, "utf-8");
     const mainsailOverrideSection = findSection("update_manager mainsail", moonrakerConfigContents);
     const hostname = (await $$`tr -d " \t\n\r" < /etc/hostname`).text();
-    if (!existsSync4(mainsailConfigFile)) {
+    if (!existsSync5(mainsailConfigFile)) {
       return renderError("Mainsail configuration file not found", { exitCode: 2 });
     }
     const { rerender } = render_default(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react63.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -99483,7 +100831,7 @@ info_tags:
     );
     if (mainsailOverrideSection != null && mainsailOverrideSection[0].properties.channel !== channel) {
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99502,7 +100850,7 @@ info_tags:
       steps.push({ name: `Switched mainsail update manager to use ${channel} releases`, status: "warning" });
     } else if (mainsailOverrideSection == null && channel !== "stable") {
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99522,7 +100870,7 @@ channel: ${channel}`;
       steps.push({ name: `Mainsail update manager override added (channel: ${channel})`, status: "success" });
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99539,7 +100887,7 @@ channel: ${channel}`;
       cmdSignal(null);
       steps.push({ name: "Moonraker configuration written to disk", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99556,10 +100904,10 @@ channel: ${channel}`;
       cmdSignal(null);
       steps.push({ name: "Moonraker restarted", status: "success" });
     }
-    if (existsSync4("/etc/nginx/sites-enabled/mainsail")) {
+    if (existsSync5("/etc/nginx/sites-enabled/mainsail")) {
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99576,7 +100924,7 @@ channel: ${channel}`;
       return;
     }
     rerender(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react63.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -99591,7 +100939,7 @@ channel: ${channel}`;
     );
     await $$`sudo ln -s ${mainsailConfigFile} /etc/nginx/sites-enabled/mainsail`;
     steps.push({ name: "Restored mainsail configuration", status: "success" });
-    if (existsSync4("/etc/nginx/sites-enabled/fluidd")) {
+    if (existsSync5("/etc/nginx/sites-enabled/fluidd")) {
       await $$`sudo rm /etc/nginx/sites-enabled/fluidd`;
       cmdSignal(null);
       steps.push({ name: "Disabled fluidd configuration", status: "success" });
@@ -99599,7 +100947,7 @@ channel: ${channel}`;
     const nginxValidation = await $$({ nothrow: true })`sudo nginx -t`;
     if (nginxValidation.exitCode !== 0) {
       if (nginxValidation.stderr.trim() != "") {
-        getLogger().error(
+        getLogger2().error(
           { stderr: nginxValidation.stderr, stdout: nginxValidation.stdout },
           "nginx validation failed during fluidd installation"
         );
@@ -99612,7 +100960,7 @@ channel: ${channel}`;
         warnings.push(nginxValidation.stdout);
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99631,7 +100979,7 @@ channel: ${channel}`;
       cmdSignal(null);
       steps.push({ name: "Restored previous fluidd configuration", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react63.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99649,7 +100997,7 @@ channel: ${channel}`;
       return;
     }
     rerender(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react63.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -99666,7 +101014,7 @@ channel: ${channel}`;
     steps.push({ name: "Nginx reloaded", status: "success" });
     cmdSignal(null);
     rerender(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react63.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -99691,9 +101039,9 @@ init_cjs_shim();
 // ../server/gcode-processor/gcode-processor.ts
 init_cjs_shim();
 var import_progress_stream = __toESM(require_progress_stream());
-import { existsSync as existsSync5 } from "node:fs";
+import { existsSync as existsSync6 } from "node:fs";
 import { access, constants, stat } from "node:fs/promises";
-import path7 from "node:path";
+import path9 from "node:path";
 
 // ../server/gcode-processor/GCodeFile.ts
 init_cjs_shim();
@@ -100531,12 +101879,6 @@ var State = class {
 // ../server/gcode-processor/helpers.ts
 init_cjs_shim();
 var import_semver = __toESM(require_semver2());
-
-// ../server/helpers/logger.ts
-init_cjs_shim();
-var import_pino2 = __toESM(require_pino());
-
-// ../server/gcode-processor/helpers.ts
 function exactlyOneBitSet(integer) {
   return integer != 0 && (integer & integer - 1) == 0;
 }
@@ -101206,6 +102548,7 @@ init_cjs_shim();
 var Printability = /* @__PURE__ */ ((Printability2) => {
   Printability2["UNKNOWN"] = "UNKNOWN";
   Printability2["NOT_SUPPORTED"] = "NOT_SUPPORTED";
+  Printability2["PROCESSOR_NOT_SUPPORTED"] = "PROCESSOR_NOT_SUPPORTED";
   Printability2["MUST_PROCESS"] = "MUST_PROCESS";
   Printability2["READY"] = "READY";
   Printability2["COULD_REPROCESS"] = "COULD_REPROCESS";
@@ -101283,8 +102626,8 @@ function coerceSemVerOrThrow(version, message) {
   return sv;
 }
 var GCodeFile = class _GCodeFile {
-  constructor(path10, info, printability, canDeprocess, printabilityReasons) {
-    this.path = path10;
+  constructor(path13, info, printability, canDeprocess, printabilityReasons) {
+    this.path = path13;
     this.info = info;
     this.printability = printability;
     this.canDeprocess = canDeprocess;
@@ -101306,22 +102649,23 @@ var GCodeFile = class _GCodeFile {
 ; ratos_meta end ${chunks.length}`;
   }
   /** Factory. Returns GCodeFile with valid `info` or throws if the file header can't be parsed etc. */
-  static async inspect(path10, options) {
+  static async inspect(path13, options) {
     options = strictWithDefaults(options, defaultInspectOptions);
     const onWarning = options?.onWarning;
-    const header = await fsReaderGetLines2(path10, 4);
+    const header = await fsReaderGetLines2(path13, 4);
     const gci = _GCodeFile.tryParseHeader(header);
     if (!gci) {
       throw new GeneratorIdentificationNotFound();
     }
     if (gci.fileFormatVersion === void 0) {
-      const tail2 = await fsReaderGetLines2(path10, -3);
+      const tail2 = await fsReaderGetLines2(path13, -3);
       if (/^; processed by RatOS($|\s)/im.test(tail2)) {
         gci.postProcessorVersion = _GCodeFile.LEGACY_RATOS_VERSION;
         gci.fileFormatVersion = 0;
       }
     }
     const reasons = [];
+    let printability;
     if (!options.allowUnsupportedSlicerVersions) {
       try {
         validateGenerator(gci, false);
@@ -101333,20 +102677,21 @@ var GCodeFile = class _GCodeFile {
     }
     if (gci.fileFormatVersion !== void 0) {
       if (gci.fileFormatVersion < _GCodeFile.FILE_FORMAT_VERSION) {
+        printability = "PROCESSOR_NOT_SUPPORTED" /* PROCESSOR_NOT_SUPPORTED */;
         reasons.push(
           "The file format is from an old version of RatOS which is no longer supported. The original file must be re-uploaded or re-sliced."
         );
       } else if (gci.fileFormatVersion > _GCodeFile.FILE_FORMAT_VERSION) {
+        printability = "PROCESSOR_NOT_SUPPORTED" /* PROCESSOR_NOT_SUPPORTED */;
         reasons.push(
           "The file format is from a newer version of RatOS. Update RatOS, or re-upload or re-slice the original file."
         );
       }
     }
     if (reasons.length > 0) {
-      return new _GCodeFile(path10, gci, "NOT_SUPPORTED" /* NOT_SUPPORTED */, void 0, reasons);
+      return new _GCodeFile(path13, gci, printability ?? "NOT_SUPPORTED" /* NOT_SUPPORTED */, void 0, reasons);
     }
     const currentVersion = await getPostProcessorVersion();
-    let printability;
     if (gci.isProcessed) {
       if (gci.processedForIdex !== !!options.printerHasIdex) {
         switch (gci.processedForIdex) {
@@ -101386,11 +102731,11 @@ var GCodeFile = class _GCodeFile {
       printability = !!options.printerHasIdex ? "MUST_PROCESS" /* MUST_PROCESS */ : "READY" /* READY */;
     }
     if (gci.isProcessed) {
-      var tail = await fsReaderGetLines2(path10, -100);
+      var tail = await fsReaderGetLines2(path13, -100);
       rxRatosMeta.lastIndex = 0;
       var match2 = rxRatosMeta.exec(tail);
       if (match2 && match2[3] && !match2[1]) {
-        tail = await fsReaderGetLines2(path10, -(102 + Number(match2[3])));
+        tail = await fsReaderGetLines2(path13, -(102 + Number(match2[3])));
         rxRatosMeta.lastIndex = 0;
         match2 = rxRatosMeta.exec(tail);
       }
@@ -101421,7 +102766,7 @@ var GCodeFile = class _GCodeFile {
         onWarning?.("INVALID_METADATA" /* INVALID_METADATA */, "The ratos_meta block was not found.");
       }
     }
-    return new _GCodeFile(path10, gci, printability, gci.isProcessed ? false : void 0, reasons);
+    return new _GCodeFile(path13, gci, printability, gci.isProcessed ? false : void 0, reasons);
   }
   /** If the current file is already processed by the current GCodeHandling version, throws; otherwise, inputFile will be deprocessed on the fly (if already processed) and (re)transformed. */
   async transform(outputFile, options) {
@@ -101592,7 +102937,7 @@ var GCodeFile = class _GCodeFile {
 // ../server/gcode-processor/gcode-processor.ts
 var PROGRESS_STREAM_SPEED_STABILIZATION_TIME = 3;
 async function inspectGCode(inputFile, options) {
-  const inputStat = await stat(path7.resolve(inputFile));
+  const inputStat = await stat(path9.resolve(inputFile));
   if (!inputStat.isFile()) {
     throw new Error(`${inputFile} is not a file`);
   }
@@ -101660,8 +103005,8 @@ async function processGCode(inputFile, outputFile, options) {
     abortSignal: options.abortSignal,
     onWarning: options.onWarning
   };
-  const inputStat = await stat(path7.resolve(inputFile));
-  const outPath = path7.resolve(path7.dirname(outputFile));
+  const inputStat = await stat(path9.resolve(inputFile));
+  const outPath = path9.resolve(path9.dirname(outputFile));
   if (!inputStat.isFile()) {
     throw new Error(`${inputFile} is not a file`);
   }
@@ -101716,7 +103061,7 @@ async function processGCode(inputFile, outputFile, options) {
   } catch (e) {
     throw new Error(`${outPath} is not a writable directory`);
   }
-  if (existsSync5(path7.resolve(outputFile)) && !options.overwrite) {
+  if (existsSync6(path9.resolve(outputFile)) && !options.overwrite) {
     throw new Error(`${outputFile} already exists`);
   }
   let progressStream;
@@ -101733,931 +103078,6 @@ async function processGCode(inputFile, outputFile, options) {
 
 // commands/postprocessor.tsx
 import { echo as echo2, fs as fs2, tmpfile } from "zx";
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/badge.js
-init_cjs_shim();
-var import_react34 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/theme.js
-init_cjs_shim();
-var import_react33 = __toESM(require_react(), 1);
-var import_deepmerge = __toESM(require_cjs3(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/theme.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/figures@6.1.0/node_modules/figures/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/is-unicode-supported@2.1.0/node_modules/is-unicode-supported/index.js
-init_cjs_shim();
-import process14 from "node:process";
-function isUnicodeSupported() {
-  const { env: env3 } = process14;
-  const { TERM, TERM_PROGRAM } = env3;
-  if (process14.platform !== "win32") {
-    return TERM !== "linux";
-  }
-  return Boolean(env3.WT_SESSION) || Boolean(env3.TERMINUS_SUBLIME) || env3.ConEmuTask === "{cmd::Cmder}" || TERM_PROGRAM === "Terminus-Sublime" || TERM_PROGRAM === "vscode" || TERM === "xterm-256color" || TERM === "alacritty" || TERM === "rxvt-unicode" || TERM === "rxvt-unicode-256color" || env3.TERMINAL_EMULATOR === "JetBrains-JediTerm";
-}
-
-// ../node_modules/.pnpm/figures@6.1.0/node_modules/figures/index.js
-var common = {
-  circleQuestionMark: "(?)",
-  questionMarkPrefix: "(?)",
-  square: "\u2588",
-  squareDarkShade: "\u2593",
-  squareMediumShade: "\u2592",
-  squareLightShade: "\u2591",
-  squareTop: "\u2580",
-  squareBottom: "\u2584",
-  squareLeft: "\u258C",
-  squareRight: "\u2590",
-  squareCenter: "\u25A0",
-  bullet: "\u25CF",
-  dot: "\u2024",
-  ellipsis: "\u2026",
-  pointerSmall: "\u203A",
-  triangleUp: "\u25B2",
-  triangleUpSmall: "\u25B4",
-  triangleDown: "\u25BC",
-  triangleDownSmall: "\u25BE",
-  triangleLeftSmall: "\u25C2",
-  triangleRightSmall: "\u25B8",
-  home: "\u2302",
-  heart: "\u2665",
-  musicNote: "\u266A",
-  musicNoteBeamed: "\u266B",
-  arrowUp: "\u2191",
-  arrowDown: "\u2193",
-  arrowLeft: "\u2190",
-  arrowRight: "\u2192",
-  arrowLeftRight: "\u2194",
-  arrowUpDown: "\u2195",
-  almostEqual: "\u2248",
-  notEqual: "\u2260",
-  lessOrEqual: "\u2264",
-  greaterOrEqual: "\u2265",
-  identical: "\u2261",
-  infinity: "\u221E",
-  subscriptZero: "\u2080",
-  subscriptOne: "\u2081",
-  subscriptTwo: "\u2082",
-  subscriptThree: "\u2083",
-  subscriptFour: "\u2084",
-  subscriptFive: "\u2085",
-  subscriptSix: "\u2086",
-  subscriptSeven: "\u2087",
-  subscriptEight: "\u2088",
-  subscriptNine: "\u2089",
-  oneHalf: "\xBD",
-  oneThird: "\u2153",
-  oneQuarter: "\xBC",
-  oneFifth: "\u2155",
-  oneSixth: "\u2159",
-  oneEighth: "\u215B",
-  twoThirds: "\u2154",
-  twoFifths: "\u2156",
-  threeQuarters: "\xBE",
-  threeFifths: "\u2157",
-  threeEighths: "\u215C",
-  fourFifths: "\u2158",
-  fiveSixths: "\u215A",
-  fiveEighths: "\u215D",
-  sevenEighths: "\u215E",
-  line: "\u2500",
-  lineBold: "\u2501",
-  lineDouble: "\u2550",
-  lineDashed0: "\u2504",
-  lineDashed1: "\u2505",
-  lineDashed2: "\u2508",
-  lineDashed3: "\u2509",
-  lineDashed4: "\u254C",
-  lineDashed5: "\u254D",
-  lineDashed6: "\u2574",
-  lineDashed7: "\u2576",
-  lineDashed8: "\u2578",
-  lineDashed9: "\u257A",
-  lineDashed10: "\u257C",
-  lineDashed11: "\u257E",
-  lineDashed12: "\u2212",
-  lineDashed13: "\u2013",
-  lineDashed14: "\u2010",
-  lineDashed15: "\u2043",
-  lineVertical: "\u2502",
-  lineVerticalBold: "\u2503",
-  lineVerticalDouble: "\u2551",
-  lineVerticalDashed0: "\u2506",
-  lineVerticalDashed1: "\u2507",
-  lineVerticalDashed2: "\u250A",
-  lineVerticalDashed3: "\u250B",
-  lineVerticalDashed4: "\u254E",
-  lineVerticalDashed5: "\u254F",
-  lineVerticalDashed6: "\u2575",
-  lineVerticalDashed7: "\u2577",
-  lineVerticalDashed8: "\u2579",
-  lineVerticalDashed9: "\u257B",
-  lineVerticalDashed10: "\u257D",
-  lineVerticalDashed11: "\u257F",
-  lineDownLeft: "\u2510",
-  lineDownLeftArc: "\u256E",
-  lineDownBoldLeftBold: "\u2513",
-  lineDownBoldLeft: "\u2512",
-  lineDownLeftBold: "\u2511",
-  lineDownDoubleLeftDouble: "\u2557",
-  lineDownDoubleLeft: "\u2556",
-  lineDownLeftDouble: "\u2555",
-  lineDownRight: "\u250C",
-  lineDownRightArc: "\u256D",
-  lineDownBoldRightBold: "\u250F",
-  lineDownBoldRight: "\u250E",
-  lineDownRightBold: "\u250D",
-  lineDownDoubleRightDouble: "\u2554",
-  lineDownDoubleRight: "\u2553",
-  lineDownRightDouble: "\u2552",
-  lineUpLeft: "\u2518",
-  lineUpLeftArc: "\u256F",
-  lineUpBoldLeftBold: "\u251B",
-  lineUpBoldLeft: "\u251A",
-  lineUpLeftBold: "\u2519",
-  lineUpDoubleLeftDouble: "\u255D",
-  lineUpDoubleLeft: "\u255C",
-  lineUpLeftDouble: "\u255B",
-  lineUpRight: "\u2514",
-  lineUpRightArc: "\u2570",
-  lineUpBoldRightBold: "\u2517",
-  lineUpBoldRight: "\u2516",
-  lineUpRightBold: "\u2515",
-  lineUpDoubleRightDouble: "\u255A",
-  lineUpDoubleRight: "\u2559",
-  lineUpRightDouble: "\u2558",
-  lineUpDownLeft: "\u2524",
-  lineUpBoldDownBoldLeftBold: "\u252B",
-  lineUpBoldDownBoldLeft: "\u2528",
-  lineUpDownLeftBold: "\u2525",
-  lineUpBoldDownLeftBold: "\u2529",
-  lineUpDownBoldLeftBold: "\u252A",
-  lineUpDownBoldLeft: "\u2527",
-  lineUpBoldDownLeft: "\u2526",
-  lineUpDoubleDownDoubleLeftDouble: "\u2563",
-  lineUpDoubleDownDoubleLeft: "\u2562",
-  lineUpDownLeftDouble: "\u2561",
-  lineUpDownRight: "\u251C",
-  lineUpBoldDownBoldRightBold: "\u2523",
-  lineUpBoldDownBoldRight: "\u2520",
-  lineUpDownRightBold: "\u251D",
-  lineUpBoldDownRightBold: "\u2521",
-  lineUpDownBoldRightBold: "\u2522",
-  lineUpDownBoldRight: "\u251F",
-  lineUpBoldDownRight: "\u251E",
-  lineUpDoubleDownDoubleRightDouble: "\u2560",
-  lineUpDoubleDownDoubleRight: "\u255F",
-  lineUpDownRightDouble: "\u255E",
-  lineDownLeftRight: "\u252C",
-  lineDownBoldLeftBoldRightBold: "\u2533",
-  lineDownLeftBoldRightBold: "\u252F",
-  lineDownBoldLeftRight: "\u2530",
-  lineDownBoldLeftBoldRight: "\u2531",
-  lineDownBoldLeftRightBold: "\u2532",
-  lineDownLeftRightBold: "\u252E",
-  lineDownLeftBoldRight: "\u252D",
-  lineDownDoubleLeftDoubleRightDouble: "\u2566",
-  lineDownDoubleLeftRight: "\u2565",
-  lineDownLeftDoubleRightDouble: "\u2564",
-  lineUpLeftRight: "\u2534",
-  lineUpBoldLeftBoldRightBold: "\u253B",
-  lineUpLeftBoldRightBold: "\u2537",
-  lineUpBoldLeftRight: "\u2538",
-  lineUpBoldLeftBoldRight: "\u2539",
-  lineUpBoldLeftRightBold: "\u253A",
-  lineUpLeftRightBold: "\u2536",
-  lineUpLeftBoldRight: "\u2535",
-  lineUpDoubleLeftDoubleRightDouble: "\u2569",
-  lineUpDoubleLeftRight: "\u2568",
-  lineUpLeftDoubleRightDouble: "\u2567",
-  lineUpDownLeftRight: "\u253C",
-  lineUpBoldDownBoldLeftBoldRightBold: "\u254B",
-  lineUpDownBoldLeftBoldRightBold: "\u2548",
-  lineUpBoldDownLeftBoldRightBold: "\u2547",
-  lineUpBoldDownBoldLeftRightBold: "\u254A",
-  lineUpBoldDownBoldLeftBoldRight: "\u2549",
-  lineUpBoldDownLeftRight: "\u2540",
-  lineUpDownBoldLeftRight: "\u2541",
-  lineUpDownLeftBoldRight: "\u253D",
-  lineUpDownLeftRightBold: "\u253E",
-  lineUpBoldDownBoldLeftRight: "\u2542",
-  lineUpDownLeftBoldRightBold: "\u253F",
-  lineUpBoldDownLeftBoldRight: "\u2543",
-  lineUpBoldDownLeftRightBold: "\u2544",
-  lineUpDownBoldLeftBoldRight: "\u2545",
-  lineUpDownBoldLeftRightBold: "\u2546",
-  lineUpDoubleDownDoubleLeftDoubleRightDouble: "\u256C",
-  lineUpDoubleDownDoubleLeftRight: "\u256B",
-  lineUpDownLeftDoubleRightDouble: "\u256A",
-  lineCross: "\u2573",
-  lineBackslash: "\u2572",
-  lineSlash: "\u2571"
-};
-var specialMainSymbols = {
-  tick: "\u2714",
-  info: "\u2139",
-  warning: "\u26A0",
-  cross: "\u2718",
-  squareSmall: "\u25FB",
-  squareSmallFilled: "\u25FC",
-  circle: "\u25EF",
-  circleFilled: "\u25C9",
-  circleDotted: "\u25CC",
-  circleDouble: "\u25CE",
-  circleCircle: "\u24DE",
-  circleCross: "\u24E7",
-  circlePipe: "\u24BE",
-  radioOn: "\u25C9",
-  radioOff: "\u25EF",
-  checkboxOn: "\u2612",
-  checkboxOff: "\u2610",
-  checkboxCircleOn: "\u24E7",
-  checkboxCircleOff: "\u24BE",
-  pointer: "\u276F",
-  triangleUpOutline: "\u25B3",
-  triangleLeft: "\u25C0",
-  triangleRight: "\u25B6",
-  lozenge: "\u25C6",
-  lozengeOutline: "\u25C7",
-  hamburger: "\u2630",
-  smiley: "\u32E1",
-  mustache: "\u0DF4",
-  star: "\u2605",
-  play: "\u25B6",
-  nodejs: "\u2B22",
-  oneSeventh: "\u2150",
-  oneNinth: "\u2151",
-  oneTenth: "\u2152"
-};
-var specialFallbackSymbols = {
-  tick: "\u221A",
-  info: "i",
-  warning: "\u203C",
-  cross: "\xD7",
-  squareSmall: "\u25A1",
-  squareSmallFilled: "\u25A0",
-  circle: "( )",
-  circleFilled: "(*)",
-  circleDotted: "( )",
-  circleDouble: "( )",
-  circleCircle: "(\u25CB)",
-  circleCross: "(\xD7)",
-  circlePipe: "(\u2502)",
-  radioOn: "(*)",
-  radioOff: "( )",
-  checkboxOn: "[\xD7]",
-  checkboxOff: "[ ]",
-  checkboxCircleOn: "(\xD7)",
-  checkboxCircleOff: "( )",
-  pointer: ">",
-  triangleUpOutline: "\u2206",
-  triangleLeft: "\u25C4",
-  triangleRight: "\u25BA",
-  lozenge: "\u2666",
-  lozengeOutline: "\u25CA",
-  hamburger: "\u2261",
-  smiley: "\u263A",
-  mustache: "\u250C\u2500\u2510",
-  star: "\u2736",
-  play: "\u25BA",
-  nodejs: "\u2666",
-  oneSeventh: "1/7",
-  oneNinth: "1/9",
-  oneTenth: "1/10"
-};
-var mainSymbols = { ...common, ...specialMainSymbols };
-var fallbackSymbols = { ...common, ...specialFallbackSymbols };
-var shouldUseMain = isUnicodeSupported();
-var figures = shouldUseMain ? mainSymbols : fallbackSymbols;
-var figures_default = figures;
-var replacements = Object.entries(specialMainSymbols);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/theme.js
-var colorByVariant = {
-  info: "blue",
-  success: "green",
-  error: "red",
-  warning: "yellow"
-};
-var theme = {
-  styles: {
-    container: ({ variant }) => ({
-      flexGrow: 1,
-      borderStyle: "round",
-      borderColor: colorByVariant[variant],
-      gap: 1,
-      paddingX: 1
-    }),
-    iconContainer: () => ({
-      flexShrink: 0
-    }),
-    icon: ({ variant }) => ({
-      color: colorByVariant[variant]
-    }),
-    content: () => ({
-      flexShrink: 1,
-      flexGrow: 1,
-      minWidth: 0,
-      flexDirection: "column",
-      gap: 1
-    }),
-    title: () => ({
-      bold: true
-    }),
-    message: () => ({})
-  },
-  config({ variant }) {
-    let icon;
-    if (variant === "info") {
-      icon = figures_default.info;
-    }
-    if (variant === "success") {
-      icon = figures_default.tick;
-    }
-    if (variant === "error") {
-      icon = figures_default.cross;
-    }
-    if (variant === "warning") {
-      icon = figures_default.warning;
-    }
-    return { icon };
-  }
-};
-var theme_default = theme;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/theme.js
-init_cjs_shim();
-var theme2 = {
-  styles: {
-    container: ({ color }) => ({
-      backgroundColor: color
-    }),
-    label: () => ({
-      color: "black"
-    })
-  }
-};
-var theme_default2 = theme2;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/theme.js
-init_cjs_shim();
-var theme3 = {
-  styles: {
-    input: ({ isFocused }) => ({
-      dimColor: !isFocused
-    })
-  }
-};
-var theme_default3 = theme3;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/theme.js
-init_cjs_shim();
-var theme4 = {
-  styles: {
-    container: () => ({
-      flexDirection: "column"
-    }),
-    option: ({ isFocused }) => ({
-      gap: 1,
-      paddingLeft: isFocused ? 0 : 2
-    }),
-    selectedIndicator: () => ({
-      color: "green"
-    }),
-    focusIndicator: () => ({
-      color: "blue"
-    }),
-    label({ isFocused, isSelected }) {
-      let color;
-      if (isSelected) {
-        color = "green";
-      }
-      if (isFocused) {
-        color = "blue";
-      }
-      return { color };
-    },
-    highlightedText: () => ({
-      bold: true
-    })
-  }
-};
-var theme_default4 = theme4;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/theme.js
-init_cjs_shim();
-var theme5 = {
-  styles: {
-    list: () => ({
-      flexDirection: "column"
-    }),
-    listItem: () => ({
-      gap: 1
-    }),
-    marker: () => ({
-      dimColor: true
-    }),
-    content: () => ({
-      flexDirection: "column"
-    })
-  }
-};
-var theme_default5 = theme5;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/theme.js
-init_cjs_shim();
-var theme6 = {
-  styles: {
-    container: () => ({
-      flexGrow: 1,
-      minWidth: 0
-    }),
-    completed: () => ({
-      color: "magenta"
-    }),
-    remaining: () => ({
-      dimColor: true
-    })
-  },
-  config: () => ({
-    // Character for rendering a completed bar
-    completedCharacter: figures_default.square,
-    // Character for rendering a remaining bar
-    remainingCharacter: figures_default.squareLightShade
-  })
-};
-var theme_default6 = theme6;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/theme.js
-init_cjs_shim();
-var theme7 = {
-  styles: {
-    container: () => ({
-      flexDirection: "column"
-    }),
-    option: ({ isFocused }) => ({
-      gap: 1,
-      paddingLeft: isFocused ? 0 : 2
-    }),
-    selectedIndicator: () => ({
-      color: "green"
-    }),
-    focusIndicator: () => ({
-      color: "blue"
-    }),
-    label({ isFocused, isSelected }) {
-      let color;
-      if (isSelected) {
-        color = "green";
-      }
-      if (isFocused) {
-        color = "blue";
-      }
-      return { color };
-    },
-    highlightedText: () => ({
-      bold: true
-    })
-  }
-};
-var theme_default7 = theme7;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/theme.js
-init_cjs_shim();
-var theme8 = {
-  styles: {
-    container: () => ({
-      gap: 1
-    }),
-    frame: () => ({
-      color: "blue"
-    }),
-    label: () => ({})
-  }
-};
-var theme_default8 = theme8;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/theme.js
-init_cjs_shim();
-var colorByVariant2 = {
-  success: "green",
-  error: "red",
-  warning: "yellow",
-  info: "blue"
-};
-var iconByVariant = {
-  success: figures_default.tick,
-  error: figures_default.cross,
-  warning: figures_default.warning,
-  info: figures_default.info
-};
-var theme9 = {
-  styles: {
-    container: () => ({
-      gap: 1
-    }),
-    iconContainer: () => ({
-      flexShrink: 0
-    }),
-    icon: ({ variant }) => ({
-      color: colorByVariant2[variant]
-    }),
-    message: () => ({})
-  },
-  config: ({ variant }) => ({
-    icon: iconByVariant[variant]
-  })
-};
-var theme_default9 = theme9;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/theme.js
-init_cjs_shim();
-var theme10 = {
-  styles: {
-    list: () => ({
-      flexDirection: "column"
-    }),
-    listItem: () => ({
-      gap: 1
-    }),
-    marker: () => ({
-      dimColor: true
-    }),
-    content: () => ({
-      flexDirection: "column"
-    })
-  },
-  config: () => ({
-    marker: figures_default.line
-  })
-};
-var theme_default10 = theme10;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/theme.js
-init_cjs_shim();
-var theme11 = {
-  styles: {
-    value: () => ({})
-  }
-};
-var theme_default11 = theme11;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/theme.js
-init_cjs_shim();
-var theme12 = {
-  styles: {
-    value: () => ({})
-  }
-};
-var theme_default12 = theme12;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/theme.js
-init_cjs_shim();
-var theme13 = {
-  styles: {
-    value: () => ({})
-  }
-};
-var theme_default13 = theme13;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/theme.js
-var defaultTheme = {
-  components: {
-    Alert: theme_default,
-    Badge: theme_default2,
-    ConfirmInput: theme_default3,
-    MultiSelect: theme_default4,
-    OrderedList: theme_default5,
-    ProgressBar: theme_default6,
-    Select: theme_default7,
-    Spinner: theme_default8,
-    StatusMessage: theme_default9,
-    UnorderedList: theme_default10,
-    TextInput: theme_default11,
-    EmailInput: theme_default12,
-    PasswordInput: theme_default13
-  }
-};
-var ThemeContext = (0, import_react33.createContext)(defaultTheme);
-var useComponentTheme = (component) => {
-  const theme14 = (0, import_react33.useContext)(ThemeContext);
-  return theme14.components[component];
-};
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/confirm-input.js
-init_cjs_shim();
-var import_react35 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
-init_cjs_shim();
-var import_react39 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
-init_cjs_shim();
-var import_react37 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
-init_cjs_shim();
-var import_react36 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/constants.js
-init_cjs_shim();
-var defaultMarker = figures_default.line;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
-var UnorderedListItemContext = (0, import_react36.createContext)({
-  marker: defaultMarker
-});
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
-function UnorderedListItem({ children }) {
-  const { marker } = (0, import_react37.useContext)(UnorderedListItemContext);
-  const { styles: styles5 } = useComponentTheme("UnorderedList");
-  return import_react37.default.createElement(
-    Box_default,
-    { ...styles5.listItem() },
-    import_react37.default.createElement(Text, { ...styles5.marker() }, marker),
-    import_react37.default.createElement(Box_default, { ...styles5.content() }, children)
-  );
-}
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-context.js
-init_cjs_shim();
-var import_react38 = __toESM(require_react(), 1);
-var UnorderedListContext = (0, import_react38.createContext)({
-  depth: 0
-});
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
-function UnorderedList({ children }) {
-  const { depth } = (0, import_react39.useContext)(UnorderedListContext);
-  const { styles: styles5, config } = useComponentTheme("UnorderedList");
-  const listContext = (0, import_react39.useMemo)(() => ({
-    depth: depth + 1
-  }), [depth]);
-  const listItemContext = (0, import_react39.useMemo)(() => {
-    const { marker } = config();
-    if (typeof marker === "string") {
-      return { marker };
-    }
-    if (Array.isArray(marker)) {
-      return {
-        marker: marker[depth] ?? marker.at(-1) ?? defaultMarker
-      };
-    }
-    return {
-      marker: defaultMarker
-    };
-  }, [config, depth]);
-  return import_react39.default.createElement(
-    UnorderedListContext.Provider,
-    { value: listContext },
-    import_react39.default.createElement(
-      UnorderedListItemContext.Provider,
-      { value: listItemContext },
-      import_react39.default.createElement(Box_default, { ...styles5.list() }, children)
-    )
-  );
-}
-UnorderedList.Item = UnorderedListItem;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select.js
-init_cjs_shim();
-var import_react42 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select-option.js
-init_cjs_shim();
-var import_react40 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/use-multi-select-state.js
-init_cjs_shim();
-var import_react41 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/lib/option-map.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/use-multi-select.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/progress-bar.js
-init_cjs_shim();
-var import_react43 = __toESM(require_react(), 1);
-function ProgressBar({ value }) {
-  const [width, setWidth] = (0, import_react43.useState)(0);
-  const [ref, setRef] = (0, import_react43.useState)(null);
-  if (ref) {
-    const dimensions = measure_element_default(ref);
-    if (dimensions.width !== width) {
-      setWidth(dimensions.width);
-    }
-  }
-  const progress2 = Math.min(100, Math.max(0, value));
-  const complete = Math.round(progress2 / 100 * width);
-  const remaining = width - complete;
-  const { styles: styles5, config } = useComponentTheme("ProgressBar");
-  return import_react43.default.createElement(
-    Box_default,
-    { ref: setRef, ...styles5.container() },
-    complete > 0 && import_react43.default.createElement(Text, { ...styles5.completed() }, config().completedCharacter.repeat(complete)),
-    remaining > 0 && import_react43.default.createElement(Text, { ...styles5.remaining() }, config().remainingCharacter.repeat(remaining))
-  );
-}
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select.js
-init_cjs_shim();
-var import_react46 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select-option.js
-init_cjs_shim();
-var import_react44 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select-state.js
-init_cjs_shim();
-var import_react45 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/spinner.js
-init_cjs_shim();
-var import_react48 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/use-spinner.js
-init_cjs_shim();
-var import_react47 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/text-input.js
-init_cjs_shim();
-var import_react51 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input-state.js
-init_cjs_shim();
-var import_react49 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input.js
-init_cjs_shim();
-var import_react50 = __toESM(require_react(), 1);
-var cursor = source_default.inverse(" ");
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
-init_cjs_shim();
-var import_react55 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
-init_cjs_shim();
-var import_react53 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item-context.js
-init_cjs_shim();
-var import_react52 = __toESM(require_react(), 1);
-var OrderedListItemContext = (0, import_react52.createContext)({
-  marker: figures_default.line
-});
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
-function OrderedListItem({ children }) {
-  const { marker } = (0, import_react53.useContext)(OrderedListItemContext);
-  const { styles: styles5 } = useComponentTheme("OrderedList");
-  return import_react53.default.createElement(
-    Box_default,
-    { ...styles5.listItem() },
-    import_react53.default.createElement(Text, { ...styles5.marker() }, marker),
-    import_react53.default.createElement(Box_default, { ...styles5.content() }, children)
-  );
-}
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-context.js
-init_cjs_shim();
-var import_react54 = __toESM(require_react(), 1);
-var OrderedListContext = (0, import_react54.createContext)({
-  marker: ""
-});
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
-function OrderedList({ children }) {
-  const { marker: parentMarker } = (0, import_react55.useContext)(OrderedListContext);
-  const { styles: styles5 } = useComponentTheme("OrderedList");
-  let numberOfItems = 0;
-  for (const child of import_react55.default.Children.toArray(children)) {
-    if (!(0, import_react55.isValidElement)(child) || child.type !== OrderedListItem) {
-      continue;
-    }
-    numberOfItems++;
-  }
-  const maxMarkerWidth = String(numberOfItems).length;
-  return import_react55.default.createElement(Box_default, { ...styles5.list() }, import_react55.default.Children.map(children, (child, index) => {
-    if (!(0, import_react55.isValidElement)(child) || child.type !== OrderedListItem) {
-      return child;
-    }
-    const paddedMarker = `${String(index + 1).padStart(maxMarkerWidth)}.`;
-    const marker = `${parentMarker}${paddedMarker}`;
-    return (
-      // eslint-disable-next-line react/jsx-no-constructed-context-values
-      import_react55.default.createElement(
-        OrderedListContext.Provider,
-        { value: { marker } },
-        import_react55.default.createElement(OrderedListItemContext.Provider, { value: { marker } }, child)
-      )
-    );
-  }));
-}
-OrderedList.Item = OrderedListItem;
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/password-input.js
-init_cjs_shim();
-var import_react58 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input-state.js
-init_cjs_shim();
-var import_react56 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input.js
-init_cjs_shim();
-var import_react57 = __toESM(require_react(), 1);
-var cursor2 = source_default.inverse(" ");
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/status-message.js
-init_cjs_shim();
-var import_react59 = __toESM(require_react(), 1);
-function StatusMessage({ children, variant }) {
-  const { styles: styles5, config } = useComponentTheme("StatusMessage");
-  return import_react59.default.createElement(
-    Box_default,
-    { ...styles5.container() },
-    import_react59.default.createElement(
-      Box_default,
-      { ...styles5.iconContainer() },
-      import_react59.default.createElement(Text, { ...styles5.icon({ variant }) }, config({ variant }).icon)
-    ),
-    import_react59.default.createElement(Text, { ...styles5.message() }, children)
-  );
-}
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/alert.js
-init_cjs_shim();
-var import_react60 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/index.js
-init_cjs_shim();
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/email-input.js
-init_cjs_shim();
-var import_react63 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input-state.js
-init_cjs_shim();
-var import_react61 = __toESM(require_react(), 1);
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input.js
-init_cjs_shim();
-var import_react62 = __toESM(require_react(), 1);
-var cursor3 = source_default.inverse(" ");
-
-// ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/types.js
-init_cjs_shim();
-
-// commands/postprocessor.tsx
 var import_react64 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/luxon@3.4.4/node_modules/luxon/src/luxon.js
@@ -108928,7 +109348,7 @@ function friendlyDateTime(dateTimeish) {
 }
 
 // commands/postprocessor.tsx
-import path8 from "path";
+import path10 from "path";
 
 // ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/formatter.js
 init_cjs_shim();
@@ -109002,8 +109422,8 @@ init_cjs_shim();
 // ../node_modules/.pnpm/@schema-hub+zod-error-formatter@0.0.8_zod@3.22.4/node_modules/@schema-hub/zod-error-formatter/zod-error-formatter/path.js
 init_cjs_shim();
 var isNonEmptyPath = isNonEmptyArray;
-function formatPath(path10) {
-  return path10.reduce((currentFormattedPath, item, index) => {
+function formatPath(path13) {
+  return path13.reduce((currentFormattedPath, item, index) => {
     if (typeof item === "number") {
       return `${currentFormattedPath}[${item}]`;
     }
@@ -109025,9 +109445,9 @@ function isMapEntryPathItem(pathItem) {
 function determinePathItemKind(pathItem) {
   return typeof pathItem === "number" ? "key" : "property";
 }
-function findMapValueByPath(value, path10) {
-  if (isNonEmptyPath(path10)) {
-    const [mapEntryKey, keyOrValue, ...remainingPath] = path10;
+function findMapValueByPath(value, path13) {
+  if (isNonEmptyPath(path13)) {
+    const [mapEntryKey, keyOrValue, ...remainingPath] = path13;
     if (keyOrValue !== void 0 && isMapEntryPathItem(keyOrValue)) {
       const entry = Array.from(value.entries())[mapEntryKey];
       if (entry !== void 0) {
@@ -109041,12 +109461,12 @@ function findMapValueByPath(value, path10) {
   }
   return { found: true, value };
 }
-function findValueByPath(value, path10) {
+function findValueByPath(value, path13) {
   if (isMap(value)) {
-    return findMapValueByPath(value, path10);
+    return findMapValueByPath(value, path13);
   }
-  if (isNonEmptyPath(path10)) {
-    const [currentPathItem, ...remainingPath] = path10;
+  if (isNonEmptyPath(path13)) {
+    const [currentPathItem, ...remainingPath] = path13;
     if (isIndexable(value) && Object.hasOwn(value, currentPathItem)) {
       return findValueByPath(value[currentPathItem], remainingPath);
     }
@@ -109340,11 +109760,11 @@ var issueCodeToFormatterMap = {
   not_finite: formatSimpleMessage("number must be finite")
 };
 function formatIssue(issue, input) {
-  const { path: path10, code } = issue;
+  const { path: path13, code } = issue;
   const formatter = issueCodeToFormatterMap[code];
   const message = formatter(issue, input);
-  if (isNonEmptyPath(path10)) {
-    const formattedPath = formatPath(path10);
+  if (isNonEmptyPath(path13)) {
+    const formattedPath = formatPath(path13);
     return `at ${formattedPath}: ${message}`;
   }
   return message;
@@ -109467,9 +109887,9 @@ var toPostProcessorCLIOutput = (obj) => {
   try {
     echo2(JSON.stringify(PostProcessorCLIOutput.parse(obj)));
   } catch (e) {
-    getLogger().error(e, "An error occurred while serializing postprocessor output");
+    getLogger2().error(e, "An error occurred while serializing postprocessor output");
     if (e instanceof ZodError) {
-      getLogger().trace(obj, "Invalid data passed to toPostProcessorCLIOutput");
+      getLogger2().trace(obj, "Invalid data passed to toPostProcessorCLIOutput");
       echo2(
         JSON.stringify({
           result: "error",
@@ -109553,10 +109973,10 @@ var postprocessor = (program3) => {
     let lastProgressPercentage = -1;
     const isInteractive = process.stdout.isTTY && !args.nonInteractive;
     if (isInteractive) {
-      const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile) }));
+      const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path10.basename(inputFile) }));
       rerender = _rerender;
       onProgress = (report) => {
-        _rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), report }));
+        _rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path10.basename(inputFile), report }));
       };
     } else {
       onProgress = (report) => {
@@ -109577,7 +109997,7 @@ var postprocessor = (program3) => {
       allowUnknownGenerator: args.allowUnknownGenerator,
       onProgress,
       onWarning: (code, message) => {
-        getLogger().trace(code, "Warning during processing: " + message);
+        getLogger2().trace(code, "Warning during processing: " + message);
         switch (code) {
           case "UNSUPPORTED_SLICER_VERSION" /* UNSUPPORTED_SLICER_VERSION */:
             toPostProcessorCLIOutput({
@@ -109606,12 +110026,12 @@ var postprocessor = (program3) => {
               title: "Unexpected warning",
               message
             });
-            getLogger().warn(code, message);
+            getLogger2().warn(code, message);
             break;
         }
       }
     };
-    getLogger().info(
+    getLogger2().info(
       { ...opts, inputFile, outputFile: outputFile ?? "No output file specified" },
       "postprocessor options"
     );
@@ -109620,20 +110040,20 @@ var postprocessor = (program3) => {
         outputFile = tmpfile();
       }
       const result = outputFile != null && outputFile.trim() !== "" ? await processGCode(inputFile, outputFile, { ...opts, fullAnalysis: false }) : await inspectGCode(inputFile, { ...opts, fullAnalysis: false });
-      getLogger().info(result, "postprocessor result");
+      getLogger2().info(result, "postprocessor result");
       if (!result.wasAlreadyProcessed && args.overwriteInput && result.isProcessed) {
-        getLogger().info({ outputFile, inputFile }, "renaming output file to input file");
+        getLogger2().info({ outputFile, inputFile }, "renaming output file to input file");
         fs2.renameSync(outputFile, inputFile);
       }
       if (result.wasAlreadyProcessed && result.printability === "READY" /* READY */ && !args.overwriteInput && outputFile != null && outputFile.trim() !== "") {
-        getLogger().info(
+        getLogger2().info(
           { outputFile, inputFile },
           "Input file already processed. Copying input file to output file"
         );
         fs2.copyFileSync(inputFile, outputFile);
       }
       if (rerender && isInteractive) {
-        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), done: true }));
+        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path10.basename(inputFile), done: true }));
       } else {
         toPostProcessorCLIOutput({
           result: "success",
@@ -109667,13 +110087,13 @@ Line ${e.lineNumber}: ${e.line}`;
           errorMessage = `File ${e.path} not found`;
           errorCode = "FILE_NOT_FOUND";
         } else {
-          getLogger().error(e, "Unexpected error while processing gcode file");
+          getLogger2().error(e, "Unexpected error while processing gcode file");
         }
       } else {
-        getLogger().error(e, "Unexpected error while processing gcode file");
+        getLogger2().error(e, "Unexpected error while processing gcode file");
       }
       if (rerender && isInteractive) {
-        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), error: errorMessage }));
+        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path10.basename(inputFile), error: errorMessage }));
       } else {
         toPostProcessorCLIOutput({
           result: "error",
@@ -109687,11 +110107,637 @@ Line ${e.lineNumber}: ${e.line}`;
   });
 };
 
+// commands/update-logs.tsx
+init_cjs_shim();
+import { readFile as readFile2 } from "node:fs/promises";
+import { existsSync as existsSync7 } from "node:fs";
+var import_react65 = __toESM(require_react(), 1);
+var LogEntrySchema = z.object({
+  level: z.number(),
+  time: z.number().transform((val) => {
+    return new Date(val).toISOString();
+  }),
+  msg: z.string(),
+  source: z.string().optional(),
+  context: z.string().optional(),
+  errorCode: z.string().optional(),
+  pid: z.number().optional(),
+  hostname: z.string().optional()
+});
+var LOG_LEVELS = {
+  10: { name: "TRACE", color: "gray" },
+  20: { name: "DEBUG", color: "cyan" },
+  30: { name: "INFO", color: "green" },
+  40: { name: "WARN", color: "yellow" },
+  50: { name: "ERROR", color: "red" },
+  60: { name: "FATAL", color: "magenta" }
+};
+async function parseLogFile(logPath) {
+  try {
+    const content = await readFile2(logPath, "utf-8");
+    const lines = content.trim().split("\n").filter((line) => line.trim());
+    const entries = [];
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+        const entry = LogEntrySchema.parse(parsed);
+        if (entry.source === "ratos-update") {
+          entries.push(entry);
+        }
+      } catch (e) {
+        getLogger2().debug(`Skipping invalid log line: ${line}`);
+      }
+    }
+    return entries.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  } catch (error) {
+    throw new Error(`Failed to read log file: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+function generateSummary(entries) {
+  const summary = {
+    totalEntries: entries.length,
+    errorCount: 0,
+    warnCount: 0,
+    infoCount: 0,
+    debugCount: 0,
+    traceCount: 0,
+    fatalCount: 0,
+    lastUpdate: null,
+    duration: null,
+    success: true
+  };
+  let startTime = null;
+  let endTime = null;
+  for (const entry of entries) {
+    switch (entry.level) {
+      case 10:
+        summary.traceCount++;
+        break;
+      case 20:
+        summary.debugCount++;
+        break;
+      case 30:
+        summary.infoCount++;
+        break;
+      case 40:
+        summary.warnCount++;
+        break;
+      case 50:
+        summary.errorCount++;
+        summary.success = false;
+        break;
+      case 60:
+        summary.fatalCount++;
+        summary.success = false;
+        break;
+    }
+    const entryTime = new Date(entry.time);
+    if (!startTime || entryTime < startTime) {
+      startTime = entryTime;
+    }
+    if (!endTime || entryTime > endTime) {
+      endTime = entryTime;
+    }
+    if (entry.errorCode === "SCRIPT_SUCCESS" || entry.errorCode === "SCRIPT_ERROR") {
+      summary.lastUpdate = entry.time;
+    }
+  }
+  if (startTime && endTime) {
+    const durationMs = endTime.getTime() - startTime.getTime();
+    const seconds = Math.floor(durationMs / 1e3);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes > 0) {
+      summary.duration = `${minutes}m ${remainingSeconds}s`;
+    } else {
+      summary.duration = `${remainingSeconds}s`;
+    }
+  }
+  return summary;
+}
+function filterBySeverity(entries, minLevel) {
+  return entries.filter((entry) => entry.level >= minLevel);
+}
+function filterByContext(entries, context) {
+  return entries.filter((entry) => entry.context === context);
+}
+function formatLogEntry(entry, showDetails = false) {
+  const level = LOG_LEVELS[entry.level] || { name: "UNKNOWN", color: "white" };
+  const timestamp = new Date(entry.time).toLocaleString();
+  let formatted = `[${timestamp}] ${level.name}: ${entry.msg}`;
+  if (showDetails) {
+    if (entry.context) {
+      formatted += ` (context: ${entry.context})`;
+    }
+    if (entry.errorCode) {
+      formatted += ` (code: ${entry.errorCode})`;
+    }
+    if (entry.pid) {
+      formatted += ` (pid: ${entry.pid})`;
+    }
+  }
+  return formatted;
+}
+var LogSummaryComponent = ({ summary }) => /* @__PURE__ */ import_react65.default.createElement(Container, null, /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column", paddingY: 1 }, /* @__PURE__ */ import_react65.default.createElement(Text, { bold: true, color: "white" }, "RatOS Update Log Summary"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "gray" }, "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"), /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "row", justifyContent: "space-between", marginY: 1 }, /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white" }, "Status:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white" }, "Total Entries:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white" }, "Duration:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white" }, "Last Update:")), /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: summary.success ? "green" : "red" }, summary.success ? "\u2713 SUCCESS" : "\u2717 FAILED"), /* @__PURE__ */ import_react65.default.createElement(Text, null, summary.totalEntries), /* @__PURE__ */ import_react65.default.createElement(Text, null, summary.duration || "Unknown"), /* @__PURE__ */ import_react65.default.createElement(Text, null, summary.lastUpdate ? new Date(summary.lastUpdate).toLocaleString() : "Unknown"))), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "gray" }, "Log Level Breakdown:"), /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "row", justifyContent: "space-between", marginLeft: 2 }, /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: "red" }, "Errors:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "magenta" }, "Fatal:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "yellow" }, "Warnings:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "green" }, "Info:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "cyan" }, "Debug:"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "gray" }, "Trace:")), /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: "red" }, summary.errorCount), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "magenta" }, summary.fatalCount), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "yellow" }, summary.warnCount), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "green" }, summary.infoCount), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "cyan" }, summary.debugCount), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "gray" }, summary.traceCount)))));
+var LogEntriesComponent = ({ entries, showDetails }) => /* @__PURE__ */ import_react65.default.createElement(Container, null, /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column" }, entries.map((entry, index) => {
+  const level = LOG_LEVELS[entry.level] || { name: "UNKNOWN", color: "white" };
+  return /* @__PURE__ */ import_react65.default.createElement(Text, { key: index, color: level.color }, formatLogEntry(entry, showDetails));
+})));
+var updateLogs = (parentCommand) => {
+  const updateLogs2 = parentCommand.command("update-logs").description("View and analyze RatOS update script logs from the main RatOS log");
+  updateLogs2.command("summary").description("Show a summary of the most recent update attempt").action(async () => {
+    try {
+      const env3 = loadEnvironment();
+      const logPath = env3.LOG_FILE;
+      if (!existsSync7(logPath)) {
+        return renderError(`Log file not found: ${logPath}`, { exitCode: 1 });
+      }
+      const entries = await parseLogFile(logPath);
+      if (entries.length === 0) {
+        return renderError("No log entries found", { exitCode: 1 });
+      }
+      const summary = generateSummary(entries);
+      render_default(/* @__PURE__ */ import_react65.default.createElement(LogSummaryComponent, { summary }));
+    } catch (error) {
+      getLogger2().error("Failed to read update logs", {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return renderError(`Failed to read update logs: ${error instanceof Error ? error.message : "Unknown error"}`, {
+        exitCode: 1
+      });
+    }
+  });
+  updateLogs2.command("show").description("Show detailed update logs").option("-n, --lines <number>", "Number of recent lines to show", "50").option("-l, --level <level>", "Minimum log level (trace, debug, info, warn, error, fatal)", "info").option("-c, --context <context>", "Filter by context").option("-d, --details", "Show detailed information").action(async (options) => {
+    try {
+      const env3 = loadEnvironment();
+      const logPath = env3.LOG_FILE;
+      if (!existsSync7(logPath)) {
+        return renderError(`Log file not found: ${logPath}`, { exitCode: 1 });
+      }
+      let entries = await parseLogFile(logPath);
+      if (entries.length === 0) {
+        return renderError("No log entries found", { exitCode: 1 });
+      }
+      const levelMap = {
+        trace: 10,
+        debug: 20,
+        info: 30,
+        warn: 40,
+        error: 50,
+        fatal: 60
+      };
+      const minLevel = levelMap[options.level.toLowerCase()] || 30;
+      entries = filterBySeverity(entries, minLevel);
+      if (options.context) {
+        entries = filterByContext(entries, options.context);
+      }
+      const maxLines = parseInt(options.lines, 10);
+      if (isNaN(maxLines) || maxLines <= 0) {
+        return renderError("Invalid number of lines specified", { exitCode: 1 });
+      }
+      if (entries.length > maxLines) {
+        entries = entries.slice(-maxLines);
+      }
+      render_default(/* @__PURE__ */ import_react65.default.createElement(LogEntriesComponent, { entries, showDetails: options.details }));
+    } catch (error) {
+      getLogger2().error("Failed to read update logs", {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return renderError(`Failed to read update logs: ${error instanceof Error ? error.message : "Unknown error"}`, {
+        exitCode: 1
+      });
+    }
+  });
+  updateLogs2.command("errors").description("Show only errors and warnings from the most recent update").option("-d, --details", "Show detailed information").action(async (options) => {
+    try {
+      const env3 = loadEnvironment();
+      const logPath = env3.LOG_FILE;
+      if (!existsSync7(logPath)) {
+        return renderError(`Log file not found: ${logPath}`, { exitCode: 1 });
+      }
+      let entries = await parseLogFile(logPath);
+      if (entries.length === 0) {
+        return renderError("No log entries found", { exitCode: 1 });
+      }
+      entries = filterBySeverity(entries, 40);
+      if (entries.length === 0) {
+        render_default(
+          /* @__PURE__ */ import_react65.default.createElement(Container, null, /* @__PURE__ */ import_react65.default.createElement(Text, { color: "green" }, "\u2713 No errors or warnings found in the update logs!"))
+        );
+        return;
+      }
+      render_default(/* @__PURE__ */ import_react65.default.createElement(LogEntriesComponent, { entries, showDetails: options.details }));
+    } catch (error) {
+      return renderError(`Failed to read update logs: ${error instanceof Error ? error.message : "Unknown error"}`, {
+        exitCode: 1
+      });
+    }
+  });
+};
+
+// commands/development.tsx
+init_cjs_shim();
+import { cd, path as path11, syncProcessCwd } from "zx";
+import { existsSync as existsSync9 } from "node:fs";
+import { readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
+
+// ../server/helpers/file-operations.ts
+init_cjs_shim();
+import { existsSync as existsSync8, createReadStream as createReadStream2, createWriteStream as createWriteStream2 } from "fs";
+import { copyFile, unlink } from "fs/promises";
+import { EOL } from "os";
+import { createInterface } from "readline";
+var replaceInFileByLine = async (filePath, searchOrReplacer, replace) => {
+  if (!existsSync8(filePath)) {
+    throw new Error("File does not exist: " + filePath);
+  }
+  const fileStream = createReadStream2(filePath, { highWaterMark: 1 * 1024 * 1024 });
+  const writeStream = createWriteStream2(filePath + ".tmp", { flags: "w" });
+  const rl = createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
+  const rlClosed = new Promise((resolve, reject) => {
+    rl.on("close", () => {
+      resolve(null);
+    });
+  });
+  let linesChanged = 0;
+  let linesDeleted = 0;
+  let lineNumber = 0;
+  try {
+    for await (const line of rl) {
+      lineNumber++;
+      let newLine = line;
+      if (searchOrReplacer instanceof Function) {
+        newLine = searchOrReplacer(line, lineNumber);
+      } else if (replace === null) {
+        if (searchOrReplacer instanceof RegExp ? line.match(searchOrReplacer) : line.includes(searchOrReplacer)) {
+          newLine = null;
+        }
+      } else if (replace == null) {
+        getLogger().warn(`replaceInFileByLine (${filePath}): replacer wasn't provided, writing line as is`);
+      } else {
+        newLine = line.replace(searchOrReplacer, replace);
+      }
+      if (newLine !== null) {
+        writeStream.write(newLine + EOL);
+        if (newLine !== line) {
+          linesChanged++;
+        }
+      } else {
+        linesDeleted++;
+      }
+    }
+  } catch (e) {
+    getLogger().error(
+      `replaceInFileByLine (${filePath}): error encountered during replace operation, original file will not be changed. ${e instanceof Error ? e.message : e instanceof String ? e : "Unknown error"}`
+    );
+    fileStream.destroy();
+    writeStream.destroy();
+    throw e;
+  } finally {
+    rl.close();
+    await rlClosed;
+    await new Promise((resolve, reject) => {
+      writeStream.close((err) => {
+        if (err) {
+          throw reject(err);
+        }
+        resolve(null);
+      });
+    });
+    await new Promise((resolve, reject) => {
+      fileStream.close((err) => {
+        if (err) {
+          throw reject(err);
+        }
+        resolve(null);
+      });
+    });
+  }
+  if (linesChanged + linesDeleted > 0) {
+    await copyFile(filePath + ".tmp", filePath);
+  }
+  await unlink(filePath + ".tmp");
+  return { linesChanged, linesDeleted, linesTotal: lineNumber };
+};
+
+// components/confirm.tsx
+init_cjs_shim();
+var import_react66 = __toESM(require_react(), 1);
+var Confirm = ({ prompt, message, default: defaultConfirmation, onConfirm, onCancel }) => {
+  return /* @__PURE__ */ import_react66.default.createElement(Container, null, /* @__PURE__ */ import_react66.default.createElement(Box_default, { gap: 1 }, /* @__PURE__ */ import_react66.default.createElement(Text, { bold: true }, prompt), /* @__PURE__ */ import_react66.default.createElement(
+    ConfirmInput,
+    {
+      onConfirm,
+      onCancel,
+      defaultChoice: defaultConfirmation === false ? "cancel" : "confirm"
+    }
+  )), message && /* @__PURE__ */ import_react66.default.createElement(Box_default, { gap: 1 }, /* @__PURE__ */ import_react66.default.createElement(Text, { dimColor: true }, message)));
+};
+var confirm = async (prompt, message, defaultConfirmation) => {
+  return new Promise((resolve) => {
+    render_default(
+      /* @__PURE__ */ import_react66.default.createElement(
+        Confirm,
+        {
+          prompt,
+          message,
+          default: defaultConfirmation,
+          onConfirm: () => {
+            resolve(true);
+          },
+          onCancel: () => {
+            resolve(false);
+          }
+        }
+      )
+    );
+  });
+};
+
+// commands/development.tsx
+var import_react67 = __toESM(require_react(), 1);
+var ensureLocalEnvFile = async () => {
+  if (!existsSync9("./.env.local")) {
+    getLogger2().info("Creating .env.local file");
+    await writeFile2("./.env.local", await readFile3(".env"));
+  }
+};
+var tempEnvFile = "/tmp/configurator.env.local";
+var replaceInTempEnvFile = async (searchOrReplacer, replace) => {
+  if (!existsSync9(tempEnvFile)) {
+    throw new Error(`Temporary environment file ${tempEnvFile} not found`);
+  }
+  await replaceInFileByLine(tempEnvFile, searchOrReplacer, replace);
+};
+var isDeploymentBranch = (branch) => branch.indexOf("-deployment") > -1;
+var renderBranchInfo = async ($4) => {
+  render_default(
+    /* @__PURE__ */ import_react67.default.createElement(Container, null, /* @__PURE__ */ import_react67.default.createElement(Text, { bold: true }, "Current branch:"), /* @__PURE__ */ import_react67.default.createElement(Text, { color: "green" }, await $4`git branch --show-current`.text()), /* @__PURE__ */ import_react67.default.createElement(Text, { bold: true }, "Available upstream branches:"), /* @__PURE__ */ import_react67.default.createElement(Text, null, (await $4`git branch -r`).lines().map((line) => line.trim()).join("\n")))
+  );
+};
+var development = (program3) => {
+  const development2 = program3.command("development").description("Development commands");
+  development2.command("branch").description("Switch between development and deployment branches.").argument("[remote]", 'The remote to fetch from, eg. "origin" or "upstream"').argument("[branch]", 'The new branch to switch to, eg. "development" or "dev-deployment"').option("-f, --force", "Forcefully delete and recreate the local branch if it already exists").action(async (remote, newBranch, options) => {
+    const { cmdSignal, $: $4 } = constructSignalShell();
+    syncProcessCwd();
+    if (remote == null) {
+      await renderBranchInfo($4);
+      return;
+    }
+    if (newBranch == null) {
+      newBranch = remote;
+      remote = "origin";
+    }
+    try {
+      if ((await $4`git remote get-url ${remote}`).text().trim() === "") {
+        renderError(`Remote "${remote}" not found`);
+      }
+    } catch (e) {
+      renderError(`Remote "${remote}" not found`);
+    }
+    if ((await $4`git fetch ${remote} --depth=1 && git branch -r`).lines().map((line) => line.trim()).filter((line) => line.startsWith(`${remote}/${newBranch}`)).length === 0) {
+      renderError(`Branch "${newBranch}" not found on remote "${remote}"`);
+    }
+    await ensureSudo();
+    const currentBranch = (await $4`git branch --show-current`).lines()[0];
+    const hasDirtyWorkingDirectory = (await $4`git status --porcelain`).lines().filter((line) => line.trim() !== "").length > 0;
+    getLogger2().info(
+      {
+        currentBranch,
+        currentBranchIsDeploymentBranch: isDeploymentBranch(currentBranch),
+        hasDirtyWorkingDirectory
+      },
+      `Switching from ${currentBranch} to ${newBranch}...`
+    );
+    if ((await $4`git branch -a`).lines().filter((line) => line.trim() === newBranch).length !== 0 && !options?.force) {
+      if (!await confirm(
+        `Local branch "${newBranch}" will be recreated, proceed?`,
+        `If you proceed "${newBranch}" will be forcefully deleted and recreated to match "${remote}/${newBranch}". This will also delete any unpushed local changes you have made to the branch.`,
+        false
+      )) {
+        getLogger2().info(
+          `Aborting switch to ${newBranch}, local branch already exists and user did not confirm the recreation`
+        );
+        renderError(`Aborted branch switch to ${newBranch}.`);
+        return;
+      }
+    }
+    if (hasDirtyWorkingDirectory && !await confirm(
+      "Working directory is dirty and will be forcefully reset, do you want to continue?",
+      (await $4`git diff --name-only HEAD`).lines().map((line) => "Would remove " + path11.relative(process.cwd(), line.trim())).join("\n") + "\n" + (await $4`git clean -d -n`).lines().map((line) => line.trim()).join("\n"),
+      false
+    )) {
+      getLogger2().info(
+        `Aborting switch to ${newBranch}, working directory is dirty and user did not confirm the reset`
+      );
+      renderError("Branch switching aborted because the working directory is dirty.");
+      return;
+    }
+    getLogger2().info(`Switching from ${currentBranch} to ${newBranch}...`);
+    const installActions = [
+      hasDirtyWorkingDirectory ? {
+        name: "Resetting working directory",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          await $4`git reset --hard HEAD`;
+          await $4`git clean -d -f`;
+          return { newName: "Reset working directory", stepStatus: "success" };
+        })
+      } : null,
+      {
+        name: "Fetching latest changes",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          await $4`git fetch ${remote} ${newBranch}`;
+          return { newName: "Fetched latest changes", stepStatus: "success" };
+        })
+      },
+      {
+        name: "Copying local environment file",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          await ensureLocalEnvFile();
+          await $4`cp ./.env.local ${tempEnvFile}`;
+          return { newName: "Copied local environment file", stepStatus: "success" };
+        })
+      },
+      {
+        name: `Switching to ${newBranch}...`,
+        execute: async (abortSignal, helpers) => {
+          await $4({ signal: abortSignal })`git switch -C ${newBranch} ${remote}/${newBranch}`;
+          if (abortSignal.aborted) {
+            await $4`git checkout ${currentBranch}`;
+            return { newName: "Aborted", stepStatus: "error" };
+          }
+          if (newBranch.endsWith("-deployment")) {
+            getLogger2().info(`Switched to deployment branch "${newBranch}"`);
+            helpers.insertStep({
+              name: `Adjusting environment for deployment branch ${newBranch}`,
+              execute: skipActionIfAborted(async (abortSignal2, helpers2) => {
+                await replaceInTempEnvFile((line) => {
+                  if (line.startsWith("RATOS_SCRIPT_DIR=")) {
+                    return line.replace("/src/", "/app/");
+                  }
+                  return line;
+                });
+                reloadEnvironment(tempEnvFile);
+                if (process.cwd().endsWith("/src")) {
+                  cd("..");
+                  await $4({ signal: abortSignal2 })`cp -r ${tempEnvFile} ./app/.env.local`;
+                  const filesToDelete = await $4`git clean -d -n`;
+                  helpers2.insertStep({
+                    name: "Cleaning up src directory",
+                    prompt: "The following files/directories will be deleted:\n\n" + filesToDelete.lines().map((line) => line.trim()).join("\n") + "\n\nDo you want to continue?",
+                    execute: skipActionIfAborted(async (abortSignal3, helpers3) => {
+                      await $4({ signal: abortSignal3 })`git clean -d -f`;
+                      return { newName: "Cleaned up src directory", stepStatus: "success" };
+                    }),
+                    status: "pending"
+                  });
+                  helpers2.insertStep({
+                    name: "Enabling configurator service",
+                    execute: skipActionIfAborted(async (abortSignal3, helpers3) => {
+                      await $4({ signal: abortSignal3 })`sudo systemctl enable ratos-configurator`;
+                      helpers3.pushWarning(
+                        "Configurator service has been enabled and will start automatically on boot."
+                      );
+                      return { newName: "Enabled configurator service", stepStatus: "success" };
+                    }),
+                    status: "pending"
+                  });
+                }
+                return { newName: "Adjusted environment for deployment branch", stepStatus: "success" };
+              }),
+              status: "pending"
+            });
+          } else {
+            getLogger2().info(`Switched to development branch "${newBranch}"`);
+            helpers.insertStep({
+              name: `Adjusting environment for development branch ${newBranch}`,
+              execute: skipActionIfAborted(async (abortSignal2, helpers2) => {
+                await replaceInTempEnvFile((line) => {
+                  if (line.startsWith("RATOS_SCRIPT_DIR=")) {
+                    return line.replace("/app/", "/src/");
+                  }
+                  return line;
+                });
+                reloadEnvironment(tempEnvFile);
+                if (process.cwd().endsWith("/app")) {
+                  cd("..");
+                  await $4({ signal: abortSignal2 })`cp -r ${tempEnvFile} ./src/.env.local`;
+                  const filesToDelete = await $4`git clean -d -n`;
+                  helpers2.insertStep({
+                    name: "Cleaning up app directory",
+                    prompt: "The following files/directories will be deleted:\n\n" + filesToDelete.lines().map((line) => line.trim()).join("\n") + "\n\nDo you want to continue?",
+                    execute: skipActionIfAborted(async (abortSignal3, helpers3) => {
+                      await $4({ signal: abortSignal3 })`git clean -d -f`;
+                      return { newName: "Cleaned up app directory", stepStatus: "success" };
+                    }),
+                    status: "pending"
+                  });
+                  helpers2.insertStep({
+                    name: "Disabling configurator service",
+                    execute: skipActionIfAborted(async (abortSignal3, helpers3) => {
+                      await $4({ signal: abortSignal3 })`sudo systemctl disable ratos-configurator`;
+                      helpers3.pushWarning(
+                        "Configurator service has been disabled, use `pnpm run dev` to start the configurator."
+                      );
+                      return { newName: "Disabled configurator service", stepStatus: "success" };
+                    }),
+                    status: "pending"
+                  });
+                  helpers2.insertStep({
+                    name: "Building RatOS CLI",
+                    execute: skipActionIfAborted(async (abortSignal3, helpers3) => {
+                      cd("src");
+                      await $4({ signal: abortSignal3 })`pnpm install`;
+                      await $4({ signal: abortSignal3 })`pnpm run build:cli`;
+                      cd("..");
+                      return { newName: "Built RatOS CLI", stepStatus: "success" };
+                    }),
+                    status: "pending"
+                  });
+                }
+                return { newName: "Adjusted environment for development branch", stepStatus: "success" };
+              }),
+              status: "pending"
+            });
+          }
+          return abortSignal.aborted ? { newName: "Aborted branch switch", stepStatus: "error" } : { newName: "Switched branch to " + newBranch, stepStatus: "success" };
+        }
+      },
+      {
+        name: "Updating RatOS configurator",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          await $4({ signal: abortSignal })`sudo ${loadEnvironment().RATOS_SCRIPT_DIR}/update.sh`;
+          return { newName: "Updated RatOS configurator", stepStatus: "success" };
+        })
+      },
+      {
+        name: "Restarting RatOS configurator",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          let isDisabled = false;
+          try {
+            isDisabled = (await $4`sudo systemctl is-enabled ratos-configurator`).text().trim() === "disabled";
+          } catch (e) {
+            isDisabled = true;
+          }
+          if (isDisabled) {
+            return {
+              newName: "Skipped restarting RatOS configurator (service disabled)",
+              stepStatus: "skipped"
+            };
+          }
+          await $4({ signal: abortSignal })`sudo systemctl restart ratos-configurator`;
+          await $4({
+            signal: abortSignal
+          })`sleep 1 && curl -s -o /dev/null --retry 20 --retry-all-errors --retry-delay 1 --retry-max-time 60 "http://localhost:3000/configure" &> /dev/null`;
+          return { newName: "Restarted RatOS configurator", stepStatus: "success" };
+        })
+      },
+      {
+        name: "Updating RatOS configuration",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          await $4({
+            signal: abortSignal
+          })`sudo ${loadEnvironment().RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
+          return { newName: "Updated RatOS configuration", stepStatus: "success" };
+        })
+      },
+      {
+        name: "Restarting Klipper",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          await $4({ signal: abortSignal })`sudo systemctl restart klipper`;
+          return { newName: "Restarted Klipper", stepStatus: "success" };
+        })
+      },
+      {
+        name: "Restarting Moonraker",
+        execute: skipActionIfAborted(async (abortSignal, helpers) => {
+          await $4({ signal: abortSignal })`sudo systemctl restart moonraker`;
+          return { newName: "Restarted Moonraker", stepStatus: "success" };
+        })
+      }
+    ];
+    render_default(
+      /* @__PURE__ */ import_react67.default.createElement(
+        InstallProgress,
+        {
+          initialStatusText: `Switching branch to ${newBranch}...`,
+          cmdSignal,
+          steps: installActions.filter(Boolean)
+        }
+      )
+    );
+  });
+};
+var development_default = development;
+
 // commands.tsx
 var program2 = new Command().name("ratos").version((await readPackageUp())?.packageJson.version ?? "unknown").description("RatOS CLI for interacting with the RatOS Configurator").option("-cwd, --cwd <path>", "Set the current working directory").configureOutput({
-  outputError: (str, write) => {
-    getLogger().error(str);
-    write(errorColor(str));
+  outputError: (str, write2) => {
+    getLogger2().error(str);
+    write2(errorColor(str));
   }
 }).showSuggestionAfterError(true);
 program2.command("info").description("Print info about this RatOS installation").action(async () => {
@@ -109709,7 +110755,7 @@ program2.command("info").description("Print info about this RatOS installation")
     ip: await client.ipAddress.query()
   };
   render_default(
-    /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "row", columnGap: 5, padding: 2, paddingTop: 1 }, /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "Machine IP"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "RatOS Version"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "Configurator Version"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "Klipper Version")), /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react65.default.createElement(Text, null, info.ip), /* @__PURE__ */ import_react65.default.createElement(Text, null, info.osVersion), /* @__PURE__ */ import_react65.default.createElement(Text, null, info.version), /* @__PURE__ */ import_react65.default.createElement(Text, null, info.klipperVersion)))
+    /* @__PURE__ */ import_react68.default.createElement(Box_default, { flexDirection: "row", columnGap: 5, padding: 2, paddingTop: 1 }, /* @__PURE__ */ import_react68.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react68.default.createElement(Text, { color: "white", dimColor: true }, "Machine IP"), /* @__PURE__ */ import_react68.default.createElement(Text, { color: "white", dimColor: true }, "RatOS Version"), /* @__PURE__ */ import_react68.default.createElement(Text, { color: "white", dimColor: true }, "Configurator Version"), /* @__PURE__ */ import_react68.default.createElement(Text, { color: "white", dimColor: true }, "Klipper Version")), /* @__PURE__ */ import_react68.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react68.default.createElement(Text, null, info.ip), /* @__PURE__ */ import_react68.default.createElement(Text, null, info.osVersion), /* @__PURE__ */ import_react68.default.createElement(Text, null, info.version), /* @__PURE__ */ import_react68.default.createElement(Text, null, info.klipperVersion)))
   );
 });
 var extensions = program2.command("extensions").description("Register, unregister or symlink extensions managed by the RatOS Configurator");
@@ -109748,7 +110794,7 @@ extensions.command("list").option("-k, --klipper", "Only show Klipper extensions
     return;
   }
   render_default(
-    /* @__PURE__ */ import_react65.default.createElement(Container, null, klippyExtensions.length > 0 && !options.moonraker && /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ import_react65.default.createElement(Text, null, klippyExtensions.length, " Registered Klipper ", klippyExtensions.length === 1 ? "Extension" : "Extensions", klippyExtensions.length ? ":" : ""), klippyExtensions.map((ext) => /* @__PURE__ */ import_react65.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))), moonrakerExtensions.length > 0 && !options.klipper && /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react65.default.createElement(Text, null, moonrakerExtensions.length, " Registered Moonraker", " ", moonrakerExtensions.length === 1 ? "Extension" : "Extensions", moonrakerExtensions.length ? ":" : ""), moonrakerExtensions.map((ext) => /* @__PURE__ */ import_react65.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))))
+    /* @__PURE__ */ import_react68.default.createElement(Container, null, klippyExtensions.length > 0 && !options.moonraker && /* @__PURE__ */ import_react68.default.createElement(Box_default, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ import_react68.default.createElement(Text, null, klippyExtensions.length, " Registered Klipper ", klippyExtensions.length === 1 ? "Extension" : "Extensions", klippyExtensions.length ? ":" : ""), klippyExtensions.map((ext) => /* @__PURE__ */ import_react68.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react68.default.createElement(Text, { color: existsSync10(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))), moonrakerExtensions.length > 0 && !options.klipper && /* @__PURE__ */ import_react68.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react68.default.createElement(Text, null, moonrakerExtensions.length, " Registered Moonraker", " ", moonrakerExtensions.length === 1 ? "Extension" : "Extensions", moonrakerExtensions.length ? ":" : ""), moonrakerExtensions.map((ext) => /* @__PURE__ */ import_react68.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react68.default.createElement(Text, { color: existsSync10(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))))
   );
 });
 registerExtensions.command("klipper").description("Register a Klipper extension to be managed by the RatOS Configurator").option("-k, --kinematics", "Register as a kinematics extension").option("-e, --error-if-exists", "Throw error if the extension already exists").argument("<name>", "Name of the extension").argument("<file>", "The path to the extension itself").showHelpAfterError().action(async (extName, extFile, options) => {
@@ -109762,13 +110808,13 @@ registerExtensions.command("klipper").description("Register a Klipper extension 
   let realPath = "";
   try {
     realPath = await getRealPath(program2, extFile);
-    if (!(await stat3(realPath)).isFile() || !realPath.endsWith(".py")) {
+    if (!(await stat4(realPath)).isFile() || !realPath.endsWith(".py")) {
       return renderError(`${realPath} is not a python file`, { exitCode: 2 });
     }
   } catch (e) {
     return renderError(`Failed to get file name from ${extFile}`, { exitCode: 2 });
   }
-  const fileName = realPath.split(path9.sep).pop();
+  const fileName = realPath.split(path12.sep).pop();
   if (fileName == null) {
     return renderError(`Failed to get file name from ${realPath}`, { exitCode: 2 });
   }
@@ -109789,7 +110835,7 @@ registerExtensions.command("klipper").description("Register a Klipper extension 
     return renderError("Failed to register extension", { exitCode: 2 });
   }
   render_default(
-    /* @__PURE__ */ import_react65.default.createElement(Container, null, /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react68.default.createElement(Container, null, /* @__PURE__ */ import_react68.default.createElement(
       Status,
       {
         results: {
@@ -109811,13 +110857,13 @@ registerExtensions.command("moonraker").description("Register a Moonraker extens
   let realPath = "";
   try {
     realPath = await getRealPath(program2, extFile);
-    if (!(await stat3(realPath)).isFile() || !realPath.endsWith(".py")) {
+    if (!(await stat4(realPath)).isFile() || !realPath.endsWith(".py")) {
       return renderError(`${realPath} is not a python file`, { exitCode: 2 });
     }
   } catch (e) {
     return renderError(`Failed to get file name from ${extFile}`, { exitCode: 2 });
   }
-  const fileName = realPath.split(path9.sep).pop();
+  const fileName = realPath.split(path12.sep).pop();
   if (fileName == null) {
     return renderError(`Failed to get file name from ${realPath}`, { exitCode: 2 });
   }
@@ -109831,7 +110877,7 @@ registerExtensions.command("moonraker").description("Register a Moonraker extens
       }
     });
     render_default(
-      /* @__PURE__ */ import_react65.default.createElement(Container, null, /* @__PURE__ */ import_react65.default.createElement(
+      /* @__PURE__ */ import_react68.default.createElement(Container, null, /* @__PURE__ */ import_react68.default.createElement(
         Status,
         {
           results: {
@@ -109997,6 +111043,8 @@ log.command("rotate").description("force rotate the RatOS configurator log").act
   const log2 = "/etc/logrotate.d/ratos-configurator";
   $3({ verbose: true })`logrotate -f ${log2}`;
 });
+updateLogs(log);
+development_default(program2);
 var doctor = program2.command("doctor").description("Diagnose and fix common issues on a RatOS installation").action(async () => {
   await ensureSudo();
   const cmdSignal = createSignal();
@@ -110005,13 +111053,13 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
     log(entry) {
       if (entry.kind === "cmd") {
         cmdSignal(entry.cmd);
-        getLogger().info("Running command: " + entry.cmd);
+        getLogger2().info("Running command: " + entry.cmd);
       }
     }
   });
   const steps = [];
   let { rerender } = render_default(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react68.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110025,7 +111073,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo ${loadEnvironment().RATOS_SCRIPT_DIR}/update.sh`;
   steps.push({ name: "Repaired RatOS configurator", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react68.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110040,7 +111088,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sleep 1 && curl -s -o /dev/null --retry 20 --retry-all-errors --retry-delay 1 --retry-max-time 60 "http://localhost:3000/configure" &> /dev/null`;
   steps.push({ name: "Restarted RatOS configurator", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react68.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110054,7 +111102,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo ${loadEnvironment().RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
   steps.push({ name: "Repaired RatOS configuration", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react68.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110068,7 +111116,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo systemctl restart klipper`;
   steps.push({ name: "Restarted Klipper", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react68.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110082,7 +111130,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo systemctl restart moonraker`;
   steps.push({ name: "Restarted Moonraker", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react68.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110098,16 +111146,13 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
 // ratos.tsx
 loadEnvironment();
 try {
-  program2.command("test-error").action(async () => {
-    throw new Error("Test error");
-  });
   await program2.parseAsync();
 } catch (e) {
   if (e instanceof Error) {
-    getLogger().error(e, e.message);
+    getLogger2().error(e, e.message);
     program2.error("Error: " + e.message, { exitCode: 1 });
   }
-  getLogger().error(e);
+  getLogger2().error(e);
   program2.error("An unexpected error occurred", { exitCode: 1 });
 }
 /**
