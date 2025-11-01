@@ -449,7 +449,7 @@ export const captureConfigSection: Action = (c, s) => {
 	}
 
 	const rxFirstLayerEstimate = /(?:(?<H>\d+)h\s*)?(?:(?<M>\d+)m\s*)?(?:(?<S>\d+)s)?/;
-	const firstLayerEsitmateLinePrefix = "; estimated first layer printing time (normal mode) = "
+	const firstLayerEsitmateLinePrefix = '; estimated first layer printing time (normal mode) = ';
 
 	// Replace this action with the action to look for the flavour-specific start line:
 	return [
@@ -463,8 +463,7 @@ export const captureConfigSection: Action = (c, s) => {
 						(match.groups?.M ? Number(match.groups.M) * 60 : 0) +
 						(match.groups?.S ? Number(match.groups.S) : 0);
 				}
-			}
-			else if (c.line.startsWith(startLine)) {
+			} else if (c.line.startsWith(startLine)) {
 				s.configSection = new Map<string, string>();
 				// Replace this action with the action to capture the config section:
 				return [

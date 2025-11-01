@@ -274,10 +274,7 @@ export class GCodeProcessor extends SlidingWindowLineProcessor {
 			}
 
 			// Add SLICER_FIRST_LAYER_DURATION only if it is not already present
-			if (
-				s.slicerFirstLayerDuration &&
-				!/(\s|\d)SLICER_FIRST_LAYER_DURATION(\s|=)/.test(s.startPrintLine.line)
-			) {
+			if (s.slicerFirstLayerDuration && !/(\s|\d)SLICER_FIRST_LAYER_DURATION(\s|=)/.test(s.startPrintLine.line)) {
 				toAdd += ` SLICER_FIRST_LAYER_DURATION=${s.slicerFirstLayerDuration}`;
 			}
 
