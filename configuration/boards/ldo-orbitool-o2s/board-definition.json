@@ -84,9 +84,9 @@
 			}
 		},
 		"temperature_sensor": {
-			"name": "hotend_power_draw",
+			"name": "hotend_power",
 			"parameters": {
-				"sensor_pin": "hotend_power_draw_pin",
+				"sensor_pin": "e_power_draw_pin",
 				"sensor_type": "orbitool_o2s_hotend_power_scale"
 			}
 		}
