@@ -30,6 +30,43 @@
 		],
 		"hasBoot0Jumper": false
 	},
+	"outputPins": [
+		{
+			"name": "_run_led",
+			"pin": "PB8",
+			"value": 1
+		}
+	],
+	"hotendHeater": {
+		"maxPower": { 
+			"value": 0.995,
+		    "comment": "The hotend heater power must be limited to 99.5% (max_power: 0.995) to enable the correct operation of Orbitool O2s protection features. Do not set max_power to a value greater than 0.995."
+		},
+		"pwmCycleTime": {
+			"value": 0.01,
+			"comment": "To improve the heater power calculation accuracy, the heater PWM is forced to 100Hz (instead of the 10Hz default of Klipper)."
+		}
+	},
+	"partCoolingFan": {
+		"inputVoltagePwmCycleTime": {
+			"value": 0.02,
+			"comment": "cycle_time as per Orbitool O2 example config"
+		},
+		"maxPower": { 
+			"value": 0.995, 
+			"comment": "The part fan power must be limited to 99.5% (max_power: 0.995) to enable the correct operation of Orbitool O2s protection features. Do not set max_power to a value greater than 0.995."
+		}
+	},
+	"toolheadCoolingFan": {
+		"maxPower": { 
+			"value": 1,
+			"comment": "Use max_power: 0.5 for 12V, max_power: 1 for 24V (in printer.cfg)" 
+		},
+		"inputVoltagePwmCycleTime": { 
+			"value": 0.0001,
+			"comment": "The Orbitool O2s DC-DC fan control circuit is designed for a command signal of 10khz. Do not change."
+		}
+	},
 	"LIS2DW": {
 		"cs_pin": "PA4",
 		"hardware": {
@@ -37,13 +74,9 @@
 		}
 	},
 	"customSections": {
-		"extruder": {
-			"parameters": {
-				"max_power": 0.995
-			}
-		},
 		"adc_temperature": {
-			"name": "hotend_power_scale",
+			"name": "orbitool_o2_hotend_power_scale",
+			"isPerToolhead": false,
 			"parameters": {
 				"temperature1": 119,
 				"voltage1": 1.91,
@@ -51,34 +84,11 @@
 				"voltage2": 3.82
 			}
 		},
-		"fan": {
-			"parameters": {
-				"max_power": 0.995,
-				"shutdown_speed": 0.0
-			}
-		},
-		"heater_fan": {
-			"name": "toolhead_cooling_fan",
-			"comments": ["Use max_power: 0.5 for 12V, max_power: 1 for 24V (in printer.cfg)"],
-			"parameters": {
-				"max_power": 0.995,
-				"cycle_time": 0.0001,
-				"shutdown_speed": 0.0
-			}
-		},
-		"output_pin": {
-			"name": "O2_RUN_LED",
-			"parameters": {
-				"pin": "PB8",
-				"shutdown_value": 0,
-				"value": 1
-			}
-		},
-		"temperature_sensor": {
+	"temperature_sensor": {
 			"name": "hotend_power_draw",
 			"parameters": {
 				"sensor_pin": "PA2",
-				"sensor_type": "hotend_power_scale"
+				"sensor_type": "orbitool_o2_hotend_power_scale"
 			}
 		}
 	}

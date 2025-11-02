@@ -22,6 +22,8 @@ Most bash scripts will assume user `pi` exists. Needs fixing, fortunately  you d
 
 ### Installation
 
+The `RatOS-configuration` has been incorporated into `RatOS-configurator` (the so-called "monorepo" update), so the `RatOS-configuration` repo is no longer used and should not be cloned. The correct development environment installation process for the monorepo setup is not fully documented yet.
+
 Clone repositories
 ```bash
 mkdir RatOS-dev && cd RatOS-dev
@@ -32,10 +34,10 @@ git clone git@github.com:Rat-OS/RatOS-configurator.git
 # External dependencies
 git clone git@github.com:klipper3d/klipper.git
 git clone git@github.com:Arksine/moonraker.git
-# Configuration repo
-cd printer_data/config
-git clone git@github.com:Rat-OS/RatOS-configuration.git RatOS
-cd ../..
+# Configuration repo ** SEE MONOREPO NOTE ABOVE **
+#cd printer_data/config
+#git clone git@github.com:Rat-OS/RatOS-configuration.git RatOS
+#cd ../..
 ```
 
 Install dependencies
@@ -64,6 +66,16 @@ LOG_FILE=/home/myuser/RatOS-dev/printer_data/logs/ratos-configurator.log
 RATOS_DATA_DIR=/home/myuser/RatOS-dev/printer_data/ratos
 NEXT_PUBLIC_KLIPPER_HOSTNAME=hostnameofrunningtestprinter.local
 RECOIL_DUPLICATE_ATOM_KEY_CHECKING_ENABLED=false
+```
+NOTE: for modern monorepo setups, the following change to the above is at least partially functional:
+```
+RATOS_CONFIGURATION_PATH=/home/myuser/RatOS-dev/RatOS-configurator/configuration
+```
+
+It may also be necessary to create .env.test.local:
+```bash
+cd RatOS-configurator/src
+cp .env.local .env.test.local
 ```
 
 The `NEXT_PUBLIC_KLIPPER_HOSTNAME` variable is used by the frontend to connect to moonraker and klipper, those need to be real. The RatOS configurator will save configuration to the database on the moonraker instance running on that host.
