@@ -390,6 +390,26 @@ describe('configuration', async () => {
 				axis: deserializedToolheadConfig?.axis ?? PrinterAxis.x,
 			}).find((option) => option.id === toolhead.yEndstop);
 			const defaultToolboard = parsedBoards.find((board) => board.id === toolhead.toolboard);
+
+			// If the printer-definition default for xEndstop is 'endstop-toolboard', ensure
+			// that when a toolboard is present the concrete option appears in xEndstopOptions.
+			test
+				.skipIf(!toolhead.toolboard)
+				.concurrent('mcu picker honors printer default endstop-toolboard when toolboard is selected', () => {
+					if (toolhead.xEndstop !== 'endstop-toolboard') {
+						// Not applicable for this toolhead
+						return;
+					}
+					const tb = parsedBoards.find((b) => b.id === toolhead.toolboard)!;
+					expect(tb).not.toBeNull();
+					const opts = xEndstopOptions(deserializedConfig, {
+						...deserializedToolheadConfig,
+						axis: deserializedToolheadConfig?.axis ?? PrinterAxis.x,
+						toolboard: tb as any,
+					});
+					const found = opts.find((o) => o.id === 'endstop-toolboard');
+					expect(found).not.toBeNull();
+				});
 			test.skipIf(!toolhead.toolboard).concurrent('has valid toolboard default', () => {
 				expect(defaultToolboard).not.toBeNull();
 			});

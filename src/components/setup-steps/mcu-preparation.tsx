@@ -16,6 +16,7 @@ import { Cpu, FileQuestion, MemoryStick, Usb, Zap, ZapOff } from 'lucide-react';
 import { Badge } from '@/components/common/badge';
 import { deserializeDriver } from '@/utils/serialization';
 import { useRecoilCallback } from 'recoil';
+import { xEndstopOptions, defaultXEndstop } from '@/data/endstops';
 import { ControlboardState, PrinterRailsState } from '@/recoil/printer';
 
 export interface SelectableBoard extends SelectableCard {
@@ -194,9 +195,36 @@ export const MCUPreparation: React.FC<StepScreenProps & ExtraProps> = (props) =>
 		({ reset, snapshot }) =>
 			async (newBoard: SelectableBoard | null) => {
 				if (toolhead) {
+					const newToolboard = newBoard == null ? null : Toolboard.parse(newBoard.board);
+					// Build a new config with the new toolboard
+					const newConfig = { ...toolhead.getConfig(), toolboard: newToolboard };
+					// If a toolboard was just added, prefer the concrete toolboard endstop option
+					let newXEndstop = newConfig.xEndstop ?? defaultXEndstop;
+					if (toolhead.getToolboard() == null && newToolboard != null) {
+						try {
+							const opts = xEndstopOptions(null, newConfig as any);
+							// Prefer the printer-definition default if present in the current toolhead config
+							const desiredDefaultId = toolhead.getConfig().xEndstop?.id;
+							if (desiredDefaultId) {
+								const found = opts.find((x) => x.id === desiredDefaultId);
+								if (found) {
+									newXEndstop = found;
+								} else {
+									// fall back to toolboard-specific option if available
+									const tb = opts.find((x) => x.id === 'endstop-toolboard');
+									if (tb) newXEndstop = tb;
+								}
+							} else {
+								const tb = opts.find((x) => x.id === 'endstop-toolboard');
+								if (tb) newXEndstop = tb;
+							}
+						} catch (e) {
+							// ignore and fall back to existing xEndstop
+						}
+					}
 					setToolhead({
-						...toolhead.getConfig(),
-						toolboard: newBoard == null ? null : Toolboard.parse(newBoard.board),
+						...newConfig,
+						xEndstop: newXEndstop,
 					});
 				} else if (newBoard != null) {
 					_setControlboard(Board.parse(newBoard.board));
