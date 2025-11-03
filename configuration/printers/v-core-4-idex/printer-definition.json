@@ -59,7 +59,7 @@
 				"hotend": "rapido-plus-uhf",
 				"partFan": "4pin-toolboard",
 				"hotendFan": "2pin-toolboard",
-				"probe": "superpinda",
+				"probe": "beacon",
 				"xEndstop": "endstop-toolboard",
 				"yEndstop": "endstop"
 			},
@@ -71,7 +71,6 @@
 				"hotend": "rapido-plus-uhf",
 				"partFan": "4pin-toolboard",
 				"hotendFan": "2pin-toolboard",
-				"probe": "superpinda",
 				"xEndstop": "endstop-toolboard",
 				"yEndstop": "endstop"
 			}

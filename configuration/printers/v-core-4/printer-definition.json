@@ -52,12 +52,14 @@
 		"toolheads": [
 			{
 				"axis": "x",
+				"description": "The V-Core toolhead",
 				"extruder": "orbiter-2",
+				"toolboard": "btt-ebb42-12",
 				"hotend": "rapido-plus-uhf",
-				"partFan": "4pin",
-				"hotendFan": "2pin",
-				"probe": "superpinda",
-				"xEndstop": "endstop",
+				"partFan": "4pin-toolboard",
+				"hotendFan": "2pin-toolboard",
+				"probe": "beacon",
+				"xEndstop": "endstop-toolboard",
 				"yEndstop": "endstop"
 			}
 		],
