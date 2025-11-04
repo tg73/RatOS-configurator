@@ -3,6 +3,7 @@
 	"name": "V-Core 4.1",
 	"description": "Rat Rig flagship 3d printer in CoreXY mode",
 	"manufacturer": "Rat Rig",
+	"releaseDate": "2042-05-25",
 	"documentationLink": "https://docs.ratrig.com/v-core-4-0/build-guide",
 	"image": "v-core-4.png",
 	"template": "v-core-4-1.ts",

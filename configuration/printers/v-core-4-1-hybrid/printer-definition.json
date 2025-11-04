@@ -3,6 +3,7 @@
 	"name": "V-Core 4.1 Hybrid",
 	"description": "Rat Rig flagship 3d printer with the hybrid upgrade kit",
 	"manufacturer": "Rat Rig",
+	"releaseDate": "2042-05-25",
 	"documentationLink": "https://docs.ratrig.com/v-core-4-0/build-guide",
 	"image": "v-core-4-hybrid.png",
 	"template": "v-core-4-1-hybrid.ts",
