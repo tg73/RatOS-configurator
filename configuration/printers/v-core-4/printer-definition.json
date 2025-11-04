@@ -4,9 +4,9 @@
 	"description": "Rat Rig flagship 3d printer in CoreXY mode",
 	"releaseDate": "2024-04-26",
 	"manufacturer": "Rat Rig",
-	"documentationLink": "https://v-core4.ratrig.com/",
+	"documentationLink": "https://docs.ratrig.com/v-core-4-0/build-guide",
 	"image": "v-core-4.png",
-	"template": "v-core-4-printer.template.cfg",
+	"template": "v-core-4.ts",
 	"driverCountRequired": 6,
 	"bedMargin": {
 		"x": [59.8, 59.8],

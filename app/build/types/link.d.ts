@@ -37,8 +37,8 @@ declare namespace __next_route_internal_types__ {
     | `/calibration`
     | `/motion`
     | `/toolhead`
-    | `/wizard`
     | `/analysis/macros/new`
+    | `/wizard`
     | `/analysis`
     | `/analysis/macros`
   type DynamicRoutes<T extends string = string> = 
