@@ -71,7 +71,8 @@
 		"cs_pin": "PA4",
 		"hardware": {
 			"bus": "spi1"
-		}
+		},
+		"axesMap": "y, z, x"
 	},
 	"customSections": {
 		"adc_temperature": {
