@@ -53,7 +53,7 @@
 		"toolheads": [
 			{
 				"axis": "x",
-				"description": "The V-Core 4.1 Basic toolhead",
+				"description": "the V-Core toolhead",
 				"extruder": "orbiter-2",
 				"toolboard": "ldo-orbitool-o2s",
 				"hotend": "rapido-plus-uhf",
