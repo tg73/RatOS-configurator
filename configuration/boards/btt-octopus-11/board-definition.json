@@ -13,6 +13,7 @@
 	"documentationLink": "https://os.ratrig.com/docs/boards/btt/octopus-11",
 	"driverCount": 8,
 	"driverVoltages": [24],
+	"hasChamberLightingPin": true,
 	"dfu": {
 		"flashDevice": "0483:df11",
 		"dfuBootImage": "dfubooting.drawio.png",
