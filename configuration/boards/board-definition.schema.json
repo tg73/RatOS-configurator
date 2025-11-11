@@ -87,6 +87,10 @@
 			"description": "Whether this board has an MCU temperature sensor, default is true",
 			"type": "boolean"
 		},
+		"hasChamberLightingPin": {
+			"description": "Whether this board has a defined chamber lighting output pin, default is false. If true, the chamber_lighting_pin alias must be defined.",
+			"type": "boolean"
+		},
 		"outputPins": {
 			"description": "Output pin definitions. Some boards have safety features that require a pin to be pulled high to enable power, such as the SKR2.",
 			"type": "array",

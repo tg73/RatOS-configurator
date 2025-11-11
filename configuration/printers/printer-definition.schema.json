@@ -242,6 +242,10 @@
 					"description": "Default board for this printer. Should be the name of the board directory.",
 					"type": "string"
 				},
+				"chamberLighting": {
+					"description": "Is chamber lighting installed by default for this printer?",
+					"type": "boolean"
+				},
 				"controllerFan": {
 					"description": "Default controller fan for this printer.",
 					"type": "string",
