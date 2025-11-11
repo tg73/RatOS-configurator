@@ -243,8 +243,9 @@
 					"type": "string"
 				},
 				"chamberLighting": {
-					"description": "Is chamber lighting installed by default for this printer?",
-					"type": "boolean"
+					"description": "Default chamber lighting option for this printer.",
+					"type": "string",
+					"enum": ["controlboard", "none"]
 				},
 				"controllerFan": {
 					"description": "Default controller fan for this printer.",

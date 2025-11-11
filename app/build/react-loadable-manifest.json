@@ -15,6 +15,14 @@
       "static/chunks/7816.a07f170efed109c3.js"
     ]
   },
+  "../components/setup-steps/printer-selection.tsx -> @/data/accessories": {
+    "id": 84229,
+    "files": []
+  },
+  "../hooks/usePrinterConfiguration.tsx -> @/data/accessories": {
+    "id": 84229,
+    "files": []
+  },
   "../node_modules/.pnpm/@trpc+next@10.45.1_@tanstack+react-query@4.36.1_react-dom@18.2.0_react@18.2.0__react@18.2.0___2igx4b6qzwu3mpzu3wdw7fruxy/node_modules/@trpc/next/dist/index.mjs -> react-dom/server": {
     "id": 40569,
     "files": [
