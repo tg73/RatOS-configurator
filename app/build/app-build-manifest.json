@@ -289,13 +289,6 @@
       "static/chunks/main-app-97a5ed2f18129f03.js",
       "static/chunks/app/motion/layout-22d5f832036d8b74.js"
     ],
-    "/toolhead/layout": [
-      "static/chunks/webpack-d9f5ae0bdd05b140.js",
-      "static/chunks/fa86fe2e-e962572a02b89204.js",
-      "static/chunks/8458-94fd4fc7ee07d7b5.js",
-      "static/chunks/main-app-97a5ed2f18129f03.js",
-      "static/chunks/app/toolhead/layout-220a280869051600.js"
-    ],
     "/toolhead/page": [
       "static/chunks/webpack-d9f5ae0bdd05b140.js",
       "static/chunks/fa86fe2e-e962572a02b89204.js",
@@ -318,6 +311,13 @@
       "static/chunks/6375-f8d8d37fa4eb4325.js",
       "static/chunks/6079-a541b8a60eeaa543.js",
       "static/chunks/app/toolhead/page-2a3a77b76f69ad1b.js"
+    ],
+    "/toolhead/layout": [
+      "static/chunks/webpack-d9f5ae0bdd05b140.js",
+      "static/chunks/fa86fe2e-e962572a02b89204.js",
+      "static/chunks/8458-94fd4fc7ee07d7b5.js",
+      "static/chunks/main-app-97a5ed2f18129f03.js",
+      "static/chunks/app/toolhead/layout-220a280869051600.js"
     ],
     "/wizard/page": [
       "static/chunks/webpack-d9f5ae0bdd05b140.js",
