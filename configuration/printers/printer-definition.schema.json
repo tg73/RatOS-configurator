@@ -247,6 +247,16 @@
 					"type": "string",
 					"enum": ["controlboard", "none"]
 				},
+				"toolheadAlignmentSystem": {
+					"description": "Default toolhead alignment system for this printer.",
+					"type": "string",
+					"enum": ["ratRigVaoc", "none"]
+				},
+				"chamberAirFilter": {
+					"description": "Default chamber air filter for this printer.",
+					"type": "string",
+					"enum": ["ratRigRatPack", "none"]
+				},
 				"controllerFan": {
 					"description": "Default controller fan for this printer.",
 					"type": "string",
