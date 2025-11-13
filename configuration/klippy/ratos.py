@@ -250,7 +250,7 @@ class RatOS:
 		except Exception as e:
 			self.console_echo('Failed to reset DC endstop configuration', 'error', f'Could not write to {config_path}: {str(e)}')
 			return		
-		self.console_echo('DC endstop configuration reset', 'info', f'Successfully reset {config_path}_N_RESTART klipper for the changes to take effect, then run CONFIGURE_DC_ENDSTOP to perform the configuration.')
+		self.console_echo('DC endstop configuration reset', 'info', f'Successfully reset {config_path}_N_You must restart klipper for the changes to take effect, then run CONFIGURE_DC_ENDSTOP to perform the configuration.')
 
 	desc_CONFIGURE_DC_ENDSTOP = "Updates the dc-endstop.cfg configuration file, configuring dual carriage endstop settings taking account of the last measured IDEX toolhead offsets (for example, from VAOC)."
 	def cmd_CONFIGURE_DC_ENDSTOP(self, gcmd):		
@@ -259,7 +259,7 @@ class RatOS:
 			return
 
 		self.gm_ratos = self.printer.lookup_object('gcode_macro RatOS')
-		isConfigured = self.gm_ratos.variables.get('dc_endstop_is_configured', 'false').strip().lower() == 'true'
+		isConfigured = self.gm_ratos.variables.get('dc_endstop_is_configured', False) == True
 		if isConfigured:
 			self.console_echo(
 				'DC endstop already configured', 'warning', 
@@ -367,8 +367,14 @@ class RatOS:
 				f.write(content)
 		except Exception as e:
 			self.console_echo('Failed to update DC endstop configuration', 'error', f'Could not write to {config_path}: {str(e)}')
-			return		
-		self.console_echo('DC endstop configuration updated', 'info', f'Updated {config_path}_N_RESTART klipper for the changes to take effect.')
+			return
+		if str(gcmd.get('RESTART', '1')).strip().lower() in ('1', 'true', 'yes'):
+			self.console_echo('DC endstop configuration updated', 'info', f'Updated {config_path}_N_Restarting klipper to allow the changes to take effect...')
+			# Request a restart
+			gcode = self.printer.lookup_object('gcode')
+			gcode.request_restart('restart')
+		else:
+			self.console_echo('DC endstop configuration updated', 'info', f'Updated {config_path}_N_You must RESTART klipper for the changes to take effect.')
 
 	#####
 	# Gcode Post Processor
