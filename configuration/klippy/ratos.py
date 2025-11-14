@@ -302,7 +302,7 @@ class RatOS:
 		except Exception as e:
 			self.console_echo('Failed to update maximum Y position adjustment', 'error', f'Could not write to {config_path}: {str(e)}')
 			return
-		if str(gcmd.get('RESTART', '1')).strip().lower() in ('1', 'true', 'yes'):
+		if str(gcmd.get('RESTART', '0')).strip().lower() in ('1', 'true', 'yes'):
 			self.console_echo('Maximum Y position adjustment updated', 'info', f'Updated {config_path}_N_New maximum Y position is {new_max_y:.3f}._N_Restarting klipper to allow the changes to take effect...')
 			# Request a restart
 			gcode = self.printer.lookup_object('gcode')
@@ -449,7 +449,7 @@ class RatOS:
 		except Exception as e:
 			self.console_echo('Failed to update DC endstop configuration', 'error', f'Could not write to {config_path}: {str(e)}')
 			return
-		if str(gcmd.get('RESTART', '1')).strip().lower() in ('1', 'true', 'yes'):
+		if str(gcmd.get('RESTART', '0')).strip().lower() in ('1', 'true', 'yes'):
 			self.console_echo('DC endstop configuration updated', 'info', f'Updated {config_path}_N_Restarting klipper to allow the changes to take effect...')
 			# Request a restart
 			gcode = self.printer.lookup_object('gcode')

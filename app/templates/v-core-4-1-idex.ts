@@ -62,7 +62,7 @@ ${helper.renderFans()}
 #############################################################################################################
 ${helper.renderChamberLighting()}
 
-${helper.renderToolheadAlignmentSystem()}
+${helper.renderToolheadAlignmentSystemHardware()}
 
 ${helper.renderChamberAirFilter()}
 
@@ -210,6 +210,8 @@ ${helper.renderUserStepperSections({
 		],
 	},
 })}
+
+${helper.renderToolheadAlignmentSystemConfigHelpers()}
 
 [heater_bed]
 control: pid
