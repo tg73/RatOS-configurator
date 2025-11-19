@@ -63,7 +63,8 @@
 				"hotendFan": "2pin-toolboard",
 				"probe": "beacon",
 				"xEndstop": "endstop-toolboard",
-				"yEndstop": "endstop"
+				"yEndstop": "endstop",
+				"filamentSensor": "orbiter-smart-sensor"
 			},
 			{
 				"axis": "dual_carriage",
@@ -74,7 +75,8 @@
 				"partFan": "4pin-dedicated-toolboard",
 				"hotendFan": "2pin-toolboard",
 				"xEndstop": "endstop-toolboard",
-				"yEndstop": "endstop"
+				"yEndstop": "endstop",
+				"filamentSensor": "orbiter-smart-sensor"
 			}
 		],
 		"rails": [

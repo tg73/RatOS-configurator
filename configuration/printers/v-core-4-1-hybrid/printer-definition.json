@@ -62,7 +62,8 @@
 				"hotendFan": "2pin-toolboard",
 				"probe": "beacon",
 				"xEndstop": "endstop-toolboard",
-				"yEndstop": "endstop"
+				"yEndstop": "endstop",
+				"filamentSensor": "orbiter-smart-sensor"
 			}
 		],
 		"rails": [

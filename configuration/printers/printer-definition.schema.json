@@ -232,6 +232,10 @@
 							"toolboard": {
 								"description": "Default board for this toolhead. Should be the name of the board directory.",
 								"type": "string"
+							},
+							"filamentSensor": {
+								"description": "Default filament sensor for this toolhead. Should be the name of the /configuration/filament-sensors/* subdir.",
+								"type": "string"
 							}
 						},
 						"required": ["extruder", "hotend", "xEndstop", "yEndstop", "axis", "partFan", "hotendFan"]
