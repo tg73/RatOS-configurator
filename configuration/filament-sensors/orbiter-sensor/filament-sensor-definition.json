@@ -5,7 +5,5 @@
 	"description": "Filament sensor for Orbiter extruders with unload button",
 	"manufacturer": "LDO",
 	"template": "generic.ts",
-	"templateProperties": {
-		"hasButton": true
-	}
+	"hasButton": true
 }
