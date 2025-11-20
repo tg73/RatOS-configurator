@@ -15,8 +15,8 @@
 			"type": "string",
 			"const": "filament-sensor"
 		},
-		"name": {
-			"description": "The name of the filament sensor",
+		"title": {
+			"description": "The title of the filament sensor for UI use",
 			"type": "string"
 		},
 		"description": {
@@ -24,47 +24,24 @@
 			"type": "string"
 		},
 		"manufacturer": {
-			"description": "The name of the manufacturer of this filament sensor",
+			"description": "The manufacturer of this filament sensor",
 			"type": "string"
-		},
-		"hasButton": {
-			"description": "Whether this filament sensor has a button",
-			"type": "boolean",
-			"default": false
-		},
-		"sensePinAlias": {
-			"description": "The pin alias for the filament sensor sense pin. Default is 'filament_sensor_sense_pin'.",
-			"type": "string",
-			"default": "filament_sensor_sense_pin"
-		},
-		"buttonPinAlias": {
-			"description": "The pin alias for the filament sensor button pin. Default is 'filament_sensor_button_pin'.",
-			"type": "string",
-			"default": "filament_sensor_button_pin"
-		},
-		"additionalRequiredPins": {
-			"description": "Additional pin aliases required by this filament sensor. Note that filament_sensor_sense_pin is always required, and filament_sensor_button_pin is required if hasButton is true.",
-			"type": "array",
-			"items": {
-				"type": "string"
-			},
-			"uniqueItems": true
 		},
 		"template": {
 			"description": "TypeScript template for this filament sensor (path relative to /src/templates/filament-sensors/)",
 			"type": "string"
 		},
-		"templateProperties": {
-			"description": "Custom properties for this filament sensor. These properties can be consumed by the template, enabling template reuse for similar filament sensors.",
+		"templateOptions": {
+			"description": "Custom template options for this filament sensor. These options can be consumed by the template, enabling template reuse for similar filament sensors.",
 			"type": "object",
 			"additionalProperties": true
 		}
 	},
 	"required": [
 		"type",
-		"name",
+		"title",
 		"description",
 		"manufacturer",
 		"template"
-	]	
+	]
 }

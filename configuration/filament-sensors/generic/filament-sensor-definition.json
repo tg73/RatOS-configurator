@@ -1,7 +1,7 @@
 {
 	"$schema": "../filament-sensor-definition-schema.json",
 	"type": "filament-sensor",
-	"name": "Generic Filament Sensor",
+	"title": "Generic Filament Sensor",
 	"description": "Generic filament sensor",
 	"manufacturer": "Generic",
 	"template": "generic.ts"
