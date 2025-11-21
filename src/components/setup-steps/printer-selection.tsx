@@ -178,9 +178,11 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						reset(ControllerFanState);
 					}
 					if (printer.defaults.chamberLighting != null) {
-						const chamberLightingOptions = (await import('@/data/accessories')).chamberLightingOptions;
-						const options = chamberLightingOptions();
-						const defaultChamberLighting = options.find((a) => a.id === printer.defaults.chamberLighting);
+						// TODO
+						//const chamberLightingOptions = (await import('@/data/accessories')).chamberLightingOptions;
+						//const options = chamberLightingOptions();
+						//const defaultChamberLighting = options.find((a) => a.id === printer.defaults.chamberLighting);
+						const defaultChamberLighting = null;
 						if (defaultChamberLighting) {
 							set(ChamberLightingState, defaultChamberLighting);
 						} else {
@@ -190,9 +192,11 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						reset(ChamberLightingState);
 					}
 					if (printer.defaults.chamberAirFilter != null) {
-						const chamberAirFilterOptions = (await import('@/data/accessories')).chamberAirFilterOptions;
-						const options = chamberAirFilterOptions();
-						const defaultChamberAirFilter = options.find((a) => a.id === printer.defaults.chamberAirFilter);
+						// TODO
+						//const chamberAirFilterOptions = (await import('@/data/accessories')).chamberAirFilterOptions;
+						//const options = chamberAirFilterOptions();
+						//const defaultChamberAirFilter = options.find((a) => a.id === printer.defaults.chamberAirFilter);
+						const defaultChamberAirFilter = null;
 						if (defaultChamberAirFilter) {
 							set(ChamberAirFilterState, defaultChamberAirFilter);
 						} else {
@@ -202,11 +206,13 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						reset(ChamberAirFilterState);
 					}
 					if (printer.defaults.toolheadAlignmentSystem != null) {
-						const toolheadAlignmentSystemOptions = (await import('@/data/accessories')).toolheadAlignmentSystemOptions;
-						const options = toolheadAlignmentSystemOptions();
-						const defaultToolheadAlignmentSystem = options.find(
-							(a) => a.id === printer.defaults.toolheadAlignmentSystem,
-						);
+						// TODO
+						//const toolheadAlignmentSystemOptions = (await import('@/data/accessories')).toolheadAlignmentSystemOptions;
+						//const options = toolheadAlignmentSystemOptions();
+						//const defaultToolheadAlignmentSystem = options.find(
+						//	(a) => a.id === printer.defaults.toolheadAlignmentSystem,
+						//);
+						const defaultToolheadAlignmentSystem = null;
 						if (defaultToolheadAlignmentSystem) {
 							set(ToolheadAlignmentSystemState, defaultToolheadAlignmentSystem);
 						} else {

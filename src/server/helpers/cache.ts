@@ -1,6 +1,6 @@
 import NodeCache from 'node-cache';
 import { BoardWithDetectionStatus } from '@/zods/boards';
-import { MetaDirectories } from '@/server/routers/printer';
+import { MetaDirectories } from '@/server/helpers/metadata';
 import { Extruder } from '@/zods/hardware';
 import { ZodType, z } from 'zod';
 

@@ -1,5 +1,13 @@
 import { Board, BoardID } from '@/zods/boards';
-import { ChamberAirFilter, ChamberLighting, Fan, ToolheadAlignmentSystem } from '@/zods/hardware';
+import {
+	ChamberAirFilter,
+	ChamberAirFilterRef,
+	ChamberLighting,
+	ChamberLightingRef,
+	Fan,
+	ToolheadAlignmentSystem,
+	ToolheadAlignmentSystemRef,
+} from '@/zods/hardware';
 import { PrinterDefinition, PrinterSizeDefinition } from '@/zods/printer';
 import { PrinterAxis, PrinterRail, SerializedPrinterRail } from '@/zods/motion';
 import {
@@ -10,7 +18,7 @@ import {
 } from '@/zods/toolhead';
 import { ToolheadHelper } from '@/helpers/toolhead';
 import { z } from 'zod';
-import { defaultChamberAirFilter, defaultChamberLighting, defaultToolheadAlignmentSystem } from '@/data/accessories';
+//import { defaultChamberAirFilter, defaultChamberLighting, defaultToolheadAlignmentSystem } from '@/data/accessories';
 
 export const PrinterSize = z.union([PrinterSizeDefinition, z.number(), z.string()]).nullable().optional();
 
@@ -24,9 +32,9 @@ const BasePrinterConfiguration = z
 		performanceMode: z.boolean().default(false),
 		stealthchop: z.boolean().default(false),
 		standstillStealth: z.boolean().default(false),
-		chamberLighting: ChamberLighting.default(defaultChamberLighting),
-		toolheadAlignmentSystem: ToolheadAlignmentSystem.default(defaultToolheadAlignmentSystem),
-		chamberAirFilter: ChamberAirFilter.default(defaultChamberAirFilter),
+		chamberLighting: ChamberLighting.nullable().optional(),
+		toolheadAlignmentSystem: ToolheadAlignmentSystem.nullable().optional(),
+		chamberAirFilter: ChamberAirFilter.nullable().optional(),
 		rails: z.array(PrinterRail),
 	})
 	.strict()
@@ -118,9 +126,9 @@ export const SerializedPrinterConfiguration = BasePrinterConfiguration.innerType
 		controlboard: BoardID,
 		toolheads: z.array(SerializedToolheadConfiguration).min(1).max(2),
 		controllerFan: Fan.shape.id,
-		chamberLighting: ChamberLighting.shape.id.default(defaultChamberLighting.id),
-		toolheadAlignmentSystem: ToolheadAlignmentSystem.shape.id.default(defaultToolheadAlignmentSystem.id),
-		chamberAirFilter: ChamberAirFilter.shape.id.default(defaultChamberAirFilter.id),
+		chamberLighting: ChamberLightingRef.nullable().optional(),
+		toolheadAlignmentSystem: ToolheadAlignmentSystemRef.nullable().optional(),
+		chamberAirFilter: ChamberAirFilterRef.nullable().optional(),
 		rails: z.array(SerializedPrinterRail),
 	})
 	.strict();

@@ -49,7 +49,6 @@
 	},
 	"defaults": {
 		"board": "btt-octopus-11",
-		"chamberLighting": "controlboard",
 		"toolheads": [
 			{
 				"axis": "x",
@@ -62,7 +61,7 @@
 				"probe": "beacon",
 				"xEndstop": "endstop-toolboard",
 				"yEndstop": "endstop",
-				"filamentSensor": "orbiter-smart-sensor"
+				"filamentSensor": {"id": "orbiter-smart-sensor", "connectedTo": "toolboard"}
 			}
 		],
 		"rails": [

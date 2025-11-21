@@ -50,8 +50,6 @@
 	"kinematics": "hybrid-corexy-idex",
 	"defaults": {
 		"board": "btt-octopus-11",
-		"chamberLighting": "controlboard",
-		"toolheadAlignmentSystem": "ratRigVaoc",
 		"toolheads": [
 			{
 				"axis": "x",
@@ -64,7 +62,7 @@
 				"probe": "beacon",
 				"xEndstop": "endstop-toolboard",
 				"yEndstop": "endstop",
-				"filamentSensor": "orbiter-smart-sensor"
+				"filamentSensor": {"id": "orbiter-smart-sensor", "connectedTo": "toolboard"}
 			},
 			{
 				"axis": "dual_carriage",
@@ -76,7 +74,7 @@
 				"hotendFan": "2pin-toolboard",
 				"xEndstop": "endstop-toolboard",
 				"yEndstop": "endstop",
-				"filamentSensor": "orbiter-smart-sensor"
+				"filamentSensor": {"id": "orbiter-smart-sensor", "connectedTo": "toolboard"}
 			}
 		],
 		"rails": [

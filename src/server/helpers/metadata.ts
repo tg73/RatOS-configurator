@@ -13,10 +13,91 @@ import {
 	Toolboard,
 	ToolboardPinMap,
 } from '@/zods/boards';
-import { Extruder } from '@/zods/hardware';
+import { Extruder, FilamentSensor, ChamberLighting, ToolheadAlignmentSystem, ChamberAirFilter } from '@/zods/hardware';
 import { getScriptRoot } from '@/server/helpers/file-operations';
 import { getLogger } from '@/server/helpers/logger';
 import { MetadataCache, cacheAsyncMetadataFn, cacheMetadataFn } from '@/server/helpers/cache';
+
+const CFG_META_DIRS = ['hotends', 'extruders', 'z-probe'] as const;
+const JSON_META_DIRS = [
+	'filament-sensors',
+	'chamber-lighting',
+	'toolhead-alignment-systems',
+	'chamber-air-filters',
+] as const;
+
+export type CfgMetaDirectories = (typeof CFG_META_DIRS)[number];
+export type JsonMetaDirectories = (typeof JSON_META_DIRS)[number];
+export type MetaDirectories = CfgMetaDirectories | JsonMetaDirectories;
+
+/**
+ * Helper function to enforce the keys of the input map (T) match
+ * the keys in the required type (JsonMetaDirectories).
+ * NOTE: The constraint 'T extends Record<JsonMetaDirectories, any>'
+ * ensures that *all* members of JsonMetaDirectories MUST be present in 'map'.
+ * It also prevents extraneous properties from being added.
+ * * @param map - The map object being defined.
+ * @returns The map object with its types strictly enforced.
+ */
+function makeStrictJsonMetaDirectoriesMap<T extends Record<JsonMetaDirectories, any>>(map: T) {
+	return map;
+}
+
+const jsonMetaDirectoryToHardwareMapObject = makeStrictJsonMetaDirectoriesMap({
+	'filament-sensors': {} as FilamentSensor,
+	'chamber-lighting': {} as ChamberLighting,
+	'toolhead-alignment-systems': {} as ToolheadAlignmentSystem,
+	'chamber-air-filters': {} as ChamberAirFilter,
+});
+
+/**
+ * A mapping of JsonMetaDirectories to their corresponding hardware type definitions such as FilamentSensor.
+ */
+export type JsonMetaDirectoryToHardwareMap = typeof jsonMetaDirectoryToHardwareMapObject;
+
+/**
+ * A union type of all hardware types defined in JsonMetaDirectoryToHardwareMap.
+ */
+export type JsonMetaHardware = JsonMetaDirectoryToHardwareMap[keyof JsonMetaDirectoryToHardwareMap];
+
+type HardwareTypeKey = JsonMetaDirectoryToHardwareMap[keyof JsonMetaDirectoryToHardwareMap]['type'];
+
+/**
+ * A mapping of hardware 'type' literals to their corresponding JsonMetaDirectories.
+ * For example, 'filament-sensor' maps to 'filament-sensors'.
+ */
+type HardwareTypeToJsonMetaDirectoryMap = {
+	[K in keyof JsonMetaDirectoryToHardwareMap as JsonMetaDirectoryToHardwareMap[K]['type']]: K;
+};
+
+const RuntimeHardwareTypeToJsonMetaDirectoryMap: Record<HardwareTypeKey, JsonMetaDirectories> = {
+	'filament-sensor': 'filament-sensors',
+	'chamber-lighting': 'chamber-lighting',
+	'toolhead-alignment-system': 'toolhead-alignment-systems',
+	'chamber-air-filter': 'chamber-air-filters',
+};
+
+/**
+ * Resolves the parent directory name (plural) from the component's
+ * internal 'type' property (singular).
+ * * @param component - An object derived from one of the JsonMetaDirectoryToHardwareMap types.
+ * @returns The corresponding JsonMetaDirectories string.
+ */
+export function getJsonMetaDirectoryName<T extends { type: HardwareTypeKey }>(
+	component: T,
+): HardwareTypeToJsonMetaDirectoryMap[T['type']] {
+	// We use a type assertion here because we know the RuntimeHardwareTypeToJsonMetaDirectoryMap
+	// strictly mirrors the HardwareTypeToJsonMetaDirectoryMap type.
+	return RuntimeHardwareTypeToJsonMetaDirectoryMap[component.type] as HardwareTypeToJsonMetaDirectoryMap[T['type']];
+}
+
+export function isCfgMetaDirectory(directory: MetaDirectories): directory is CfgMetaDirectories {
+	return (CFG_META_DIRS as readonly string[]).includes(directory);
+}
+
+export function isJsonMetaDirectory(directory: MetaDirectories): directory is JsonMetaDirectories {
+	return (JSON_META_DIRS as readonly string[]).includes(directory);
+}
 
 export const parseMetadata = async <T extends ZodType>(cfgFile: string, zod: T): Promise<z.infer<T> | null> => {
 	if (cfgFile.trim() === '') return null;

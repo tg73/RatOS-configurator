@@ -29,7 +29,6 @@ import { defaultControllerFan } from '@/data/fans';
 import { moonrakerWriteEffect } from '@/components/sync-with-moonraker';
 import { getLogger } from '@/app/_helpers/logger';
 import { trpcClient } from '@/helpers/trpc';
-import { defaultChamberAirFilter, defaultChamberLighting, defaultToolheadAlignmentSystem } from '@/data/accessories';
 
 export const PerformanceModeState = atom<boolean | null | undefined>({
 	key: 'PerformanceMode',
@@ -44,11 +43,14 @@ export const PerformanceModeState = atom<boolean | null | undefined>({
 
 export const ChamberLightingState = atom<z.infer<typeof ChamberLighting> | null | undefined>({
 	key: 'ChamberLighting',
-	default: defaultChamberLighting,
+	default: null,
 	effects: [
 		moonrakerWriteEffect(),
 		syncEffect({
 			read: async ({ read }) => {
+				// TODO
+				return null;
+				/*
 				const chamberLightingState = await read(ChamberLightingState.key);
 				if (chamberLightingState != null && chamberLightingState !== '') {
 					// If it's already a full object, return it
@@ -71,6 +73,7 @@ export const ChamberLightingState = atom<z.infer<typeof ChamberLighting> | null 
 					}
 				}
 				return defaultChamberLighting;
+				*/
 			},
 			write: ({ write }, newValue) => {
 				// Serialize the chamber lighting to store only the ID
@@ -87,11 +90,14 @@ export const ChamberLightingState = atom<z.infer<typeof ChamberLighting> | null 
 
 export const ToolheadAlignmentSystemState = atom<z.infer<typeof ToolheadAlignmentSystem> | null | undefined>({
 	key: 'ToolheadAlignmentSystem',
-	default: defaultToolheadAlignmentSystem,
+	default: null,
 	effects: [
 		moonrakerWriteEffect(),
 		syncEffect({
 			read: async ({ read }) => {
+				// TODO
+				return null;
+				/*
 				const toolheadAlignmentSystemState = await read(ToolheadAlignmentSystemState.key);
 				if (toolheadAlignmentSystemState != null && toolheadAlignmentSystemState !== '') {
 					// If it's already a full object, return it
@@ -119,6 +125,7 @@ export const ToolheadAlignmentSystemState = atom<z.infer<typeof ToolheadAlignmen
 					}
 				}
 				return defaultToolheadAlignmentSystem;
+				*/
 			},
 			write: ({ write }, newValue) => {
 				// Serialize the toolhead alignment system to store only the ID
@@ -135,11 +142,14 @@ export const ToolheadAlignmentSystemState = atom<z.infer<typeof ToolheadAlignmen
 
 export const ChamberAirFilterState = atom<z.infer<typeof ChamberAirFilter> | null | undefined>({
 	key: 'ChamberAirFilter',
-	default: defaultChamberAirFilter,
+	default: null,
 	effects: [
 		moonrakerWriteEffect(),
 		syncEffect({
 			read: async ({ read }) => {
+				// TODO
+				return null;
+				/*
 				const chamberAirFilterState = await read(ChamberAirFilterState.key);
 				if (chamberAirFilterState != null && chamberAirFilterState !== '') {
 					// If it's already a full object, return it
@@ -162,6 +172,7 @@ export const ChamberAirFilterState = atom<z.infer<typeof ChamberAirFilter> | nul
 					}
 				}
 				return defaultChamberAirFilter;
+				*/
 			},
 			write: ({ write }, newValue) => {
 				// Serialize the chamber air filter to store only the ID
@@ -338,9 +349,18 @@ export const serializePrinterConfiguration = (config: PrinterConfiguration): Ser
 		performanceMode: config.performanceMode,
 		stealthchop: config.stealthchop,
 		standstillStealth: config.standstillStealth,
-		chamberLighting: config.chamberLighting.id,
-		toolheadAlignmentSystem: config.toolheadAlignmentSystem.id,
-		chamberAirFilter: config.chamberAirFilter.id,
+		chamberLighting:
+			config.chamberLighting == null
+				? null
+				: { id: config.chamberLighting.id, connectedTo: config.chamberLighting.connectedTo },
+		toolheadAlignmentSystem:
+			config.toolheadAlignmentSystem == null
+				? null
+				: { id: config.toolheadAlignmentSystem.id, connectedTo: config.toolheadAlignmentSystem.connectedTo },
+		chamberAirFilter:
+			config.chamberAirFilter == null
+				? null
+				: { id: config.chamberAirFilter.id, connectedTo: config.chamberAirFilter.connectedTo },
 		rails: config.rails.map((rail) => serializePrinterRail(rail)),
 	};
 	return SerializedPrinterConfiguration.parse(serializedConfig);
@@ -358,9 +378,18 @@ export const serializePartialPrinterConfiguration = (
 		performanceMode: config?.performanceMode,
 		stealthchop: config?.stealthchop,
 		standstillStealth: config?.standstillStealth,
-		chamberLighting: config?.chamberLighting?.id,
-		toolheadAlignmentSystem: config?.toolheadAlignmentSystem?.id,
-		chamberAirFilter: config?.chamberAirFilter?.id,
+		chamberLighting:
+			config?.chamberLighting == null
+				? null
+				: { id: config.chamberLighting.id, connectedTo: config.chamberLighting.connectedTo },
+		toolheadAlignmentSystem:
+			config?.toolheadAlignmentSystem == null
+				? null
+				: { id: config.toolheadAlignmentSystem.id, connectedTo: config.toolheadAlignmentSystem.connectedTo },
+		chamberAirFilter:
+			config?.chamberAirFilter == null
+				? null
+				: { id: config.chamberAirFilter.id, connectedTo: config.chamberAirFilter.connectedTo },
 	};
 	return SerializedPartialPrinterConfiguration.parse(serializedConfig);
 };

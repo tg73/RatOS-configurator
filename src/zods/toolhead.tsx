@@ -10,6 +10,7 @@ import {
 	Accelerometer,
 	Nozzle,
 	FilamentSensor,
+	FilamentSensorRef,
 } from '@/zods/hardware';
 import { PrinterAxis } from '@/zods/motion';
 import { getDefaultNozzle } from '@/data/nozzles';
@@ -77,7 +78,7 @@ export const SerializedToolheadConfiguration = BaseToolheadConfiguration.extend(
 	yAccelerometer: Accelerometer.shape.id.optional().nullable(),
 	toolboard: BoardID.optional().nullable(),
 	probe: Probe.shape.id.optional().nullable(),
-	filamentSensor: FilamentSensor.shape.id.optional().nullable(),
+	filamentSensor: FilamentSensorRef.optional().nullable(),
 }).strict();
 export const SerializedPartialToolheadConfiguration = SerializedToolheadConfiguration.partial().optional();
 

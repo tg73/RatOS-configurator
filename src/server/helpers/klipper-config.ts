@@ -1172,6 +1172,9 @@ export const constructKlipperConfigHelpers = async (
 			return result.join('\n');
 		},
 		renderChamberLighting() {
+			// TODO
+			return null;
+			/*
 			const result: string[] = [];
 			if (config.chamberLighting.id !== 'controlboard') {
 				result.push('# Chamber lighting not installed');
@@ -1184,8 +1187,12 @@ export const constructKlipperConfigHelpers = async (
 			result.push(`white_pin: ${pins.chamber_lighting_pin}`);
 			result.push(`initial_WHITE: 0.5`);
 			return result.join('\n');
+			*/
 		},
 		renderToolheadAlignmentSystemHardware() {
+			// TODO
+			return null;
+			/*
 			// This section is typically be emitted in RatOS.cfg (but only for IDEX printers)
 			const result: string[] = [];
 			if (config.toolheadAlignmentSystem.id !== 'ratRigVaoc') {
@@ -1193,8 +1200,12 @@ export const constructKlipperConfigHelpers = async (
 				return result.join('\n');
 			}
 			return extrasGenerator.generateRatRigVaocHardwareIncludes();
+			*/
 		},
 		renderToolheadAlignmentSystemConfigHelpers() {
+			// TODO
+			return null;
+			/*
 			// This section is typically be emitted near the end of printer.cfg, after an user stepper sections (but only for IDEX printers)
 			const result: string[] = [];
 			if (config.toolheadAlignmentSystem.id !== 'ratRigVaoc') {
@@ -1202,8 +1213,12 @@ export const constructKlipperConfigHelpers = async (
 				return result.join('\n');
 			}
 			return extrasGenerator.generateRatRigVaocConfigHelperIncludes();
+			*/
 		},
 		renderChamberAirFilter() {
+			// TODO
+			return null;
+			/*
 			const result: string[] = [];
 			if (config.chamberAirFilter.id !== 'ratRigRatPack') {
 				result.push('# Chamber air filter not installed');
@@ -1217,6 +1232,7 @@ export const constructKlipperConfigHelpers = async (
 			result.push(`pin: ${pins.ratrig_ratpack_pin}`);
 			result.push(`enable_pin: ${pins.ratrig_ratpack_enable_pin}`);
 			return result.join('\n');
+			*/
 		},
 		renderFans() {
 			const result: string[] = [];

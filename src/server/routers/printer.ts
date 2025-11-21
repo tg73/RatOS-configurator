@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getLogger } from '@/server/helpers/logger';
 
-import { extractIncludes, parseMetadata } from '@/server/helpers/metadata';
+import { extractIncludes, isCfgMetaDirectory, MetaDirectories, parseMetadata } from '@/server/helpers/metadata';
 import {
 	Hotend,
 	Extruder,
@@ -38,7 +38,6 @@ import {
 } from '@/server/helpers/klipper-config';
 import { serverSchema } from '@/env/schema.mjs';
 import { controllerFanOptions, partFanOptions, hotendFanOptions } from '@/data/fans';
-import { chamberAirFilterOptions, chamberLightingOptions, toolheadAlignmentSystemOptions } from '@/data/accessories';
 import { filamentSensorOptions } from '@/data/filament-sensors.server';
 import { getBoards, getToolboards } from '@/server/routers/mcu';
 import { xAccelerometerOptions, yAccelerometerOptions } from '@/data/accelerometers';
@@ -69,22 +68,14 @@ import { getDefaultNozzle } from '@/data/nozzles';
 import { extractLinesFromFile, getScriptRoot, searchFileByLine } from '@/server/helpers/file-operations';
 import { runSudoScript } from '@/server/helpers/run-script';
 
+// TODO
+//import { chamberAirFilterOptions, chamberLightingOptions, toolheadAlignmentSystemOptions } from '@/data/accessories';
+
 function isNodeError(error: any): error is NodeJS.ErrnoException {
 	return error instanceof Error;
 }
 
 type FileAction = 'created' | 'overwritten' | 'skipped' | 'error' | 'unchanged';
-
-const CFG_META_DIRS = ['hotends', 'extruders', 'z-probe'] as const;
-const JSON_META_DIRS = ['filament-sensors'] as const;
-
-export type CfgMetaDirectories = (typeof CFG_META_DIRS)[number];
-export type JsonMetaDirectories = (typeof JSON_META_DIRS)[number];
-export type MetaDirectories = CfgMetaDirectories | JsonMetaDirectories;
-
-function isCfgMetaDirectory(directory: MetaDirectories): directory is CfgMetaDirectories {
-	return (CFG_META_DIRS as readonly string[]).includes(directory);
-}
 
 export const parseDirectory = cacheAsyncDirectoryFn(async <T extends z.ZodType>(directory: MetaDirectories, zod: T) => {
 	const cached = ServerCache.get(directory);
@@ -299,12 +290,15 @@ export const deserializeToolheadConfiguration = async (
 			(f) => f.id === config.hotendFan,
 		),
 		filamentSensor:
-			(
-				await filamentSensorOptions({ controlboard }, null, {
-					toolboard: toolboard,
-					toolNumber: config?.toolNumber,
-				})
-			).find((s) => s.id === config.filamentSensor) ?? null,
+			config.filamentSensor == null
+				? null
+				: (
+						await filamentSensorOptions({ controlboard }, null, {
+							toolboard: toolboard,
+							toolNumber: config?.toolNumber,
+						})
+					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo == config.filamentSensor!.connectedTo) ??
+					null,
 	} satisfies PartialToolheadConfiguration;
 	return ToolheadConfiguration.parse(res);
 };
@@ -352,12 +346,15 @@ export const deserializePartialToolheadConfiguration = async (
 			{ toolboard, axis: config?.axis ?? PrinterAxis.x, toolNumber: config?.toolNumber },
 		).find((f) => f.id === config?.hotendFan),
 		filamentSensor:
-			(
-				await filamentSensorOptions({ controlboard }, null, {
-					toolboard: toolboard,
-					toolNumber: config?.toolNumber,
-				})
-			).find((s) => s.id === config?.filamentSensor) ?? null,
+			config?.filamentSensor == null
+				? null
+				: (
+						await filamentSensorOptions({ controlboard }, null, {
+							toolboard: toolboard,
+							toolNumber: config?.toolNumber,
+						})
+					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo == config.filamentSensor!.connectedTo) ??
+					null,
 	} satisfies PartialToolheadConfiguration);
 };
 
@@ -382,7 +379,11 @@ export const deserializePartialPrinterConfiguration = async (
 		performanceMode: config?.performanceMode,
 		stealthchop: config?.stealthchop,
 		standstillStealth: config?.standstillStealth,
-		chamberLighting: chamberLightingOptions({ controlboard }).find((a) => a.id === config?.chamberLighting),
+		// TODO
+		//chamberLighting: chamberLightingOptions({ controlboard }).find((a) => a.id === config?.chamberLighting),
+		chamberLighting: null,
+		chamberAirFilter: null,
+		toolheadAlignmentSystem: null,
 		rails: config?.rails?.map((r) => deserializePrinterRail(r)),
 	});
 };
@@ -405,11 +406,15 @@ export const deserializePrinterConfiguration = async (
 		performanceMode: config?.performanceMode,
 		stealthchop: config?.stealthchop,
 		standstillStealth: config?.standstillStealth,
-		chamberLighting: chamberLightingOptions({ controlboard }).find((a) => a.id === config?.chamberLighting),
-		toolheadAlignmentSystem: toolheadAlignmentSystemOptions({ controlboard }).find(
-			(a) => a.id === config?.toolheadAlignmentSystem,
-		),
-		chamberAirFilter: chamberAirFilterOptions({ controlboard }).find((a) => a.id === config?.chamberAirFilter),
+		// TODO
+		//chamberLighting: chamberLightingOptions({ controlboard }).find((a) => a.id === config?.chamberLighting),
+		//toolheadAlignmentSystem: toolheadAlignmentSystemOptions({ controlboard }).find(
+		//	(a) => a.id === config?.toolheadAlignmentSystem,
+		//),
+		//chamberAirFilter: chamberAirFilterOptions({ controlboard }).find((a) => a.id === config?.chamberAirFilter),
+		chamberLighting: null,
+		toolheadAlignmentSystem: null,
+		chamberAirFilter: null,
 		rails: config?.rails.map((r) => deserializePrinterRail(r)),
 	});
 };
@@ -984,7 +989,7 @@ export const printerRouter = router({
 			}),
 		)
 		.output(z.array(ChamberLighting))
-		.query(async (ctx) => chamberLightingOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {}))),
+		.query(async (ctx) => []), // TODO chamberLightingOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {}))),
 	toolheadAlignmentSystemOptions: publicProcedure
 		.input(
 			z.object({
@@ -992,9 +997,7 @@ export const printerRouter = router({
 			}),
 		)
 		.output(z.array(ToolheadAlignmentSystem))
-		.query(async (ctx) =>
-			toolheadAlignmentSystemOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {})),
-		),
+		.query(async (ctx) => []), // TODO toolheadAlignmentSystemOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {})),
 	chamberAirFilterOptions: publicProcedure
 		.input(
 			z.object({
@@ -1002,9 +1005,7 @@ export const printerRouter = router({
 			}),
 		)
 		.output(z.array(ChamberAirFilter))
-		.query(async (ctx) =>
-			chamberAirFilterOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {})),
-		),
+		.query(async (ctx) => []), // TODO chamberAirFilterOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {}))),
 	xAccelerometerOptions: publicProcedure
 		.input(
 			z.object({

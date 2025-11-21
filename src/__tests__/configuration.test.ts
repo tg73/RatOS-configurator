@@ -5,7 +5,7 @@ import {
 	getPrinters,
 	parseDirectory,
 } from '@/server/routers/printer';
-import { Extruder, FilamentSensor, Hotend, Probe } from '@/zods/hardware';
+import { Extruder, Hotend, Probe, UnconnectedFilamentSensor } from '@/zods/hardware';
 import { getBoards } from '@/server/routers/mcu';
 import fs from 'fs';
 import path from 'path';
@@ -37,7 +37,7 @@ describe('configuration', async () => {
 	const parsedHotends = await parseDirectory('hotends', Hotend);
 	const parsedExtruders = await parseDirectory('extruders', Extruder);
 	const parsedProbes = await parseDirectory('z-probe', Probe);
-	const parsedFilamentSensors = await parseDirectory('filament-sensors', FilamentSensor);
+	const parsedFilamentSensors = await parseDirectory('filament-sensors', UnconnectedFilamentSensor);
 	let parsedBoards;
 	try {
 		parsedBoards = await getBoards();
@@ -377,9 +377,13 @@ describe('configuration', async () => {
 				toolheads: toolheads,
 				rails: defaultRails,
 				size: printer.sizes?.[0],
-				chamberLighting: { id: 'controlboard', title: 'nobody cares' },
-				toolheadAlignmentSystem: { id: 'none', title: 'nobody cares' },
-				chamberAirFilter: { id: 'none', title: 'nobody cares' },
+				// TODO
+				//chamberLighting: { id: 'controlboard', title: 'nobody cares' },
+				//toolheadAlignmentSystem: { id: 'none', title: 'nobody cares' },
+				//chamberAirFilter: { id: 'none', title: 'nobody cares' },
+				chamberAirFilter: null,
+				chamberLighting: null,
+				toolheadAlignmentSystem: null,
 				performanceMode: false,
 				standstillStealth: false,
 				stealthchop: false,

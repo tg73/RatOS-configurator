@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ChamberAirFilter, ChamberLighting, ToolheadAlignmentSystem } from '@/zods/hardware';
 import type { PartialPrinterConfiguration } from '@/zods/printer-configuration';
 
+/*
 export const chamberLightingOptions = (
 	config?: PartialPrinterConfiguration | null,
 ): z.infer<typeof ChamberLighting>[] => {
@@ -67,3 +68,4 @@ export const defaultChamberAirFilter = {
 	id: 'none' as const,
 	title: 'None',
 };
+*/

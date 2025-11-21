@@ -17,7 +17,7 @@ import { PrinterConfiguration } from '@/zods/printer-configuration';
 import type { RenderPinsFn } from '@/server/helpers/klipper-config';
 import { getLogger } from '@/server/helpers/logger';
 import { Board } from '@/zods/boards';
-import { TemplateModule } from '@/templates/template-api';
+import { renderTemplateAsync } from '@/templates/template-api';
 
 export class ToolheadGenerator<IsToolboard extends boolean> extends ToolheadHelper<IsToolboard> {
 	private toolboardPins: PinMapZodFromBoard<IsToolboard, false> | null;
@@ -625,27 +625,7 @@ export class ToolheadGenerator<IsToolboard extends boolean> extends ToolheadHelp
 		return result.join('\n');
 	}
 	public async renderFilamentSensorAsync() {
-		const sensor = this.getFilamentSensor();
-		if (sensor == null) {
-			return null;
-		}
-		// Load the template dynamically based on the sensor's template property
-		try {
-			// NOTE: The import argument must be a template literal for webpack to parse it correctly
-			/* webpackInclude: /\.ts$/ */
-			const templateModule = TemplateModule.parse(
-				await import(`../../../templates/filament-sensors/${sensor.template}`),
-			);
-			return (
-				await Promise.resolve(
-					templateModule.renderTemplate({ templateOptions: sensor.templateOptions ?? {}, th: this }),
-				)
-			).trim();
-		} catch (error) {
-			const templatePath = `../../../templates/filament-sensors/${sensor.template}`;
-			getLogger().error(`Failed to render filament sensor template from ${templatePath}:`, error);
-			throw new Error(`Failed to render filament sensor template for ${sensor.id}: ${error}`);
-		}
+		return await renderTemplateAsync(this.getFilamentSensor(), { toolheadGenerator: this });
 	}
 	renderToolheadMacro() {
 		const endstopSafetyMargin = 2;

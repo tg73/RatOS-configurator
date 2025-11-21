@@ -1,4 +1,4 @@
-import { FilamentSensor } from '@/zods/hardware';
+import { FilamentSensor, UnconnectedFilamentSensor } from '@/zods/hardware';
 import type { PartialPrinterConfiguration } from '@/zods/printer-configuration';
 import { parseDirectory } from '@/server/routers/printer';
 import { parseBoardPinConfig } from '@/server/helpers/metadata';
@@ -32,6 +32,8 @@ export const filamentSensorOptions = async (
 	toolNumber?: number | null,
 	toolheadConfig?: PartialToolheadConfiguration | null,
 ): Promise<FilamentSensor[]> => {
+	// TODO: Abstract, generalize
+
 	// For a potentially non-empty result, caller must supply either:
 	// - A toolhead index to select the toolhead from the printer config
 	// - A toolhead config directly
@@ -59,8 +61,10 @@ export const filamentSensorOptions = async (
 		return [];
 	}
 
-	const boardPins = hasToolboard ? await parseBoardPinConfig(toolboard) : await parseBoardPinConfig(controlboard!);
-	const allSensors: FilamentSensor[] = await parseDirectory('filament-sensors', FilamentSensor);
+	const toolboardPins = hasToolboard ? await parseBoardPinConfig(toolboard) : null;
+	const controlboardPins = hasControlboard ? await parseBoardPinConfig(controlboard!) : null;
+
+	const allSensors: UnconnectedFilamentSensor[] = await parseDirectory('filament-sensors', UnconnectedFilamentSensor);
 	const validSensors: FilamentSensor[] = [];
 
 	for (const sensor of allSensors) {
@@ -69,20 +73,32 @@ export const filamentSensorOptions = async (
 		const templateModule = TemplateModule.parse(await import(`../templates/filament-sensors/${sensor.template}`));
 		const requiredPins = templateModule.getRequiredPinAliases({ templateOptions: sensor.templateOptions ?? {} });
 
-		if (requiredPins.every((pin) => boardPins[pin] != null)) {
-			const sensorCopy = { ...sensor };
-			sensorCopy.badge = [
-				hasToolboard
-					? {
-							color: 'sky',
-							children: `${toolboard.name} T${toolNumber}`,
-						}
-					: {
-							color: 'purple',
-							children: controlboard!.name,
-						},
-			];
-			validSensors.push(sensorCopy);
+		if (controlboardPins && requiredPins.every((pin) => controlboardPins[pin] != null)) {
+			const connected: FilamentSensor = {
+				...sensor,
+				connectedTo: 'controlboard',
+				badge: [
+					{
+						color: 'purple',
+						children: controlboard!.name,
+					},
+				],
+			};
+			validSensors.push(connected);
+		}
+
+		if (toolboardPins && requiredPins.every((pin) => toolboardPins[pin] != null)) {
+			const connected: FilamentSensor = {
+				...sensor,
+				connectedTo: 'toolboard',
+				badge: [
+					{
+						color: 'sky',
+						children: `${toolboard!.name} T${toolNumber}`,
+					},
+				],
+			};
+			validSensors.push(connected);
 		}
 	}
 

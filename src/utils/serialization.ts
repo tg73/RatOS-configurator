@@ -98,7 +98,8 @@ export const serializeToolheadConfiguration = (th: ToolheadConfiguration<any>): 
 		hotendFan: th.hotendFan.id,
 		xAccelerometer: th.xAccelerometer?.id,
 		yAccelerometer: th.yAccelerometer?.id,
-		filamentSensor: th.filamentSensor?.id,
+		filamentSensor:
+			th.filamentSensor == null ? null : { id: th.filamentSensor.id, connectedTo: th.filamentSensor.connectedTo },
 	};
 };
 
@@ -120,7 +121,8 @@ export const serializePartialToolheadConfiguration = (
 				hotendFan: th.hotendFan?.id,
 				xAccelerometer: th.xAccelerometer?.id,
 				yAccelerometer: th.yAccelerometer?.id,
-				filamentSensor: th.filamentSensor?.id,
+				filamentSensor:
+					th.filamentSensor == null ? null : { id: th.filamentSensor.id, connectedTo: th.filamentSensor.connectedTo },
 			};
 };
 

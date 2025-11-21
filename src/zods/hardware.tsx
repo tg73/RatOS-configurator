@@ -2,7 +2,12 @@ import { z } from 'zod';
 import { serverSchema } from '@/env/schema.mjs';
 import { PrinterRailDefinition, Stepper } from '@/zods/motion';
 import { badgeColorOptions } from '@/components/common/badge';
-import { PinMap } from '@/zods/boards';
+import {
+	HardwareDefinition,
+	HardwareInstance,
+	HardwareInstanceRef,
+	UnconnectedHardwareInstance,
+} from '@/zods/template-api';
 
 export const thermistors = [
 	'EPCOS 100K B57560G104F',
@@ -54,25 +59,6 @@ export const Probe = hardwareType.extend({
 	type: z.literal('static-probe').or(z.literal('stowable-probe')),
 	title: z.string(),
 });
-
-export const FilamentSensor = hardwareType.extend({
-	type: z.literal('filament-sensor'),
-	title: z.string(),
-	description: z.string(),
-	manufacturer: z.string(),
-	template: z.string(),
-	templateOptions: z.record(z.unknown()).optional(),
-	badge: z
-		.array(
-			z.object({
-				children: z.string(),
-				color: badgeColorOptions,
-			}),
-		)
-		.optional(),
-});
-
-export type FilamentSensor = z.infer<typeof FilamentSensor>;
 
 export const Endstop = z.object({
 	id: z.enum(['endstop', 'endstop-toolboard', 'sensorless']),
@@ -139,41 +125,63 @@ export const Fan = z.object({
 		.optional(),
 });
 
-export const ChamberLighting = z.object({
-	id: z.enum(['controlboard', 'none']),
-	title: z.string(),
-	badge: z
-		.array(
-			z.object({
-				children: z.string(),
-				color: badgeColorOptions,
-			}),
-		)
-		.optional(),
-});
+//---------------- Template API Types ------------------
 
-export const ToolheadAlignmentSystem = z.object({
-	id: z.enum(['ratRigVaoc', 'none']),
-	title: z.string(),
-	badge: z
-		.array(
-			z.object({
-				children: z.string(),
-				color: badgeColorOptions,
-			}),
-		)
-		.optional(),
-});
+// NB: I attempted to generalize the pattern below (see createHardwareSchemas in zods/template-api.ts)
+// but Zod struggled to infer the types correctly.
 
-export const ChamberAirFilter = z.object({
-	id: z.enum(['ratRigRatPack', 'none']),
-	title: z.string(),
-	badge: z
-		.array(
-			z.object({
-				children: z.string(),
-				color: badgeColorOptions,
-			}),
-		)
-		.optional(),
+export const FilamentSensorDefinition = HardwareDefinition.extend({
+	type: z.literal('filament-sensor'),
 });
+export type FilamentSensorDefinition = z.infer<typeof FilamentSensorDefinition>;
+
+export const UnconnectedFilamentSensor = UnconnectedHardwareInstance.merge(FilamentSensorDefinition);
+export type UnconnectedFilamentSensor = z.infer<typeof UnconnectedFilamentSensor>;
+
+export const FilamentSensor = HardwareInstance.merge(FilamentSensorDefinition);
+export type FilamentSensor = z.infer<typeof FilamentSensor>;
+
+export const FilamentSensorRef = HardwareInstanceRef;
+export type FilamentSensorRef = z.infer<typeof FilamentSensorRef>;
+
+export const ChamberLightingDefinition = HardwareDefinition.extend({
+	type: z.literal('chamber-lighting'),
+});
+export type ChamberLightingDefinition = z.infer<typeof ChamberLightingDefinition>;
+
+export const UnconnectedChamberLighting = UnconnectedHardwareInstance.merge(ChamberLightingDefinition);
+export type UnconnectedChamberLighting = z.infer<typeof UnconnectedChamberLighting>;
+
+export const ChamberLighting = HardwareInstance.merge(ChamberLightingDefinition);
+export type ChamberLighting = z.infer<typeof ChamberLighting>;
+
+export const ChamberLightingRef = HardwareInstanceRef;
+export type ChamberLightingRef = z.infer<typeof ChamberLightingRef>;
+
+export const ToolheadAlignmentSystemDefinition = HardwareDefinition.extend({
+	type: z.literal('toolhead-alignment-system'),
+});
+export type ToolheadAlignmentSystemDefinition = z.infer<typeof ToolheadAlignmentSystemDefinition>;
+
+export const UnconnectedToolheadAlignmentSystem = UnconnectedHardwareInstance.merge(ToolheadAlignmentSystemDefinition);
+export type UnconnectedToolheadAlignmentSystem = z.infer<typeof UnconnectedToolheadAlignmentSystem>;
+
+export const ToolheadAlignmentSystem = HardwareInstance.merge(ToolheadAlignmentSystemDefinition);
+export type ToolheadAlignmentSystem = z.infer<typeof ToolheadAlignmentSystem>;
+
+export const ToolheadAlignmentSystemRef = HardwareInstanceRef;
+export type ToolheadAlignmentSystemRef = z.infer<typeof ToolheadAlignmentSystemRef>;
+
+export const ChamberAirFilterDefinition = HardwareDefinition.extend({
+	type: z.literal('chamber-air-filter'),
+});
+export type ChamberAirFilterDefinition = z.infer<typeof ChamberAirFilterDefinition>;
+
+export const UnconnectedChamberAirFilter = UnconnectedHardwareInstance.merge(ChamberAirFilterDefinition);
+export type UnconnectedChamberAirFilter = z.infer<typeof UnconnectedChamberAirFilter>;
+
+export const ChamberAirFilter = HardwareInstance.merge(ChamberAirFilterDefinition);
+export type ChamberAirFilter = z.infer<typeof ChamberAirFilter>;
+
+export const ChamberAirFilterRef = HardwareInstanceRef;
+export type ChamberAirFilterRef = z.infer<typeof ChamberAirFilterRef>;
