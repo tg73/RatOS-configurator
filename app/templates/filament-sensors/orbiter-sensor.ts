@@ -10,7 +10,7 @@ export const getRequiredPinAliases: GetRequiredPinAliasesFn = (ctx) => {
 };
 
 export const renderTemplate: RenderTemplateFn = (ctx) => {
-	const th = ctx.th;
+	const th = ctx.toolheadGenerator;
 	const opts = Options.parse(ctx.templateOptions ?? {});
 	const runout = `
 [filament_switch_sensor filament_sensor${th.printerHasMultipleToolheads ? `_${th.getShortToolName()}` : ''}]

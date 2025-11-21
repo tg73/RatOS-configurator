@@ -3,45 +3,5 @@
 	"$id": "https://os.ratrig.com/filament-sensor-definition.schema.json",
 	"title": "Filament Sensor Definition",
 	"description": "A RatOS-supported filament sensor",
-	"type": "object",
-	"additionalProperties": false,
-	"properties": {
-		"$schema": {
-			"description": "The schema used for this file",
-			"type": "string"
-		},
-		"type": {
-			"description": "The type of this configuration file",
-			"type": "string",
-			"const": "filament-sensor"
-		},
-		"title": {
-			"description": "The title of the filament sensor for UI use",
-			"type": "string"
-		},
-		"description": {
-			"description": "A description of the filament sensor",
-			"type": "string"
-		},
-		"manufacturer": {
-			"description": "The manufacturer of this filament sensor",
-			"type": "string"
-		},
-		"template": {
-			"description": "TypeScript template for this filament sensor (path relative to /src/templates/filament-sensors/)",
-			"type": "string"
-		},
-		"templateOptions": {
-			"description": "Custom template options for this filament sensor. These options can be consumed by the template, enabling template reuse for similar filament sensors.",
-			"type": "object",
-			"additionalProperties": true
-		}
-	},
-	"required": [
-		"type",
-		"title",
-		"description",
-		"manufacturer",
-		"template"
-	]
+	"$ref": "../hardware-definition-schema.json"
 }

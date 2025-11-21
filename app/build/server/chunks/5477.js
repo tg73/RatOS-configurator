@@ -1,4 +1,4 @@
-"use strict";exports.id=5477,exports.ids=[5477],exports.modules={5477:(e,t,o)=>{o.r(t),o.d(t,{getRequiredPinAliases:()=>getRequiredPinAliases,renderTemplate:()=>renderTemplate});var n=o(38316);let i=n.z.object({isSmart:n.z.boolean().default(!1)}),getRequiredPinAliases=e=>["filament_sensor_runout_pin","filament_sensor_motion_pin"],renderTemplate=e=>{let t=e.th,o=i.parse(e.templateOptions??{}),n=`
+"use strict";exports.id=5477,exports.ids=[5477],exports.modules={5477:(e,t,o)=>{o.r(t),o.d(t,{getRequiredPinAliases:()=>getRequiredPinAliases,renderTemplate:()=>renderTemplate});var n=o(38316);let i=n.z.object({isSmart:n.z.boolean().default(!1)}),getRequiredPinAliases=e=>["filament_sensor_runout_pin","filament_sensor_motion_pin"],renderTemplate=e=>{let t=e.toolheadGenerator,o=i.parse(e.templateOptions??{}),n=`
 [filament_switch_sensor filament_sensor${t.printerHasMultipleToolheads?`_${t.getShortToolName()}`:""}]
 pause_on_runout: False
 event_delay: 1.0
