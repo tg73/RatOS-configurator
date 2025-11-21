@@ -136,10 +136,20 @@ export class ToolheadHelper<IsToolboard extends boolean> {
 				changeSet[key] = change;
 				return;
 			}
+			// TODO: this is arguable a bit hacky, and certainly rather well hidden.
 			if (current && change) {
 				if (typeof current === 'object' && 'id' in current && typeof change === 'object' && 'id' in change) {
 					if (current.id !== change.id) {
 						changeSet[key] = change;
+					} else {
+						const currentHasConnectedTo = 'connectedTo' in current;
+						const changeHasConnectedTo = 'connectedTo' in change;
+						if (
+							(currentHasConnectedTo && changeHasConnectedTo && current.connectedTo !== change.connectedTo) ||
+							currentHasConnectedTo != changeHasConnectedTo
+						) {
+							changeSet[key] = change;
+						}
 					}
 				} else if (!deepEqual(current, change)) {
 					changeSet[key] = change;

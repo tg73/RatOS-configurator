@@ -1,4 +1,7 @@
+import { getLogger } from '@/app/_helpers/logger';
+import { getErrorMessage } from '@/utils/exception-handling';
 import { MoonrakerPrinterState, MoonrakerPrinterStateErrorEnum, parseMoonrakerHTTPResponse } from '@/zods/moonraker';
+import { get } from 'http';
 import { ZodError } from 'zod';
 
 export const queryPrinterState = async (): Promise<
@@ -25,9 +28,30 @@ export const queryPrinterState = async (): Promise<
 };
 
 export const klipperRestart = async (force = false) => {
-	if (force || ['error', 'complete', 'canceled', 'standby', undefined].includes(await queryPrinterState())) {
-		await fetch('http://localhost:7125/printer/restart', { method: 'POST' });
-		return true;
+	if (force) {
+		getLogger().info('Restarting Klipper without checking printer state...');
+	} else {
+		let state: string | undefined;
+		try {
+			const state = await queryPrinterState();
+		} catch (e) {
+			getLogger().error(`Failed to query printer state before Klipper restart: ${getErrorMessage(e)}`);
+			return false;
+		}
+		if (!['error', 'complete', 'canceled', 'standby', undefined].includes(state)) {
+			getLogger().info(`Skipping Klipper restart because printer is in '${state}' state.`);
+			return false;
+		}
+		getLogger().info(`Restarting Klipper, printer is currently in '${state}' state...`);
 	}
+
+	try {
+		await fetch('http://localhost:7125/printer/restart', { method: 'POST' });
+		getLogger().info('Klipper restart command sent successfully.');
+		return true;
+	} catch (e) {
+		getLogger().error(`Failed to send Klipper restart command: ${getErrorMessage(e)}`);
+	}
+
 	return false;
 };

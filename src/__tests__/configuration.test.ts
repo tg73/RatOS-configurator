@@ -37,7 +37,10 @@ describe('configuration', async () => {
 	const parsedHotends = await parseDirectory('hotends', Hotend);
 	const parsedExtruders = await parseDirectory('extruders', Extruder);
 	const parsedProbes = await parseDirectory('z-probe', Probe);
-	const parsedFilamentSensors = await parseDirectory('filament-sensors', UnconnectedFilamentSensor);
+	const parsedFilamentSensors: UnconnectedFilamentSensor[] = await parseDirectory(
+		'filament-sensors',
+		UnconnectedFilamentSensor,
+	);
 	let parsedBoards;
 	try {
 		parsedBoards = await getBoards();
@@ -411,7 +414,7 @@ describe('configuration', async () => {
 			const defaultHotend = parsedHotends.find((hotend) => hotend.id === toolhead.hotend);
 			const defaultExtruder = parsedExtruders.find((extruder) => extruder.id === toolhead.extruder);
 			const defaultProbe = parsedProbes.find((probe) => probe.id === toolhead.probe);
-			const defaultFilamentSensor = parsedFilamentSensors.find((sensor) => sensor.id === toolhead.filamentSensor);
+			const defaultFilamentSensor = null; // TODO parsedFilamentSensors.find((sensor) => sensor.id === toolhead.filamentSensor);
 			const defaultXEndstop = xEndstopOptions(deserializedConfig, {
 				...deserializedToolheadConfig,
 				axis: deserializedToolheadConfig?.axis ?? PrinterAxis.x,

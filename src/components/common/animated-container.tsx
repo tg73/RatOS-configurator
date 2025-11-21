@@ -1,7 +1,7 @@
 import { useDebounce } from '@/app/_hooks/debounce';
 import useResizeObserver from '@react-hook/resize-observer';
 import { motion, SpringOptions } from 'framer-motion';
-import { useState, useRef, PropsWithChildren, useCallback, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useRef, PropsWithChildren, useCallback, useLayoutEffect, useEffect } from 'react';
 import { twJoin, twMerge } from 'tailwind-merge';
 
 export const AnimatedContainer = (

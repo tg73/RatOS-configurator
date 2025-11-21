@@ -111,7 +111,9 @@ export const useToolheadConfiguration = <T extends boolean = true>(
 							toolheadConfig: serializePartialToolheadConfiguration(th),
 							toolOrAxis: th.toolNumber as ToolNumber,
 						});
-						const stillAvailable = availableSensors.find((s) => s.id === th.filamentSensor?.id);
+						const stillAvailable = availableSensors.find(
+							(s) => s.id === th.filamentSensor?.id && s.connectedTo === th.filamentSensor?.connectedTo,
+						);
 						if (stillAvailable == null) {
 							th.filamentSensor = null;
 						}

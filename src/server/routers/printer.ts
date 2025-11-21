@@ -67,6 +67,7 @@ import objectHash from 'object-hash';
 import { getDefaultNozzle } from '@/data/nozzles';
 import { extractLinesFromFile, getScriptRoot, searchFileByLine } from '@/server/helpers/file-operations';
 import { runSudoScript } from '@/server/helpers/run-script';
+import { i } from 'vitest/dist/reporters-yx5ZTtEV';
 
 // TODO
 //import { chamberAirFilterOptions, chamberLightingOptions, toolheadAlignmentSystemOptions } from '@/data/accessories';
@@ -297,7 +298,7 @@ export const deserializeToolheadConfiguration = async (
 							toolboard: toolboard,
 							toolNumber: config?.toolNumber,
 						})
-					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo == config.filamentSensor!.connectedTo) ??
+					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo === config.filamentSensor!.connectedTo) ??
 					null,
 	} satisfies PartialToolheadConfiguration;
 	return ToolheadConfiguration.parse(res);
@@ -353,7 +354,7 @@ export const deserializePartialToolheadConfiguration = async (
 							toolboard: toolboard,
 							toolNumber: config?.toolNumber,
 						})
-					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo == config.filamentSensor!.connectedTo) ??
+					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo === config.filamentSensor!.connectedTo) ??
 					null,
 	} satisfies PartialToolheadConfiguration);
 };
@@ -873,6 +874,10 @@ const getToolheads = async <
 
 export const printerRouter = router({
 	getSavedConfig: publicProcedure.output(SerializedPrinterConfiguration.nullable()).query(async (ctx) => {
+		if (!hasLastPrinterSettings()) {
+			getLogger().info('No saved printer settings found.');
+			return null;
+		}
 		const config = await getLastPrinterSettings(undefined, true);
 		return config;
 	}),
