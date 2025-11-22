@@ -15,7 +15,7 @@ if (process.env.RATOS_CONFIGURATION_PATH) {
  * This represents the abstract definition only.
  */
 export const HardwareDefinition = z.object({
-	type: z.enum(['filament_sensor', 'chamber_lighting', 'toolhead_alignment_system', 'chamber_air_filter']),
+	type: z.enum(['filament-sensor', 'chamber-lighting', 'toolhead-alignment-system', 'chamber-air-filter']),
 	title: z.string(),
 	description: z.string(),
 	manufacturer: z.string(),

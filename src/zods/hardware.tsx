@@ -131,7 +131,7 @@ export const Fan = z.object({
 //----------------------------------------------------------------------------------------
 // FilamentSensor
 //----------------------------------------------------------------------------------------
-export const FilamentSensorSchemas = createHardwareSchemas('filament_sensor');
+export const FilamentSensorSchemas = createHardwareSchemas('filament-sensor');
 export const FilamentSensorDefinition = FilamentSensorSchemas.Definition;
 export type FilamentSensorDefinition = z.infer<typeof FilamentSensorDefinition>;
 export const UnconnectedFilamentSensor = FilamentSensorSchemas.Unconnected;
@@ -158,7 +158,7 @@ export type OptionalFilamentSensorRef = z.infer<typeof OptionalFilamentSensorRef
 //----------------------------------------------------------------------------------------
 // ChamberLighting
 //----------------------------------------------------------------------------------------
-export const ChamberLightingSchemas = createHardwareSchemas('chamber_lighting');
+export const ChamberLightingSchemas = createHardwareSchemas('chamber-lighting');
 export const ChamberLightingDefinition = ChamberLightingSchemas.Definition;
 export type ChamberLightingDefinition = z.infer<typeof ChamberLightingDefinition>;
 export const UnconnectedChamberLighting = ChamberLightingSchemas.Unconnected;
@@ -185,7 +185,7 @@ export type OptionalChamberLightingRef = z.infer<typeof OptionalChamberLightingR
 //----------------------------------------------------------------------------------------
 // ChamberAirFilter
 //----------------------------------------------------------------------------------------
-export const ChamberAirFilterSchemas = createHardwareSchemas('chamber_air_filter');
+export const ChamberAirFilterSchemas = createHardwareSchemas('chamber-air-filter');
 export const ChamberAirFilterDefinition = ChamberAirFilterSchemas.Definition;
 export type ChamberAirFilterDefinition = z.infer<typeof ChamberAirFilterDefinition>;
 export const UnconnectedChamberAirFilter = ChamberAirFilterSchemas.Unconnected;
@@ -212,7 +212,7 @@ export type OptionalChamberAirFilterRef = z.infer<typeof OptionalChamberAirFilte
 //----------------------------------------------------------------------------------------
 // ToolheadAlignmentSystem
 //----------------------------------------------------------------------------------------
-export const ToolheadAlignmentSystemSchemas = createHardwareSchemas('toolhead_alignment_system');
+export const ToolheadAlignmentSystemSchemas = createHardwareSchemas('toolhead-alignment-system');
 export const ToolheadAlignmentSystemDefinition = ToolheadAlignmentSystemSchemas.Definition;
 export type ToolheadAlignmentSystemDefinition = z.infer<typeof ToolheadAlignmentSystemDefinition>;
 export const UnconnectedToolheadAlignmentSystem = ToolheadAlignmentSystemSchemas.Unconnected;
