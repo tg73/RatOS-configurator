@@ -66,7 +66,7 @@ export type HardwareInstance = z.infer<typeof HardwareInstance>;
  * Base schema for a hardware instance reference used with the Template API. This includes only the id and connection information,
  * which in combination with the corresponding @see HardwareDefinition is sufficient to reconstruct a full @see HardwareInstance.
  */
-export const HardwareInstanceRef = HardwareInstance.pick({ id: true, connectedTo: true }).required();
+export const HardwareInstanceRef = HardwareInstance.pick({ id: true, connectedTo: true }).required().strip();
 
 /**
  * Inferred type of the base schema for a hardware instance reference used with the Template API. This includes only the id and connection information,

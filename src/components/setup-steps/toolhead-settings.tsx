@@ -150,7 +150,7 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 						query="filamentSensorOptions"
 						canClear={true}
 						error={errors?.fieldErrors.filamentSensor?.join('\n')}
-						onSelect={(value) => setToolheadField('filamentSensor', value ?? null)}
+						onSelect={(value) => setToolheadField('filamentSensor', value ?? undefined)}
 						value={toolhead.getFilamentSensor()}
 						nothingSelectedText="None"
 						noOptionsText="No filament sensors are supported by the selected toolboard and/or controlboard."

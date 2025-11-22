@@ -15,6 +15,15 @@ import {
 import { PrinterAxis } from '@/zods/motion';
 import { getDefaultNozzle } from '@/data/nozzles';
 
+// Was Accelerometer.optional().nullable(), which:
+//   a) uses optional/nullable ordering incorrectly and
+//   b) adds unnecessary complexity/confusion around undefined vs null
+// Now normalizing to undefined when not set, with tranform in place to handle null inputs
+// which may be encountered during deserialization in the wild.
+const GracefulOptionalAccelerometer = z
+	.union([Accelerometer.optional(), z.literal(null)])
+	.transform((val) => (val === null ? undefined : val));
+
 export const BaseToolheadConfiguration = z
 	.object({
 		hotend: Hotend,
@@ -25,11 +34,11 @@ export const BaseToolheadConfiguration = z
 		hotendFan: Fan,
 		partFan: Fan,
 		nozzle: Nozzle.default(getDefaultNozzle()),
-		xAccelerometer: Accelerometer.optional().nullable(),
-		yAccelerometer: Accelerometer.optional().nullable(),
+		xAccelerometer: GracefulOptionalAccelerometer,
+		yAccelerometer: GracefulOptionalAccelerometer,
 		toolboard: Toolboard.nullable(),
 		probe: Probe.optional(),
-		filamentSensor: FilamentSensor.optional().nullable(),
+		filamentSensor: FilamentSensor.optional(),
 		axis: z.literal(PrinterAxis.x).or(z.literal(PrinterAxis.dual_carriage)),
 		description: z.string().optional(),
 		toolNumber: z.number().optional(),

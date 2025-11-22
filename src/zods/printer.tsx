@@ -3,7 +3,12 @@ import { serverSchema } from '@/env/schema.mjs';
 import path from 'path';
 import { SerializedPrinterRailDefinition } from '@/zods/motion';
 import { SerializedToolheadConfiguration, ToolheadConfiguration } from '@/zods/toolhead';
-import { ChamberAirFilterRef, ChamberLightingRef, Fan, ToolheadAlignmentSystemRef } from '@/zods/hardware';
+import {
+	Fan,
+	OptionalChamberAirFilterRef,
+	OptionalChamberLightingRef,
+	OptionalToolheadAlignmentSystemRef,
+} from '@/zods/hardware';
 import { BoardID } from '@/zods/boards';
 
 let startsWithServerValidation = '';
@@ -79,11 +84,11 @@ export const PrinterDefinition = z
 				board: BoardID.describe('Default board for this printer. Should be the name of the board directory.'),
 				rails: z.array(SerializedPrinterRailDefinition).describe('Default rails for this printer'),
 				controllerFan: Fan.shape.id.optional().describe('Default controller fan for this printer'),
-				chamberLighting: ChamberLightingRef.optional().describe('Default chamber lighting setting for this printer'),
-				toolheadAlignmentSystem: ToolheadAlignmentSystemRef.optional().describe(
+				chamberLighting: OptionalChamberLightingRef.describe('Default chamber lighting setting for this printer'),
+				toolheadAlignmentSystem: OptionalToolheadAlignmentSystemRef.describe(
 					'Default toolhead alignment system for this printer',
 				),
-				chamberAirFilter: ChamberAirFilterRef.optional().describe('Default chamber air filter for this printer'),
+				chamberAirFilter: OptionalChamberAirFilterRef.describe('Default chamber air filter for this printer'),
 			})
 			.strict()
 			.describe('Default hardware for this printer'),

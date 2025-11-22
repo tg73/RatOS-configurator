@@ -55,9 +55,9 @@ const serializedConfigFromDefaults = (printer: PrinterDefinition): SerializedPri
 		//chamberLighting: printer.defaults.chamberLighting ?? 'none',
 		//toolheadAlignmentSystem: printer.defaults.toolheadAlignmentSystem ?? 'none',
 		//chamberAirFilter: printer.defaults.chamberAirFilter ?? 'none',
-		chamberLighting: null,
-		toolheadAlignmentSystem: null,
-		chamberAirFilter: null,
+		chamberLighting: undefined,
+		toolheadAlignmentSystem: undefined,
+		chamberAirFilter: undefined,
 	} satisfies SerializedPrinterConfiguration);
 };
 

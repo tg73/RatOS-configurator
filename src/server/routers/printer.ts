@@ -282,8 +282,8 @@ export const deserializeToolheadConfiguration = async (
 		yEndstop: yEndstopOptions({ controlboard }, { toolboard, axis: config.axis, toolNumber: config.toolNumber }).find(
 			(e) => e.id === config.yEndstop,
 		),
-		xAccelerometer: serializedXAccel != null ? { ...serializedXAccel, accelerometerType: xAccel?.type } : null,
-		yAccelerometer: serializedYAccel != null ? { ...serializedYAccel, accelerometerType: yAccel?.type } : null,
+		xAccelerometer: serializedXAccel != null ? { ...serializedXAccel, accelerometerType: xAccel?.type } : undefined,
+		yAccelerometer: serializedYAccel != null ? { ...serializedYAccel, accelerometerType: yAccel?.type } : undefined,
 		partFan: partFanOptions({ controlboard }, { toolboard, axis: config.axis, toolNumber: config.toolNumber }).find(
 			(f) => f.id === config.partFan,
 		),
@@ -292,14 +292,14 @@ export const deserializeToolheadConfiguration = async (
 		),
 		filamentSensor:
 			config.filamentSensor == null
-				? null
+				? undefined
 				: (
 						await filamentSensorOptions({ controlboard }, null, {
 							toolboard: toolboard,
 							toolNumber: config?.toolNumber,
 						})
 					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo === config.filamentSensor!.connectedTo) ??
-					null,
+					undefined,
 	} satisfies PartialToolheadConfiguration;
 	return ToolheadConfiguration.parse(res);
 };
@@ -348,14 +348,14 @@ export const deserializePartialToolheadConfiguration = async (
 		).find((f) => f.id === config?.hotendFan),
 		filamentSensor:
 			config?.filamentSensor == null
-				? null
+				? undefined
 				: (
 						await filamentSensorOptions({ controlboard }, null, {
 							toolboard: toolboard,
 							toolNumber: config?.toolNumber,
 						})
 					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo === config.filamentSensor!.connectedTo) ??
-					null,
+					undefined,
 	} satisfies PartialToolheadConfiguration);
 };
 
@@ -382,9 +382,9 @@ export const deserializePartialPrinterConfiguration = async (
 		standstillStealth: config?.standstillStealth,
 		// TODO
 		//chamberLighting: chamberLightingOptions({ controlboard }).find((a) => a.id === config?.chamberLighting),
-		chamberLighting: null,
-		chamberAirFilter: null,
-		toolheadAlignmentSystem: null,
+		chamberLighting: undefined,
+		chamberAirFilter: undefined,
+		toolheadAlignmentSystem: undefined,
 		rails: config?.rails?.map((r) => deserializePrinterRail(r)),
 	});
 };

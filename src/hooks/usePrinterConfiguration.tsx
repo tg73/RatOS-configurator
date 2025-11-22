@@ -2,7 +2,15 @@
 
 import { atom, selector, useRecoilValue, useRecoilState, waitForAll, noWait, DefaultValue } from 'recoil';
 import { z } from 'zod';
-import { ChamberAirFilter, ChamberLighting, Fan, ToolheadAlignmentSystem } from '@/zods/hardware';
+import {
+	Fan,
+	ChamberAirFilter,
+	OptionalChamberAirFilterRef,
+	ChamberLighting,
+	OptionalChamberLightingRef,
+	ToolheadAlignmentSystem,
+	OptionalToolheadAlignmentSystemRef,
+} from '@/zods/hardware';
 import {
 	PartialPrinterConfiguration,
 	PrinterConfiguration,
@@ -29,6 +37,7 @@ import { defaultControllerFan } from '@/data/fans';
 import { moonrakerWriteEffect } from '@/components/sync-with-moonraker';
 import { getLogger } from '@/app/_helpers/logger';
 import { trpcClient } from '@/helpers/trpc';
+import { project } from '@/zods/util';
 
 export const PerformanceModeState = atom<boolean | null | undefined>({
 	key: 'PerformanceMode',
@@ -349,18 +358,9 @@ export const serializePrinterConfiguration = (config: PrinterConfiguration): Ser
 		performanceMode: config.performanceMode,
 		stealthchop: config.stealthchop,
 		standstillStealth: config.standstillStealth,
-		chamberLighting:
-			config.chamberLighting == null
-				? null
-				: { id: config.chamberLighting.id, connectedTo: config.chamberLighting.connectedTo },
-		toolheadAlignmentSystem:
-			config.toolheadAlignmentSystem == null
-				? null
-				: { id: config.toolheadAlignmentSystem.id, connectedTo: config.toolheadAlignmentSystem.connectedTo },
-		chamberAirFilter:
-			config.chamberAirFilter == null
-				? null
-				: { id: config.chamberAirFilter.id, connectedTo: config.chamberAirFilter.connectedTo },
+		chamberLighting: project(OptionalChamberLightingRef, config.chamberLighting),
+		toolheadAlignmentSystem: project(OptionalToolheadAlignmentSystemRef, config.toolheadAlignmentSystem),
+		chamberAirFilter: project(OptionalChamberAirFilterRef, config.chamberAirFilter),
 		rails: config.rails.map((rail) => serializePrinterRail(rail)),
 	};
 	return SerializedPrinterConfiguration.parse(serializedConfig);
@@ -378,18 +378,9 @@ export const serializePartialPrinterConfiguration = (
 		performanceMode: config?.performanceMode,
 		stealthchop: config?.stealthchop,
 		standstillStealth: config?.standstillStealth,
-		chamberLighting:
-			config?.chamberLighting == null
-				? null
-				: { id: config.chamberLighting.id, connectedTo: config.chamberLighting.connectedTo },
-		toolheadAlignmentSystem:
-			config?.toolheadAlignmentSystem == null
-				? null
-				: { id: config.toolheadAlignmentSystem.id, connectedTo: config.toolheadAlignmentSystem.connectedTo },
-		chamberAirFilter:
-			config?.chamberAirFilter == null
-				? null
-				: { id: config.chamberAirFilter.id, connectedTo: config.chamberAirFilter.connectedTo },
+		chamberLighting: project(OptionalChamberLightingRef, config?.chamberLighting),
+		toolheadAlignmentSystem: project(OptionalToolheadAlignmentSystemRef, config?.toolheadAlignmentSystem),
+		chamberAirFilter: project(OptionalChamberAirFilterRef, config?.chamberAirFilter),
 	};
 	return SerializedPartialPrinterConfiguration.parse(serializedConfig);
 };

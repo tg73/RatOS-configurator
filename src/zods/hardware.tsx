@@ -8,6 +8,7 @@ import {
 	HardwareInstanceRef,
 	UnconnectedHardwareInstance,
 } from '@/zods/template-api';
+import { project } from '@/zods/util';
 
 export const thermistors = [
 	'EPCOS 100K B57560G104F',
@@ -141,8 +142,18 @@ export type UnconnectedFilamentSensor = z.infer<typeof UnconnectedFilamentSensor
 export const FilamentSensor = HardwareInstance.merge(FilamentSensorDefinition);
 export type FilamentSensor = z.infer<typeof FilamentSensor>;
 
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export const FilamentSensorRef = HardwareInstanceRef;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export type FilamentSensorRef = z.infer<typeof FilamentSensorRef>;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
+export const OptionalFilamentSensorRef = FilamentSensorRef.optional();
 
 export const ChamberLightingDefinition = HardwareDefinition.extend({
 	type: z.literal('chamber-lighting'),
@@ -155,8 +166,18 @@ export type UnconnectedChamberLighting = z.infer<typeof UnconnectedChamberLighti
 export const ChamberLighting = HardwareInstance.merge(ChamberLightingDefinition);
 export type ChamberLighting = z.infer<typeof ChamberLighting>;
 
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export const ChamberLightingRef = HardwareInstanceRef;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export type ChamberLightingRef = z.infer<typeof ChamberLightingRef>;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
+export const OptionalChamberLightingRef = ChamberLightingRef.optional();
 
 export const ToolheadAlignmentSystemDefinition = HardwareDefinition.extend({
 	type: z.literal('toolhead-alignment-system'),
@@ -169,8 +190,18 @@ export type UnconnectedToolheadAlignmentSystem = z.infer<typeof UnconnectedToolh
 export const ToolheadAlignmentSystem = HardwareInstance.merge(ToolheadAlignmentSystemDefinition);
 export type ToolheadAlignmentSystem = z.infer<typeof ToolheadAlignmentSystem>;
 
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export const ToolheadAlignmentSystemRef = HardwareInstanceRef;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export type ToolheadAlignmentSystemRef = z.infer<typeof ToolheadAlignmentSystemRef>;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
+export const OptionalToolheadAlignmentSystemRef = ToolheadAlignmentSystemRef.optional();
 
 export const ChamberAirFilterDefinition = HardwareDefinition.extend({
 	type: z.literal('chamber-air-filter'),
@@ -183,5 +214,15 @@ export type UnconnectedChamberAirFilter = z.infer<typeof UnconnectedChamberAirFi
 export const ChamberAirFilter = HardwareInstance.merge(ChamberAirFilterDefinition);
 export type ChamberAirFilter = z.infer<typeof ChamberAirFilter>;
 
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export const ChamberAirFilterRef = HardwareInstanceRef;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
 export type ChamberAirFilterRef = z.infer<typeof ChamberAirFilterRef>;
+/**
+ * Use {@link project} to obtain references from full instances.
+ */
+export const OptionalChamberAirFilterRef = ChamberAirFilterRef.optional();

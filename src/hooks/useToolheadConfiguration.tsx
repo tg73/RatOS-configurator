@@ -115,7 +115,7 @@ export const useToolheadConfiguration = <T extends boolean = true>(
 							(s) => s.id === th.filamentSensor?.id && s.connectedTo === th.filamentSensor?.connectedTo,
 						);
 						if (stillAvailable == null) {
-							th.filamentSensor = null;
+							th.filamentSensor = undefined;
 						}
 					}
 				}
