@@ -3,12 +3,12 @@ import { serverSchema } from '@/env/schema.mjs';
 import { PrinterRailDefinition, Stepper } from '@/zods/motion';
 import { badgeColorOptions } from '@/components/common/badge';
 import {
+	createHardwareSchemas,
 	HardwareDefinition,
 	HardwareInstance,
 	HardwareInstanceRef,
 	UnconnectedHardwareInstance,
 } from '@/zods/template-api';
-import { project } from '@/zods/util';
 
 export const thermistors = [
 	'EPCOS 100K B57560G104F',
@@ -128,101 +128,110 @@ export const Fan = z.object({
 
 //---------------- Template API Types ------------------
 
-// NB: I attempted to generalize the pattern below (see createHardwareSchemas in zods/template-api.ts)
-// but Zod struggled to infer the types correctly.
-
-export const FilamentSensorDefinition = HardwareDefinition.extend({
-	type: z.literal('filament-sensor'),
-});
+//----------------------------------------------------------------------------------------
+// FilamentSensor
+//----------------------------------------------------------------------------------------
+export const FilamentSensorSchemas = createHardwareSchemas('filament_sensor');
+export const FilamentSensorDefinition = FilamentSensorSchemas.Definition;
 export type FilamentSensorDefinition = z.infer<typeof FilamentSensorDefinition>;
-
-export const UnconnectedFilamentSensor = UnconnectedHardwareInstance.merge(FilamentSensorDefinition);
+export const UnconnectedFilamentSensor = FilamentSensorSchemas.Unconnected;
 export type UnconnectedFilamentSensor = z.infer<typeof UnconnectedFilamentSensor>;
-
-export const FilamentSensor = HardwareInstance.merge(FilamentSensorDefinition);
+export const FilamentSensor = FilamentSensorSchemas.Connected;
 export type FilamentSensor = z.infer<typeof FilamentSensor>;
-
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link FilamentSensorSchemas.toRef} to obtain references to {@link FilamentSensor} instances.
  */
-export const FilamentSensorRef = HardwareInstanceRef;
+export const FilamentSensorRef = FilamentSensorSchemas.Ref;
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link FilamentSensorSchemas.toRef} to obtain references to {@link FilamentSensor} instances.
  */
 export type FilamentSensorRef = z.infer<typeof FilamentSensorRef>;
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link FilamentSensorSchemas.toRef} to obtain references to {@link FilamentSensor} instances.
  */
-export const OptionalFilamentSensorRef = FilamentSensorRef.optional();
+export const OptionalFilamentSensorRef = FilamentSensorSchemas.OptionalRef;
+/**
+ * Use {@link FilamentSensorSchemas.toRef} to obtain references to {@link FilamentSensor} instances.
+ */
+export type OptionalFilamentSensorRef = z.infer<typeof OptionalFilamentSensorRef>;
 
-export const ChamberLightingDefinition = HardwareDefinition.extend({
-	type: z.literal('chamber-lighting'),
-});
+//----------------------------------------------------------------------------------------
+// ChamberLighting
+//----------------------------------------------------------------------------------------
+export const ChamberLightingSchemas = createHardwareSchemas('chamber_lighting');
+export const ChamberLightingDefinition = ChamberLightingSchemas.Definition;
 export type ChamberLightingDefinition = z.infer<typeof ChamberLightingDefinition>;
-
-export const UnconnectedChamberLighting = UnconnectedHardwareInstance.merge(ChamberLightingDefinition);
+export const UnconnectedChamberLighting = ChamberLightingSchemas.Unconnected;
 export type UnconnectedChamberLighting = z.infer<typeof UnconnectedChamberLighting>;
-
-export const ChamberLighting = HardwareInstance.merge(ChamberLightingDefinition);
+export const ChamberLighting = ChamberLightingSchemas.Connected;
 export type ChamberLighting = z.infer<typeof ChamberLighting>;
-
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link ChamberLightingSchemas.toRef} to obtain references to {@link ChamberLighting} instances.
  */
-export const ChamberLightingRef = HardwareInstanceRef;
+export const ChamberLightingRef = ChamberLightingSchemas.Ref;
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link ChamberLightingSchemas.toRef} to obtain references to {@link ChamberLighting} instances.
  */
 export type ChamberLightingRef = z.infer<typeof ChamberLightingRef>;
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link ChamberLightingSchemas.toRef} to obtain references to {@link ChamberLighting} instances.
  */
-export const OptionalChamberLightingRef = ChamberLightingRef.optional();
-
-export const ToolheadAlignmentSystemDefinition = HardwareDefinition.extend({
-	type: z.literal('toolhead-alignment-system'),
-});
-export type ToolheadAlignmentSystemDefinition = z.infer<typeof ToolheadAlignmentSystemDefinition>;
-
-export const UnconnectedToolheadAlignmentSystem = UnconnectedHardwareInstance.merge(ToolheadAlignmentSystemDefinition);
-export type UnconnectedToolheadAlignmentSystem = z.infer<typeof UnconnectedToolheadAlignmentSystem>;
-
-export const ToolheadAlignmentSystem = HardwareInstance.merge(ToolheadAlignmentSystemDefinition);
-export type ToolheadAlignmentSystem = z.infer<typeof ToolheadAlignmentSystem>;
-
+export const OptionalChamberLightingRef = ChamberLightingSchemas.OptionalRef;
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link ChamberLightingSchemas.toRef} to obtain references to {@link ChamberLighting} instances.
  */
-export const ToolheadAlignmentSystemRef = HardwareInstanceRef;
-/**
- * Use {@link project} to obtain references from full instances.
- */
-export type ToolheadAlignmentSystemRef = z.infer<typeof ToolheadAlignmentSystemRef>;
-/**
- * Use {@link project} to obtain references from full instances.
- */
-export const OptionalToolheadAlignmentSystemRef = ToolheadAlignmentSystemRef.optional();
+export type OptionalChamberLightingRef = z.infer<typeof OptionalChamberLightingRef>;
 
-export const ChamberAirFilterDefinition = HardwareDefinition.extend({
-	type: z.literal('chamber-air-filter'),
-});
+//----------------------------------------------------------------------------------------
+// ChamberAirFilter
+//----------------------------------------------------------------------------------------
+export const ChamberAirFilterSchemas = createHardwareSchemas('chamber_air_filter');
+export const ChamberAirFilterDefinition = ChamberAirFilterSchemas.Definition;
 export type ChamberAirFilterDefinition = z.infer<typeof ChamberAirFilterDefinition>;
-
-export const UnconnectedChamberAirFilter = UnconnectedHardwareInstance.merge(ChamberAirFilterDefinition);
+export const UnconnectedChamberAirFilter = ChamberAirFilterSchemas.Unconnected;
 export type UnconnectedChamberAirFilter = z.infer<typeof UnconnectedChamberAirFilter>;
-
-export const ChamberAirFilter = HardwareInstance.merge(ChamberAirFilterDefinition);
+export const ChamberAirFilter = ChamberAirFilterSchemas.Connected;
 export type ChamberAirFilter = z.infer<typeof ChamberAirFilter>;
-
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link ChamberAirFilterSchemas.toRef} to obtain references to {@link ChamberAirFilter} instances.
  */
-export const ChamberAirFilterRef = HardwareInstanceRef;
+export const ChamberAirFilterRef = ChamberAirFilterSchemas.Ref;
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link ChamberAirFilterSchemas.toRef} to obtain references to {@link ChamberAirFilter} instances.
  */
 export type ChamberAirFilterRef = z.infer<typeof ChamberAirFilterRef>;
 /**
- * Use {@link project} to obtain references from full instances.
+ * Use {@link ChamberAirFilterSchemas.toRef} to obtain references to {@link ChamberAirFilter} instances.
  */
-export const OptionalChamberAirFilterRef = ChamberAirFilterRef.optional();
+export const OptionalChamberAirFilterRef = ChamberAirFilterSchemas.OptionalRef;
+/**
+ * Use {@link ChamberAirFilterSchemas.toRef} to obtain references to {@link ChamberAirFilter} instances.
+ */
+export type OptionalChamberAirFilterRef = z.infer<typeof OptionalChamberAirFilterRef>;
+
+//----------------------------------------------------------------------------------------
+// ToolheadAlignmentSystem
+//----------------------------------------------------------------------------------------
+export const ToolheadAlignmentSystemSchemas = createHardwareSchemas('toolhead_alignment_system');
+export const ToolheadAlignmentSystemDefinition = ToolheadAlignmentSystemSchemas.Definition;
+export type ToolheadAlignmentSystemDefinition = z.infer<typeof ToolheadAlignmentSystemDefinition>;
+export const UnconnectedToolheadAlignmentSystem = ToolheadAlignmentSystemSchemas.Unconnected;
+export type UnconnectedToolheadAlignmentSystem = z.infer<typeof UnconnectedToolheadAlignmentSystem>;
+export const ToolheadAlignmentSystem = ToolheadAlignmentSystemSchemas.Connected;
+export type ToolheadAlignmentSystem = z.infer<typeof ToolheadAlignmentSystem>;
+/**
+ * Use {@link ToolheadAlignmentSystemSchemas.toRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
+ */
+export const ToolheadAlignmentSystemRef = ToolheadAlignmentSystemSchemas.Ref;
+/**
+ * Use {@link ToolheadAlignmentSystemSchemas.toRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
+ */
+export type ToolheadAlignmentSystemRef = z.infer<typeof ToolheadAlignmentSystemRef>;
+/**
+ * Use {@link ToolheadAlignmentSystemSchemas.toRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
+ */
+export const OptionalToolheadAlignmentSystemRef = ToolheadAlignmentSystemSchemas.OptionalRef;
+/**
+ * Use {@link ToolheadAlignmentSystemSchemas.toRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
+ */
+export type OptionalToolheadAlignmentSystemRef = z.infer<typeof OptionalToolheadAlignmentSystemRef>;

@@ -10,6 +10,9 @@ import {
 	OptionalChamberLightingRef,
 	ToolheadAlignmentSystem,
 	OptionalToolheadAlignmentSystemRef,
+	ChamberLightingSchemas,
+	ToolheadAlignmentSystemSchemas,
+	ChamberAirFilterSchemas,
 } from '@/zods/hardware';
 import {
 	PartialPrinterConfiguration,
@@ -37,7 +40,6 @@ import { defaultControllerFan } from '@/data/fans';
 import { moonrakerWriteEffect } from '@/components/sync-with-moonraker';
 import { getLogger } from '@/app/_helpers/logger';
 import { trpcClient } from '@/helpers/trpc';
-import { project } from '@/zods/util';
 
 export const PerformanceModeState = atom<boolean | null | undefined>({
 	key: 'PerformanceMode',
@@ -358,9 +360,9 @@ export const serializePrinterConfiguration = (config: PrinterConfiguration): Ser
 		performanceMode: config.performanceMode,
 		stealthchop: config.stealthchop,
 		standstillStealth: config.standstillStealth,
-		chamberLighting: project(OptionalChamberLightingRef, config.chamberLighting),
-		toolheadAlignmentSystem: project(OptionalToolheadAlignmentSystemRef, config.toolheadAlignmentSystem),
-		chamberAirFilter: project(OptionalChamberAirFilterRef, config.chamberAirFilter),
+		chamberLighting: ChamberLightingSchemas.toOptionalRef(config.chamberLighting),
+		toolheadAlignmentSystem: ToolheadAlignmentSystemSchemas.toOptionalRef(config.toolheadAlignmentSystem),
+		chamberAirFilter: ChamberAirFilterSchemas.toOptionalRef(config.chamberAirFilter),
 		rails: config.rails.map((rail) => serializePrinterRail(rail)),
 	};
 	return SerializedPrinterConfiguration.parse(serializedConfig);
@@ -378,9 +380,9 @@ export const serializePartialPrinterConfiguration = (
 		performanceMode: config?.performanceMode,
 		stealthchop: config?.stealthchop,
 		standstillStealth: config?.standstillStealth,
-		chamberLighting: project(OptionalChamberLightingRef, config?.chamberLighting),
-		toolheadAlignmentSystem: project(OptionalToolheadAlignmentSystemRef, config?.toolheadAlignmentSystem),
-		chamberAirFilter: project(OptionalChamberAirFilterRef, config?.chamberAirFilter),
+		chamberLighting: ChamberLightingSchemas.toOptionalRef(config?.chamberLighting),
+		toolheadAlignmentSystem: ToolheadAlignmentSystemSchemas.toOptionalRef(config?.toolheadAlignmentSystem),
+		chamberAirFilter: ChamberAirFilterSchemas.toOptionalRef(config?.chamberAirFilter),
 	};
 	return SerializedPartialPrinterConfiguration.parse(serializedConfig);
 };

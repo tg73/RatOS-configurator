@@ -75,40 +75,60 @@ export const HardwareInstanceRef = HardwareInstance.pick({ id: true, connectedTo
 export type HardwareInstanceRef = z.infer<typeof HardwareInstanceRef>;
 
 /**
- * THIS DOES NOT WORK AS EXPECTED! It would be nice to have, but Zod struggles infer types from generics in this way.
- *
- * Generates the three specialized schema levels (Definition, Unconnected, Connected)
- * for a given literal type string. Assumes that the Ref schema is the same for all types (for now).
+ * Generates the specialized schema for a specific hardware type used with the Template API.
  * @param literalType - The specific literal string value (e.g., 'filament_sensor').
- * @param specificSchema - A Zod object containing any unique fields for this type (optional).
+ * @param extendedDefinitionSchema - A Zod object containing any unique fields for this type (optional).
  */
-function createHardwareSchemas<T extends z.infer<typeof HardwareDefinition>['type'], S extends z.ZodObject<any>>(
-	literalType: T,
-	specificSchema?: S,
-) {
-	// 1. Specialized Definition: HardwareDefinition + the specific literal type
-	const SpecializedDefinition =
-		specificSchema == null
-			? HardwareDefinition.extend({
-					type: z.literal(literalType),
-				})
-			: HardwareDefinition.extend({
-					type: z.literal(literalType),
-				}).merge(specificSchema); // Merge specific fields like 'pin', 'runout_logic', etc.
+export function createHardwareSchemas<
+	// 1. We allow string so you can overwrite the base enum if needed
+	T extends string,
+	// 2. We default the generic X to an empty object schema
+	X extends z.ZodObject<any> = z.ZodObject<{}>,
+>(literalType: T, extendedDefinitionSchema?: X) {
+	// Normalize: If no specific schema is provided, use an empty object.
+	// This ensures the .merge() operations below always happen on a concrete object.
+	const extension = extendedDefinitionSchema ?? z.object({});
 
-	// 2. Unconnected Instance: UnconnectedHardwareInstance + SpecializedDefinition
-	const SpecializedUnconnected = UnconnectedHardwareInstance.merge(SpecializedDefinition);
+	// 1. Definition
+	// We extend the base to overwrite 'type', then merge any specifics.
+	const Definition = HardwareDefinition.extend({ type: z.literal(literalType) }).merge(extension);
 
-	// 3. Connected Instance: HardwareInstance + SpecializedDefinition
-	const SpecializedConnected = HardwareInstance.merge(SpecializedDefinition);
+	// 2. Unconnected Instance
+	// Merge Definition ON TOP of Unconnected to ensure the 'type' literal
+	// overrides the base 'type' enum.
+	// (Existing keys 'id' and 'path' from Unconnected are preserved)
+	const Unconnected = UnconnectedHardwareInstance.merge(Definition);
 
-	// 4. Reference: Reuse the common Ref structure
-	const Ref = HardwareInstanceRef;
+	// 3. Connected Instance
+	// Merge Definition ON TOP of Connected.
+	const Connected = HardwareInstance.merge(Definition);
+
+	// 4. References
+	// Note that HardwareInstanceRef is already stripped of extra keys.
+	// We brand the Ref to make it distinct in the type system, as Ref instances
+	// are not interchangeable between different hardware types.
+	const Ref = HardwareInstanceRef.brand(`${literalType}_ref` as `${T}_ref`);
+	const OptionalRef = HardwareInstanceRef.brand(`${literalType}_ref` as `${T}_ref`).optional();
+
+	// 5. The Type-Safe Converter
+	// This function is hard-coded to only accept the BRANDED Connected type.
+	const toRef = (source: z.infer<typeof Connected>) => {
+		return Ref.parse(source);
+	};
+
+	// 6. The Type-Safe Converter
+	// This function is hard-coded to only accept the BRANDED Connected type.
+	const toOptionalRef = (source?: z.infer<typeof Connected>) => {
+		return OptionalRef.parse(source);
+	};
 
 	return {
-		Definition: SpecializedDefinition,
-		Unconnected: SpecializedUnconnected,
-		Connected: SpecializedConnected,
-		Ref: Ref,
+		Definition,
+		Unconnected,
+		Connected,
+		Ref,
+		OptionalRef,
+		toRef,
+		toOptionalRef,
 	};
 }

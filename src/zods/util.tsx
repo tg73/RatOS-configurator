@@ -13,13 +13,28 @@ export const PinoLogEvent = z.object({
 });
 
 /**
- * A type-safe wrapper around Zod's {@link z.ZodType.parse} function (which by desgin accepts `unknown`). Use
- * this function when using Zod to project between types, rather than validating unknown data.
- * A common use case is going from a full type like `FilamentSensor`, to a reference type like
- * `OptionalFilamentSensorRef`. The `OptionalFilamentSensorRef` schema will strip unwanted keys.
- * In this example, where Zod's `parse` would accept `null`, `project` will not, instead giving
- * a type error at compile time.
+ * A utility type to "prettify" complex TypeScript types for improved readability in IDEs.
+ * @example
+ * BEFORE: Tooltip might show 'HardwareInstance & { type: ... }'
+ * type MyType = z.infer<typeof FilamentSensor>;
+ *
+ * AFTER: Tooltip shows '{ id: string; type: "filament_sensor"; ... }'
+ * type MyType = Prettify<z.infer<typeof FilamentSensor>>;
  */
-export function project<T extends z.ZodType>(schema: T, source: z.infer<T>): z.infer<T> {
-	return schema.parse(source);
-}
+export type Prettify<T> = {
+	[K in keyof T]: T[K];
+} & {};
+
+/**
+ * A utility type to "prettify" complex TypeScript types for improved readability in IDEs,
+ * for complex nested objects.
+ * @example
+ * BEFORE: Tooltip might show 'HardwareInstance & { type: ... }'
+ * type MyType = z.infer<typeof FilamentSensor>;
+ *
+ * AFTER: Tooltip shows '{ id: string; type: "filament_sensor"; ... }'
+ * type MyType = Prettify<z.infer<typeof FilamentSensor>>;
+ */
+export type PrettifyDeep<T> = {
+	[K in keyof T]: T[K] extends object ? PrettifyDeep<T[K]> : T[K];
+} & {};
