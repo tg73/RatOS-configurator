@@ -182,7 +182,7 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						//const chamberLightingOptions = (await import('@/data/accessories')).chamberLightingOptions;
 						//const options = chamberLightingOptions();
 						//const defaultChamberLighting = options.find((a) => a.id === printer.defaults.chamberLighting);
-						const defaultChamberLighting = null;
+						const defaultChamberLighting = undefined;
 						if (defaultChamberLighting) {
 							set(ChamberLightingState, defaultChamberLighting);
 						} else {
@@ -196,7 +196,7 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						//const chamberAirFilterOptions = (await import('@/data/accessories')).chamberAirFilterOptions;
 						//const options = chamberAirFilterOptions();
 						//const defaultChamberAirFilter = options.find((a) => a.id === printer.defaults.chamberAirFilter);
-						const defaultChamberAirFilter = null;
+						const defaultChamberAirFilter = undefined;
 						if (defaultChamberAirFilter) {
 							set(ChamberAirFilterState, defaultChamberAirFilter);
 						} else {
@@ -212,7 +212,7 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						//const defaultToolheadAlignmentSystem = options.find(
 						//	(a) => a.id === printer.defaults.toolheadAlignmentSystem,
 						//);
-						const defaultToolheadAlignmentSystem = null;
+						const defaultToolheadAlignmentSystem = undefined;
 						if (defaultToolheadAlignmentSystem) {
 							set(ToolheadAlignmentSystemState, defaultToolheadAlignmentSystem);
 						} else {

@@ -52,15 +52,15 @@ export const PerformanceModeState = atom<boolean | null | undefined>({
 	],
 });
 
-export const ChamberLightingState = atom<z.infer<typeof ChamberLighting> | null | undefined>({
+export const ChamberLightingState = atom<ChamberLighting | undefined>({
 	key: 'ChamberLighting',
-	default: null,
+	default: undefined,
 	effects: [
 		moonrakerWriteEffect(),
 		syncEffect({
 			read: async ({ read }) => {
 				// TODO
-				return null;
+				return undefined;
 				/*
 				const chamberLightingState = await read(ChamberLightingState.key);
 				if (chamberLightingState != null && chamberLightingState !== '') {
@@ -87,27 +87,27 @@ export const ChamberLightingState = atom<z.infer<typeof ChamberLighting> | null 
 				*/
 			},
 			write: ({ write }, newValue) => {
-				// Serialize the chamber lighting to store only the ID
+				// Serialize the chamber lighting to store only a ref
 				if (newValue instanceof DefaultValue || newValue == null) {
-					write(ChamberLightingState.key, newValue);
+					write(ChamberLightingState.key, DefaultValue);
 					return;
 				}
-				write(ChamberLightingState.key, newValue.id);
+				write(ChamberLightingState.key, ChamberLightingSchemas.toRef(newValue));
 			},
-			refine: getRefineCheckerForZodSchema(ChamberLighting.nullable()),
+			refine: getRefineCheckerForZodSchema(ChamberLighting.optional()),
 		}),
 	],
 });
 
-export const ToolheadAlignmentSystemState = atom<z.infer<typeof ToolheadAlignmentSystem> | null | undefined>({
+export const ToolheadAlignmentSystemState = atom<ToolheadAlignmentSystem | undefined>({
 	key: 'ToolheadAlignmentSystem',
-	default: null,
+	default: undefined,
 	effects: [
 		moonrakerWriteEffect(),
 		syncEffect({
 			read: async ({ read }) => {
 				// TODO
-				return null;
+				return undefined;
 				/*
 				const toolheadAlignmentSystemState = await read(ToolheadAlignmentSystemState.key);
 				if (toolheadAlignmentSystemState != null && toolheadAlignmentSystemState !== '') {
@@ -139,27 +139,27 @@ export const ToolheadAlignmentSystemState = atom<z.infer<typeof ToolheadAlignmen
 				*/
 			},
 			write: ({ write }, newValue) => {
-				// Serialize the toolhead alignment system to store only the ID
+				// Serialize the toolhead alignment system to store only a ref
 				if (newValue instanceof DefaultValue || newValue == null) {
-					write(ToolheadAlignmentSystemState.key, newValue);
+					write(ToolheadAlignmentSystemState.key, DefaultValue);
 					return;
 				}
-				write(ToolheadAlignmentSystemState.key, newValue.id);
+				write(ToolheadAlignmentSystemState.key, ToolheadAlignmentSystemSchemas.toRef(newValue));
 			},
-			refine: getRefineCheckerForZodSchema(ToolheadAlignmentSystem.nullable()),
+			refine: getRefineCheckerForZodSchema(ToolheadAlignmentSystem.optional()),
 		}),
 	],
 });
 
-export const ChamberAirFilterState = atom<z.infer<typeof ChamberAirFilter> | null | undefined>({
+export const ChamberAirFilterState = atom<ChamberAirFilter | undefined>({
 	key: 'ChamberAirFilter',
-	default: null,
+	default: undefined,
 	effects: [
 		moonrakerWriteEffect(),
 		syncEffect({
 			read: async ({ read }) => {
 				// TODO
-				return null;
+				return undefined;
 				/*
 				const chamberAirFilterState = await read(ChamberAirFilterState.key);
 				if (chamberAirFilterState != null && chamberAirFilterState !== '') {
@@ -186,14 +186,14 @@ export const ChamberAirFilterState = atom<z.infer<typeof ChamberAirFilter> | nul
 				*/
 			},
 			write: ({ write }, newValue) => {
-				// Serialize the chamber air filter to store only the ID
+				// Serialize the chamber air filter to store only a ref
 				if (newValue instanceof DefaultValue || newValue == null) {
-					write(ChamberAirFilterState.key, newValue);
+					write(ChamberAirFilterState.key, DefaultValue);
 					return;
 				}
-				write(ChamberAirFilterState.key, newValue.id);
+				write(ChamberAirFilterState.key, ChamberAirFilterSchemas.toRef(newValue));
 			},
-			refine: getRefineCheckerForZodSchema(ChamberAirFilter.nullable()),
+			refine: getRefineCheckerForZodSchema(ChamberAirFilter.optional()),
 		}),
 	],
 });

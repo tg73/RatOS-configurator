@@ -8,7 +8,6 @@ if (process.env.RATOS_CONFIGURATION_PATH) {
 	startsWithServerValidation = environment.RATOS_CONFIGURATION_PATH;
 }
 
-// TODO: Avoid duplicating the list of supported types (or related constants) between here and src/server/helpers/metadata.ts
 export const HardwareTypeKey = z.enum([
 	'filament-sensor',
 	'chamber-lighting',
@@ -127,13 +126,13 @@ export function createHardwareSchemas<
 
 	// 5. The Type-Safe Converter
 	// This function is hard-coded to only accept the BRANDED Connected type.
-	const toRef = (source: z.infer<typeof Connected>) => {
+	const toRef = (source: z.infer<typeof Connected>): z.infer<typeof Ref> => {
 		return Ref.parse(source);
 	};
 
 	// 6. The Type-Safe Converter
 	// This function is hard-coded to only accept the BRANDED Connected type.
-	const toOptionalRef = (source?: z.infer<typeof Connected>) => {
+	const toOptionalRef = (source?: z.infer<typeof Connected>): z.infer<typeof OptionalRef> => {
 		return OptionalRef.parse(source);
 	};
 

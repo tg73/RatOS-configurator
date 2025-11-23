@@ -67,7 +67,6 @@ import objectHash from 'object-hash';
 import { getDefaultNozzle } from '@/data/nozzles';
 import { extractLinesFromFile, getScriptRoot, searchFileByLine } from '@/server/helpers/file-operations';
 import { runSudoScript } from '@/server/helpers/run-script';
-import { i } from 'vitest/dist/reporters-yx5ZTtEV';
 
 // TODO
 //import { chamberAirFilterOptions, chamberLightingOptions, toolheadAlignmentSystemOptions } from '@/data/accessories';

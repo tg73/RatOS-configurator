@@ -38,6 +38,7 @@ import {
 	getDcEndstopConfigurationFileContent,
 	getAdjustYMaxConfigurationFileContent,
 } from '@/server/helpers/config-generation/ratrig-vaoc';
+import { renderTemplateAsync } from '@/templates/template-api';
 
 type WritableFiles = { fileName: string; content: string; overwrite: boolean; order?: number }[];
 type ExcludeStepperParameters<T extends string> = (T extends
@@ -1274,9 +1275,10 @@ export const constructKlipperConfigHelpers = async (
 		},
 		async renderFilamentSensorsAsync() {
 			const result: string[] = [];
-			// Filament sensors
 			const filamentSensors = (
-				await Promise.all(utils.getToolheads().map((th) => th.renderFilamentSensorAsync()))
+				await Promise.all(
+					utils.getToolheads().map((th) => renderTemplateAsync(th.getFilamentSensor(), { utils }, th.getTool())),
+				)
 			).filter((s) => s != null);
 			if (filamentSensors.length > 0) {
 				result.push(``);

@@ -17,7 +17,6 @@ import { PrinterConfiguration } from '@/zods/printer-configuration';
 import type { RenderPinsFn } from '@/server/helpers/klipper-config';
 import { getLogger } from '@/server/helpers/logger';
 import { Board } from '@/zods/boards';
-import { renderToolheadTemplateAsync } from '@/templates/template-api';
 
 export class ToolheadGenerator<IsToolboard extends boolean> extends ToolheadHelper<IsToolboard> {
 	private toolboardPins: PinMapZodFromBoard<IsToolboard, false> | null;
@@ -623,9 +622,6 @@ export class ToolheadGenerator<IsToolboard extends boolean> extends ToolheadHelp
 			result.push(`max_power: ${vc.value}`);
 		}
 		return result.join('\n');
-	}
-	public async renderFilamentSensorAsync() {
-		return await renderToolheadTemplateAsync(this.getFilamentSensor(), { toolheadGenerator: this });
 	}
 	renderToolheadMacro() {
 		const endstopSafetyMargin = 2;
