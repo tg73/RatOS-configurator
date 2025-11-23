@@ -107,8 +107,15 @@ export function createHardwareSchemas<
 	// Note that HardwareInstanceRef is already stripped of extra keys.
 	// We brand the Ref to make it distinct in the type system, as Ref instances
 	// are not interchangeable between different hardware types.
-	const Ref = HardwareInstanceRef.brand(`${literalType}_ref` as `${T}_ref`);
-	const OptionalRef = HardwareInstanceRef.brand(`${literalType}_ref` as `${T}_ref`).optional();
+
+	// TODO: For now, disable branding. Introducing branded types here causes typecheck errors which
+	//    despite attempts to fix them, have not been resolved yet. Investigate and re-enable branding later.
+
+	//const Ref = HardwareInstanceRef.brand(`${literalType}_ref` as `${T}_ref`);
+	//const OptionalRef = HardwareInstanceRef.brand(`${literalType}_ref` as `${T}_ref`).optional();
+
+	const Ref = HardwareInstanceRef;
+	const OptionalRef = HardwareInstanceRef.optional();
 
 	// 5. The Type-Safe Converter
 	// This function is hard-coded to only accept the BRANDED Connected type.

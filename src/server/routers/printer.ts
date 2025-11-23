@@ -413,9 +413,9 @@ export const deserializePrinterConfiguration = async (
 		//	(a) => a.id === config?.toolheadAlignmentSystem,
 		//),
 		//chamberAirFilter: chamberAirFilterOptions({ controlboard }).find((a) => a.id === config?.chamberAirFilter),
-		chamberLighting: null,
-		toolheadAlignmentSystem: null,
-		chamberAirFilter: null,
+		chamberLighting: undefined,
+		toolheadAlignmentSystem: undefined,
+		chamberAirFilter: undefined,
 		rails: config?.rails.map((r) => deserializePrinterRail(r)),
 	});
 };

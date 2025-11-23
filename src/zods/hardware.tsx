@@ -44,10 +44,14 @@ export const Hotend = hardwareType.extend({
 	flowType: z.union([z.literal('sf'), z.literal('hf'), z.literal('uhf')]),
 });
 
+export type Hotend = z.infer<typeof Hotend>;
+
 export const Nozzle = z.object({
 	type: z.enum(['Regular', 'CHT']),
 	diameter: z.number().min(0.2).max(1.8),
 });
+
+export type Nozzle = z.infer<typeof Nozzle>;
 
 export const Extruder = hardwareType.extend({
 	type: z.literal('extruder'),
@@ -56,10 +60,14 @@ export const Extruder = hardwareType.extend({
 	title: z.string(),
 });
 
+export type Extruder = z.infer<typeof Extruder>;
+
 export const Probe = hardwareType.extend({
 	type: z.literal('static-probe').or(z.literal('stowable-probe')),
 	title: z.string(),
 });
+
+export type Probe = z.infer<typeof Probe>;
 
 export const Endstop = z.object({
 	id: z.enum(['endstop', 'endstop-toolboard', 'sensorless']),
@@ -73,6 +81,8 @@ export const Endstop = z.object({
 		)
 		.optional(),
 });
+
+export type Endstop = z.infer<typeof Endstop>;
 
 export const KlipperAccelSensorNameSchame = z.union([
 	z.literal('toolboard_t0'),
@@ -89,6 +99,8 @@ export const Accelerometer = z.object({
 	title: z.string(),
 	accelerometerType: AccelerometerType.default('adxl345').optional(),
 });
+
+export type Accelerometer = z.infer<typeof Accelerometer>;
 
 export type KlipperAccelSensorName = z.infer<typeof KlipperAccelSensorNameSchame>;
 
@@ -126,6 +138,8 @@ export const Fan = z.object({
 		.optional(),
 });
 
+export type Fan = z.infer<typeof Fan>;
+
 //---------------- Template API Types ------------------
 
 //----------------------------------------------------------------------------------------
@@ -147,11 +161,11 @@ export const FilamentSensorRef = FilamentSensorSchemas.Ref;
  */
 export type FilamentSensorRef = z.infer<typeof FilamentSensorRef>;
 /**
- * Use {@link FilamentSensorSchemas.toRef} to obtain references to {@link FilamentSensor} instances.
+ * Use {@link FilamentSensorSchemas.toOptionalRef} to obtain references to {@link FilamentSensor} instances.
  */
 export const OptionalFilamentSensorRef = FilamentSensorSchemas.OptionalRef;
 /**
- * Use {@link FilamentSensorSchemas.toRef} to obtain references to {@link FilamentSensor} instances.
+ * Use {@link FilamentSensorSchemas.toOptionalRef} to obtain references to {@link FilamentSensor} instances.
  */
 export type OptionalFilamentSensorRef = z.infer<typeof OptionalFilamentSensorRef>;
 
@@ -174,11 +188,11 @@ export const ChamberLightingRef = ChamberLightingSchemas.Ref;
  */
 export type ChamberLightingRef = z.infer<typeof ChamberLightingRef>;
 /**
- * Use {@link ChamberLightingSchemas.toRef} to obtain references to {@link ChamberLighting} instances.
+ * Use {@link ChamberLightingSchemas.toOptionalRef} to obtain references to {@link ChamberLighting} instances.
  */
 export const OptionalChamberLightingRef = ChamberLightingSchemas.OptionalRef;
 /**
- * Use {@link ChamberLightingSchemas.toRef} to obtain references to {@link ChamberLighting} instances.
+ * Use {@link ChamberLightingSchemas.toOptionalRef} to obtain references to {@link ChamberLighting} instances.
  */
 export type OptionalChamberLightingRef = z.infer<typeof OptionalChamberLightingRef>;
 
@@ -201,11 +215,11 @@ export const ChamberAirFilterRef = ChamberAirFilterSchemas.Ref;
  */
 export type ChamberAirFilterRef = z.infer<typeof ChamberAirFilterRef>;
 /**
- * Use {@link ChamberAirFilterSchemas.toRef} to obtain references to {@link ChamberAirFilter} instances.
+ * Use {@link ChamberAirFilterSchemas.toOptionalRef} to obtain references to {@link ChamberAirFilter} instances.
  */
 export const OptionalChamberAirFilterRef = ChamberAirFilterSchemas.OptionalRef;
 /**
- * Use {@link ChamberAirFilterSchemas.toRef} to obtain references to {@link ChamberAirFilter} instances.
+ * Use {@link ChamberAirFilterSchemas.toOptionalRef} to obtain references to {@link ChamberAirFilter} instances.
  */
 export type OptionalChamberAirFilterRef = z.infer<typeof OptionalChamberAirFilterRef>;
 
@@ -228,10 +242,10 @@ export const ToolheadAlignmentSystemRef = ToolheadAlignmentSystemSchemas.Ref;
  */
 export type ToolheadAlignmentSystemRef = z.infer<typeof ToolheadAlignmentSystemRef>;
 /**
- * Use {@link ToolheadAlignmentSystemSchemas.toRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
+ * Use {@link ToolheadAlignmentSystemSchemas.toOptionalRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
  */
 export const OptionalToolheadAlignmentSystemRef = ToolheadAlignmentSystemSchemas.OptionalRef;
 /**
- * Use {@link ToolheadAlignmentSystemSchemas.toRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
+ * Use {@link ToolheadAlignmentSystemSchemas.toOptionalRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
  */
 export type OptionalToolheadAlignmentSystemRef = z.infer<typeof OptionalToolheadAlignmentSystemRef>;
