@@ -17,78 +17,84 @@ import { Extruder, FilamentSensor, ChamberLighting, ToolheadAlignmentSystem, Cha
 import { getScriptRoot } from '@/server/helpers/file-operations';
 import { getLogger } from '@/server/helpers/logger';
 import { MetadataCache, cacheAsyncMetadataFn, cacheMetadataFn } from '@/server/helpers/cache';
+import { HardwareInstance, HardwareTypeKey } from '@/zods/template-api';
 
+// 1. The Source of Truth (Zod Schema)
+// This is HardwareTypeKey from src/zods/template-api.ts
+
+// 2. Legacy Config Directories (kept as-is)
 const CFG_META_DIRS = ['hotends', 'extruders', 'z-probe'] as const;
-const JSON_META_DIRS = [
-	'filament-sensors',
-	'chamber-lighting',
-	'toolhead-alignment-systems',
-	'chamber-air-filters',
-] as const;
-
 export type CfgMetaDirectories = (typeof CFG_META_DIRS)[number];
-export type JsonMetaDirectories = (typeof JSON_META_DIRS)[number];
+
+// 3. The Master Configuration Map
+// We use a mapped type to enforce that EVERY HardwareTypeKey is present.
+// We use a dummy object to hold the types for inference.
+type HardwareConfigMap = {
+	[K in HardwareTypeKey]: {
+		dir: string;
+		instance: HardwareInstance; // Replace 'any' with the specific type union if strictness is needed here
+	};
+};
+
+/**
+ * This object defines the relationship between the Type Key, the Directory Name,
+ * and the Hardware Instance Type.
+ */
+const HARDWARE_CONFIG = {
+	'filament-sensor': {
+		dir: 'filament-sensors',
+		instance: {} as FilamentSensor,
+	},
+	'chamber-lighting': {
+		dir: 'chamber-lighting',
+		instance: {} as ChamberLighting,
+	},
+	'toolhead-alignment-system': {
+		dir: 'toolhead-alignment-systems',
+		instance: {} as ToolheadAlignmentSystem,
+	},
+	'chamber-air-filter': {
+		dir: 'chamber-air-filters',
+		instance: {} as ChamberAirFilter,
+	},
+} as const satisfies HardwareConfigMap;
+
+// --- Derived Types & Constants ---
+
+/**
+ * A union of all valid JSON metadata directory strings.
+ * Derived values: 'filament-sensors' | 'chamber-lighting' | ...
+ */
+export type JsonMetaDirectories = (typeof HARDWARE_CONFIG)[HardwareTypeKey]['dir'];
+
 export type MetaDirectories = CfgMetaDirectories | JsonMetaDirectories;
 
 /**
- * Helper function to enforce the keys of the input map (T) match
- * the keys in the required type (JsonMetaDirectories).
- * NOTE: The constraint 'T extends Record<JsonMetaDirectories, any>'
- * ensures that *all* members of JsonMetaDirectories MUST be present in 'map'.
- * It also prevents extraneous properties from being added.
- * * @param map - The map object being defined.
- * @returns The map object with its types strictly enforced.
+ * A mapping of JsonMetaDirectories to their corresponding hardware type definitions.
+ * Mapped Type: { 'filament-sensors': FilamentSensor; ... }
  */
-function makeStrictJsonMetaDirectoriesMap<T extends Record<JsonMetaDirectories, any>>(map: T) {
-	return map;
-}
-
-const jsonMetaDirectoryToHardwareMapObject = makeStrictJsonMetaDirectoriesMap({
-	'filament-sensors': {} as FilamentSensor,
-	'chamber-lighting': {} as ChamberLighting,
-	'toolhead-alignment-systems': {} as ToolheadAlignmentSystem,
-	'chamber-air-filters': {} as ChamberAirFilter,
-});
+export type JsonMetaDirectoryToHardwareMap = {
+	[K in HardwareTypeKey as (typeof HARDWARE_CONFIG)[K]['dir']]: (typeof HARDWARE_CONFIG)[K]['instance'];
+};
 
 /**
- * A mapping of JsonMetaDirectories to their corresponding hardware type definitions such as FilamentSensor.
- */
-export type JsonMetaDirectoryToHardwareMap = typeof jsonMetaDirectoryToHardwareMapObject;
-
-/**
- * A union type of all hardware types defined in JsonMetaDirectoryToHardwareMap.
+ * A union type of all hardware types.
  */
 export type JsonMetaHardware = JsonMetaDirectoryToHardwareMap[keyof JsonMetaDirectoryToHardwareMap];
 
-type HardwareTypeKey = JsonMetaDirectoryToHardwareMap[keyof JsonMetaDirectoryToHardwareMap]['type'];
+// Runtime list of JSON directories for the type guard
+const JSON_META_DIRS_ARRAY = Object.values(HARDWARE_CONFIG).map((c) => c.dir);
+
+// --- Runtime Lookups ---
 
 /**
- * A mapping of hardware 'type' literals to their corresponding JsonMetaDirectories.
- * For example, 'filament-sensor' maps to 'filament-sensors'.
- */
-type HardwareTypeToJsonMetaDirectoryMap = {
-	[K in keyof JsonMetaDirectoryToHardwareMap as JsonMetaDirectoryToHardwareMap[K]['type']]: K;
-};
-
-const RuntimeHardwareTypeToJsonMetaDirectoryMap: Record<HardwareTypeKey, JsonMetaDirectories> = {
-	'filament-sensor': 'filament-sensors',
-	'chamber-lighting': 'chamber-lighting',
-	'toolhead-alignment-system': 'toolhead-alignment-systems',
-	'chamber-air-filter': 'chamber-air-filters',
-};
-
-/**
- * Resolves the parent directory name (plural) from the component's
- * internal 'type' property (singular).
- * * @param component - An object derived from one of the JsonMetaDirectoryToHardwareMap types.
- * @returns The corresponding JsonMetaDirectories string.
+ * Resolves the parent directory name (plural) from the component's internal 'type' property (singular).
  */
 export function getJsonMetaDirectoryName<T extends { type: HardwareTypeKey }>(
 	component: T,
-): HardwareTypeToJsonMetaDirectoryMap[T['type']] {
-	// We use a type assertion here because we know the RuntimeHardwareTypeToJsonMetaDirectoryMap
-	// strictly mirrors the HardwareTypeToJsonMetaDirectoryMap type.
-	return RuntimeHardwareTypeToJsonMetaDirectoryMap[component.type] as HardwareTypeToJsonMetaDirectoryMap[T['type']];
+): (typeof HARDWARE_CONFIG)[T['type']]['dir'] {
+	// Direct lookup on the master config object
+	return HARDWARE_CONFIG[component.type].dir;
 }
 
 export function isCfgMetaDirectory(directory: MetaDirectories): directory is CfgMetaDirectories {
@@ -96,7 +102,7 @@ export function isCfgMetaDirectory(directory: MetaDirectories): directory is Cfg
 }
 
 export function isJsonMetaDirectory(directory: MetaDirectories): directory is JsonMetaDirectories {
-	return (JSON_META_DIRS as readonly string[]).includes(directory);
+	return (JSON_META_DIRS_ARRAY as unknown as string[]).includes(directory);
 }
 
 export const parseMetadata = async <T extends ZodType>(cfgFile: string, zod: T): Promise<z.infer<T> | null> => {

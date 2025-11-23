@@ -9,13 +9,21 @@ if (process.env.RATOS_CONFIGURATION_PATH) {
 }
 
 // TODO: Avoid duplicating the list of supported types (or related constants) between here and src/server/helpers/metadata.ts
+export const HardwareTypeKey = z.enum([
+	'filament-sensor',
+	'chamber-lighting',
+	'toolhead-alignment-system',
+	'chamber-air-filter',
+]);
+
+export type HardwareTypeKey = z.infer<typeof HardwareTypeKey>;
 
 /**
  * Base schema corresponding to configuration/hardware-definition-schema.json
  * This represents the abstract definition only.
  */
 export const HardwareDefinition = z.object({
-	type: z.enum(['filament-sensor', 'chamber-lighting', 'toolhead-alignment-system', 'chamber-air-filter']),
+	type: HardwareTypeKey,
 	title: z.string(),
 	description: z.string(),
 	manufacturer: z.string(),

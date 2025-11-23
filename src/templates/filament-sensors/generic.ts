@@ -1,4 +1,4 @@
-import { GetRequiredPinAliasesFn, RenderTemplateFn } from '@/templates/template-api';
+import { GetRequiredPinAliasesFn, RenderToolheadTemplateFn } from '@/templates/template-api';
 import { z } from 'zod';
 
 const Options = z.object({
@@ -10,7 +10,7 @@ export const getRequiredPinAliases: GetRequiredPinAliasesFn = (ctx) => {
 	return ['filament_sensor_runout_pin'];
 };
 
-export const renderTemplate: RenderTemplateFn = (ctx) => {
+export const renderToolheadTemplate: RenderToolheadTemplateFn = (ctx) => {
 	const th = ctx.toolheadGenerator;
 	const opts = Options.parse(ctx.templateOptions ?? {});
 	return `
