@@ -1174,7 +1174,7 @@ export const constructKlipperConfigHelpers = async (
 		},
 		renderChamberLighting() {
 			// TODO
-			return null;
+			return '';
 			/*
 			const result: string[] = [];
 			if (config.chamberLighting.id !== 'controlboard') {
@@ -1192,7 +1192,7 @@ export const constructKlipperConfigHelpers = async (
 		},
 		renderToolheadAlignmentSystemHardware() {
 			// TODO
-			return null;
+			return '';
 			/*
 			// This section is typically be emitted in RatOS.cfg (but only for IDEX printers)
 			const result: string[] = [];
@@ -1205,7 +1205,7 @@ export const constructKlipperConfigHelpers = async (
 		},
 		renderToolheadAlignmentSystemConfigHelpers() {
 			// TODO
-			return null;
+			return '';
 			/*
 			// This section is typically be emitted near the end of printer.cfg, after an user stepper sections (but only for IDEX printers)
 			const result: string[] = [];
@@ -1218,7 +1218,7 @@ export const constructKlipperConfigHelpers = async (
 		},
 		renderChamberAirFilter() {
 			// TODO
-			return null;
+			return '';
 			/*
 			const result: string[] = [];
 			if (config.chamberAirFilter.id !== 'ratRigRatPack') {

@@ -62,7 +62,13 @@ export const filamentSensorOptions = async (
 	}
 
 	const toolboardPins = hasToolboard ? await parseBoardPinConfig(toolboard) : null;
-	const controlboardPins = hasControlboard ? await parseBoardPinConfig(controlboard!) : null;
+
+	// TODO: For now, don't allow T1 components to connect to the controlboard. This is a big hammer to stop
+	// users using the same controlboard pins for two sensors, one associated with each toolhead. There are
+	// valid use cases: for example, IDEX with two chassis-mounted filament sensors both connected to the controlboard.
+	// However, right now we don't have the logic to support this safely, so we block it for now. A user could
+	// of course add custom config for the T1 control-board connected hardware.	
+	const controlboardPins = toolNumber === 0 && hasControlboard ? await parseBoardPinConfig(controlboard!) : null;
 
 	const allSensors: UnconnectedFilamentSensor[] = await parseDirectory('filament-sensors', UnconnectedFilamentSensor);
 	const validSensors: FilamentSensor[] = [];

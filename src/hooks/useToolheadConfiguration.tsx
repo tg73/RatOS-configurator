@@ -57,6 +57,7 @@ export const useToolheadConfiguration = <T extends boolean = true>(
 		return th ?? null;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [errorIfNotExist, toolOrAxis, toolheadConfigsRef.current]);
+
 	const [hasManuallySelectedThermistor, setHasManuallySelectedThermistor] = useState(false);
 
 	const setToolhead = useRecoilCallback(
