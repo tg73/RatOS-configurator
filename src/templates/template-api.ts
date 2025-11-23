@@ -5,6 +5,8 @@ import { getJsonMetaDirectoryName, JsonMetaHardware } from '@/server/helpers/met
 import { getLogger } from '@/server/helpers/logger';
 import { getErrorMessage } from '@/utils/exception-handling';
 import { HardwareInstance } from '@/zods/template-api';
+import { KlipperConfigUtils } from '@/server/helpers/klipper-config';
+import { ToolNumber } from '@/zods/toolhead';
 
 /*
  * Here we define the new server-only template API.
@@ -31,18 +33,31 @@ export const GetRequiredPinAliasesContext = z.object({
 
 export type GetRequiredPinAliasesContext = z.infer<typeof GetRequiredPinAliasesContext>;
 
+const GetPrefixedPinFromAliasFn = z
+	.function()
+	.describe(
+		'Function that maps a pin alias (from PinMap) to an actual pin name, with a toolboard prefix ' +
+			'when applicable, depending on the where the current hardware instance is connected.',
+	)
+	.args(PinMap.keyof())
+	.returns(z.string());
+
+type GetPrefixedPinFromAliasFn = z.infer<typeof GetPrefixedPinFromAliasFn>;
+
 export const RenderTemplateContext = z.object({
 	instance: HardwareInstance,
 	purpose: z
 		.string()
-		.optional()
 		.describe(
 			'The purpose of the template rendering, if applicable. Most templates will ignore this. Currently, ' +
 				'the "purpose" concept is used by a limited number of arguably over-coupled software patterns, ' +
 				'but the intention is to make it more general in the future, once the dust has settled and ' +
 				'use cases have emerged.',
-		),
+		)
+		.optional(),
 	templateOptions: z.record(z.unknown()),
+	getPrefixedPinFromAlias: GetPrefixedPinFromAliasFn,
+	utils: z.custom<KlipperConfigUtils>(),
 });
 
 export type RenderTemplateContext = z.infer<typeof RenderTemplateContext>;
@@ -55,8 +70,11 @@ export const RenderTemplateFn = z
 	)
 	.returns(z.union([z.string(), z.promise(z.string())]));
 
+export type RenderTemplateFn = z.infer<typeof RenderTemplateFn>;
+
 export const RenderToolheadTemplateContext = RenderTemplateContext.extend({
-	toolheadGenerator: z.lazy(() => z.instanceof(ToolheadGenerator) as z.ZodType<ToolheadGenerator<boolean>>),
+	toolNumber: ToolNumber,
+	//toolheadGenerator: z.lazy(() => z.instanceof(ToolheadGenerator) as z.ZodType<ToolheadGenerator<boolean>>),
 });
 
 export type RenderToolheadTemplateContext = z.infer<typeof RenderToolheadTemplateContext>;
@@ -98,9 +116,10 @@ export const TemplateModule = z
 
 export type TemplateModule = z.infer<typeof TemplateModule>;
 
-export async function renderToolheadTemplateAsync(
+export async function renderTemplateAsync(
 	instance: HardwareInstance | null | undefined,
-	ctx: Omit<RenderToolheadTemplateContext, 'templateOptions' | 'instance'>,
+	ctx: Omit<RenderTemplateContext, 'templateOptions' | 'instance' | 'getPrefixedPinFromAlias'>,
+	toolNumber?: ToolNumber,
 ): Promise<string | null> {
 	if (instance == null) {
 		return null;
@@ -122,7 +141,7 @@ export async function renderToolheadTemplateAsync(
 		);
 	}
 
-	if (!templateModule.renderToolheadTemplate) {
+	if (toolNumber != null && !templateModule.renderToolheadTemplate) {
 		getLogger().error(
 			`Template module for ${instance.id} from ${directoryName}/${instance.template} does not export renderToolheadTemplate`,
 		);
@@ -131,10 +150,72 @@ export async function renderToolheadTemplateAsync(
 		);
 	}
 
+	if (toolNumber == null) {
+		if (!templateModule.renderTemplate) {
+			getLogger().error(
+				`Template module for ${instance.id} from ${directoryName}/${instance.template} does not export renderTemplate`,
+			);
+			throw new Error(
+				`Template module for ${instance.id} from ${directoryName}/${instance.template} does not export renderTemplate`,
+			);
+		}
+		if (instance.connectedTo === 'toolboard') {
+			getLogger().error(
+				`Template module for ${instance.id} from ${directoryName}/${instance.template} is connected to a toolboard but no tool number was provided`,
+			);
+			throw new Error(
+				`Template module for ${instance.id} from ${directoryName}/${instance.template} is connected to a toolboard but no tool number was provided`,
+			);
+		}
+	}
+
+	const getPrefixedPinFromAlias: GetPrefixedPinFromAliasFn =
+		toolNumber == null
+			? (alias) => {
+					const pin = ctx.utils.getControlboardPins()?.[alias];
+					if (!pin) {
+						throw new Error(
+							`No pin found for alias "${alias}" while rendering template for ${instance.type} ${instance.id} connected to ${instance.connectedTo}`,
+						);
+					}
+					return pin;
+				}
+			: (alias) => {
+					let pin: string | undefined;
+					if (instance.connectedTo === 'controlboard') {
+						pin = ctx.utils.getControlboardPins()?.[alias];
+					} else {
+						const th = ctx.utils.getToolhead(toolNumber);
+						pin = th.getToolboardPins()[alias];
+						if (pin) {
+							pin = `${th.getToolboardName()}:${pin}`;
+						}
+					}
+					if (!pin) {
+						throw new Error(
+							`No pin found for alias "${alias}" while rendering template for T${toolNumber} ${instance.type} ${instance.id} connected to ${instance.connectedTo}`,
+						);
+					}
+					return pin;
+				};
+
 	try {
 		return (
 			await Promise.resolve(
-				templateModule.renderToolheadTemplate({ ...ctx, instance, templateOptions: instance.templateOptions ?? {} }),
+				toolNumber == null
+					? templateModule.renderTemplate!({
+							...ctx,
+							instance,
+							getPrefixedPinFromAlias,
+							templateOptions: instance.templateOptions ?? {},
+						})
+					: templateModule.renderToolheadTemplate!({
+							...ctx,
+							instance,
+							toolNumber,
+							getPrefixedPinFromAlias,
+							templateOptions: instance.templateOptions ?? {},
+						}),
 			)
 		).trim();
 	} catch (error) {
