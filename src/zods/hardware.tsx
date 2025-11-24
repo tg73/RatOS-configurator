@@ -8,6 +8,7 @@ import {
 	HardwareInstance,
 	HardwareInstanceRef,
 	UnconnectedHardwareInstance,
+	HardwareTypeKey,
 } from '@/zods/template-api';
 
 export const thermistors = [
@@ -249,3 +250,95 @@ export const OptionalToolheadAlignmentSystemRef = ToolheadAlignmentSystemSchemas
  * Use {@link ToolheadAlignmentSystemSchemas.toOptionalRef} to obtain references to {@link ToolheadAlignmentSystem} instances.
  */
 export type OptionalToolheadAlignmentSystemRef = z.infer<typeof OptionalToolheadAlignmentSystemRef>;
+
+type HardwareSchemasRegistryMap = {
+	[K in HardwareTypeKey]: {
+		schemas: any;
+	};
+};
+
+// Build a precise typed map of actual schema bundle types
+type HardwareSchemasMap = {
+	'filament-sensor': typeof FilamentSensorSchemas;
+	'chamber-lighting': typeof ChamberLightingSchemas;
+	'toolhead-alignment-system': typeof ToolheadAlignmentSystemSchemas;
+	'chamber-air-filter': typeof ChamberAirFilterSchemas;
+};
+
+// Keep a const runtime registry but ensure strong typing:
+export const HARDWARE_REGISTRY = {
+	'filament-sensor': { schemas: FilamentSensorSchemas },
+	'chamber-lighting': { schemas: ChamberLightingSchemas },
+	'toolhead-alignment-system': { schemas: ToolheadAlignmentSystemSchemas },
+	'chamber-air-filter': { schemas: ChamberAirFilterSchemas },
+} as const satisfies { [K in keyof HardwareSchemasRegistryMap]: { schemas: HardwareSchemasMap[K] } };
+
+/**
+ * Helper type to extract the HardwareDefintion-based type based on the key string.
+ * Example: HardwareDefinitionType<'filament-sensor'> resolves to FilamentSensorDefinition (the type)
+ */
+export type HardwareDefinitionType<K extends keyof typeof HARDWARE_REGISTRY> = z.infer<
+	(typeof HARDWARE_REGISTRY)[K]['schemas']['Definition']
+>;
+
+/**
+ * Helper type to extract the unconnected hardware instance type based on the key string.
+ * Example: UnconnectedHardwareInstanceType<'filament-sensor'> resolves to UnconnectedFilamentSensor (the type)
+ */
+export type UnconnectedHardwareInstanceType<K extends keyof typeof HARDWARE_REGISTRY> = z.infer<
+	(typeof HARDWARE_REGISTRY)[K]['schemas']['Unconnected']
+>;
+
+/**
+ * Helper type to extract the HardwareInstance-based type based on the key string.
+ * Example: HardwareInstanceType<'filament-sensor'> resolves to FilamentSensor (the type)
+ */
+export type HardwareInstanceType<K extends keyof typeof HARDWARE_REGISTRY> = z.infer<
+	(typeof HARDWARE_REGISTRY)[K]['schemas']['Connected']
+>;
+
+/**
+ * Helper type to extract the HardwareInstanceRef-based type based on the key string.
+ * Example: HardwareInstanceRefType<'filament-sensor'> resolves to FilamentSensorRef (the type)
+ */
+export type HardwareInstanceRefType<K extends keyof typeof HARDWARE_REGISTRY> = z.infer<
+	(typeof HARDWARE_REGISTRY)[K]['schemas']['Ref']
+>;
+
+/**
+ * Helper type to extract the OptionalHardwareInstanceRef-based type based on the key string.
+ * Example: OptionalHardwareInstanceRefType<'filament-sensor'> resolves to OptionalFilamentSensorRef (the type)
+ */
+export type OptionalHardwareInstanceRefType<K extends keyof typeof HARDWARE_REGISTRY> = z.infer<
+	(typeof HARDWARE_REGISTRY)[K]['schemas']['OptionalRef']
+>;
+
+export type SchemasFor<K extends keyof typeof HARDWARE_REGISTRY> = (typeof HARDWARE_REGISTRY)[K]['schemas'];
+
+// Strongly-typed wrapper
+export function toHardwareInstanceRef<K extends keyof typeof HARDWARE_REGISTRY>(
+	type: K,
+	instance: z.infer<SchemasFor<K>['Connected']>,
+): z.infer<SchemasFor<K>['Ref']> {
+	// At runtime we look up the schema bundle for `type`.
+	// The type system can't fully prove that `schemas.toRef` expects the exact `instance` type here,
+	// so use a tiny, local assertion. This keeps the public API fully typed while minimizing unsafe casts.
+	const schemas = HARDWARE_REGISTRY[type].schemas as unknown as {
+		toRef(arg: z.infer<SchemasFor<K>['Connected']>): z.infer<SchemasFor<K>['Ref']>;
+	};
+	return schemas.toRef(instance);
+}
+
+// Strongly-typed wrapper
+export function toOptionalHardwareInstanceRef<K extends keyof typeof HARDWARE_REGISTRY>(
+	type: K,
+	instance: z.infer<SchemasFor<K>['Connected']>,
+): z.infer<SchemasFor<K>['OptionalRef']> {
+	// At runtime we look up the schema bundle for `type`.
+	// The type system can't fully prove that `schemas.toRef` expects the exact `instance` type here,
+	// so use a tiny, local assertion. This keeps the public API fully typed while minimizing unsafe casts.
+	const schemas = HARDWARE_REGISTRY[type].schemas as unknown as {
+		toOptionalRef(arg: z.infer<SchemasFor<K>['Connected']>): z.infer<SchemasFor<K>['OptionalRef']>;
+	};
+	return schemas.toOptionalRef(instance);
+}

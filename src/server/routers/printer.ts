@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import { getLogger } from '@/server/helpers/logger';
 
-import { extractIncludes, isCfgMetaDirectory, MetaDirectories, parseMetadata } from '@/server/helpers/metadata';
+import {
+	getHardwareTypeKeyFromJsonMetaDirectory,
+	isCfgMetaDirectory,
+	JsonMetaDirectories,
+	MetaDirectories,
+	parseMetadata,
+} from '@/server/helpers/metadata';
 import {
 	Hotend,
 	Extruder,
@@ -14,6 +20,7 @@ import {
 	ToolheadAlignmentSystem,
 	ChamberAirFilter,
 	FilamentSensor,
+	HARDWARE_REGISTRY,
 } from '@/zods/hardware';
 import { constants, existsSync, readFileSync, mkdirSync } from 'fs';
 import { PrinterDefinition, PrinterDefinitionWithResolvedToolheads } from '@/zods/printer';
@@ -67,6 +74,7 @@ import objectHash from 'object-hash';
 import { getDefaultNozzle } from '@/data/nozzles';
 import { extractLinesFromFile, getScriptRoot, searchFileByLine } from '@/server/helpers/file-operations';
 import { runSudoScript } from '@/server/helpers/run-script';
+import { UnconnectedHardwareInstance } from '@/zods/template-api';
 
 // TODO
 //import { chamberAirFilterOptions, chamberLightingOptions, toolheadAlignmentSystemOptions } from '@/data/accessories';
@@ -76,6 +84,14 @@ function isNodeError(error: any): error is NodeJS.ErrnoException {
 }
 
 type FileAction = 'created' | 'overwritten' | 'skipped' | 'error' | 'unchanged';
+
+export const parseJsonMetaDirectory = async (
+	directory: JsonMetaDirectories,
+): Promise<UnconnectedHardwareInstance[]> => {
+	const hardwareType = getHardwareTypeKeyFromJsonMetaDirectory(directory);
+	const zod = HARDWARE_REGISTRY[hardwareType].schemas.Unconnected;
+	return parseDirectory(directory, zod);
+};
 
 export const parseDirectory = cacheAsyncDirectoryFn(async <T extends z.ZodType>(directory: MetaDirectories, zod: T) => {
 	const cached = ServerCache.get(directory);

@@ -6,12 +6,13 @@ import {
 	HardwareInstance,
 	HardwareInstanceRef,
 	createHardwareSchemas,
+	HardwareTypeKey,
 } from '@/zods/template-api';
 
 describe('template-api schemas', () => {
 	// Extract the first enum member from HardwareDefinition.type dynamically
-	let firstHardwareType: string;
-	let validHardwareTypes: string[];
+	let firstHardwareType: HardwareTypeKey;
+	let validHardwareTypes: HardwareTypeKey[];
 	let validPathPrefix: string;
 
 	beforeAll(() => {

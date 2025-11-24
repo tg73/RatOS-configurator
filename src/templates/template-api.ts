@@ -1,7 +1,6 @@
-import { ToolheadGenerator } from '@/server/helpers/config-generation/toolhead';
 import { z } from 'zod';
 import { PinMap } from '@/zods/boards';
-import { getJsonMetaDirectoryName, JsonMetaHardware } from '@/server/helpers/metadata';
+import { getJsonMetaDirectoryName } from '@/server/helpers/metadata';
 import { getLogger } from '@/server/helpers/logger';
 import { getErrorMessage } from '@/utils/exception-handling';
 import { HardwareInstance } from '@/zods/template-api';

@@ -88,7 +88,7 @@ export type HardwareInstanceRef = z.infer<typeof HardwareInstanceRef>;
  */
 export function createHardwareSchemas<
 	// 1. We allow string so you can overwrite the base enum if needed
-	T extends string,
+	T extends HardwareTypeKey,
 	// 2. We default the generic X to an empty object schema
 	X extends z.ZodObject<any> = z.ZodObject<{}>,
 >(literalType: T, extendedDefinitionSchema?: X) {

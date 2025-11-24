@@ -29,35 +29,29 @@ export type CfgMetaDirectories = (typeof CFG_META_DIRS)[number];
 // 3. The Master Configuration Map
 // We use a mapped type to enforce that EVERY HardwareTypeKey is present.
 // We use a dummy object to hold the types for inference.
-type HardwareConfigMap = {
+type HardwareTypeKeyToJsonMetaDirMap = {
 	[K in HardwareTypeKey]: {
 		dir: string;
-		instance: HardwareInstance; // Replace 'any' with the specific type union if strictness is needed here
 	};
 };
 
 /**
- * This object defines the relationship between the Type Key, the Directory Name,
- * and the Hardware Instance Type.
+ * This object defines the relationship between the hardware type key and the JSON meta directory name.
  */
-const HARDWARE_CONFIG = {
+const HARDWARE_KEY_TO_JSON_META_DIR = {
 	'filament-sensor': {
 		dir: 'filament-sensors',
-		instance: {} as FilamentSensor,
 	},
 	'chamber-lighting': {
 		dir: 'chamber-lighting',
-		instance: {} as ChamberLighting,
 	},
 	'toolhead-alignment-system': {
 		dir: 'toolhead-alignment-systems',
-		instance: {} as ToolheadAlignmentSystem,
 	},
 	'chamber-air-filter': {
 		dir: 'chamber-air-filters',
-		instance: {} as ChamberAirFilter,
 	},
-} as const satisfies HardwareConfigMap;
+} as const satisfies HardwareTypeKeyToJsonMetaDirMap;
 
 // --- Derived Types & Constants ---
 
@@ -65,37 +59,54 @@ const HARDWARE_CONFIG = {
  * A union of all valid JSON metadata directory strings.
  * Derived values: 'filament-sensors' | 'chamber-lighting' | ...
  */
-export type JsonMetaDirectories = (typeof HARDWARE_CONFIG)[HardwareTypeKey]['dir'];
+export type JsonMetaDirectories = (typeof HARDWARE_KEY_TO_JSON_META_DIR)[HardwareTypeKey]['dir'];
 
 export type MetaDirectories = CfgMetaDirectories | JsonMetaDirectories;
 
-/**
- * A mapping of JsonMetaDirectories to their corresponding hardware type definitions.
- * Mapped Type: { 'filament-sensors': FilamentSensor; ... }
- */
-export type JsonMetaDirectoryToHardwareMap = {
-	[K in HardwareTypeKey as (typeof HARDWARE_CONFIG)[K]['dir']]: (typeof HARDWARE_CONFIG)[K]['instance'];
+type JsonMetaDirectoryToHardwareTypeMap = {
+	[K in JsonMetaDirectories]: {
+		type: HardwareTypeKey;
+	};
 };
 
-/**
- * A union type of all hardware types.
- */
-export type JsonMetaHardware = JsonMetaDirectoryToHardwareMap[keyof JsonMetaDirectoryToHardwareMap];
-
-// Runtime list of JSON directories for the type guard
-const JSON_META_DIRS_ARRAY = Object.values(HARDWARE_CONFIG).map((c) => c.dir);
+const JSON_META_DIR_TO_HARDWARE_KEY = {
+	[HARDWARE_KEY_TO_JSON_META_DIR['filament-sensor'].dir]: { type: 'filament-sensor' },
+	[HARDWARE_KEY_TO_JSON_META_DIR['chamber-lighting'].dir]: { type: 'chamber-lighting' },
+	[HARDWARE_KEY_TO_JSON_META_DIR['toolhead-alignment-system'].dir]: { type: 'toolhead-alignment-system' },
+	[HARDWARE_KEY_TO_JSON_META_DIR['chamber-air-filter'].dir]: { type: 'chamber-air-filter' },
+} as const satisfies JsonMetaDirectoryToHardwareTypeMap;
 
 // --- Runtime Lookups ---
 
+// Runtime list of JSON directories for the type guard
+const JSON_META_DIRS_ARRAY = Object.values(HARDWARE_KEY_TO_JSON_META_DIR).map((c) => c.dir);
+
 /**
- * Resolves the parent directory name (plural) from the component's internal 'type' property (singular).
+ * Resolves the parent directory name (plural) from a {@link HardwareTypeKey} (singular).
+ */
+export function getJsonMetaDirectoryName<K extends HardwareTypeKey>(
+	type: K,
+): (typeof HARDWARE_KEY_TO_JSON_META_DIR)[K]['dir'];
+
+/**
+ * Resolves the parent directory name (plural) from an internal 'type' property (singular).
  */
 export function getJsonMetaDirectoryName<T extends { type: HardwareTypeKey }>(
 	component: T,
-): (typeof HARDWARE_CONFIG)[T['type']]['dir'] {
-	// Direct lookup on the master config object
-	return HARDWARE_CONFIG[component.type].dir;
+): (typeof HARDWARE_KEY_TO_JSON_META_DIR)[T['type']]['dir'];
+
+export function getJsonMetaDirectoryName(arg: HardwareTypeKey | { type: HardwareTypeKey }) {
+	const key: HardwareTypeKey = typeof arg === 'string' ? arg : arg.type;
+	return HARDWARE_KEY_TO_JSON_META_DIR[key].dir;
 }
+
+export function getHardwareTypeKeyFromJsonMetaDirectory<K extends JsonMetaDirectories>(
+	directory: K,
+): (typeof JSON_META_DIR_TO_HARDWARE_KEY)[K]['type'] {
+	return JSON_META_DIR_TO_HARDWARE_KEY[directory].type;
+}
+
+const x = getHardwareTypeKeyFromJsonMetaDirectory('filament-sensors');
 
 export function isCfgMetaDirectory(directory: MetaDirectories): directory is CfgMetaDirectories {
 	return (CFG_META_DIRS as readonly string[]).includes(directory);
