@@ -9,7 +9,7 @@ export const getRequiredPinAliases: GetRequiredPinAliasesFn = (ctx) => {
 };
 
 export const renderTemplate: RenderTemplateFn = (ctx) => {
-	switch (ctx.purpose) {
+	switch (ctx.section) {
 		case 'hardware':
 			const updatedCrowsnestContent = getUpdatedCrowsnestConfigurationForVaoc();
 			ctx.extrasGenerator.addFileToRender({
@@ -92,7 +92,7 @@ heater_temp: 50
 [include ratos_generated/adjust-y-max.cfg] # Managed by INCREASE_Y_MAX macro
 `;
 		default:
-			throw new Error(`Unknown purpose '${ctx.purpose}' for template rendering.`);
+			throw new Error(`Unknown purpose '${ctx.section}' for template rendering.`);
 	}
 };
 
@@ -106,7 +106,7 @@ export function getUpdatedCrowsnestConfigurationForVaoc() {
 log_level: verbose
 delete_log: false
 no_proxy: false
-`,
+`.trim(),
 		},
 		{
 			section: 'cam 1',
@@ -118,7 +118,7 @@ port: 8080
 device: /dev/video0
 resolution: 1920x1080
 max_fps: 30
-`,
+`.trim(),
 		},
 	]);
 }

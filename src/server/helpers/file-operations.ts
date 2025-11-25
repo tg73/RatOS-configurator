@@ -304,36 +304,40 @@ export function replaceOrAddIniSections(content: string, updates: IniUpdate[]): 
 
 	// Build output: prelude + processed sections (replacing bodies where needed)
 	let out = prelude;
-	if (out.length && !out.endsWith('\n')) out += '\n';
 
 	for (let i = 0; i < sections.length; i++) {
 		if (skipIndex.has(i)) continue; // remove duplicates
 		const nameForThis = indexToName.get(i) ?? null;
 		if (nameForThis) {
 			// Replace body for this section with the final body for the name
-			out += sections[i].headerLine + '\n';
-			const body = nameToBody.get(nameForThis) ?? '';
-			out += body;
-			if (!out.endsWith('\n')) out += '\n';
-			// Preserve trailing comment/blank block that preceded the next header (so comments between sections are kept)
 			const originalSlice = normContent.slice(sections[i].start, sections[i].end);
-			const trailingMatch = originalSlice.match(/(\n(?:[ \t]*#.*\n|[ \t]*\n)*)$/);
-			const trailing = trailingMatch ? trailingMatch[1] : '\n';
-			// Append trailing block (but avoid duplicating newlines)
-			if (trailing) {
-				// ensure we don't duplicate the newline already at end
-				if (trailing === '\n' && out.endsWith('\n')) {
-					// already has a single newline, nothing to do
-				} else {
-					out += trailing;
-				}
+
+			// Extract just the body content from the original section (everything after header line)
+			const headerEndIdx = originalSlice.indexOf('\n');
+			const originalBodyWithTrailing = headerEndIdx >= 0 ? originalSlice.slice(headerEndIdx + 1) : '';
+
+			// Get the new body (normalized to LF)
+			const newBody = nameToBody.get(nameForThis) ?? '';
+
+			// Compare just the meaningful body content (strip trailing whitespace for comparison)
+			const originalBodyTrimmed = originalBodyWithTrailing.replace(/\s+$/, '');
+			const newBodyTrimmed = newBody.replace(/\s+$/, '');
+
+			// Write the header line
+			out += sections[i].headerLine + '\n';
+
+			// If body content is identical, preserve original exactly (including trailing whitespace/comments)
+			if (newBodyTrimmed === originalBodyTrimmed) {
+				out += originalBodyWithTrailing;
+			} else {
+				// Body changed: use new body and ensure it ends with newline
+				out += newBody;
+				if (!out.endsWith('\n')) out += '\n';
 			}
 		} else {
-			// copy original section slice
+			// copy original section slice exactly as-is
 			const slice = normContent.slice(sections[i].start, sections[i].end);
 			out += slice;
-			if (!out.endsWith('\n')) out += '\n';
-			out += '\n';
 		}
 	}
 

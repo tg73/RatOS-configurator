@@ -1127,7 +1127,7 @@ export const constructKlipperConfigHelpers = async (
 			const result = await renderTemplateAsync(config.toolheadAlignmentSystem, {
 				utils,
 				extrasGenerator,
-				purpose: 'hardware',
+				section: 'hardware',
 			});
 			return result?.trim() ?? '';
 		},
@@ -1136,7 +1136,7 @@ export const constructKlipperConfigHelpers = async (
 			const result = await renderTemplateAsync(config.toolheadAlignmentSystem, {
 				utils,
 				extrasGenerator,
-				purpose: 'config-helpers',
+				section: 'config-helpers',
 			});
 			return result?.trim() ?? '';
 		},

@@ -143,7 +143,11 @@ export const Dropdown = <DropdownOption extends Option = Option, CanClear extend
 	const options =
 		props.sort == false
 			? props.options
-			: props.options.slice(0).sort((a: any, b: any) => {
+			: props.options.slice().sort((a: any, b: any) => {
+					// toolboard-connected options first, then alphabetical by title/name
+					if (a.connectedTo !== b.connectedTo) {
+						return a.connectedTo == 'toolboard' ? -1 : 1;
+					}
 					const at = (a.title ?? a.name ?? '').toString();
 					const bt = (b.title ?? b.name ?? '').toString();
 					return at.localeCompare(bt);

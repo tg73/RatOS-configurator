@@ -380,7 +380,8 @@ describe('configuration', async () => {
 				toolheads: toolheads,
 				rails: defaultRails,
 				size: printer.sizes?.[0],
-				// TODO
+				// TODO: This is probably the right test to verify that the applicable printer.defaults are actually
+				//   compatible with the default board and toolboard.
 				//chamberLighting: { id: 'controlboard', title: 'nobody cares' },
 				//toolheadAlignmentSystem: { id: 'none', title: 'nobody cares' },
 				//chamberAirFilter: { id: 'none', title: 'nobody cares' },

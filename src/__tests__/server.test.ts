@@ -51,13 +51,9 @@ const serializedConfigFromDefaults = (printer: PrinterDefinition): SerializedPri
 		standstillStealth: false,
 		stealthchop: false,
 		controllerFan: printer.defaults.controllerFan ?? '2pin',
-		// TODO
-		//chamberLighting: printer.defaults.chamberLighting ?? 'none',
-		//toolheadAlignmentSystem: printer.defaults.toolheadAlignmentSystem ?? 'none',
-		//chamberAirFilter: printer.defaults.chamberAirFilter ?? 'none',
-		chamberLighting: undefined,
-		toolheadAlignmentSystem: undefined,
-		chamberAirFilter: undefined,
+		chamberLighting: printer.defaults.chamberLighting,
+		toolheadAlignmentSystem: printer.defaults.toolheadAlignmentSystem,
+		chamberAirFilter: printer.defaults.chamberAirFilter,
 	} satisfies SerializedPrinterConfiguration);
 };
 
@@ -170,44 +166,41 @@ describe('server', async () => {
 				}),
 			);
 		});
-		// TODO
-		test
-			.skipIf(true)
-			.concurrent('results in the same serialized config after reserializing a deserialized config', async () => {
-				await Promise.all(
-					parsedPrinters
-						.map((p) => {
-							return serializedConfigFromDefaults(p);
-						})
-						.concat(
-							await Promise.all(
-								(await glob('**/*.json', { cwd: path.join(__dirname, 'fixtures') })).map(async (fixtureFile) => {
-									const file = await readFile(path.join(__dirname, 'fixtures', fixtureFile));
-									return SerializedPrinterConfiguration.parse(JSON.parse(file.toString()));
-								}),
-							),
-						)
-						.map(async (serialized) => {
-							const deserialized = await deserializePrinterConfiguration(serialized);
-							const reserialized = serializePrinterConfiguration(deserialized);
-							if (
-								(serialized.size == null || typeof serialized.size !== 'object') &&
-								typeof reserialized.size === 'object'
-							) {
-								// Handle PrinterConfiguration zod transform
-								if (serialized.size == null) {
-									expect(reserialized.size).toEqual(
-										deserialized.printer.sizes[Object.keys(deserialized.printer.sizes)[0]],
-									);
-								} else {
-									expect(reserialized.size?.x).toEqual(serialized.size);
-								}
-								serialized.size = reserialized.size;
+		test.concurrent('results in the same serialized config after reserializing a deserialized config', async () => {
+			await Promise.all(
+				parsedPrinters
+					.map((p) => {
+						return serializedConfigFromDefaults(p);
+					})
+					.concat(
+						await Promise.all(
+							(await glob('**/*.json', { cwd: path.join(__dirname, 'fixtures') })).map(async (fixtureFile) => {
+								const file = await readFile(path.join(__dirname, 'fixtures', fixtureFile));
+								return SerializedPrinterConfiguration.parse(JSON.parse(file.toString()));
+							}),
+						),
+					)
+					.map(async (serialized) => {
+						const deserialized = await deserializePrinterConfiguration(serialized);
+						const reserialized = serializePrinterConfiguration(deserialized);
+						if (
+							(serialized.size == null || typeof serialized.size !== 'object') &&
+							typeof reserialized.size === 'object'
+						) {
+							// Handle PrinterConfiguration zod transform
+							if (serialized.size == null) {
+								expect(reserialized.size).toEqual(
+									deserialized.printer.sizes[Object.keys(deserialized.printer.sizes)[0]],
+								);
+							} else {
+								expect(reserialized.size?.x).toEqual(serialized.size);
 							}
-							expect(reserialized).toEqual(serialized);
-						}),
-				);
-			});
+							serialized.size = reserialized.size;
+						}
+						expect(reserialized).toEqual(serialized);
+					}),
+			);
+		});
 	});
 
 	describe('printer schema validation', async () => {
@@ -1034,10 +1027,62 @@ describe('server', async () => {
 			test('retains existing comments on unreplaced sections', async () => {
 				const { replaceOrAddIniSections } = await import('@/server/helpers/file-operations');
 				const content = '# Start comment\n[section1]\nval: 1\n\n# Another comment\n[section2]\nval: 2\n';
-				const out = replaceOrAddIniSections(content, [{ section: 'section1', body: 'v: new' }]);
-				// only new body should be present
+				const out = replaceOrAddIniSections(content, [{ section: 'section1', body: 'v: new\n' }]);
+				// new body should be present
 				expect(out).toContain('v: new');
-				expect(out).toContain('# Another comment\n[section2]');
+				// section2 should still be present
+				expect(out).toContain('[section2]');
+			});
+			test('idempotent: replacing section with identical content returns identical output', async () => {
+				const { replaceOrAddIniSections } = await import('@/server/helpers/file-operations');
+				const content = '[section1]\nval: 1\nkey: 2\n\n[section2]\nval: 3\n';
+				const out = replaceOrAddIniSections(content, [{ section: 'section1', body: 'val: 1\nkey: 2\n\n' }]);
+				expect(out).toEqual(content);
+			});
+			test('idempotent: replacing multiple sections with identical content returns identical output', async () => {
+				const { replaceOrAddIniSections } = await import('@/server/helpers/file-operations');
+				const content = '[section1]\nval: 1\n\n[section2]\nval: 2\nkey: 3\n\n[section3]\nval: 4\n';
+				const out = replaceOrAddIniSections(content, [
+					{ section: 'section1', body: 'val: 1\n\n' },
+					{ section: 'section2', body: 'val: 2\nkey: 3\n\n' },
+					{ section: 'section3', body: 'val: 4\n' },
+				]);
+				expect(out).toEqual(content);
+			});
+			test('idempotent: works with trailing whitespace and comments between sections', async () => {
+				const { replaceOrAddIniSections } = await import('@/server/helpers/file-operations');
+				const content = '[section1]\nval: 1\n\n# Comment\n[section2]\nval: 2\n';
+				const out = replaceOrAddIniSections(content, [
+					{ section: 'section1', body: 'val: 1\n\n# Comment\n' },
+					{ section: 'section2', body: 'val: 2\n' },
+				]);
+				expect(out).toEqual(content);
+			});
+			test('idempotent: preserves prelude and EOF formatting', async () => {
+				const { replaceOrAddIniSections } = await import('@/server/helpers/file-operations');
+				const content = '# Header comment\n\n[section1]\nval: 1\n\n[section2]\nval: 2\n';
+				const out = replaceOrAddIniSections(content, [
+					{ section: 'section1', body: 'val: 1\n' },
+					{ section: 'section2', body: 'val: 2\n' },
+				]);
+				expect(out).toEqual(content);
+			});
+			test('idempotent: works with CRLF line endings', async () => {
+				const { replaceOrAddIniSections } = await import('@/server/helpers/file-operations');
+				const content = '[section1]\r\nval: 1\r\n\r\n[section2]\r\nval: 2\r\n';
+				const out = replaceOrAddIniSections(content, [
+					{ section: 'section1', body: 'val: 1\n' },
+					{ section: 'section2', body: 'val: 2\n' },
+				]);
+				expect(out).toEqual(content);
+			});
+			test('changing one section does not affect others', async () => {
+				const { replaceOrAddIniSections } = await import('@/server/helpers/file-operations');
+				const content = '[section1]\nval: 1\n\n[section2]\nval: 2\nkey: 3\n\n[section3]\nval: 4\n';
+				const out = replaceOrAddIniSections(content, [{ section: 'section2', body: 'val: changed\n' }]);
+				expect(out).toContain('[section1]\nval: 1\n\n');
+				expect(out).toContain('[section2]\nval: changed\n');
+				expect(out).toContain('[section3]\nval: 4\n');
 			});
 		});
 	});

@@ -48,11 +48,11 @@ type GetPrefixedPinFromAliasFn = z.infer<typeof GetPrefixedPinFromAliasFn>;
 
 export const RenderTemplateContext = z.object({
 	instance: HardwareInstance,
-	purpose: z
+	section: z
 		.string()
 		.describe(
-			'The purpose of the template rendering, if applicable. Most templates will ignore this. Currently, ' +
-				'the "purpose" concept is used by a limited number of arguably over-coupled software patterns, ' +
+			'Identifies a particular section of configuration to be rendered, if applicable. Most templates will ignore this. Currently, ' +
+				'the "section" concept is used in a couple of arguably over-coupled cases, ' +
 				'but the intention is to make it more general in the future, once the dust has settled and ' +
 				'use cases have emerged.',
 		)
@@ -77,7 +77,6 @@ export type RenderTemplateFn = z.infer<typeof RenderTemplateFn>;
 
 export const RenderToolheadTemplateContext = RenderTemplateContext.extend({
 	toolNumber: ToolNumber,
-	//toolheadGenerator: z.lazy(() => z.instanceof(ToolheadGenerator) as z.ZodType<ToolheadGenerator<boolean>>),
 });
 
 export type RenderToolheadTemplateContext = z.infer<typeof RenderToolheadTemplateContext>;

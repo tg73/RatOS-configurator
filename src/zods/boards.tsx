@@ -94,8 +94,8 @@ export const AllPins = {
 	ratrig_vaoc_led_pin: z.string().optional(),
 	ratrig_vaoc_fan_pin: z.string().optional(),
 	chamber_lighting_pin: z.string().optional(),
-	ratrig_ratpack_enable_pin: z.string().optional(),
-	ratrig_ratpack_pin: z.string().optional(),
+	chamber_filter_4p_fan_pin: z.string().optional(),
+	chamber_filter_4p_fan_enable_pin: z.string().optional(),
 };
 export const PinMap = z.object(AllPins);
 
@@ -357,9 +357,6 @@ export const Board = z
 		thermistorPullup: z.number().default(4700),
 		alternativePT1000Resistor: z.number().optional(),
 		invertPinLogic: z.array(z.string()).default([]),
-		hasChamberLightingPin: z.boolean().default(false),
-		hasRatRigVaocPins: z.boolean().default(false),
-		hasRatRigRatPackPins: z.boolean().default(false),
 		customSections: z
 			.record(
 				z.string().regex(/^\S+$/),

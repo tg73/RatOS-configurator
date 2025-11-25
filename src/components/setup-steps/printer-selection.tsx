@@ -9,7 +9,7 @@ import {
 	SelectableOption,
 	SelectedCard,
 } from '@/components/card-selector-with-options';
-import { trpc } from '@/helpers/trpc';
+import { trpc, trpcClient } from '@/helpers/trpc';
 import { ShowWhenReady } from '@/components/common/show-when-ready';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useRecoilValue, useRecoilCallback } from 'recoil';
@@ -38,6 +38,7 @@ import { Modal } from '@/components/common/modal';
 import { Banner } from '@/components/common/banner';
 import { ShieldCheck } from 'lucide-react';
 import { deserializePrinterRail } from '@/utils/serialization';
+import { ChamberAirFilterSchemas, ChamberLightingSchemas } from '@/zods/hardware';
 
 interface SelectablePrinter<Option extends SelectableOption = SelectableOption>
 	extends SelectableCardWithOptions<Option> {
@@ -178,11 +179,12 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						reset(ControllerFanState);
 					}
 					if (printer.defaults.chamberLighting != null) {
-						// TODO
-						//const chamberLightingOptions = (await import('@/data/accessories')).chamberLightingOptions;
-						//const options = chamberLightingOptions();
-						//const defaultChamberLighting = options.find((a) => a.id === printer.defaults.chamberLighting);
-						const defaultChamberLighting = undefined;
+						const chamberLightingOptions = await trpcClient.printer.chamberLightingOptions.query({
+							config: defaultBoard ? { controlboard: defaultBoard.id } : null,
+						});
+						const defaultChamberLighting = chamberLightingOptions.find((a) =>
+							ChamberLightingSchemas.refEquals(a, printer.defaults.chamberLighting),
+						);
 						if (defaultChamberLighting) {
 							set(ChamberLightingState, defaultChamberLighting);
 						} else {
@@ -192,11 +194,12 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						reset(ChamberLightingState);
 					}
 					if (printer.defaults.chamberAirFilter != null) {
-						// TODO
-						//const chamberAirFilterOptions = (await import('@/data/accessories')).chamberAirFilterOptions;
-						//const options = chamberAirFilterOptions();
-						//const defaultChamberAirFilter = options.find((a) => a.id === printer.defaults.chamberAirFilter);
-						const defaultChamberAirFilter = undefined;
+						const chamberAirFilterOptions = await trpcClient.printer.chamberAirFilterOptions.query({
+							config: defaultBoard ? { controlboard: defaultBoard.id } : null,
+						});
+						const defaultChamberAirFilter = chamberAirFilterOptions.find((a) =>
+							ChamberAirFilterSchemas.refEquals(a, printer.defaults.chamberAirFilter),
+						);
 						if (defaultChamberAirFilter) {
 							set(ChamberAirFilterState, defaultChamberAirFilter);
 						} else {
@@ -206,13 +209,12 @@ export const PrinterSelection: React.FC<StepScreenProps> = (props) => {
 						reset(ChamberAirFilterState);
 					}
 					if (printer.defaults.toolheadAlignmentSystem != null) {
-						// TODO
-						//const toolheadAlignmentSystemOptions = (await import('@/data/accessories')).toolheadAlignmentSystemOptions;
-						//const options = toolheadAlignmentSystemOptions();
-						//const defaultToolheadAlignmentSystem = options.find(
-						//	(a) => a.id === printer.defaults.toolheadAlignmentSystem,
-						//);
-						const defaultToolheadAlignmentSystem = undefined;
+						const toolheadAlignmentSystemOptions = await trpcClient.printer.toolheadAlignmentSystemOptions.query({
+							config: defaultBoard ? { controlboard: defaultBoard.id } : null,
+						});
+						const defaultToolheadAlignmentSystem = toolheadAlignmentSystemOptions.find((a) =>
+							ChamberAirFilterSchemas.refEquals(a, printer.defaults.toolheadAlignmentSystem!),
+						);
 						if (defaultToolheadAlignmentSystem) {
 							set(ToolheadAlignmentSystemState, defaultToolheadAlignmentSystem);
 						} else {

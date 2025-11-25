@@ -22,6 +22,9 @@ import {
 	FilamentSensor,
 	HARDWARE_REGISTRY,
 	FilamentSensorSchemas,
+	ChamberLightingSchemas,
+	ToolheadAlignmentSystemSchemas,
+	ChamberAirFilterSchemas,
 } from '@/zods/hardware';
 import { constants, existsSync, readFileSync, mkdirSync } from 'fs';
 import { PrinterDefinition, PrinterDefinitionWithResolvedToolheads } from '@/zods/printer';
@@ -46,7 +49,12 @@ import {
 } from '@/server/helpers/klipper-config';
 import { serverSchema } from '@/env/schema.mjs';
 import { controllerFanOptions, partFanOptions, hotendFanOptions } from '@/data/fans';
-import { getFilamentSensorOptionsAsync } from '@/data/accessories';
+import {
+	getFilamentSensorOptionsAsync,
+	getChamberLightingOptionsAsync,
+	getChamberAirFilterOptionsAsync,
+	getToolheadAlignmentSystemOptionsAsync,
+} from '@/data/accessories';
 import { getBoards, getToolboards } from '@/server/routers/mcu';
 import { xAccelerometerOptions, yAccelerometerOptions } from '@/data/accelerometers';
 import { hasBeaconAccel } from '@/data/accelerometers.server';
@@ -76,9 +84,6 @@ import { getDefaultNozzle } from '@/data/nozzles';
 import { extractLinesFromFile, getScriptRoot, searchFileByLine } from '@/server/helpers/file-operations';
 import { runSudoScript } from '@/server/helpers/run-script';
 import { UnconnectedHardwareInstance } from '@/zods/template-api';
-
-// TODO
-//import { chamberAirFilterOptions, chamberLightingOptions, toolheadAlignmentSystemOptions } from '@/data/accessories';
 
 function isNodeError(error: any): error is NodeJS.ErrnoException {
 	return error instanceof Error;
@@ -394,11 +399,24 @@ export const deserializePartialPrinterConfiguration = async (
 		performanceMode: config?.performanceMode,
 		stealthchop: config?.stealthchop,
 		standstillStealth: config?.standstillStealth,
-		// TODO
-		//chamberLighting: chamberLightingOptions({ controlboard }).find((a) => a.id === config?.chamberLighting),
-		chamberLighting: undefined,
-		chamberAirFilter: undefined,
-		toolheadAlignmentSystem: undefined,
+		chamberLighting:
+			config?.chamberLighting == null
+				? undefined
+				: (await getChamberLightingOptionsAsync({ controlboard })).find((a) =>
+						ChamberLightingSchemas.refEquals(a, config.chamberLighting),
+					),
+		toolheadAlignmentSystem:
+			config?.toolheadAlignmentSystem == null
+				? undefined
+				: (await getToolheadAlignmentSystemOptionsAsync({ controlboard })).find((a) =>
+						ToolheadAlignmentSystemSchemas.refEquals(a, config.toolheadAlignmentSystem),
+					),
+		chamberAirFilter:
+			config?.chamberAirFilter == null
+				? undefined
+				: (await getChamberAirFilterOptionsAsync({ controlboard })).find((a) =>
+						ChamberAirFilterSchemas.refEquals(a, config.chamberAirFilter),
+					),
 		rails: config?.rails?.map((r) => deserializePrinterRail(r)),
 	});
 };
@@ -421,15 +439,15 @@ export const deserializePrinterConfiguration = async (
 		performanceMode: config?.performanceMode,
 		stealthchop: config?.stealthchop,
 		standstillStealth: config?.standstillStealth,
-		// TODO
-		//chamberLighting: chamberLightingOptions({ controlboard }).find((a) => a.id === config?.chamberLighting),
-		//toolheadAlignmentSystem: toolheadAlignmentSystemOptions({ controlboard }).find(
-		//	(a) => a.id === config?.toolheadAlignmentSystem,
-		//),
-		//chamberAirFilter: chamberAirFilterOptions({ controlboard }).find((a) => a.id === config?.chamberAirFilter),
-		chamberLighting: undefined,
-		toolheadAlignmentSystem: undefined,
-		chamberAirFilter: undefined,
+		chamberLighting: (await getChamberLightingOptionsAsync({ controlboard })).find((a) =>
+			ChamberLightingSchemas.refEquals(a, config.chamberLighting),
+		),
+		toolheadAlignmentSystem: (await getToolheadAlignmentSystemOptionsAsync({ controlboard })).find((a) =>
+			ToolheadAlignmentSystemSchemas.refEquals(a, config.toolheadAlignmentSystem),
+		),
+		chamberAirFilter: (await getChamberAirFilterOptionsAsync({ controlboard })).find((a) =>
+			ChamberAirFilterSchemas.refEquals(a, config.chamberAirFilter),
+		),
 		rails: config?.rails.map((r) => deserializePrinterRail(r)),
 	});
 };
@@ -651,7 +669,11 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 						`git diff --minimal --no-ext-diff --no-index /dev/null /tmp/ratos-added-new-${timehash}.cfg`,
 						(err, stdout, stderr) => {
 							if (stdout.trim() == '') {
-								reject(stderr);
+								if (err) {
+									return reject(err);
+								}
+								const msg = (stderr && stderr.toString()) || 'Empty diff output';
+								return reject(new Error(msg));
 							}
 							resolve(stdout);
 						},
@@ -670,7 +692,14 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 	);
 	const removedFiles = await Promise.all(
 		oldFiles
-			.filter((f) => f.exists && !newFiles.some((nf) => nf.fileName === f.fileName))
+			.filter(
+				(f) =>
+					f.exists &&
+					// TODO: Minor hack here. Never remove crowsnest.conf. This can happen if VAOC is removed from the config.
+					// It would be nice to handle this more elegantly in the future.
+					f.fileName !== 'crowsnest.conf' &&
+					!newFiles.some((nf) => nf.fileName === f.fileName),
+			)
 			.map(async (f) => {
 				const timehash = new Date().getTime() + objectHash(f);
 				await writeFile(`/tmp/ratos-removed-old-${timehash}.cfg`, f.content);
@@ -679,7 +708,11 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 						`git diff --minimal --no-ext-diff --no-index /tmp/ratos-removed-old-${timehash}.cfg /dev/null`,
 						(err, stdout, stderr) => {
 							if (stdout.trim() == '') {
-								reject(stderr);
+								if (err) {
+									return reject(err);
+								}
+								const msg = (stderr && stderr.toString()) || 'Empty diff output';
+								return reject(new Error(msg));
 							}
 							resolve(stdout);
 						},
@@ -696,6 +729,21 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 				} satisfies Unpacked<FilesToWriteWithState> as Unpacked<FilesToWriteWithState>;
 			}),
 	);
+	// TODO: [matching-changes-issue] Think more carefully about what to do when the old file disk content happens to exactly match the new file content,
+	// but the last saved content is different to the old file disk content. Essentially, user has made changes on disk that match the new config,
+	// but those changes are not yet saved in the last-saved tracking. In this case, we probably want to show that the file is changed from config,
+	// but not changed on disk. However, the diff generation logic below assumes that if the disk content matches the new content,
+	// then there is no diff to show. We would need to adjust the diff generation to compare against lastSavedContent in this specific case.
+	// But then, showing a diff *when there will actually be no changes applied to disk* could be confusing.
+	//
+	// So in the filter, you see:
+	//    of.content === f.content : false
+	//    of.diskContent === f.content : true
+	// Then in the map:
+	//    oldFile.exists is true, so oldPath is left pointing to the disk file.
+	//
+	// For now, I'm going to add logic to the filter to exclude these files from the "changed" list,
+	// and instead include them in the "unchanged" list, but still mark them as changedFromConfig.
 	const changedFiles = await Promise.all(
 		newFiles
 			.filter(
@@ -704,6 +752,7 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 					oldFiles.some(
 						(of) =>
 							of.fileName === f.fileName &&
+							of.diskContent !== f.content && // added this condition, see [matching-changes-issue] comment above.
 							(of.content !== f.content || (f.lastSavedContent != null && of.content !== f.lastSavedContent)),
 					),
 			)
@@ -724,7 +773,11 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 						`git diff --minimal --no-ext-diff --no-index ${oldPath} /tmp/ratos-changed-new-${timehash}.cfg`,
 						(err, stdout, stderr) => {
 							if (stdout.trim() == '') {
-								reject(stderr);
+								if (err) {
+									return reject(err);
+								}
+								const msg = (stderr && stderr.toString()) || 'Empty diff output';
+								return reject(new Error(msg));
 							}
 							resolve(stdout);
 						},
@@ -752,7 +805,8 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 					oldFiles.some(
 						(of) =>
 							of.fileName === f.fileName &&
-							of.content === f.content &&
+							// below, added `|| of.diskContent === f.content`` condition, see [matching-changes-issue] comment above.
+							(of.content === f.content || of.diskContent === f.content) &&
 							(f.lastSavedContent == null || of.content === f.lastSavedContent),
 					),
 			)
@@ -775,7 +829,11 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 							`git diff --minimal --no-ext-diff --no-index ${oldPath} /tmp/ratos-changed-new-${timehash}.cfg`,
 							(err, stdout, stderr) => {
 								if (stdout.trim() == '') {
-									reject(stderr);
+									if (err) {
+										return reject(err);
+									}
+									const msg = (stderr && stderr.toString()) || 'Empty diff output';
+									return reject(new Error(msg));
 								}
 								resolve(stdout);
 							},
@@ -1008,7 +1066,10 @@ export const printerRouter = router({
 			}),
 		)
 		.output(z.array(ChamberLighting))
-		.query(async (ctx) => []), // TODO chamberLightingOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {}))),
+		.query(
+			async (ctx) =>
+				await getChamberLightingOptionsAsync(await deserializePartialPrinterConfiguration(ctx.input.config ?? {})),
+		),
 	toolheadAlignmentSystemOptions: publicProcedure
 		.input(
 			z.object({
@@ -1016,7 +1077,12 @@ export const printerRouter = router({
 			}),
 		)
 		.output(z.array(ToolheadAlignmentSystem))
-		.query(async (ctx) => []), // TODO toolheadAlignmentSystemOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {})),
+		.query(
+			async (ctx) =>
+				await getToolheadAlignmentSystemOptionsAsync(
+					await deserializePartialPrinterConfiguration(ctx.input.config ?? {}),
+				),
+		),
 	chamberAirFilterOptions: publicProcedure
 		.input(
 			z.object({
@@ -1024,7 +1090,10 @@ export const printerRouter = router({
 			}),
 		)
 		.output(z.array(ChamberAirFilter))
-		.query(async (ctx) => []), // TODO chamberAirFilterOptions(await deserializePartialPrinterConfiguration(ctx.input.config ?? {}))),
+		.query(
+			async (ctx) =>
+				await getChamberAirFilterOptionsAsync(await deserializePartialPrinterConfiguration(ctx.input.config ?? {})),
+		),
 	xAccelerometerOptions: publicProcedure
 		.input(
 			z.object({
