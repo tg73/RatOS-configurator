@@ -21,6 +21,7 @@ import {
 	ChamberAirFilter,
 	FilamentSensor,
 	HARDWARE_REGISTRY,
+	FilamentSensorSchemas,
 } from '@/zods/hardware';
 import { constants, existsSync, readFileSync, mkdirSync } from 'fs';
 import { PrinterDefinition, PrinterDefinitionWithResolvedToolheads } from '@/zods/printer';
@@ -45,7 +46,7 @@ import {
 } from '@/server/helpers/klipper-config';
 import { serverSchema } from '@/env/schema.mjs';
 import { controllerFanOptions, partFanOptions, hotendFanOptions } from '@/data/fans';
-import { filamentSensorOptions } from '@/data/filament-sensors.server';
+import { getFilamentSensorOptionsAsync } from '@/data/accessories';
 import { getBoards, getToolboards } from '@/server/routers/mcu';
 import { xAccelerometerOptions, yAccelerometerOptions } from '@/data/accelerometers';
 import { hasBeaconAccel } from '@/data/accelerometers.server';
@@ -309,12 +310,11 @@ export const deserializeToolheadConfiguration = async (
 			config.filamentSensor == null
 				? undefined
 				: (
-						await filamentSensorOptions({ controlboard }, null, {
+						await getFilamentSensorOptionsAsync({ controlboard }, null, {
 							toolboard: toolboard,
 							toolNumber: config?.toolNumber,
 						})
-					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo === config.filamentSensor!.connectedTo) ??
-					undefined,
+					).find((s) => FilamentSensorSchemas.refEquals(s, config.filamentSensor)) ?? undefined,
 	} satisfies PartialToolheadConfiguration;
 	return ToolheadConfiguration.parse(res);
 };
@@ -365,12 +365,11 @@ export const deserializePartialToolheadConfiguration = async (
 			config?.filamentSensor == null
 				? undefined
 				: (
-						await filamentSensorOptions({ controlboard }, null, {
+						await getFilamentSensorOptionsAsync({ controlboard }, null, {
 							toolboard: toolboard,
 							toolNumber: config?.toolNumber,
 						})
-					).find((s) => s.id === config.filamentSensor!.id && s.connectedTo === config.filamentSensor!.connectedTo) ??
-					undefined,
+					).find((s) => FilamentSensorSchemas.refEquals(s, config.filamentSensor)) ?? undefined,
 	} satisfies PartialToolheadConfiguration);
 };
 
@@ -1065,14 +1064,15 @@ export const printerRouter = router({
 			}),
 		)
 		.output(z.array(FilamentSensor))
-		.query(async (ctx) =>
-			filamentSensorOptions(
-				ctx.input.config == null ? null : await deserializePartialPrinterConfiguration(ctx.input.config),
-				typeof ctx.input.toolOrAxis === 'number' ? ctx.input.toolOrAxis : null,
-				ctx.input.toolheadConfig == null
-					? null
-					: await deserializePartialToolheadConfiguration(ctx.input.toolheadConfig, ctx.input.config ?? {}),
-			),
+		.query(
+			async (ctx) =>
+				await getFilamentSensorOptionsAsync(
+					ctx.input.config == null ? null : await deserializePartialPrinterConfiguration(ctx.input.config),
+					typeof ctx.input.toolOrAxis === 'number' ? ctx.input.toolOrAxis : null,
+					ctx.input.toolheadConfig == null
+						? null
+						: await deserializePartialToolheadConfiguration(ctx.input.toolheadConfig, ctx.input.config ?? {}),
+				),
 		),
 	deserializeToolheadConfiguration: publicProcedure
 		.input(

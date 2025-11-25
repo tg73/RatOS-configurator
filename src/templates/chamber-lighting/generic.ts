@@ -1,26 +1,17 @@
-import { GetRequiredPinAliasesFn, RenderToolheadTemplateFn } from '@/templates/template-api';
-import { z } from 'zod';
+import { GetRequiredPinAliasesFn, RenderTemplateFn } from '@/templates/template-api';
 
-const Options = z.object({
-	invertRunoutPin: z.boolean().default(false),
-	pullUpRunoutPin: z.boolean().default(true),
-});
+// TODO: Use templateOptions to allow different pin configurations, brightness control, RGB etc.
 
 export const getRequiredPinAliases: GetRequiredPinAliasesFn = (ctx) => {
-	return ['filament_sensor_runout_pin'];
+	return ['chamber_lighting_pin'];
 };
 
-export const renderToolheadTemplate: RenderToolheadTemplateFn = (ctx) => {
-	const th = ctx.toolheadGenerator;
-	const opts = Options.parse(ctx.templateOptions ?? {});
+export const renderTemplate: RenderTemplateFn = (ctx) => {
 	return `
-[filament_switch_sensor filament_sensor${th.printerHasMultipleToolheads ? `_${th.getShortToolName()}` : ''}]
-pause_on_runout: False
-event_delay: 1.0
-switch_pin: ${opts.invertRunoutPin ? '!' : ''}${opts.pullUpRunoutPin ? '^' : ''}${th.getPinPrefix()}${th.getPinFromAlias('filament_sensor_runout_pin')}
-runout_gcode:
-	_ON_TOOLHEAD_FILAMENT_SENSOR_RUNOUT TOOLHEAD=${th.getTool()}
-insert_gcode:
-	_ON_TOOLHEAD_FILAMENT_SENSOR_INSERT TOOLHEAD=${th.getTool()}
+# ${ctx.instance.title}
+# ${ctx.instance.description}
+[led chamber]
+white_pin: ${ctx.getPrefixedPinFromAlias('chamber_lighting_pin')}
+initial_WHITE: 0.5
 `;
 };

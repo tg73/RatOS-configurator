@@ -87,6 +87,7 @@ export const SerializedToolheadConfiguration = BaseToolheadConfiguration.extend(
 	yAccelerometer: Accelerometer.shape.id.optional().nullable(),
 	toolboard: BoardID.optional().nullable(),
 	probe: Probe.shape.id.optional().nullable(),
+	// TODO: Can we drop nullable() here? This is a new property so there shouldn't be any existing nulls to handle.
 	filamentSensor: FilamentSensorRef.optional().nullable(),
 }).strict();
 export const SerializedPartialToolheadConfiguration = SerializedToolheadConfiguration.partial().optional();

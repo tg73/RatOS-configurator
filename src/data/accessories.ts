@@ -1,71 +1,52 @@
-import { z } from 'zod';
-import { ChamberAirFilter, ChamberLighting, ToolheadAlignmentSystem } from '@/zods/hardware';
+import { FilamentSensor, ChamberAirFilter, ChamberLighting, ToolheadAlignmentSystem } from '@/zods/hardware';
 import type { PartialPrinterConfiguration } from '@/zods/printer-configuration';
+import { PartialToolheadConfiguration } from '@/zods/toolhead';
+import { getCompatibleHardwareInstancesAsync } from '@/templates/template-api';
 
-/*
-export const chamberLightingOptions = (
+/**
+ * Return valid filament sensor options considering the controlboard and/or toolhead configuration.
+ * See documentation on {@link getCompatibleHardwareInstancesAsync} for usage details.
+ */
+export async function getFilamentSensorOptionsAsync(
 	config?: PartialPrinterConfiguration | null,
-): z.infer<typeof ChamberLighting>[] => {
-	const options: z.infer<typeof ChamberLighting>[] = [
-		{
-			id: 'controlboard' as const,
-			title: 'Wired to Controlboard',
-			badge: [{ color: 'purple', children: config?.controlboard?.name ?? 'Control Board' }],
-		},
-		{
-			id: 'none' as const,
-			title: 'None',
-		},
-	];
-	return options;
-};
+	toolNumber?: number | null,
+	toolheadConfig?: PartialToolheadConfiguration | null,
+): Promise<FilamentSensor[]> {
+	return await getCompatibleHardwareInstancesAsync('filament-sensor', config, toolNumber, toolheadConfig);
+}
 
-export const defaultChamberLighting = {
-	id: 'none' as const,
-	title: 'None',
-};
-
-export const toolheadAlignmentSystemOptions = (
+/**
+ * Return valid chamber air filter  options considering the controlboard and/or toolhead configuration.
+ * See documentation on {@link getCompatibleHardwareInstancesAsync} for usage details.
+ */
+export async function getChamberAirFilterOptionsAsync(
 	config?: PartialPrinterConfiguration | null,
-): z.infer<typeof ToolheadAlignmentSystem>[] => {
-	const options: z.infer<typeof ToolheadAlignmentSystem>[] = [
-		{
-			id: 'ratRigVaoc' as const,
-			title: 'Rat Rig VAOC',
-			badge: [{ color: 'purple', children: config?.controlboard?.name ?? 'Control Board' }],
-		},
-		{
-			id: 'none' as const,
-			title: 'None',
-		},
-	];
-	return options;
-};
+	toolNumber?: number | null,
+	toolheadConfig?: PartialToolheadConfiguration | null,
+): Promise<ChamberAirFilter[]> {
+	return await getCompatibleHardwareInstancesAsync('chamber-air-filter', config, toolNumber, toolheadConfig);
+}
 
-export const defaultToolheadAlignmentSystem = {
-	id: 'none' as const,
-	title: 'None',
-};
-
-export const chamberAirFilterOptions = (
+/**
+ * Return valid chamber lighting options considering the controlboard and/or toolhead configuration.
+ * See documentation on {@link getCompatibleHardwareInstancesAsync} for usage details.
+ */
+export async function getChamberLightingOptionsAsync(
 	config?: PartialPrinterConfiguration | null,
-): z.infer<typeof ChamberAirFilter>[] => {
-	const options: z.infer<typeof ChamberAirFilter>[] = [
-		{
-			id: 'ratRigRatPack' as const,
-			title: 'Rat Rig Rat Pack',
-			badge: [{ color: 'purple', children: config?.controlboard?.name ?? 'Control Board' }],
-		},
-		{
-			id: 'none' as const,
-			title: 'None',
-		},
-	];
-	return options;
-};
+	toolNumber?: number | null,
+	toolheadConfig?: PartialToolheadConfiguration | null,
+): Promise<ChamberLighting[]> {
+	return await getCompatibleHardwareInstancesAsync('chamber-lighting', config, toolNumber, toolheadConfig);
+}
 
-export const defaultChamberAirFilter = {
-	id: 'none' as const,
-	title: 'None',
-};
-*/
+/**
+ * Return valid toolhead alignment system options considering the controlboard and/or toolhead configuration.
+ * See documentation on {@link getCompatibleHardwareInstancesAsync} for usage details.
+ */
+export async function getToolheadAlignmentSystemOptionsAsync(
+	config?: PartialPrinterConfiguration | null,
+	toolNumber?: number | null,
+	toolheadConfig?: PartialToolheadConfiguration | null,
+): Promise<ToolheadAlignmentSystem[]> {
+	return await getCompatibleHardwareInstancesAsync('toolhead-alignment-system', config, toolNumber, toolheadConfig);
+}

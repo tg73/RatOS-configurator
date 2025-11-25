@@ -136,6 +136,29 @@ export function createHardwareSchemas<
 		return OptionalRef.parse(source);
 	};
 
+	// Dynamically extract the keys that define a Reference.
+	// We use HardwareInstanceRef.shape because it is the unbranded, raw object definition.
+	// runtimeKeys = ["id", "connectedTo"]
+	const refKeys = Object.keys(HardwareInstanceRef.shape) as (keyof z.infer<typeof Ref>)[];
+
+	// 2. Define the comparison function
+	const refEquals = (a: z.infer<typeof Ref> | null | undefined, b: z.infer<typeof Ref> | null | undefined): boolean => {
+		// Strict reference check (fast path for same object or both null/undefined)
+		if (a === b) return true;
+
+		// If either is null/undefined (but not both, due to check above), they aren't equal
+		if (a == null || b == null) return false;
+
+		// Iterate over the specific keys defined by the Schema
+		for (const key of refKeys) {
+			if (a[key] !== b[key]) {
+				return false;
+			}
+		}
+
+		return true;
+	};
+
 	return {
 		Definition,
 		Unconnected,
@@ -144,5 +167,11 @@ export function createHardwareSchemas<
 		OptionalRef,
 		toRef,
 		toOptionalRef,
+		/**
+		 * Type-safe function to compare two hardware instance references for equality. Note that
+		 * Ref instances are currently unbranded (see TODO above), so this function can accept any
+		 * Ref of the same shape.
+		 */
+		refEquals,
 	};
 }

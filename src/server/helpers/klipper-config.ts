@@ -31,13 +31,7 @@ import path from 'path';
 import { serverSchema } from '@/env/schema.mjs';
 import { KlipperAccelSensorName } from '@/zods/hardware';
 import { ToolheadSuffix } from '@/helpers/toolhead';
-import {
-	getVaocControlPointVariables,
-	getUpdatedCrowsnestConfigurationForVaoc,
-	VAOCControlPoints,
-	getDcEndstopConfigurationFileContent,
-	getAdjustYMaxConfigurationFileContent,
-} from '@/server/helpers/config-generation/ratrig-vaoc';
+import { getVaocControlPointVariables, VAOCControlPoints } from '@/server/helpers/config-generation/ratrig-vaoc';
 import { renderTemplateAsync } from '@/templates/template-api';
 
 type WritableFiles = { fileName: string; content: string; overwrite: boolean; order?: number }[];
@@ -414,58 +408,10 @@ export const constructKlipperConfigExtrasGenerator = (
 				})
 				.join('\n');
 		},
-		generateRatRigVaocHardwareIncludes() {
-			const result: string[] = [];
-			utils.requireControlboardPin('ratrig_vaoc_probe_pin');
-			utils.requireControlboardPin('ratrig_vaoc_led_pin');
-			utils.requireControlboardPin('ratrig_vaoc_fan_pin');
-			// Modify crowsnest.conf
-			const updatedCrowsnestContent = getUpdatedCrowsnestConfigurationForVaoc();
-			this.addFileToRender({
-				fileName: 'crowsnest.conf',
-				content: updatedCrowsnestContent,
-				overwrite: false,
-			});
-			// Emit VAOC include
-			result.push(`# Rat Rig VAOC`);
-			result.push(`[include RatOS/extras/ratrig-vaoc.cfg]`);
-			return result.join('\n');
-		},
-		generateRatRigVaocConfigHelperIncludes() {
-			const result: string[] = [];
-			// If overwrite is requested (or overwrite details are not available), reset dc-endstop.cfg.
-			// Otherwise, use the existing content or the default content if the file does not exist.
-			const dcEndstopCfgFileName = 'ratos_generated/dc-endstop.cfg';
-			const forceDcEndstopDefault =
-				(overwriteFiles?.includes(dcEndstopCfgFileName) || overwriteFiles?.includes('*')) ?? true;
-			const dcEndstopContent = getDcEndstopConfigurationFileContent(forceDcEndstopDefault, dcEndstopCfgFileName);
-			this.addFileToRender({
-				fileName: dcEndstopCfgFileName,
-				content: dcEndstopContent,
-				overwrite: forceDcEndstopDefault,
-			});
-			// Ditto, for adjust-y-max.cfg.
-			const adjustYMaxCfgFileName = 'ratos_generated/adjust-y-max.cfg';
-			const forceAdjustYMaxDefault =
-				(overwriteFiles?.includes(adjustYMaxCfgFileName) || overwriteFiles?.includes('*')) ?? true;
-			const adjustYMaxContent = getAdjustYMaxConfigurationFileContent(forceAdjustYMaxDefault, adjustYMaxCfgFileName);
-			this.addFileToRender({
-				fileName: adjustYMaxCfgFileName,
-				content: adjustYMaxContent,
-				overwrite: forceAdjustYMaxDefault,
-			});
-			result.push(
-				'########################################',
-				`# Configuration Helpers for Rat Rig VAOC`,
-				`########################################`,
-				'#',
-				'# These includes must come after any user-defined stepper sections',
-				'# to ensure that overrides work correctly.',
-				'#',
-				'[include ratos_generated/dc-endstop.cfg]   # Managed by CONFIGURE_DC_ENDSTOP macro',
-				'[include ratos_generated/adjust-y-max.cfg] # Managed by INCREASE_Y_MAX macro',
+		isOverwriteRequestedForFile(fileName: string, defaultIfOverwriteFilesIsUndefined: boolean = true): boolean {
+			return (
+				(overwriteFiles?.includes(fileName) || overwriteFiles?.includes('*')) ?? defaultIfOverwriteFilesIsUndefined
 			);
-			return result.join('\n');
 		},
 		addReminder(reminder: string) {
 			_reminders.push(reminder);
@@ -1172,68 +1118,31 @@ export const constructKlipperConfigHelpers = async (
 			}
 			return result.join('\n');
 		},
-		renderChamberLighting() {
-			// TODO
-			return '';
-			/*
-			const result: string[] = [];
-			if (config.chamberLighting.id !== 'controlboard') {
-				result.push('# Chamber lighting not installed');
-				return result.join('\n');
-			}
-			utils.requireControlboardPin('chamber_lighting_pin');
-			const pins = utils.getControlboardPins();
-			result.push(`# Chamber lighting (non-RGB)`);
-			result.push(`[led chamber]`);
-			result.push(`white_pin: ${pins.chamber_lighting_pin}`);
-			result.push(`initial_WHITE: 0.5`);
-			return result.join('\n');
-			*/
+		async renderChamberLightingAsync() {
+			const result = await renderTemplateAsync(config.chamberLighting, { utils, extrasGenerator });
+			return result?.trim() ?? '';
 		},
-		renderToolheadAlignmentSystemHardware() {
-			// TODO
-			return '';
-			/*
-			// This section is typically be emitted in RatOS.cfg (but only for IDEX printers)
-			const result: string[] = [];
-			if (config.toolheadAlignmentSystem.id !== 'ratRigVaoc') {
-				result.push('# Toolhead alignment system not installed');
-				return result.join('\n');
-			}
-			return extrasGenerator.generateRatRigVaocHardwareIncludes();
-			*/
+		async renderToolheadAlignmentSystemHardwareAsync() {
+			// This section is typically emitted in RatOS.cfg (but only for IDEX printers)
+			const result = await renderTemplateAsync(config.toolheadAlignmentSystem, {
+				utils,
+				extrasGenerator,
+				purpose: 'hardware',
+			});
+			return result?.trim() ?? '';
 		},
-		renderToolheadAlignmentSystemConfigHelpers() {
-			// TODO
-			return '';
-			/*
-			// This section is typically be emitted near the end of printer.cfg, after an user stepper sections (but only for IDEX printers)
-			const result: string[] = [];
-			if (config.toolheadAlignmentSystem.id !== 'ratRigVaoc') {
-				result.push('# Toolhead alignment system not installed');
-				return result.join('\n');
-			}
-			return extrasGenerator.generateRatRigVaocConfigHelperIncludes();
-			*/
+		async renderToolheadAlignmentSystemConfigHelpersAsync() {
+			// This section is typically emitted near the end of printer.cfg, after an user stepper sections (but only for IDEX printers)
+			const result = await renderTemplateAsync(config.toolheadAlignmentSystem, {
+				utils,
+				extrasGenerator,
+				purpose: 'config-helpers',
+			});
+			return result?.trim() ?? '';
 		},
-		renderChamberAirFilter() {
-			// TODO
-			return '';
-			/*
-			const result: string[] = [];
-			if (config.chamberAirFilter.id !== 'ratRigRatPack') {
-				result.push('# Chamber air filter not installed');
-				return result.join('\n');
-			}
-			utils.requireControlboardPin('ratrig_ratpack_pin');
-			utils.requireControlboardPin('ratrig_ratpack_enable_pin');
-			const pins = utils.getControlboardPins();
-			result.push(`# Rat Rig Rat Pack`);
-			result.push(`[fan_generic filter]`);
-			result.push(`pin: ${pins.ratrig_ratpack_pin}`);
-			result.push(`enable_pin: ${pins.ratrig_ratpack_enable_pin}`);
-			return result.join('\n');
-			*/
+		async renderChamberAirFilterAsync() {
+			const result = await renderTemplateAsync(config.chamberAirFilter, { utils, extrasGenerator });
+			return result?.trim() ?? '';
 		},
 		renderFans() {
 			const result: string[] = [];
@@ -1277,7 +1186,9 @@ export const constructKlipperConfigHelpers = async (
 			const result: string[] = [];
 			const filamentSensors = (
 				await Promise.all(
-					utils.getToolheads().map((th) => renderTemplateAsync(th.getFilamentSensor(), { utils }, th.getTool())),
+					utils
+						.getToolheads()
+						.map((th) => renderTemplateAsync(th.getFilamentSensor(), { utils, extrasGenerator }, th.getTool())),
 				)
 			).filter((s) => s != null);
 			if (filamentSensors.length > 0) {
