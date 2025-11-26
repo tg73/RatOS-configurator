@@ -62,6 +62,10 @@ The mock data generator creates realistic update log scenarios including:
 - `PERMISSION_DENIED` - File permission issues
 - `DISK_SPACE_LOW` - Insufficient disk space
 - `BACKUP_FAILED` - Backup operation failures
+- `KLIPPER_MIGRATION_FAILED` - Klipper repository migration failures
+- `GIT_FETCH_FAILED` - Git fetch operation failures
+- `GIT_CHECKOUT_FAILED` - Git checkout operation failures
+- `KLIPPER_UNCOMMITTED_CHANGES` - Uncommitted changes in Klipper repository
 
 ### Test Scenarios
 

@@ -135,6 +135,41 @@ symlink_extensions()
 	fi
 }
 
+
+# ensure_klipper_fork_migration() - Ensures Klipper repository is migrated to RatOS fork
+#
+# This function delegates all repository state validation and migration logic to the
+# dedicated klipper-fork-migration.sh script, which provides comprehensive handling of:
+# - Official Klipper repositories (migration needed)
+# - RatOS fork repositories at correct state (migration not needed)
+# - RatOS fork repositories at incorrect state (migration needed)
+# - Unsupported repository sources (fatal error)
+# - All edge cases including detached HEAD, uncommitted changes, etc.
+#
+# RETURN CODES:
+#   0 - Success: Migration completed successfully or was not needed
+#   1+ - Error: Migration failed (specific error codes from migration script)
+#
+ensure_klipper_fork_migration()
+{
+	log_info "Ensuring Klipper repository is properly configured..." "ensure_klipper_migration"
+
+	# Delegate all repository validation and migration logic to the dedicated script
+	# The migration script handles all scenarios comprehensively:
+	# - Repository state validation with 4 distinct scenarios
+	# - Graceful skipping when migration is not needed
+	# - Comprehensive error handling and edge case management
+	# - Consistent logging and error reporting
+	if ! "$SCRIPT_DIR"/klipper-fork-migration.sh; then
+		local code=$?
+		log_error "Klipper fork migration failed (exit code $code)!" "ensure_klipper_migration" "KLIPPER_MIGRATION_FAILED"
+		return $code
+	fi
+
+	log_info "Klipper repository configuration verified successfully!" "ensure_klipper_migration"
+	return 0
+}
+
 # Main execution with error handling
 main() {
 	local exit_code=0
@@ -145,6 +180,7 @@ main() {
 	# Use set +e to prevent immediate exit on function failure
 	set +e
 
+	ensure_klipper_fork_migration || exit_code=1
 	update_symlinks || exit_code=1
 	ensure_sudo_command_whitelisting || exit_code=1
 	ensure_service_permission || exit_code=1

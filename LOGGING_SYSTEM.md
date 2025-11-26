@@ -17,7 +17,7 @@ The unified logging system consists of four main components:
 
 The bash logging library provides structured logging capabilities for shell scripts, outputting logs in JSON format compatible with the pino logging system used throughout the application. **All logs are written to the main RatOS log file** (`/var/log/ratos-configurator.log`) with a `source: "ratos-update"` field for filtering.
 
-#### Features:
+#### Features
 - **JSON-formatted logs** compatible with pino
 - **Multiple log levels**: trace, debug, info, warn, error, fatal
 - **Unified log file** - writes to main RatOS log instead of separate files
@@ -26,7 +26,7 @@ The bash logging library provides structured logging capabilities for shell scri
 - **Command execution logging** with automatic error handling
 - **Timestamped entries** with process information
 
-#### Usage Example:
+#### Usage Example
 ```bash
 #!/bin/bash
 source "$(dirname "$0")/ratos-logging.sh"
@@ -49,7 +49,7 @@ execute_with_logging "package_update" "APT_UPDATE_FAILED" apt-get update
 log_script_complete "my-script.sh" $?
 ```
 
-#### Configuration:
+#### Configuration
 - `RATOS_LOG_LEVEL`: Set minimum log level (default: info)
 - `RATOS_LOG_FILE`: Log file path (default: uses `${LOG_FILE}` from environment, typically `/var/log/ratos-configurator.log`)
 - `RATOS_LOG_MAX_SIZE`: Maximum log file size before rotation (default: 0 = disabled when using main log)
@@ -61,7 +61,7 @@ log_script_complete "my-script.sh" $?
 
 The CLI provides several commands for viewing and analyzing update logs. **Update logs are now a subcommand of the main `logs` command** and automatically filter the main log file to show only entries with `source: "ratos-update"`.
 
-#### Commands:
+#### Commands
 
 **`ratos logs update-logs summary`**
 - Shows a summary of the most recent update attempt from the main log
@@ -81,7 +81,7 @@ The CLI provides several commands for viewing and analyzing update logs. **Updat
 - Options:
   - `-d, --details`: Show detailed information
 
-#### Usage Examples:
+#### Usage Examples
 ```bash
 # Show update summary (note the new command structure)
 ratos logs update-logs summary
@@ -104,7 +104,7 @@ ratos logs rotate  # Force log rotation
 
 The web interface provides a comprehensive log viewer accessible at `/configure/update-logs`.
 
-#### Features:
+#### Features
 - **Log Summary Dashboard**: Overview of recent update attempts
 - **Interactive Log Viewer**: Browse and filter log entries
 - **Real-time Filtering**: Filter by log level, context, and search terms
@@ -112,7 +112,7 @@ The web interface provides a comprehensive log viewer accessible at `/configure/
 - **Download Capability**: Download raw log files
 - **Auto-refresh**: Automatic updates when new logs are available
 
-#### Components:
+#### Components
 - `UpdateLogsViewer`: Main component for displaying logs
 - `UpdateLogsErrorBoundary`: Error boundary for graceful error handling
 - `LogSummaryCard`: Summary statistics and controls
@@ -120,7 +120,7 @@ The web interface provides a comprehensive log viewer accessible at `/configure/
 
 ### 4. API Endpoints
 
-#### TRPC Endpoints (`src/server/routers/update-logs.ts`):
+#### TRPC Endpoints (`src/server/routers/update-logs.ts`)
 - `update-logs.summary`: Get log summary statistics (filtered by `source: "ratos-update"`)
 - `update-logs.entries`: Get filtered log entries (filtered by `source: "ratos-update"`)
 - `update-logs.errors`: Get only errors and warnings (filtered by `source: "ratos-update"`)
@@ -128,7 +128,7 @@ The web interface provides a comprehensive log viewer accessible at `/configure/
 - `update-logs.clear`: **Disabled** - Cannot clear main log file (use log rotation instead)
 - `update-logs.download`: Download main log file (contains all sources)
 
-#### REST Endpoints:
+#### REST Endpoints
 - `GET /api/update-logs/download`: Download log file as attachment
 
 ### 5. Debug Integration
@@ -156,7 +156,7 @@ All logs follow a consistent JSON format:
 }
 ```
 
-### Fields:
+### Fields
 - `level`: Numeric log level (10=trace, 20=debug, 30=info, 40=warn, 50=error, 60=fatal)
 - `time`: ISO 8601 timestamp
 - `msg`: Human-readable log message
@@ -170,7 +170,7 @@ All logs follow a consistent JSON format:
 
 Standardized error codes help identify common issues:
 
-### Update Script Error Codes:
+### Update Script Error Codes
 - `SCRIPT_ERROR`: General script failure
 - `SCRIPT_SUCCESS`: Script completed successfully
 - `SYMLINK_CREATE_FAILED`: Failed to create symbolic link
@@ -180,34 +180,66 @@ Standardized error codes help identify common issues:
 - `EXTENSION_SYMLINK_FAILED`: Extension symlinking failed
 - `OWNERSHIP_CHANGE_FAILED`: File ownership change failed
 
-### System Error Codes:
+### Klipper Migration Error Codes
+- `KLIPPER_DIR_NOT_FOUND`: Klipper directory not found
+- `KLIPPER_NOT_GIT_REPO`: Klipper directory is not a git repository
+- `KLIPPER_DIR_ACCESS_FAILED`: Cannot access Klipper directory
+- `KLIPPER_STAGED_CHANGES`: Uncommitted staged changes prevent migration
+- `KLIPPER_UNCOMMITTED_CHANGES`: Uncommitted changes prevent migration
+- `KLIPPER_MIGRATION_FAILED`: General Klipper migration failure
+- `GIT_REMOTE_URL_FAILED`: Failed to get git remote URL
+- `GIT_REMOTE_ADD_FAILED`: Failed to add git remote
+- `GIT_REMOTE_UPDATE_FAILED`: Failed to update git remote URL
+- `GIT_FETCH_FAILED`: Failed to fetch from remote repository
+- `GIT_FETCH_RETRY`: Fetch retry attempt
+- `GIT_CHECKOUT_FAILED`: Failed to checkout branch
+- `GIT_CHECKOUT_REMOTE_FAILED`: Failed to checkout remote branch
+- `GIT_TEMP_BRANCH_FAILED`: Failed to create temporary branch
+- `GIT_TEMP_BRANCH_CLEANUP`: Temporary branch cleanup operation
+- `GIT_TEMP_BRANCH_CLEANUP_FAILED`: Failed to clean up temporary branch
+- `GIT_COMMIT_NOT_FOUND`: Target commit not found
+- `GIT_RESET_FAILED`: Failed to reset to target commit
+- `GIT_UPSTREAM_SET_FAILED`: Failed to set upstream tracking
+- `REMOTE_URL_MISMATCH`: Remote URL doesn't match expected value
+- `REPOSITORY_CHECK_FAILED`: Repository check failed
+- `REMOTE_SETUP_FAILED`: Remote setup failed
+- `FETCH_FAILED`: Fetch operation failed
+- `CHECKOUT_FAILED`: Checkout operation failed
+- `RESET_FAILED`: Reset operation failed
+- `OWNERSHIP_FAILED`: Ownership fix failed
+
+### System Error Codes
 - `FILE_NOT_FOUND`: Required file not found
 - `PERMISSION_DENIED`: Insufficient permissions
 - `NETWORK_ERROR`: Network connectivity issue
 - `DISK_FULL`: Insufficient disk space
+- `ENV_VAR_MISSING`: Required environment variable not set
+- `USER_NOT_FOUND`: Required system user account does not exist
+- `GROUP_NOT_FOUND`: Required system group does not exist
+- `OWNERSHIP_CHANGE_FAILED`: Failed to change file/directory ownership
 
 ## Error Handling and Retry Logic
 
-### Bash Scripts:
+### Bash Scripts
 - Automatic error trapping with `set -eE`
 - Stack trace capture on script failure
 - Graceful error reporting with context
 - Exit codes indicate success/failure status
 
-### Web UI:
+### Web UI
 - Error boundaries prevent UI crashes
 - Automatic retry with exponential backoff
 - Graceful degradation when logs unavailable
 - User-friendly error messages
 
-### CLI:
+### CLI
 - Robust error handling for missing files
 - Clear error messages with suggested actions
 - Non-zero exit codes for scripting
 
 ## Monitoring and Alerting
 
-### Log Rotation:
+### Log Rotation
 - Automatic rotation when files exceed 10MB
 - Keeps 5 backup files by default
 - Configurable via environment variables
@@ -219,7 +251,7 @@ Standardized error codes help identify common issues:
 
 ## Troubleshooting
 
-### Common Issues:
+### Common Issues
 
 **Log file not found:**
 - Ensure update scripts have been run at least once
@@ -241,7 +273,7 @@ Standardized error codes help identify common issues:
 - Ensure scripts are using the logging library correctly
 - Verify JSON format of log entries
 
-### Debug Commands:
+### Debug Commands
 ```bash
 # Check main log file location and size
 ls -la /var/log/ratos-configurator.log*
@@ -265,25 +297,25 @@ shellcheck -ax -s bash configuration/scripts/ratos-update.sh
 
 ## Development
 
-### Adding New Log Sources:
+### Adding New Log Sources
 1. Source the logging library: `source "$(dirname "$0")/ratos-logging.sh"`
 2. Set up error trapping: `setup_error_trap "script-name"`
 3. Use logging functions: `log_info`, `log_error`, etc.
 4. Add appropriate error codes to documentation
 
-### Code Quality Standards:
+### Code Quality Standards
 - **ShellCheck Compliance**: All bash scripts must pass ShellCheck validation
 - **Error Handling**: Use proper error trapping with selective `set +e`/`set -e`
 - **Variable Quoting**: Always quote variables and use `read -r` for input
 - **Exit Codes**: Use proper exit code handling and propagation
 
-### Testing:
+### Testing
 - Unit tests in `src/__tests__/update-logs.test.ts`
 - Integration tests for CLI commands
 - End-to-end tests for web UI
 - ShellCheck validation in CI/CD pipeline
 
-### Contributing:
+### Contributing
 - Follow existing log format and error code conventions
 - Run ShellCheck on all bash scripts before committing
 - Add tests for new functionality
