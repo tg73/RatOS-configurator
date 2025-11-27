@@ -2,6 +2,21 @@
 
 This document describes the comprehensive unified logging system implemented for the RatOS-configurator project. The system consolidates all RatOS logs into a single main log file while providing specialized tools for viewing and analyzing logs from different sources, including update scripts and other system operations.
 
+## NOTE!
+
+This feature was developed by Mikkel with AI assistance, but was not fully tested and polished before he went on hiatus. There are some inconsistencies between this documentation and the actual implementation - don't assume this document is correct. Further, there are some conceptual inconsistencies within the logging system and in respect of pre-existing assumptions and behaviour elsewhere in the codebase. Resolving this is work in progress.
+
+For now, the working intent is as follows:
+- There is one main log file for application and script events.
+- The log file location must be `home/pi/printer_data/logs/ratos-configurator.log`. Don't try to configure this differently (or if you do, don't expect consistent behaviour).
+
+Observations/caveats:
+- Under some circumstances, logging from bash scripts may be based on the variables defined in `~/.ratos.env.system` (or variants thereof, see `configuration/scripts/environment.sh`). The path will be `$RATOS_PRINTER_DATA_DIR/logs/ratos-configurator.log` (which typically expands to `/home/pi/printer_data/logs/ratos-configurator.log`), unless var `LOG_FILE` is already defined in scope.
+- `LOG_FILE` is defined in `src|app/.env` (and variants), which is consumed primarily (exclusively?) by node-based code.
+- Resolving this to a single source of truth will require careful consideration of all execution scenarios, including for example CI.
+- In node code, if `LOG_FILE` is not defined (eg, in `src|app/.env`), fallbacks include `/var/log/ratos-cli.log` and `/var/log/ratos-server.log`.
+- Service/daemon `stdout` and `stderr` goes to `/var/log/ratos-configurator.log`
+
 ## Overview
 
 The unified logging system consists of four main components:
@@ -15,7 +30,7 @@ The unified logging system consists of four main components:
 
 ### 1. Bash Logging Library (`configuration/scripts/ratos-logging.sh`)
 
-The bash logging library provides structured logging capabilities for shell scripts, outputting logs in JSON format compatible with the pino logging system used throughout the application. **All logs are written to the main RatOS log file** (`/var/log/ratos-configurator.log`) with a `source: "ratos-update"` field for filtering.
+The bash logging library provides structured logging capabilities for shell scripts, outputting logs in JSON format compatible with the pino logging system used throughout the application. **All logs are written to the main RatOS log file** (`~/printer_data/logs/ratos-configurator.log`) with a `source: "ratos-update"` field for filtering.
 
 #### Features
 - **JSON-formatted logs** compatible with pino
@@ -51,7 +66,7 @@ log_script_complete "my-script.sh" $?
 
 #### Configuration
 - `RATOS_LOG_LEVEL`: Set minimum log level (default: info)
-- `RATOS_LOG_FILE`: Log file path (default: uses `${LOG_FILE}` from environment, typically `/var/log/ratos-configurator.log`)
+- `RATOS_LOG_FILE`: Log file path (default: uses `${LOG_FILE}` from environment, typically `/home/pi/printer_data/logs/ratos-configurator.log`)
 - `RATOS_LOG_MAX_SIZE`: Maximum log file size before rotation (default: 0 = disabled when using main log)
 - `RATOS_LOG_BACKUP_COUNT`: Number of backup files to keep (default: 0 = disabled when using main log)
 
@@ -134,7 +149,7 @@ The web interface provides a comprehensive log viewer accessible at `/configure/
 ### 5. Debug Integration
 
 Update logs are automatically included in debug packages as part of the main log file:
-- Main log file (`/var/log/ratos-configurator.log`) is added to debug packages
+- Main log file (`/home/pi/printer_data/logs/ratos-configurator.log`) is added to debug packages
 - Rotated log files (`.1`, `.2`, etc.) are included
 - All log sources (including update logs) are included in a single file
 - Logs are categorized appropriately in the debug package
@@ -276,13 +291,13 @@ Standardized error codes help identify common issues:
 ### Debug Commands
 ```bash
 # Check main log file location and size
-ls -la /var/log/ratos-configurator.log*
+ls -la /home/pi/printer_data/logs/ratos-configurator.log*
 
 # View raw log file (all sources)
-cat /var/log/ratos-configurator.log
+cat /home/pi/printer_data/logs/ratos-configurator.log
 
 # View only update logs
-grep '"source":"ratos-update"' /var/log/ratos-configurator.log
+grep '"source":"ratos-update"' /home/pi/printer_data/logs/ratos-configurator.log
 
 # Test log parsing
 ratos logs update-logs summary
