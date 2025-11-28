@@ -266,6 +266,481 @@ describe('Hardware Options Selectors', () => {
 		});
 	});
 
+	describe('CompatibleYEndstopsQuery', () => {
+		it('fetches Y endstops when controlboard is set', async () => {
+			const mockEndstops = [
+				{ id: 'endstop-controlboard', title: 'Endstop on Controlboard' },
+				{ id: 'endstop-toolboard', title: 'Endstop on Toolboard' },
+			];
+
+			vi.mocked(trpcClient.printer.yEndstops.query).mockResolvedValue(mockEndstops as any);
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleYEndstopsQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual(mockEndstops);
+			});
+
+			expect(trpcClient.printer.yEndstops.query).toHaveBeenCalledWith({
+				config: { controlboard: 'btt-octopus-11' },
+				toolOrAxis: 0,
+			});
+		});
+
+		it('returns empty array when controlboard is not set', async () => {
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleYEndstopsQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+
+			expect(trpcClient.printer.yEndstops.query).not.toHaveBeenCalled();
+		});
+
+		it('returns empty array on error', async () => {
+			vi.mocked(trpcClient.printer.yEndstops.query).mockRejectedValueOnce(new Error('Network error'));
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleYEndstopsQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+		});
+	});
+
+	describe('CompatiblePartFansQuery', () => {
+		it('fetches part fans when controlboard is set', async () => {
+			const mockFans = [
+				{ id: '2pin', title: '2-pin Fan' },
+				{ id: '4pin-pwm', title: '4-pin PWM Fan' },
+			];
+
+			vi.mocked(trpcClient.printer.partFanOptions.query).mockResolvedValue(mockFans as any);
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatiblePartFansQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual(mockFans);
+			});
+
+			expect(trpcClient.printer.partFanOptions.query).toHaveBeenCalledWith({
+				config: { controlboard: 'btt-octopus-11' },
+				toolOrAxis: 0,
+			});
+		});
+
+		it('returns empty array when controlboard is not set', async () => {
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatiblePartFansQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+
+			expect(trpcClient.printer.partFanOptions.query).not.toHaveBeenCalled();
+		});
+
+		it('returns empty array on error', async () => {
+			vi.mocked(trpcClient.printer.partFanOptions.query).mockRejectedValueOnce(new Error('Network error'));
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatiblePartFansQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+		});
+	});
+
+	describe('CompatibleHotendFansQuery', () => {
+		it('fetches hotend fans when controlboard is set', async () => {
+			const mockFans = [
+				{ id: '2pin', title: '2-pin Fan' },
+				{ id: '4pin-pwm', title: '4-pin PWM Fan' },
+			];
+
+			vi.mocked(trpcClient.printer.hotendFanOptions.query).mockResolvedValue(mockFans as any);
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleHotendFansQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual(mockFans);
+			});
+
+			expect(trpcClient.printer.hotendFanOptions.query).toHaveBeenCalledWith({
+				config: { controlboard: 'btt-octopus-11' },
+				toolOrAxis: 0,
+			});
+		});
+
+		it('returns empty array when controlboard is not set', async () => {
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleHotendFansQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+
+			expect(trpcClient.printer.hotendFanOptions.query).not.toHaveBeenCalled();
+		});
+
+		it('returns empty array on error', async () => {
+			vi.mocked(trpcClient.printer.hotendFanOptions.query).mockRejectedValueOnce(new Error('Network error'));
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleHotendFansQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+		});
+	});
+
+	describe('CompatibleXAccelerometersQuery', () => {
+		it('fetches X accelerometers when controlboard is set', async () => {
+			const mockAccelerometers = [
+				{ id: 'adxl345', title: 'ADXL345' },
+				{ id: 'mpu9250', title: 'MPU9250' },
+			];
+
+			vi.mocked(trpcClient.printer.xAccelerometerOptions.query).mockResolvedValue(mockAccelerometers as any);
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleXAccelerometersQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual(mockAccelerometers);
+			});
+
+			expect(trpcClient.printer.xAccelerometerOptions.query).toHaveBeenCalledWith({
+				config: { controlboard: 'btt-octopus-11' },
+				toolOrAxis: 0,
+			});
+		});
+
+		it('returns empty array when controlboard is not set', async () => {
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleXAccelerometersQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+
+			expect(trpcClient.printer.xAccelerometerOptions.query).not.toHaveBeenCalled();
+		});
+
+		it('returns empty array on error', async () => {
+			vi.mocked(trpcClient.printer.xAccelerometerOptions.query).mockRejectedValueOnce(new Error('Network error'));
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleXAccelerometersQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+		});
+	});
+
+	describe('CompatibleYAccelerometersQuery', () => {
+		it('fetches Y accelerometers when controlboard is set', async () => {
+			const mockAccelerometers = [
+				{ id: 'adxl345', title: 'ADXL345' },
+				{ id: 'mpu9250', title: 'MPU9250' },
+			];
+
+			vi.mocked(trpcClient.printer.yAccelerometerOptions.query).mockResolvedValue(mockAccelerometers as any);
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleYAccelerometersQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual(mockAccelerometers);
+			});
+
+			expect(trpcClient.printer.yAccelerometerOptions.query).toHaveBeenCalledWith({
+				config: { controlboard: 'btt-octopus-11' },
+				toolOrAxis: 0,
+			});
+		});
+
+		it('returns empty array when controlboard is not set', async () => {
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleYAccelerometersQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+
+			expect(trpcClient.printer.yAccelerometerOptions.query).not.toHaveBeenCalled();
+		});
+
+		it('returns empty array on error', async () => {
+			vi.mocked(trpcClient.printer.yAccelerometerOptions.query).mockRejectedValueOnce(new Error('Network error'));
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleYAccelerometersQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+		});
+	});
+
+	describe('CompatibleFilamentSensorsQuery', () => {
+		it('fetches filament sensors when controlboard and toolhead are set', async () => {
+			const mockSensors = [
+				{ id: 'basic-switch', title: 'Basic Switch Sensor' },
+				{ id: 'smart-sensor', title: 'Smart Filament Sensor' },
+			];
+
+			vi.mocked(trpcClient.printer.filamentSensorOptions.query).mockResolvedValue(mockSensors as any);
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+						set(PrinterToolheadState(0), {
+							toolhead: { id: 'test-toolhead' },
+							hotend: { id: 'rapido' },
+							extruder: { id: 'lgx-lite' },
+							thermistor: { id: 'PT1000' },
+						} as any);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleFilamentSensorsQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual(mockSensors);
+			});
+
+			expect(trpcClient.printer.filamentSensorOptions.query).toHaveBeenCalled();
+		});
+
+		it('returns empty array when controlboard is not set', async () => {
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleFilamentSensorsQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+
+			expect(trpcClient.printer.filamentSensorOptions.query).not.toHaveBeenCalled();
+		});
+
+		it('returns empty array when toolhead is not set', async () => {
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleFilamentSensorsQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+
+			expect(trpcClient.printer.filamentSensorOptions.query).not.toHaveBeenCalled();
+		});
+
+		it('returns empty array on error', async () => {
+			vi.mocked(trpcClient.printer.filamentSensorOptions.query).mockRejectedValueOnce(new Error('Network error'));
+
+			const wrapper = ({ children }: { children: React.ReactNode }) => (
+				<RecoilRoot
+					initializeState={({ set }) => {
+						set(ControlboardState, { id: 'btt-octopus-11' } as Board);
+						set(PrinterToolheadState(0), {
+							toolhead: { id: 'test-toolhead' },
+							hotend: { id: 'rapido' },
+							extruder: { id: 'lgx-lite' },
+							thermistor: { id: 'PT1000' },
+						} as any);
+					}}
+				>
+					<Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+				</RecoilRoot>
+			);
+
+			const { result } = renderHook(() => useRecoilValue(CompatibleFilamentSensorsQuery(0)), {
+				wrapper,
+			});
+
+			await waitFor(() => {
+				expect(result.current).toEqual([]);
+			});
+		});
+	});
+
 	describe('CompatibleControllerFansQuery', () => {
 		it('fetches controller fans when controlboard is set', async () => {
 			const mockFans = [
