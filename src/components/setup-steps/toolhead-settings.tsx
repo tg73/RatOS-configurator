@@ -3,6 +3,20 @@ import { useToolheadConfiguration } from '@/hooks/useToolheadConfiguration';
 import { stringToTitleObject } from '@/utils/serialization';
 import { ToolOrAxis, ToolheadConfiguration } from '@/zods/toolhead';
 import { Dropdown, DropdownWithPrinterQuery } from '@/components/forms/dropdown';
+import { DropdownWithHardwareOptions } from '@/components/forms/dropdown-with-hardware-options';
+import {
+	HotendsQuery,
+	ExtrudersQuery,
+	ProbesQuery,
+	ThermistorsQuery,
+	CompatibleXEndstopsQuery,
+	CompatibleYEndstopsQuery,
+	CompatiblePartFansQuery,
+	CompatibleHotendFansQuery,
+	CompatibleXAccelerometersQuery,
+	CompatibleYAccelerometersQuery,
+	CompatibleFilamentSensorsQuery,
+} from '@/recoil/hardware-options';
 import { Spinner } from '@/components/common/spinner';
 import { twMerge } from 'tailwind-merge';
 import { badgeBackgroundColorStyle, badgeBorderColorStyle, badgeTextColorStyle } from '@/components/common/badge';
@@ -72,8 +86,8 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 			</CardHeader>
 			<CardContent className="grid grid-cols-1 gap-4 border-b border-border @xs:grid-cols-2">
 				<div className="cols w-full">
-					<DropdownWithPrinterQuery
-						query="hotends"
+					<DropdownWithHardwareOptions
+						selector={HotendsQuery}
 						value={toolhead.getHotend()}
 						error={errors?.fieldErrors.hotend?.join('\n')}
 						label="Hotend"
@@ -81,11 +95,11 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 					/>
 				</div>
 				<div>
-					<DropdownWithPrinterQuery
+					<DropdownWithHardwareOptions
 						label="Hotend Thermistor"
-						query="thermistors"
+						selector={ThermistorsQuery}
 						error={errors?.fieldErrors.thermistor?.join('\n')}
-						onSelect={(thermistor) => setToolheadField('thermistor', thermistor.id)}
+						onSelect={(thermistor) => setToolheadField('thermistor', thermistor.id as any)}
 						value={stringToTitleObject(toolhead.getThermistor())}
 					/>
 				</div>
@@ -123,18 +137,18 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 					</div>
 				)}
 				<div>
-					<DropdownWithPrinterQuery
+					<DropdownWithHardwareOptions
 						label="Extruder"
-						query="extruders"
+						selector={ExtrudersQuery}
 						error={errors?.fieldErrors.extruder?.join('\n')}
 						onSelect={(value) => setToolheadField('extruder', value)}
 						value={toolhead.getExtruder()}
 					/>
 				</div>
 				<div>
-					<DropdownWithPrinterQuery
+					<DropdownWithHardwareOptions
 						label="Probe"
-						query="probes"
+						selector={ProbesQuery}
 						canClear={toolhead.getTool() === 1}
 						error={errors?.fieldErrors.probe?.join('\n')}
 						onSelect={(value) => setToolheadField('probe', value ?? undefined)}
@@ -143,11 +157,9 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 					/>
 				</div>
 				<div>
-					<DropdownWithPrinterQuery
-						vars={{ toolOrAxis: toolhead.getTool(), config: {} }}
-						serializedPrinterConfiguration="config"
+					<DropdownWithHardwareOptions
+						selector={CompatibleFilamentSensorsQuery(toolhead.getTool())}
 						label="Filament Sensor"
-						query="filamentSensorOptions"
 						canClear={true}
 						error={errors?.fieldErrors.filamentSensor?.join('\n')}
 						onSelect={(value) => setToolheadField('filamentSensor', value ?? undefined)}
@@ -159,23 +171,19 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 			</CardContent>
 			<CardContent className="grid grid-cols-1 gap-4 border-b border-border @sm:grid-cols-2">
 				<div>
-					<DropdownWithPrinterQuery
-						vars={{ toolOrAxis: toolhead.getTool(), config: {} }}
-						serializedPrinterConfiguration="config"
+					<DropdownWithHardwareOptions
+						selector={CompatibleXEndstopsQuery(toolhead.getTool())}
 						label="X Endstop"
 						error={errors?.fieldErrors.xEndstop?.join('\n')}
-						query="xEndstops"
 						onSelect={(value) => setToolheadField('xEndstop', value)}
 						value={toolhead.getXEndstop()}
 					/>
 				</div>
 				<div>
-					<DropdownWithPrinterQuery
-						vars={{ toolOrAxis: toolhead.getTool(), config: {} }}
-						serializedPrinterConfiguration="config"
+					<DropdownWithHardwareOptions
+						selector={CompatibleYEndstopsQuery(toolhead.getTool())}
 						label="Y Endstop"
 						error={errors?.fieldErrors.yEndstop?.join('\n')}
-						query="yEndstops"
 						onSelect={(value) => setToolheadField('yEndstop', value)}
 						value={toolhead.getYEndstop()}
 					/>
@@ -183,24 +191,20 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 			</CardContent>
 			<CardContent className="grid grid-cols-1 gap-4 border-b border-border @sm:grid-cols-2">
 				<div>
-					<DropdownWithPrinterQuery
-						vars={{ toolOrAxis: toolhead.getTool(), config: {} }}
-						serializedPrinterConfiguration="config"
+					<DropdownWithHardwareOptions
+						selector={CompatiblePartFansQuery(toolhead.getTool())}
 						error={errors?.fieldErrors.partFan?.join('\n')}
 						label="Part cooling fan"
-						query="partFanOptions"
 						help={fanHelp}
 						onSelect={(value) => setToolheadField('partFan', value)}
 						value={toolhead.getPartFan()}
 					/>
 				</div>
 				<div>
-					<DropdownWithPrinterQuery
-						vars={{ toolOrAxis: toolhead.getTool(), config: {} }}
-						serializedPrinterConfiguration="config"
+					<DropdownWithHardwareOptions
+						selector={CompatibleHotendFansQuery(toolhead.getTool())}
 						error={errors?.fieldErrors.hotendFan?.join('\n')}
 						label="Hotend fan"
-						query="hotendFanOptions"
 						help={fanHelp}
 						onSelect={(value) => setToolheadField('hotendFan', value)}
 						value={toolhead.getHotendFan()}
@@ -216,24 +220,20 @@ export const ToolheadSettings: React.FC<ToolheadSettingsProps> = (props) => {
 			</CardContent>
 			<CardContent className="grid grid-cols-1 gap-4 @sm:grid-cols-2">
 				<div>
-					<DropdownWithPrinterQuery
-						vars={{ toolOrAxis: toolhead.getTool(), config: {} }}
-						serializedPrinterConfiguration="config"
+					<DropdownWithHardwareOptions
+						selector={CompatibleXAccelerometersQuery(toolhead.getTool())}
 						label="X axis accelerometer"
 						error={errors?.fieldErrors.xAccelerometer?.join('\n')}
-						query="xAccelerometerOptions"
 						onSelect={(value) => setToolheadField('xAccelerometer', value)}
 						value={toolhead.getXAccelerometer()}
 						sort={false}
 					/>
 				</div>
 				<div>
-					<DropdownWithPrinterQuery
-						vars={{ toolOrAxis: toolhead.getTool(), config: {} }}
-						serializedPrinterConfiguration="config"
+					<DropdownWithHardwareOptions
+						selector={CompatibleYAccelerometersQuery(toolhead.getTool())}
 						label="Y axis accelerometer"
 						error={errors?.fieldErrors.yAccelerometer?.join('\n')}
-						query="yAccelerometerOptions"
 						onSelect={(value) => setToolheadField('yAccelerometer', value)}
 						value={toolhead.getYAccelerometer()}
 						sort={false}

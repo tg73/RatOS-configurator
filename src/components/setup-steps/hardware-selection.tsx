@@ -16,7 +16,11 @@ import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { AnimatedContainer } from '@/components/common/animated-container';
 import { fanHelp } from '@/data/fans';
 import { DropdownWithSelector } from '@/components/forms/dropdown-with-selector';
-import { CompatibleChamberAirFilterQuery, CompatibleChamberLightingQuery, CompatibleToolheadAlignmentSystemQuery } from '@/recoil/hardware-options';
+import {
+	CompatibleChamberAirFilterQuery,
+	CompatibleChamberLightingQuery,
+	CompatibleToolheadAlignmentSystemQuery,
+} from '@/recoil/hardware-options';
 
 export const HardwareSelection: React.FC<StepScreenProps> = (props) => {
 	const [advancedSteppers, setAdvancedSteppers] = useState(false);
