@@ -31,19 +31,17 @@ import {
 	serializePrinterRail,
 	serializeToolheadConfiguration,
 } from '@/utils/serialization';
-import {
-	ControlboardState,
-	LoadablePrinterRailsState,
-	PrinterRailsState,
-	PrinterSizeState,
-	PrinterState,
-} from '@/recoil/printer';
+import { ControlboardState, PrinterRailsState, PrinterSizeState, PrinterState } from '@/recoil/printer';
 import { PrinterToolheadsState } from '@/recoil/toolhead';
 import { defaultControllerFan } from '@/data/fans';
 import { moonrakerWriteEffect } from '@/components/sync-with-moonraker';
 import { getLogger } from '@/app/_helpers/logger';
 import { trpcClient } from '@/helpers/trpc';
-import { Atom } from 'lucide-react';
+import {
+	CompatibleChamberAirFilterQuery,
+	CompatibleChamberLightingQuery,
+	CompatibleToolheadAlignmentSystemQuery,
+} from '@/recoil/hardware-options';
 
 /* Message to future devs who are not gurus in this code area:
  *
@@ -104,25 +102,6 @@ export const ChamberLightingRefState = atom<OptionalChamberLightingRef>({
 	],
 });
 
-export const CompatibleChamberLightingQuery = selector<ChamberLighting[]>({
-	key: 'CompatibleChamberLightingQuery',
-	get: async ({ get }) => {
-		const controlboard = get(ControlboardState);
-		if (controlboard == null) {
-			return [];
-		}
-		try {
-			const opts = await trpcClient.printer.chamberLightingOptions.query({
-				config: { controlboard: controlboard.id },
-			});
-			return opts;
-		} catch (error) {
-			getLogger().error('Failed to run CompatibleChamberLightingQuery', error);
-			return [];
-		}
-	},
-});
-
 export const ChamberLightingState = selector<ChamberLighting | undefined>({
 	key: 'ChamberLighting',
 	get: async ({ get }) => {
@@ -171,25 +150,6 @@ export const ToolheadAlignmentSystemRefState = atom<OptionalToolheadAlignmentSys
 			refine: getRefineCheckerForZodSchema(OptionalToolheadAlignmentSystemRef),
 		}),
 	],
-});
-
-export const CompatibleToolheadAlignmentSystemQuery = selector<ToolheadAlignmentSystem[]>({
-	key: 'CompatibleToolheadAlignmentSystemQuery',
-	get: async ({ get }) => {
-		const controlboard = get(ControlboardState);
-		if (controlboard == null) {
-			return [];
-		}
-		try {
-			const opts = await trpcClient.printer.toolheadAlignmentSystemOptions.query({
-				config: { controlboard: controlboard.id },
-			});
-			return opts;
-		} catch (error) {
-			getLogger().error('Failed to run CompatibleToolheadAlignmentSystemQuery', error);
-			return [];
-		}
-	},
 });
 
 export const ToolheadAlignmentSystemState = selector<ToolheadAlignmentSystem | undefined>({
@@ -242,25 +202,6 @@ export const ChamberAirFilterRefState = atom<OptionalChamberAirFilterRef>({
 			refine: getRefineCheckerForZodSchema(OptionalChamberAirFilterRef),
 		}),
 	],
-});
-
-export const CompatibleChamberAirFilterQuery = selector<ChamberAirFilter[]>({
-	key: 'CompatibleChamberAirFilterQuery',
-	get: async ({ get }) => {
-		const controlboard = get(ControlboardState);
-		if (controlboard == null) {
-			return [];
-		}
-		try {
-			const opts = await trpcClient.printer.chamberAirFilterOptions.query({
-				config: { controlboard: controlboard.id },
-			});
-			return opts;
-		} catch (error) {
-			getLogger().error('Failed to run CompatibleChamberAirFilterQuery', error);
-			return [];
-		}
-	},
 });
 
 export const ChamberAirFilterState = selector<ChamberAirFilter | undefined>({

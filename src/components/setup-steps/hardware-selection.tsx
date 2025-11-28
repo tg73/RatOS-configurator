@@ -3,12 +3,7 @@ import React, { startTransition, useEffect, useState } from 'react';
 import { StepNavButtons } from '@/components/step-nav-buttons';
 import { StepScreenProps } from '@/hooks/useSteps';
 import { DropdownWithPrinterQuery } from '@/components/forms/dropdown';
-import {
-	CompatibleChamberAirFilterQuery,
-	CompatibleChamberLightingQuery,
-	CompatibleToolheadAlignmentSystemQuery,
-	usePrinterConfiguration,
-} from '@/hooks/usePrinterConfiguration';
+import { usePrinterConfiguration } from '@/hooks/usePrinterConfiguration';
 import { ErrorMessage } from '@/components/common/error-message';
 import { Toggle } from '@/components/forms/toggle';
 import { PrinterRailSettings } from '@/components/setup-steps/printer-rail-settings';
@@ -21,6 +16,7 @@ import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { AnimatedContainer } from '@/components/common/animated-container';
 import { fanHelp } from '@/data/fans';
 import { DropdownWithSelector } from '@/components/forms/dropdown-with-selector';
+import { CompatibleChamberAirFilterQuery, CompatibleChamberLightingQuery, CompatibleToolheadAlignmentSystemQuery } from '@/recoil/hardware-options';
 
 export const HardwareSelection: React.FC<StepScreenProps> = (props) => {
 	const [advancedSteppers, setAdvancedSteppers] = useState(false);
