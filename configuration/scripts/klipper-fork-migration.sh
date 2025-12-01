@@ -709,14 +709,14 @@ migrate_klipper_repository()
 
     # Check if migration is needed
     local check_result
-    check_klipper_repository
-    check_result=$?
+    check_klipper_repository || check_result=$?
+    check_result=${check_result:-0}
 
-    if [ $check_result -eq 1 ]; then
+    if [ "$check_result" -eq 1 ]; then
         # Migration not needed (safe skip)
         log_info "Migration not needed, skipping." "migrate_repository"
         return 0
-    elif [ $check_result -eq 2 ]; then
+    elif [ "$check_result" -eq 2 ]; then
         # Fatal error occurred
         log_error "Fatal error during repository check" "migrate_repository" "REPOSITORY_CHECK_FAILED"
         return 2
@@ -724,54 +724,54 @@ migrate_klipper_repository()
 
     # Check for uncommitted changes
     local code
-    check_uncommitted_changes
-    code=$?
-    if [ $code -eq 2 ]; then
+    check_uncommitted_changes || code=$?
+    code=${code:-0}
+    if [ "$code" -eq 2 ]; then
         # Directory access error
         log_error "Cannot access Klipper directory for uncommitted changes check" "migrate_repository" "KLIPPER_DIR_ACCESS_FAILED"
         return 2
-    elif [ $code -eq 3 ]; then
+    elif [ "$code" -eq 3 ]; then
         # Uncommitted changes detected
         log_error "Uncommitted changes prevent migration" "migrate_repository" "KLIPPER_UNCOMMITTED_CHANGES"
         return 3
     fi
 
     # Handle existing remote
-    handle_existing_remote
-    code=$?
-    if [ $code -ne 0 ]; then
+    handle_existing_remote || code=$?
+    code=${code:-0}
+    if [ "$code" -ne 0 ]; then
         log_error "Failed to handle existing remote (exit code $code)" "migrate_repository" "REMOTE_SETUP_FAILED"
         return 4
     fi
 
     # Fetch from RatOS fork
-    fetch_ratos_fork
-    code=$?
-    if [ $code -ne 0 ]; then
+    fetch_ratos_fork || code=$?
+    code=${code:-0}
+    if [ "$code" -ne 0 ]; then
         log_error "Failed to fetch from RatOS fork (exit code $code)" "migrate_repository" "FETCH_FAILED"
         return 5
     fi
 
     # Checkout target branch
-    checkout_target_branch
-    code=$?
-    if [ $code -ne 0 ]; then
+    checkout_target_branch || code=$?
+    code=${code:-0}
+    if [ "$code" -ne 0 ]; then
         log_error "Failed to checkout target branch (exit code $code)" "migrate_repository" "CHECKOUT_FAILED"
         return 6
     fi
 
     # Reset to target commit
-    reset_to_target_commit
-    code=$?
-    if [ $code -ne 0 ]; then
+    reset_to_target_commit || code=$?
+    code=${code:-0}
+    if [ "$code" -ne 0 ]; then
         log_error "Failed to reset to target commit (exit code $code)" "migrate_repository" "RESET_FAILED"
         return 7
     fi
 
     # Fix ownership
-    fix_klipper_ownership
-    code=$?
-    if [ $code -ne 0 ]; then
+    fix_klipper_ownership || code=$?
+    code=${code:-0}
+    if [ "$code" -ne 0 ]; then
         log_error "Failed to fix ownership (exit code $code)" "migrate_repository" "OWNERSHIP_FAILED"
         return 8
     fi
@@ -785,17 +785,17 @@ migrate_klipper_repository()
 }
 
 # Main execution
-migrate_klipper_repository
-code=$?
+migrate_klipper_repository || code=$?
+code=${code:-0}
 
 # Create log summary and complete
 create_log_summary "klipper-fork-migration.sh" "$START_TIME"
 log_script_complete "klipper-fork-migration.sh" "$code"
 LOG_COMPLETED=true
 
-if [ $code -ne 0 ]; then
+if [ "$code" -ne 0 ]; then
     log_error "Klipper repository migration failed (exit code $code)!" "main" "KLIPPER_MIGRATION_FAILED"
-    exit $code
+    exit "$code"
 fi
 
 log_info "Klipper repository migration script completed successfully" "main"
