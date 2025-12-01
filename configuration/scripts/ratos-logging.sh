@@ -195,12 +195,12 @@ log_message() {
 }
 
 # Convenience logging functions
-log_trace() { log_message "trace" "$1" "$2" "$3"; }
-log_debug() { log_message "debug" "$1" "$2" "$3"; }
-log_info() { log_message "info" "$1" "$2" "$3"; }
-log_warn() { log_message "warn" "$1" "$2" "$3"; }
-log_error() { log_message "error" "$1" "$2" "$3"; }
-log_fatal() { log_message "fatal" "$1" "$2" "$3"; }
+log_trace() { log_message "trace" "$1" "${2:-}" "${3:-}"; }
+log_debug() { log_message "debug" "$1" "${2:-}" "${3:-}"; }
+log_info() { log_message "info" "$1" "${2:-}" "${3:-}"; }
+log_warn() { log_message "warn" "$1" "${2:-}" "${3:-}"; }
+log_error() { log_message "error" "$1" "${2:-}" "${3:-}"; }
+log_fatal() { log_message "fatal" "$1" "${2:-}" "${3:-}"; }
 
 # Function to log command execution with error handling
 # Usage: execute_with_logging "context" "error_code" command arg1 arg2 ...
@@ -209,7 +209,10 @@ execute_with_logging() {
     local error_code="$2"
     shift 2
 
-    local cmd_str="$*"
+    # Build command string space-separated regardless of IFS
+    local cmd_str
+    cmd_str=$(printf "%s " "$@")
+    cmd_str=${cmd_str% }
     log_debug "Executing command: $cmd_str" "$context"
 
     # Create temporary file for capturing output while still displaying it
@@ -267,17 +270,24 @@ handle_error() {
     local exit_code="$1"
     local line_number="$2"
     local context="$3"
-    
+
+    # Prevent recursive traps during error handling
+    trap - ERR
+    set +e
+    set +o pipefail 2>/dev/null || true
+
     log_fatal "Script failed at line $line_number with exit code $exit_code" "$context" "SCRIPT_ERROR"
-    
+
     # Log stack trace if available
     if command -v caller >/dev/null 2>&1; then
         local frame=0
         log_error "Stack trace:" "$context" "SCRIPT_ERROR"
-        while caller "$frame"; do
+        # Use a simple loop without pipelines to avoid pipefail interactions
+        while caller "$frame" >/dev/null 2>&1; do
+            local call_line
+            call_line=$(caller "$frame")
+            log_error "  $call_line" "$context" "SCRIPT_ERROR"
             ((frame++))
-        done 2>&1 | while read -r line; do
-            log_error "  $line" "$context" "SCRIPT_ERROR"
         done
     fi
 

@@ -36,10 +36,30 @@ START_TIME=$(get_timestamp)
 # Log script start
 log_script_start "klipper-fork-migration.sh" "1.0.0"
 
+# Argument parsing
+SKIP_OWNERSHIP=false
+for arg in "$@"; do
+    case "$arg" in
+        --skip-ownership)
+            SKIP_OWNERSHIP=true
+            ;;
+    esac
+done
+
+# If skipping ownership changes, log early informational notice
+if [ "$SKIP_OWNERSHIP" = true ]; then
+    log_info "Proceeding without ownership changes (--skip-ownership)" "script_init"
+fi
+
 # Check if running as root (after logging is available)
 if [ "$EUID" -ne 0 ]; then
-  log_fatal "Please run as root" "script_init" "PERMISSION_DENIED"
-  exit 1
+    if [ "$SKIP_OWNERSHIP" = true ]; then
+        # Non-root run permitted when ownership changes are skipped
+        log_debug "Non-root execution allowed due to --skip-ownership" "script_init"
+    else
+        log_fatal "Please run as root (or use --skip-ownership)" "script_init" "PERMISSION_DENIED"
+        exit 1
+    fi
 fi
 
 # shellcheck source=configuration/scripts/ratos-common.sh
@@ -49,6 +69,10 @@ if [ ! -f "$SCRIPT_DIR/ratos-common.sh" ]; then
 fi
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR"/ratos-common.sh
+
+# Ensure log completion even on early exits (fatal validations)
+LOG_COMPLETED=false
+trap 'EXIT_CODE=$?; if [ "$LOG_COMPLETED" = false ]; then create_log_summary "klipper-fork-migration.sh" "$START_TIME"; log_script_complete "klipper-fork-migration.sh" "$EXIT_CODE"; fi' EXIT
 
 # Required environment variables (sourced from ratos-common.sh -> environment.sh):
 # - KLIPPER_DIR: Path to the Klipper installation directory
@@ -157,20 +181,20 @@ readonly MOONRAKER_CONF_PATH="$SCRIPT_DIR/../moonraker.conf"
 #
 extract_target_commit_from_moonraker()
 {
-    log_info "Extracting target commit from moonraker.conf..." "extract_commit"
+    log_info "Extracting target commit from moonraker.conf..." "extract_commit" 1>&2
 
     # Check if moonraker.conf exists and is readable
     if [ ! -f "$MOONRAKER_CONF_PATH" ]; then
-        log_error "moonraker.conf not found at: $MOONRAKER_CONF_PATH" "extract_commit" "MOONRAKER_CONF_NOT_FOUND"
+        log_error "moonraker.conf not found at: $MOONRAKER_CONF_PATH" "extract_commit" "MOONRAKER_CONF_NOT_FOUND" 1>&2
         return 1
     fi
 
     if [ ! -r "$MOONRAKER_CONF_PATH" ]; then
-        log_error "moonraker.conf is not readable: $MOONRAKER_CONF_PATH" "extract_commit" "MOONRAKER_CONF_NOT_READABLE"
+        log_error "moonraker.conf is not readable: $MOONRAKER_CONF_PATH" "extract_commit" "MOONRAKER_CONF_NOT_READABLE" 1>&2
         return 1
     fi
 
-    log_info "Reading moonraker.conf from: $MOONRAKER_CONF_PATH" "extract_commit"
+    log_info "Reading moonraker.conf from: $MOONRAKER_CONF_PATH" "extract_commit" 1>&2
 
     # Parse the moonraker.conf file to extract pinned_commit from [update_manager klipper] section
     # Use awk for robust parsing that handles various formatting styles
@@ -210,19 +234,19 @@ extract_target_commit_from_moonraker()
 
     # Check if we successfully extracted a commit hash
     if [ -z "$extracted_commit" ]; then
-        log_error "Could not find pinned_commit in [update_manager klipper] section" "extract_commit" "KLIPPER_PINNED_COMMIT_NOT_FOUND"
-        log_error "Please ensure moonraker.conf contains a valid [update_manager klipper] section with pinned_commit field" "extract_commit" "KLIPPER_PINNED_COMMIT_NOT_FOUND"
+        log_error "Could not find pinned_commit in [update_manager klipper] section" "extract_commit" "KLIPPER_PINNED_COMMIT_NOT_FOUND" 1>&2
+        log_error "Please ensure moonraker.conf contains a valid [update_manager klipper] section with pinned_commit field" "extract_commit" "KLIPPER_PINNED_COMMIT_NOT_FOUND" 1>&2
         return 2
     fi
 
     # Validate commit hash format (40-character hexadecimal string)
     if ! echo "$extracted_commit" | grep -qE '^[a-fA-F0-9]{40}$'; then
-        log_error "Invalid commit hash format: $extracted_commit" "extract_commit" "INVALID_COMMIT_HASH_FORMAT"
-        log_error "Expected 40-character hexadecimal string" "extract_commit" "INVALID_COMMIT_HASH_FORMAT"
+        log_error "Invalid commit hash format: $extracted_commit" "extract_commit" "INVALID_COMMIT_HASH_FORMAT" 1>&2
+        log_error "Expected 40-character hexadecimal string" "extract_commit" "INVALID_COMMIT_HASH_FORMAT" 1>&2
         return 3
     fi
 
-    log_info "Successfully extracted target commit: $extracted_commit" "extract_commit"
+    log_info "Successfully extracted target commit: $extracted_commit" "extract_commit" 1>&2
     echo "$extracted_commit"
     return 0
 }
@@ -418,7 +442,7 @@ handle_existing_remote()
 
     # Cache the remote URL to avoid multiple git subprocess calls
     local existing_url
-    existing_url=$(git remote get-url "$RATOS_FORK_REMOTE" 2>/dev/null)
+    existing_url=$(git remote get-url "$RATOS_FORK_REMOTE" 2>/dev/null || true)
 
     # Check if ratos-fork remote already exists
     if [ -n "$existing_url" ]; then
@@ -428,7 +452,7 @@ handle_existing_remote()
             log_warn "  Expected: $RATOS_FORK_URL" "handle_remote" "REMOTE_URL_MISMATCH"
             log_info "Updating remote URL..." "handle_remote"
 
-            if ! execute_with_logging git remote set-url "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL" "handle_remote" "GIT_REMOTE_UPDATE_FAILED"; then
+            if ! execute_with_logging "handle_remote" "GIT_REMOTE_UPDATE_FAILED" git remote set-url "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL"; then
                 log_error "Failed to update remote URL" "handle_remote" "GIT_REMOTE_UPDATE_FAILED"
                 return 1
             fi
@@ -438,7 +462,7 @@ handle_existing_remote()
         fi
     else
         log_info "Adding RatOS fork remote..." "handle_remote"
-        if ! execute_with_logging git remote add "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL" "handle_remote" "GIT_REMOTE_ADD_FAILED"; then
+        if ! execute_with_logging "handle_remote" "GIT_REMOTE_ADD_FAILED" git remote add "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL"; then
             log_error "Failed to add RatOS fork remote" "handle_remote" "GIT_REMOTE_ADD_FAILED"
             return 1
         fi
@@ -462,7 +486,7 @@ fetch_ratos_fork()
     local retry_count=0
 
     while [ $retry_count -lt $max_retries ]; do
-        if execute_with_logging git fetch "$RATOS_FORK_REMOTE" "fetch_fork" "GIT_FETCH_FAILED"; then
+        if execute_with_logging "fetch_fork" "GIT_FETCH_FAILED" git fetch "$RATOS_FORK_REMOTE"; then
             log_info "Successfully fetched from RatOS fork." "fetch_fork"
             return 0
         else
@@ -509,7 +533,7 @@ checkout_target_branch()
         log_info "Repository is in detached HEAD state." "checkout_branch"
         log_info "Creating and checking out a temporary branch..." "checkout_branch"
         temp_branch="temp-migration-$(date +%s)-$$"
-        if ! execute_with_logging git -C "$KLIPPER_DIR" checkout -b "$temp_branch" "checkout_branch" "GIT_TEMP_BRANCH_FAILED"; then
+        if ! execute_with_logging "checkout_branch" "GIT_TEMP_BRANCH_FAILED" git -C "$KLIPPER_DIR" checkout -b "$temp_branch"; then
             log_error "Failed to create temporary branch" "checkout_branch" "GIT_TEMP_BRANCH_FAILED"
             cleanup_temp_branch_on_error
             return 1
@@ -520,14 +544,14 @@ checkout_target_branch()
     # Check if target branch already exists locally
     if git -C "$KLIPPER_DIR" show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
         log_info "Local branch '$TARGET_BRANCH' already exists, switching to it..." "checkout_branch"
-        if ! execute_with_logging git -C "$KLIPPER_DIR" checkout "$TARGET_BRANCH" "checkout_branch" "GIT_CHECKOUT_FAILED"; then
+        if ! execute_with_logging "checkout_branch" "GIT_CHECKOUT_FAILED" git -C "$KLIPPER_DIR" checkout "$TARGET_BRANCH"; then
             log_error "Failed to checkout existing branch '$TARGET_BRANCH'" "checkout_branch" "GIT_CHECKOUT_FAILED"
             cleanup_temp_branch_on_error
             return 1
         fi
     else
         log_info "Creating and checking out branch '$TARGET_BRANCH' from RatOS fork..." "checkout_branch"
-        if ! execute_with_logging git -C "$KLIPPER_DIR" checkout -b "$TARGET_BRANCH" "$RATOS_FORK_REMOTE/$TARGET_BRANCH" "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED"; then
+        if ! execute_with_logging "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED" git -C "$KLIPPER_DIR" checkout -b "$TARGET_BRANCH" "$RATOS_FORK_REMOTE/$TARGET_BRANCH"; then
             log_error "Failed to checkout branch '$TARGET_BRANCH' from RatOS fork" "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED"
             log_error "Please ensure the branch exists on the remote repository." "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED"
             cleanup_temp_branch_on_error
@@ -538,7 +562,7 @@ checkout_target_branch()
     # Clean up temporary branch if we created one (successful completion)
     if [ "$created_temp_branch" = true ] && [ -n "$temp_branch" ]; then
         log_info "Cleaning up temporary migration branch: $temp_branch" "checkout_branch"
-        if execute_with_logging git -C "$KLIPPER_DIR" branch -D "$temp_branch" "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP"; then
+        if execute_with_logging "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP" git -C "$KLIPPER_DIR" branch -D "$temp_branch"; then
             log_info "Successfully cleaned up temporary branch: $temp_branch" "checkout_branch"
         else
             log_warn "Failed to clean up temporary branch: $temp_branch (this is not critical)" "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP_FAILED"
@@ -569,7 +593,7 @@ reset_to_target_commit()
     fi
 
     # Reset to target commit
-    if ! execute_with_logging git reset --hard "$TARGET_COMMIT" "reset_commit" "GIT_RESET_FAILED"; then
+    if ! execute_with_logging "reset_commit" "GIT_RESET_FAILED" git reset --hard "$TARGET_COMMIT"; then
         log_error "Failed to reset to target commit '$TARGET_COMMIT'" "reset_commit" "GIT_RESET_FAILED"
         return 1
     fi
@@ -577,7 +601,7 @@ reset_to_target_commit()
     log_info "Successfully reset to commit '$TARGET_COMMIT'." "reset_commit"
 
     # Set upstream tracking
-    if ! execute_with_logging git branch --set-upstream-to="$RATOS_FORK_REMOTE/$TARGET_BRANCH" "$TARGET_BRANCH" "reset_commit" "GIT_UPSTREAM_SET_FAILED"; then
+    if ! execute_with_logging "reset_commit" "GIT_UPSTREAM_SET_FAILED" git branch --set-upstream-to="$RATOS_FORK_REMOTE/$TARGET_BRANCH" "$TARGET_BRANCH"; then
         log_warn "Failed to set upstream tracking, but migration completed successfully." "reset_commit" "GIT_UPSTREAM_SET_FAILED"
     else
         log_info "Upstream tracking set to '$RATOS_FORK_REMOTE/$TARGET_BRANCH'." "reset_commit"
@@ -590,8 +614,20 @@ fix_klipper_ownership()
 {
     log_info "Ensuring Klipper directory ownership..." "fix_ownership"
 
-    if [ -n "$(find "$KLIPPER_DIR" \( \! -user "$RATOS_USERNAME" -o \! -group "$RATOS_USERGROUP" \) -quit)" ]; then
-        if execute_with_logging chown -R "$RATOS_USERNAME:$RATOS_USERGROUP" "$KLIPPER_DIR" "fix_ownership" "OWNERSHIP_CHANGE_FAILED"; then
+    local ownership_mismatch
+    ownership_mismatch=$(find "$KLIPPER_DIR" \( \! -user "$RATOS_USERNAME" -o \! -group "$RATOS_USERGROUP" \) -quit)
+
+    if [ "$SKIP_OWNERSHIP" = true ]; then
+        if [ -n "$ownership_mismatch" ]; then
+            log_warn "Ownership mismatch detected; skipping fix due to --skip-ownership" "fix_ownership" "OWNERSHIP_MISMATCH_SKIPPED"
+        else
+            log_info "Ownership already correct; no changes needed (--skip-ownership)" "fix_ownership"
+        fi
+        return 0
+    fi
+
+    if [ -n "$ownership_mismatch" ]; then
+        if execute_with_logging "fix_ownership" "OWNERSHIP_CHANGE_FAILED" chown -R "$RATOS_USERNAME:$RATOS_USERGROUP" "$KLIPPER_DIR"; then
             log_info "Klipper directory ownership has been set to $RATOS_USERNAME:$RATOS_USERGROUP." "fix_ownership"
         else
             log_error "Failed to set Klipper directory ownership" "fix_ownership" "OWNERSHIP_CHANGE_FAILED"
@@ -755,6 +791,7 @@ code=$?
 # Create log summary and complete
 create_log_summary "klipper-fork-migration.sh" "$START_TIME"
 log_script_complete "klipper-fork-migration.sh" "$code"
+LOG_COMPLETED=true
 
 if [ $code -ne 0 ]; then
     log_error "Klipper repository migration failed (exit code $code)!" "main" "KLIPPER_MIGRATION_FAILED"

@@ -110286,14 +110286,26 @@ var updateLogs = (parentCommand) => {
         error: 50,
         fatal: 60
       };
-      const minLevel = levelMap[options.level.toLowerCase()] || 30;
+      const requestedLevel = options.level.toLowerCase();
+      if (!(requestedLevel in levelMap)) {
+        return renderError(
+          `Invalid log level '${options.level}'. Valid levels: trace, debug, info, warn, error, fatal`,
+          { exitCode: 1 }
+        );
+      }
+      const minLevel = levelMap[requestedLevel];
       entries = filterBySeverity(entries, minLevel);
       if (options.context) {
         entries = filterByContext(entries, options.context);
       }
       const maxLines = parseInt(options.lines, 10);
-      if (isNaN(maxLines) || maxLines <= 0) {
-        return renderError("Invalid number of lines specified", { exitCode: 1 });
+      if (isNaN(maxLines)) {
+        return renderError(`Invalid number of lines '${options.lines}'. Must be a positive integer.`, {
+          exitCode: 1
+        });
+      }
+      if (maxLines <= 0) {
+        return renderError(`Invalid number of lines '${maxLines}'. Must be greater than 0.`, { exitCode: 1 });
       }
       if (entries.length > maxLines) {
         entries = entries.slice(-maxLines);

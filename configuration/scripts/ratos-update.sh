@@ -160,8 +160,9 @@ ensure_klipper_fork_migration()
 	# - Graceful skipping when migration is not needed
 	# - Comprehensive error handling and edge case management
 	# - Consistent logging and error reporting
-	if ! "$SCRIPT_DIR"/klipper-fork-migration.sh; then
-		local code=$?
+	"$SCRIPT_DIR"/klipper-fork-migration.sh
+	local code=$?
+	if [[ $code -ne 0 ]]; then
 		log_error "Klipper fork migration failed (exit code $code)!" "ensure_klipper_migration" "KLIPPER_MIGRATION_FAILED"
 		return $code
 	fi
