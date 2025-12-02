@@ -1,8 +1,10 @@
 import { KlipperConfigHelper } from '@/server/helpers/klipper-config';
 import { PrinterConfiguration } from '@/zods/printer-configuration';
 import { maybeRenderBeaconOverrides } from '@/templates/helpers/beacon';
+import { VAOCControlPoints } from '@/server/helpers/config-generation/ratrig-vaoc';
+
 export const template = (config: PrinterConfiguration, helper: KlipperConfigHelper) => {
-	const vaocControlPoints = {
+	const vaocControlPoints: VAOCControlPoints = {
 		xcontrolpoint: config.size.x / 2 - 37.5,
 		ycontrolpoint: config.size.y + 30.5,
 		zcontrolpoint: 10,
