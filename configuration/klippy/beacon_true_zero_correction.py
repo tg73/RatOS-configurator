@@ -21,7 +21,7 @@ class BeaconTrueZeroCorrection:
 		self.printer = config.get_printer()
 		self.reactor = self.printer.get_reactor()
 		self.gcode = self.printer.lookup_object('gcode')
-		self.name = config.get_name()        
+		self.name = config.get_name()
 
 		self.status = None
 		self.ratos = None
@@ -29,7 +29,7 @@ class BeaconTrueZeroCorrection:
 		self.toolhead = None
 		self.dual_carriage = None
 		self.orig_cmd = None
-		
+
 		#######
 		# Config
 		#######
@@ -62,18 +62,18 @@ class BeaconTrueZeroCorrection:
 		if self.disabled:
 			logging.info(f"{self.name}: beacon true zero correction is disabled by configuration.")
 			return
-		
+
 		if config.has_section('beacon'):
 			self.printer.register_event_handler("klippy:connect",
 												self._handle_connect)
 			self.printer.register_event_handler("homing:home_rails_end",
 												self._handle_homing_move_end)
 			self.printer.register_event_handler("stepper_enable:motor_off",
-												self._handle_motor_off)			
-			
+												self._handle_motor_off)
+
 		else:
 			logging.info(f"{self.name}: beacon is not configured, beacon true zero correction disabled.")
-		
+
 	def _handle_connect(self):
 		self.ratos = self.printer.lookup_object('ratos')
 		self.ratos_z_offset = self.printer.lookup_object('ratos_z_offset')
@@ -83,22 +83,22 @@ class BeaconTrueZeroCorrection:
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
 
 		self.orig_cmd = self.gcode.register_command(BEACON_AUTO_CALIBRATE, None)
-		if self.orig_cmd == None:
+		if self.orig_cmd is None:
 			raise self.printer.config_error(f"{BEACON_AUTO_CALIBRATE} command is not registered, {self.name} cannot be enabled. Ensure that [beacon] occurs before [{self.name}] in the configuration.")
-		
+
 		self.gcode.register_command(
-			BEACON_AUTO_CALIBRATE, 
+			BEACON_AUTO_CALIBRATE,
 			self.cmd_BEACON_AUTO_CALIBRATE,
 			desc=self.desc_BEACON_AUTO_CALIBRATE)
 
 		self.gcode.register_command(
-			'_BEACON_TRUE_ZERO_CORRECTION_DIAGNOSTICS', 
+			'_BEACON_TRUE_ZERO_CORRECTION_DIAGNOSTICS',
 			self.cmd_BEACON_TRUE_ZERO_CORRECTION_DIAGNOSTICS,
 			desc=self.desc_BEACON_TRUE_ZERO_CORRECTION_DIAGNOSTICS)
 
 	def _handle_homing_move_end(self, homing_state, rails):
 		# Clear the true zero correction offset if the Z axis is homed.
-		# Any existing true zero correction is invalidated when z is re-homed.		
+		# Any existing true zero correction is invalidated when z is re-homed.
 		if 2 in homing_state.get_axes():
 			self.ratos_z_offset.set_offset('true_zero_correction', 0)
 
@@ -109,7 +109,7 @@ class BeaconTrueZeroCorrection:
 
 	######
 	# Commands
-	######				
+	######
 	desc_BEACON_AUTO_CALIBRATE = "Automatically calibrates the Beacon probe. Extended with RatOS multi-point probing for improved true zero consistency. Use SKIP_MULTIPOINT_PROBING=1 to bypass."
 	def cmd_BEACON_AUTO_CALIBRATE(self, gcmd):
 		# Clear existing offset
@@ -118,7 +118,7 @@ class BeaconTrueZeroCorrection:
 		skip = gcmd.get('SKIP_MULTIPOINT_PROBING', '').lower() in ('1', 'true', 'yes')
 		if skip:
 			return self.orig_cmd(gcmd)
-		
+
 		zero_xy = self.toolhead.get_position()[:2]
 		retval = self.orig_cmd(gcmd)
 		self._check_homed()
@@ -139,7 +139,7 @@ class BeaconTrueZeroCorrection:
 			samples_tolerance_retries = gcmd.get_int('SAMPLES_TOLERANCE_RETRIES', 10, minval=0)
 
 			nozzle_tip_dia = self._get_nozzle_tip_diameter()
-			
+
 			# Calculate the nozzle-based min span as the length of the side of a
 			# square with area four times the footprint of COUNT nozzle tips.
 			span = math.sqrt(math.pi * (nozzle_tip_dia/2)**2 * point_count * 4.)
@@ -171,7 +171,7 @@ class BeaconTrueZeroCorrection:
 					+ "".join(" " + k + "=" + v for k, v in probe_args.items()),
 				probe_args
 			)
-			
+
 			timestamp = time.strftime("%Y%m%d_%H%M%S")
 			filename = f'/home/pi/printer_data/config/mpp_capture_{timestamp}.csv'
 
@@ -184,12 +184,12 @@ class BeaconTrueZeroCorrection:
 				f.write(f"# Nozzle Tip Diameter: {nozzle_tip_dia:.3f}mm, Span: {span:.3f}mm\n")
 				f.write(f"# Zero XY Position: {zero_xy_position[0]:.3f}, {zero_xy_position[1]:.3f}\n")
 				f.write(f"# Range X: {range_x[0]:.3f} to {range_x[1]:.3f}, Range Y: {range_y[0]:.3f} to {range_y[1]:.3f}\n")
-				
+
 				def cb(_, positions):
 					f.write(','.join(str(p[2]) for p in positions) + '\n')
 					f.flush()
 					return 'done'
-				
+
 				probe_helper = probe.ProbePointsHelper(self.config, cb, [])
 
 				for batch_index in range(batch_count):
@@ -224,35 +224,35 @@ class BeaconTrueZeroCorrection:
 			# Generate a candidate point uniformly within the given x and y limits.
 			candidate = np.array([np.random.uniform(x_lim[0], x_lim[1]),
 								np.random.uniform(y_lim[0], y_lim[1])])
-			
+
 			# Check that candidate is at least min_dist away from every existing point.
 			if ((not avoid_centre) or np.linalg.norm(candidate - centre) >= min_dist) \
 				and all(np.linalg.norm(candidate - p) >= min_dist for p in points):
 					points.append(candidate.tolist()) # don't leak numpy types
-			
+
 			iterations += 1
-		
+
 		if len(points) < n:
 			raise self.gcode.error(
 				"Could not generate all required probe points within the specified iteration limit. "
 				"The conditions are too strict.")
-		
+
 		return points
 
 	def _get_nozzle_diameter(self):
 		extruder_name = 'extruder'
-		
+
 		if self.dual_carriage and self.dual_carriage.dc[1].mode.lower() == 'primary':
 			extruder_name = 'extruder1'
-		
+
 		extruder = self.printer.lookup_object(extruder_name)
 		nozzle_diameter = extruder.nozzle_diameter
 		return nozzle_diameter
-	
+
 	def _get_nozzle_tip_diameter(self, nozzle_diameter=None):
 		if nozzle_diameter is None:
 			nozzle_diameter = self._get_nozzle_diameter()
-		
+
 		# Based on V6 standard, total nozzle tip diameter is typically 2.5 times hole diameter (spec'd up to 0.8mm),
 		# except below 0.25mm where it's 1.5 times hole diameter. FIN specifies 2.0 times hole diameter.
 		# Slice GammaMaster 2.4mm nozzle has ~3.75mm tip (from their published STEP model), a multiplier
@@ -263,7 +263,7 @@ class BeaconTrueZeroCorrection:
 			nozzle_tip_dia = 2.5 * nozzle_diameter
 		else:
 			nozzle_tip_dia = nozzle_diameter + 1.35
-		
+
 		return nozzle_tip_dia
 
 	def _prepare_probe_command(self, gcmd):
@@ -288,7 +288,7 @@ class BeaconTrueZeroCorrection:
 				+ "".join(" " + k + "=" + v for k, v in probe_args.items()),
 			probe_args
 		)
-	
+
 	def _validate_probing_region(self, range_x, range_y, span):
 		r = self.ratos.get_beacon_probing_regions()
 		probable_x = (r.contact_min[0], r.contact_max[0])
@@ -302,10 +302,10 @@ class BeaconTrueZeroCorrection:
 			in_range(probable_y, range_y[0]) and in_range(probable_y, range_y[1])):
 
 			self.ratos.console_echo(RATOS_TITLE, 'error', f'The required probing region ({span:.1f}x{span:.1f}) would probe outside the configured contact probing area.')
-			raise self.gcmd.error('The required probing region would probe outside the contact probing area')	
+			raise self.gcmd.error('The required probing region would probe outside the contact probing area')
 
 class ProbingSession:
-	
+
 	def __init__(self, tzc:BeaconTrueZeroCorrection, gcmd, zero_xy_position):
 		self.gcmd = gcmd
 		self.tzc = tzc
@@ -340,12 +340,12 @@ class ProbingSession:
 		if self._has_run:
 			raise Exception("ProbingSession has already been run, and cannot be run more than once.")
 		self._has_run = True
-				
+
 		num_points_to_generate = self._take - len(self._samples) + self.max_retries
 		min_span = 9.
 
 		nozzle_tip_dia = self.tzc._get_nozzle_tip_diameter()
-		
+
 		# Calculate the nozzle-based min span as the length of the side of a square with area four times
 		# the footprint of COUNT nozzle tips.
 		#
@@ -357,10 +357,10 @@ class ProbingSession:
 
 		nozzle_based_min_span = math.sqrt(math.pi * (nozzle_tip_dia/2)**2 * num_points_to_generate * 4.)
 		span = max(min_span, nozzle_based_min_span)
-		half_span = span / 2.		
+		half_span = span / 2.
 
 		logging.info(f"{self.tzc.name}: count: {num_points_to_generate}  min_span: {min_span}  nozzle_tip_dia: {nozzle_tip_dia:.3f}  nozzle_based_min_span: {nozzle_based_min_span:.2f}  use_span: {span:.2f}")
-		
+
 		# Calculate probing region
 		range_x = (self.zero_xy_position[0] - half_span, self.zero_xy_position[0] + half_span)
 		range_y = (self.zero_xy_position[1] - half_span, self.zero_xy_position[1] + half_span)
@@ -373,24 +373,24 @@ class ProbingSession:
 		self._next_points_index = self._take - len(self._samples)
 		self.probe_helper.update_probe_points(self._points[:self._next_points_index], 1)
 		self.probe_helper.start_probe(probe_gcmd)
-	
+
 		self._finalize()
-	
+
 	def _finalize(self):
 		if self._finalize_result == 'retry':
 			self.tzc.ratos.console_echo(
-				RATOS_TITLE, 
-				'error', 
+				RATOS_TITLE,
+				'error',
 				'One or more z values were out of range, maximum retries exceeded.')
 			raise self.gcmd.error('One or more z values were out of range, maximum retries exceeded.')
 		elif isinstance(self._finalize_result, float):
 			if self._finalize_result < -0.2:
 				# Sanity check to reduce the risk of bed damage
 				self.tzc.ratos.console_echo(
-					RATOS_TITLE, 
-					'error', 
+					RATOS_TITLE,
+					'error',
 					f'The measured true zero correction {self._finalize_result:.6f} is below the safety limit of -0.2mm._N_This is not expected behaviour.')
-				raise self.gcmd.error(f'Measured correction is below safety limit')
+				raise self.gcmd.error('Measured correction is below safety limit')
 			logging.info(f'{self.tzc.name}: applying correction {self._finalize_result:.6f}')
 			self.gcmd.respond_info(f'Applying true zero correction of {self._finalize_result*1000.:.1f} µm')
 			self.tzc.ratos_z_offset.set_offset('true_zero_correction', self._finalize_result)
@@ -409,7 +409,7 @@ class ProbingSession:
 			logging.info(f'{self.tzc.name}: samples: {", ".join(f"{z:.6f}" for z in self._samples)}  using: {", ".join(f"{z:.6f}" for z in use_samples)}')
 			self._finalize_result = float(np.mean(use_samples))
 			return 'done'
-		
+
 		rejects = [z for z in zvals if z >= self.tzc.z_rejection_threshold]
 		logging.info(f'{self.tzc.name}: rejected z-values: {", ".join(f"{z:.6f}" for z in rejects)}')
 
@@ -420,11 +420,11 @@ class ProbingSession:
 			self.probe_helper.update_probe_points(self._points[self._next_points_index:self._next_points_index + len(rejects)], 1)
 			self._next_points_index += len(rejects)
 			return 'retry'
-		
+
 		self.gcmd.respond_info(f'{len(rejects)} z value(s) were out of range, exceeding the number of available retry points.')
 		self._finalize_result = 'retry'
 		return 'done'
-		
+
 # Register the configuration
 def load_config(config):
 	return BeaconTrueZeroCorrection(config)
