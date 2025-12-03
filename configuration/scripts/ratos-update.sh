@@ -101,12 +101,79 @@ ensure_pip_requirements()
 		return 1
 	fi
 
-	# Prefer installing as the RatOS user to avoid root-owned files in the venv
-	if ! execute_with_logging "ensure_pip_requirements" "PIP_INSTALL_FAILED" sudo -u "${RATOS_USERNAME}" "$py_bin" -m pip install -r "$req_file"; then
+	# Log currently installed versions of packages in requirements.txt
+	log_info "Checking installed versions of required packages..." "ensure_pip_requirements"
+	echo "Checking installed versions of required packages..."
+	local pkg_spec pkg_name version_info
+	while IFS= read -r line || [ -n "$line" ]; do
+		# Skip empty lines and comments
+		[[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+		
+		pkg_spec=$(echo "$line" | xargs)
+		# Extract package name (before ==, >=, <=, <, >, etc.)
+		pkg_name=$(echo "$pkg_spec" | sed -E 's/([a-zA-Z0-9_-]+).*/\1/')
+		
+		version_info=$(sudo -u "${RATOS_USERNAME}" "$py_bin" -m pip show "$pkg_name" 2>/dev/null | grep "^Version:" || echo "missing")
+		if [[ "$version_info" == "missing" ]]; then
+			log_info "  $pkg_name: missing" "ensure_pip_requirements"
+			echo "  $pkg_name: missing"
+		else
+			version=$(echo "$version_info" | awk '{print $2}')
+			log_info "  $pkg_name: $version" "ensure_pip_requirements"
+			echo "  $pkg_name: $version"
+		fi
+	done < "$req_file"
+
+	# Install requirements with verbose output to capture what gets installed
+	log_info "Installing pip requirements from $req_file..." "ensure_pip_requirements"
+	echo "Installing pip requirements from $req_file..."
+	
+	local install_output install_result
+	install_output=$(sudo -u "${RATOS_USERNAME}" "$py_bin" -m pip install -r "$req_file" 2>&1)
+	install_result=$?
+	
+	if [[ $install_result -ne 0 ]]; then
 		log_error "Failed to install Python requirements into Klipper environment" "ensure_pip_requirements" "PIP_INSTALL_FAILED"
+		log_error "pip output: $install_output" "ensure_pip_requirements" "PIP_INSTALL_FAILED"
 		echo "Failed to install Python requirements into Klipper environment"
+		echo "$install_output"
 		return 1
 	fi
+
+	# Log installation outcomes
+	log_info "pip install output:" "ensure_pip_requirements"
+	echo "$install_output"
+	
+	# Parse and log what was installed/upgraded
+	if echo "$install_output" | grep -q "Successfully installed"; then
+		local installed_packages
+		installed_packages=$(echo "$install_output" | grep "Successfully installed" | sed 's/Successfully installed //')
+		log_info "Installed/upgraded packages: $installed_packages" "ensure_pip_requirements"
+		echo "Installed/upgraded packages: $installed_packages"
+	elif echo "$install_output" | grep -q "Requirement already satisfied"; then
+		log_info "All requirements already satisfied, no packages installed" "ensure_pip_requirements"
+		echo "All requirements already satisfied"
+	fi
+
+	# Log final versions after installation
+	log_info "Verifying final package versions..." "ensure_pip_requirements"
+	echo "Verifying final package versions..."
+	while IFS= read -r line || [ -n "$line" ]; do
+		[[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+		
+		pkg_spec=$(echo "$line" | xargs)
+		pkg_name=$(echo "$pkg_spec" | sed -E 's/([a-zA-Z0-9_-]+).*/\1/')
+		
+		version_info=$(sudo -u "${RATOS_USERNAME}" "$py_bin" -m pip show "$pkg_name" 2>/dev/null | grep "^Version:" || echo "ERROR: missing")
+		if [[ "$version_info" == "ERROR: missing" ]]; then
+			log_error "  $pkg_name: still missing after install!" "ensure_pip_requirements" "PACKAGE_MISSING"
+			echo "  $pkg_name: ERROR - still missing!"
+		else
+			version=$(echo "$version_info" | awk '{print $2}')
+			log_info "  $pkg_name: $version" "ensure_pip_requirements"
+			echo "  $pkg_name: $version"
+		fi
+	done < "$req_file"
 
 	log_info "Python requirements installed successfully" "ensure_pip_requirements"
 	echo "Python requirements installed successfully"
