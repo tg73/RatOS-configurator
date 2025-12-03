@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # This script installs additional dependencies for RatOS.
 
-PKGLIST="python3-numpy python3-matplotlib curl git libopenblas-base"
-
 SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )
 CFG_DIR=$(realpath "$SCRIPT_DIR/..")
 

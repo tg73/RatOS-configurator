@@ -22,6 +22,96 @@ source "$SCRIPT_DIR"/ratos-common.sh
 # shellcheck source=configuration/scripts/moonraker-ensure-policykit-rules.sh
 source "$SCRIPT_DIR"/moonraker-ensure-policykit-rules.sh
 
+ensure_system_packages()
+{
+	log_info "Ensuring system packages from PKGLIST are installed" "ensure_system_packages"
+	report_status "Ensuring required system packages are installed"
+
+	if [ -z "${PKGLIST:-}" ]; then
+		log_error "PKGLIST is not defined; expected from ratos-common.sh" "ensure_system_packages" "PKGLIST_MISSING"
+		echo "PKGLIST is not defined; expected from ratos-common.sh"
+		return 1
+	fi
+
+	# Build list of missing packages
+	local -a pkgs missing
+	local pkg
+	# shellcheck disable=SC2206
+	pkgs=( $PKGLIST )
+	missing=()
+	for pkg in "${pkgs[@]}"; do
+		if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+			missing+=("$pkg")
+		fi
+	done
+
+	if [ ${#missing[@]} -eq 0 ]; then
+		log_info "All required system packages are already installed" "ensure_system_packages"
+		echo "All required system packages are already installed"
+		return 0
+	fi
+
+	log_info "Missing packages: ${missing[*]}" "ensure_system_packages"
+	echo "Installing missing packages: ${missing[*]}"
+
+	if ! execute_with_logging "ensure_system_packages" "APT_UPDATE_FAILED" apt-get update; then
+		log_error "apt-get update failed" "ensure_system_packages" "APT_UPDATE_FAILED"
+		return 1
+	fi
+
+	# shellcheck disable=SC2068
+	if ! execute_with_logging "ensure_system_packages" "APT_INSTALL_FAILED" apt-get install -y ${missing[@]}; then
+		log_error "Failed to install one or more system packages" "ensure_system_packages" "APT_INSTALL_FAILED"
+		return 1
+	fi
+
+	log_info "System packages installed successfully" "ensure_system_packages"
+	echo "System packages installed successfully"
+}
+
+ensure_pip_requirements()
+{
+	log_info "Ensuring Python pip requirements are installed in KLIPPER_ENV" "ensure_pip_requirements"
+	report_status "Installing Python requirements into Klipper env"
+
+	local req_file py_bin pip_bin
+	req_file="${SCRIPT_DIR}/../klippy/requirements.txt"
+	py_bin="${KLIPPER_ENV}/bin/python"
+	pip_bin="${KLIPPER_ENV}/bin/pip"
+
+	if [ -z "${KLIPPER_ENV:-}" ] || [ ! -d "$KLIPPER_ENV" ]; then
+		log_error "Klipper environment not found or KLIPPER_ENV unset: $KLIPPER_ENV" "ensure_pip_requirements" "PYTHON_ENV_MISSING"
+		echo "Klipper environment not found or KLIPPER_ENV unset: $KLIPPER_ENV"
+		return 1
+	fi
+
+	if [ ! -x "$pip_bin" ]; then
+		if [ -x "$py_bin" ]; then
+			pip_bin="$py_bin -m pip"
+		else
+			log_error "pip not found in Klipper environment: $pip_bin" "ensure_pip_requirements" "PIP_NOT_FOUND"
+			echo "pip not found in Klipper environment: $pip_bin"
+			return 1
+		fi
+	fi
+
+	if [ ! -f "$req_file" ]; then
+		log_error "Requirements file not found: $req_file" "ensure_pip_requirements" "PIP_REQUIREMENTS_FILE_MISSING"
+		echo "Requirements file not found: $req_file"
+		return 1
+	fi
+
+	# Prefer installing as the RatOS user to avoid root-owned files in the venv
+	if ! execute_with_logging "ensure_pip_requirements" "PIP_INSTALL_FAILED" sudo -u "${RATOS_USERNAME}" "$py_bin" -m pip install -r "$req_file"; then
+		log_error "Failed to install Python requirements into Klipper environment" "ensure_pip_requirements" "PIP_INSTALL_FAILED"
+		echo "Failed to install Python requirements into Klipper environment"
+		return 1
+	fi
+
+	log_info "Python requirements installed successfully" "ensure_pip_requirements"
+	echo "Python requirements installed successfully"
+}
+
 update_symlinks()
 {
   log_info "Updating RatOS device symlinks..." "update_symlinks"
@@ -182,11 +272,13 @@ main() {
 	set +e
 
 	ensure_klipper_fork_migration || exit_code=1
+	ensure_system_packages || exit_code=1
 	update_symlinks || exit_code=1
 	ensure_sudo_command_whitelisting || exit_code=1
 	ensure_service_permission || exit_code=1
 	ensure_node_18 || exit_code=1
 	fix_klippy_env_ownership || exit_code=1
+	ensure_pip_requirements || exit_code=1
 	patch_klipperscreen_service_restarts || exit_code=1
 	install_beacon || exit_code=1
 	install_hooks || exit_code=1

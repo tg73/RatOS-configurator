@@ -4,6 +4,10 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /d
 # shellcheck source=./configuration/scripts/environment.sh
 source "$SCRIPT_DIR"/environment.sh
 
+# System package requirements for RatOS (read by Moonraker and scripts)
+# shellcheck disable=SC2034
+PKGLIST="python3-numpy python3-matplotlib curl git libopenblas-base"
+
 report_status()
 {
     echo -e "\n\n###### $1"
