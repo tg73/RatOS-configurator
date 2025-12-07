@@ -484,12 +484,12 @@ class BeaconMesh:
 
 		logging.info(f"{self.name}: keep_temp_meshes: {keep_temp_meshes}")
 
-		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
+		beacon_contact_calibrate_model_on_true_zero = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_true_zero']).lower() == 'true'
 
 		# Go to safe home
 		self.gcode.run_script_from_command("_MOVE_TO_SAFE_Z_HOME Z_HOP=True")
 
-		if beacon_contact_calibrate_model_on_print:
+		if beacon_contact_calibrate_model_on_true_zero:
 			# Calibrate a fresh model
 			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1")
 		else:
