@@ -35,7 +35,6 @@ git clone git@github.com:Rat-OS/RatOS-configurator.git
 git clone git@github.com:klipper3d/klipper.git
 git clone git@github.com:Arksine/moonraker.git
 # Configuration repo ** SEE MONOREPO NOTE ABOVE **
-ln -s /home/myuser/RatOS-dev/RatOS-configurator/configuration /home/myuser/RatOS-dev/printer_data/config/RatOS
 #cd printer_data/config
 #git clone git@github.com:Rat-OS/RatOS-configuration.git RatOS
 #cd ../..
@@ -59,7 +58,7 @@ Edit .env.local and modify the paths to match your setup ie:
 ```
 RATOS_CONFIGURATION_PATH=/home/myuser/RatOS-dev/printer_data/config/RatOS
 KLIPPER_CONFIG_PATH=/home/myuser/RatOS-dev/printer_data/config
-RATOS_SCRIPT_DIR=/home/myuser/RatOS-dev/RatOS-configurator/src/scripts
+RATOS_SCRIPT_DIR=/home/myuser/RatOS-dev/RatOS-configurator/scripts
 KLIPPER_DIR=/home/myuser/RatOS-dev/klipper
 KLIPPER_ENV=/home/myuser/RatOS-dev/klippy-env
 MOONRAKER_DIR=/home/myuser/RatOS-dev/moonraker

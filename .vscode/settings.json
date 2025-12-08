@@ -41,8 +41,5 @@
 	"shellcheck.useWorkspaceRootAsCwd": true,
 	"prettier.useTabs": true,
 	"editor.detectIndentation": false,
-	"python.REPL.enableREPLSmartSend": false,
-	"[json]": {
-		"editor.defaultFormatter": "vscode.json-language-features"
-	}
+	"python.REPL.enableREPLSmartSend": false
 }

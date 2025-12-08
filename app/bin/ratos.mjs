@@ -110097,12 +110097,12 @@ Line ${e.lineNumber}: ${e.line}`;
 init_cjs_shim();
 import { cd, path as path11, syncProcessCwd } from "zx";
 import { existsSync as existsSync8 } from "node:fs";
-import { readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
+import { readFile as readFile2, writeFile as writeFile2 } from "node:fs/promises";
 
 // ../server/helpers/file-operations.ts
 init_cjs_shim();
-import { existsSync as existsSync7, createReadStream as createReadStream2, createWriteStream as createWriteStream2, readFileSync as readFileSync4 } from "fs";
-import { copyFile, readFile as readFile2, unlink } from "fs/promises";
+import { existsSync as existsSync7, createReadStream as createReadStream2, createWriteStream as createWriteStream2 } from "fs";
+import { copyFile, unlink } from "fs/promises";
 import { EOL } from "os";
 import { createInterface } from "readline";
 var replaceInFileByLine = async (filePath, searchOrReplacer, replace) => {
@@ -110220,7 +110220,7 @@ var import_react66 = __toESM(require_react(), 1);
 var ensureLocalEnvFile = async () => {
   if (!existsSync8("./.env.local")) {
     getLogger2().info("Creating .env.local file");
-    await writeFile2("./.env.local", await readFile3(".env"));
+    await writeFile2("./.env.local", await readFile2(".env"));
   }
 };
 var tempEnvFile = "/tmp/configurator.env.local";
