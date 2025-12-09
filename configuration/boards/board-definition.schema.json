@@ -87,18 +87,6 @@
 			"description": "Whether this board has an MCU temperature sensor, default is true",
 			"type": "boolean"
 		},
-		"hasChamberLightingPin": {
-			"description": "Whether this board has a defined chamber lighting output pin, default is false. If true, the chamber_lighting_pin alias must be defined.",
-			"type": "boolean"
-		},
-		"hasRatRigVaocPins": {
-			"description": "Whether this board has defined RatRig VAOC pins, default is false. If true, the ratrig_vaoc_probe_pin, ratrig_vaoc_led_pin and ratrig_vaoc_fan_pin aliases must be defined.",
-			"type": "boolean"
-		},
-		"hasRatRigRatPackPins": {
-			"description": "Whether this board has defined RatRig RatPack pins, default is false. If true, the ratrig_ratpack_pin and ratrig_ratpack_enable_pin aliases must be defined.",
-			"type": "boolean"
-		},
 		"outputPins": {
 			"description": "Output pin definitions. Some boards have safety features that require a pin to be pulled high to enable power, such as the SKR2.",
 			"type": "array",

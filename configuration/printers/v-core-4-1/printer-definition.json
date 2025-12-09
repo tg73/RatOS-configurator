@@ -49,7 +49,7 @@
 	},
 	"defaults": {
 		"board": "btt-octopus-11",
-		"chamberLighting": "controlboard",
+		"chamberLighting": { "id": "dayspring", "connectedTo": "controlboard" },
 		"toolheads": [
 			{
 				"axis": "x",
@@ -61,7 +61,8 @@
 				"hotendFan": "2pin-toolboard",
 				"probe": "beacon",
 				"xEndstop": "endstop-toolboard",
-				"yEndstop": "endstop"
+				"yEndstop": "endstop",
+				"filamentSensor": {"id": "orbiter-smart-sensor", "connectedTo": "toolboard"}
 			}
 		],
 		"rails": [

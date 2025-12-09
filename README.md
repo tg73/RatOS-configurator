@@ -59,7 +59,7 @@ Edit .env.local and modify the paths to match your setup ie:
 ```
 RATOS_CONFIGURATION_PATH=/home/myuser/RatOS-dev/printer_data/config/RatOS
 KLIPPER_CONFIG_PATH=/home/myuser/RatOS-dev/printer_data/config
-RATOS_SCRIPT_DIR=/home/myuser/RatOS-dev/RatOS-configurator/scripts
+RATOS_SCRIPT_DIR=/home/myuser/RatOS-dev/RatOS-configurator/src/scripts
 KLIPPER_DIR=/home/myuser/RatOS-dev/klipper
 KLIPPER_ENV=/home/myuser/RatOS-dev/klippy-env
 MOONRAKER_DIR=/home/myuser/RatOS-dev/moonraker
