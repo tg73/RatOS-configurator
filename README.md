@@ -35,6 +35,7 @@ git clone git@github.com:Rat-OS/RatOS-configurator.git
 git clone git@github.com:klipper3d/klipper.git
 git clone git@github.com:Arksine/moonraker.git
 # Configuration repo ** SEE MONOREPO NOTE ABOVE **
+ln -s /home/myuser/RatOS-dev/RatOS-configurator/configuration /home/myuser/RatOS-dev/printer_data/config/RatOS
 #cd printer_data/config
 #git clone git@github.com:Rat-OS/RatOS-configuration.git RatOS
 #cd ../..

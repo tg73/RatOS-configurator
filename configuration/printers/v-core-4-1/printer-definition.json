@@ -49,6 +49,7 @@
 	},
 	"defaults": {
 		"board": "btt-octopus-11",
+		"chamberLighting": "controlboard",
 		"toolheads": [
 			{
 				"axis": "x",
