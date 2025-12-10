@@ -2,6 +2,6 @@
 # ${e.instance.title}
 # ${e.instance.description}
 [fan_generic filter]
-pin: ${e.getPrefixedPinFromAlias("chamber_filter_4p_fan_pin")}
+pin: !${e.getPrefixedPinFromAlias("chamber_filter_4p_fan_pin")}
 enable_pin: ${e.getPrefixedPinFromAlias("chamber_filter_4p_fan_enable_pin")}
 `}};
