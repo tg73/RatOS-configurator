@@ -38,14 +38,12 @@ speed: ${r.getMacroTravelSpeed()}
 [z_tilt]
 speed: ${r.getMacroTravelSpeed()}
 
-
 #############################################################################################################
 ### HOMING
 #############################################################################################################
 ${r.renderProbeIncludes()}
 ${(0,i.N)(e,{proximityMargins:{left:20,right:20,top:20,bottom:20},contactMargins:{left:20,right:20,top:20,bottom:20},offset:{x:0,y:19.5}})}
 ${r.renderEndstopSection()}
-
 
 #############################################################################################################
 ### FANS
@@ -55,6 +53,8 @@ ${r.renderFans()}
 #############################################################################################################
 ### ACCESSORIES
 #############################################################################################################
+${await r.renderFilamentSensorsAsync()}
+
 ${await r.renderChamberLightingAsync()}
 
 ${await r.renderChamberAirFilterAsync()}
