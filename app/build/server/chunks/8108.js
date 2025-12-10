@@ -53,6 +53,8 @@ ${r.renderFans()}
 #############################################################################################################
 ### ACCESSORIES
 #############################################################################################################
+${await r.renderFilamentSensorsAsync()}
+
 ${await r.renderChamberLightingAsync()}
 
 ${await r.renderChamberAirFilterAsync()}

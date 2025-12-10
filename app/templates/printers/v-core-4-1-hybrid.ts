@@ -60,6 +60,8 @@ ${helper.renderFans()}
 #############################################################################################################
 ### ACCESSORIES
 #############################################################################################################
+${await helper.renderFilamentSensorsAsync()}
+
 ${await helper.renderChamberLightingAsync()}
 
 ${await helper.renderChamberAirFilterAsync()}

@@ -11,7 +11,7 @@ export const renderTemplate: RenderTemplateFn = (ctx) => {
 # ${ctx.instance.title}
 # ${ctx.instance.description}
 [fan_generic filter]
-pin: ${ctx.getPrefixedPinFromAlias('chamber_filter_4p_fan_pin')}
+pin: !${ctx.getPrefixedPinFromAlias('chamber_filter_4p_fan_pin')}
 enable_pin: ${ctx.getPrefixedPinFromAlias('chamber_filter_4p_fan_enable_pin')}
 `;
 };
