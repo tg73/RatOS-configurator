@@ -15,7 +15,7 @@ export const renderToolheadTemplate: RenderToolheadTemplateFn = (ctx) => {
 	const nameSuffix = th.printerHasMultipleToolheads ? `_${th.getShortToolName()}` : '';
 	const runout = `
 # ${ctx.instance.id} connected to ${ctx.instance.connectedTo}
-[filament_switch_sensor filament_sensor${nameSuffix}]
+[filament_switch_sensor toolhead_filament_sensor${nameSuffix}]
 pause_on_runout: False
 event_delay: 1.0
 switch_pin: ^${ctx.getPrefixedPinFromAlias('filament_sensor_runout_pin')}

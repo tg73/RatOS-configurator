@@ -14,7 +14,7 @@ export const renderToolheadTemplate: RenderToolheadTemplateFn = (ctx) => {
 	const th = ctx.utils.getToolhead(ctx.toolNumber);
 	const opts = Options.parse(ctx.templateOptions ?? {});
 	return `
-[filament_switch_sensor filament_sensor${th.printerHasMultipleToolheads ? `_${th.getShortToolName()}` : ''}]
+[filament_switch_sensor toolhead_filament_sensor${th.printerHasMultipleToolheads ? `_${th.getShortToolName()}` : ''}]
 pause_on_runout: False
 event_delay: 1.0
 switch_pin: ${opts.invertRunoutPin ? '!' : ''}${opts.pullUpRunoutPin ? '^' : ''}${ctx.getPrefixedPinFromAlias('filament_sensor_runout_pin')}
