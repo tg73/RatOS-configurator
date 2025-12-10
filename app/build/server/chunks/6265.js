@@ -1,6 +1,6 @@
 "use strict";exports.id=6265,exports.ids=[6265],exports.modules={96265:(e,o,t)=>{t.r(o),t.d(o,{getRequiredPinAliases:()=>getRequiredPinAliases,renderToolheadTemplate:()=>renderToolheadTemplate});var n=t(12051);let _=n.z.object({isSmart:n.z.boolean().default(!1)}),getRequiredPinAliases=e=>["filament_sensor_runout_pin","filament_sensor_motion_pin"],renderToolheadTemplate=e=>{let o=e.utils.getToolhead(e.toolNumber),t=_.parse(e.templateOptions??{}),n=o.printerHasMultipleToolheads?`_${o.getShortToolName()}`:"",i=`
 # ${e.instance.id} connected to ${e.instance.connectedTo}
-[filament_switch_sensor toolhead_filament_sensor${n}]
+[filament_switch_sensor toolhead_filament_sensor_${o.getShortToolName()}]
 pause_on_runout: False
 event_delay: 1.0
 switch_pin: ^${e.getPrefixedPinFromAlias("filament_sensor_runout_pin")}
