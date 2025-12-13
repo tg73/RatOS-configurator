@@ -1,14 +1,16 @@
 import { getLogger } from '@/app/_helpers/logger';
+import { getHost } from '@/helpers/util';
 import { getErrorMessage } from '@/utils/exception-handling';
 import { MoonrakerPrinterState, MoonrakerPrinterStateErrorEnum, parseMoonrakerHTTPResponse } from '@/zods/moonraker';
 import { get } from 'http';
 import { ZodError } from 'zod';
 
+const host = getHost();
 export const queryPrinterState = async (): Promise<
 	Zod.output<typeof MoonrakerPrinterState>['status']['print_stats']['state']
 > => {
 	try {
-		const moonrakerRes = await fetch('http://localhost:7125/printer/objects/query?print_stats');
+		const moonrakerRes = await fetch(`http://${host}:7125/printer/objects/query?print_stats`);
 		if (moonrakerRes)
 			return (await parseMoonrakerHTTPResponse(moonrakerRes, MoonrakerPrinterState)).result.status.print_stats.state;
 	} catch (e) {
@@ -46,7 +48,7 @@ export const klipperRestart = async (force = false) => {
 	}
 
 	try {
-		await fetch('http://localhost:7125/printer/restart', { method: 'POST' });
+		await fetch(`http://${host}:7125/printer/restart`, { method: 'POST' });
 		getLogger().info('Klipper restart command sent successfully.');
 		return true;
 	} catch (e) {

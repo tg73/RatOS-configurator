@@ -6,6 +6,7 @@ import JSZip from 'jszip';
 import { readlink, stat } from 'fs/promises';
 import { getLogger } from '@/server/helpers/logger';
 import { createReadStream } from 'fs';
+import { getHost } from '@/helpers/util';
 
 export const getDebugZipFiles = async () => {
 	if (process.env.RATOS_CONFIGURATION_PATH == null) {
@@ -78,7 +79,8 @@ export const getDebugZipFiles = async () => {
 const getConsoleHistory = async () => {
 	let consoleHistory = JSON.stringify({ result: 'error', msg: 'Failed to fetch console history' });
 	try {
-		consoleHistory = await (await fetch('http://localhost:7125/server/gcode_store?count=1000')).text();
+		const host = getHost();
+		consoleHistory = await (await fetch(`http://${host}:7125/server/gcode_store?count=1000`)).text();
 	} catch (e) {
 		getLogger().error(
 			e,
