@@ -277,6 +277,154 @@ fix_klippy_env_ownership()
 	fi
 }
 
+ensure_cpu_governor_default()
+{
+	log_info "Ensuring CPU governor default configuration" "ensure_cpu_governor_default"
+	report_status "Ensuring CPU governor default configuration"
+
+	local config_file="/etc/default/cpu_governor"
+	local desired_governor="performance"
+
+	# Check if config file exists
+	if [ ! -f "$config_file" ]; then
+		log_info "Config file $config_file does not exist, creating with default governor: $desired_governor" "ensure_cpu_governor_default"
+		echo "Creating $config_file with default governor: $desired_governor"
+		
+		if echo "CPU_DEFAULT_GOVERNOR=\"$desired_governor\"" > "$config_file"; then
+			log_info "Created $config_file with CPU_DEFAULT_GOVERNOR=\"$desired_governor\"" "ensure_cpu_governor_default"
+			echo "CPU governor default configuration created successfully"
+			return 0
+		else
+			log_error "Failed to create $config_file" "ensure_cpu_governor_default" "CONFIG_CREATE_FAILED"
+			echo "Failed to create CPU governor configuration file"
+			return 1
+		fi
+	fi
+
+	# File exists, check if CPU_DEFAULT_GOVERNOR is defined
+	log_info "Config file $config_file exists, checking CPU_DEFAULT_GOVERNOR setting" "ensure_cpu_governor_default"
+
+	# Check for active (uncommented) CPU_DEFAULT_GOVERNOR setting
+	if grep -q "^[[:space:]]*CPU_DEFAULT_GOVERNOR[[:space:]]*=" "$config_file"; then
+		# Extract the current value
+		local current_value
+		current_value=$(grep "^[[:space:]]*CPU_DEFAULT_GOVERNOR[[:space:]]*=" "$config_file" | head -n1 | sed 's/^[[:space:]]*CPU_DEFAULT_GOVERNOR[[:space:]]*=[[:space:]]*["'\'']*\([^"'\'']*\)["'\'']*.*$/\1/')
+		
+		log_info "Found active CPU_DEFAULT_GOVERNOR setting with value: $current_value" "ensure_cpu_governor_default"
+		
+		if [ "$current_value" = "$desired_governor" ]; then
+			log_info "CPU_DEFAULT_GOVERNOR already set to desired value: $desired_governor" "ensure_cpu_governor_default"
+			echo "CPU governor default already configured correctly: $desired_governor"
+			return 0
+		else
+			log_warn "CPU_DEFAULT_GOVERNOR is set to '$current_value' but expected '$desired_governor'. Manual configuration detected, leaving as-is." "ensure_cpu_governor_default" "GOVERNOR_MISMATCH"
+			echo "WARNING: CPU governor is set to '$current_value' but RatOS recommends '$desired_governor'"
+			return 0
+		fi
+	fi
+
+	# Check if there's a commented CPU_DEFAULT_GOVERNOR line
+	if grep -q "^[[:space:]]*#.*CPU_DEFAULT_GOVERNOR[[:space:]]*=" "$config_file"; then
+		log_info "Found commented CPU_DEFAULT_GOVERNOR line, uncommenting and setting to: $desired_governor" "ensure_cpu_governor_default"
+		echo "Uncommenting and setting CPU_DEFAULT_GOVERNOR to: $desired_governor"
+		
+		# Uncomment the first occurrence and set the value
+		if sed -i "0,/^[[:space:]]*#.*CPU_DEFAULT_GOVERNOR[[:space:]]*=/s|^[[:space:]]*#.*CPU_DEFAULT_GOVERNOR[[:space:]]*=.*|CPU_DEFAULT_GOVERNOR=\"$desired_governor\"|" "$config_file"; then
+			log_info "Successfully uncommented and set CPU_DEFAULT_GOVERNOR=\"$desired_governor\"" "ensure_cpu_governor_default"
+			echo "CPU governor default configuration updated successfully"
+			return 0
+		else
+			log_error "Failed to uncomment and set CPU_DEFAULT_GOVERNOR" "ensure_cpu_governor_default" "CONFIG_UPDATE_FAILED"
+			echo "Failed to update CPU governor configuration"
+			return 1
+		fi
+	fi
+
+	# No CPU_DEFAULT_GOVERNOR line found, append new line
+	log_info "No CPU_DEFAULT_GOVERNOR line found, appending to config file" "ensure_cpu_governor_default"
+	echo "Adding CPU_DEFAULT_GOVERNOR to configuration file"
+	
+	if echo "CPU_DEFAULT_GOVERNOR=\"$desired_governor\"" >> "$config_file"; then
+		log_info "Successfully appended CPU_DEFAULT_GOVERNOR=\"$desired_governor\"" "ensure_cpu_governor_default"
+		echo "CPU governor default configuration added successfully"
+		return 0
+	else
+		log_error "Failed to append CPU_DEFAULT_GOVERNOR to config file" "ensure_cpu_governor_default" "CONFIG_APPEND_FAILED"
+		echo "Failed to add CPU governor configuration"
+		return 1
+	fi
+}
+
+ensure_cpu_governor_active()
+{
+	log_info "Ensuring CPU governor is actively set" "ensure_cpu_governor_active"
+	report_status "Ensuring CPU governor is actively set"
+
+	local config_file="/etc/default/cpu_governor"
+	local desired_governor="performance"
+
+	# Determine the desired governor from config file if it exists
+	if [ -f "$config_file" ]; then
+		if grep -q "^[[:space:]]*CPU_DEFAULT_GOVERNOR[[:space:]]*=" "$config_file"; then
+			desired_governor=$(grep "^[[:space:]]*CPU_DEFAULT_GOVERNOR[[:space:]]*=" "$config_file" | head -n1 | sed 's/^[[:space:]]*CPU_DEFAULT_GOVERNOR[[:space:]]*=[[:space:]]*["'\'']*\([^"'\'']*\)["'\'']*.*$/\1/')
+			log_info "Using CPU governor from config: $desired_governor" "ensure_cpu_governor_active"
+		fi
+	fi
+
+	# Check if CPU frequency scaling is available
+	if [ ! -d "/sys/devices/system/cpu/cpu0/cpufreq" ]; then
+		log_warn "CPU frequency scaling not available on this system, skipping governor check" "ensure_cpu_governor_active" "CPUFREQ_NOT_AVAILABLE"
+		echo "CPU frequency scaling not available on this system"
+		return 0
+	fi
+
+	# Check current governor settings
+	local cpu_governors
+	cpu_governors=$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null | sort -u)
+	
+	if [ -z "$cpu_governors" ]; then
+		log_error "Failed to read CPU governor settings" "ensure_cpu_governor_active" "GOVERNOR_READ_FAILED"
+		echo "Failed to read CPU governor settings"
+		return 1
+	fi
+
+	log_info "Current CPU governor(s): $(echo "$cpu_governors" | tr '\n' ' ')" "ensure_cpu_governor_active"
+
+	# Check if all CPUs are already set to desired governor
+	local all_match=true
+	for gov in $cpu_governors; do
+		if [ "$gov" != "$desired_governor" ]; then
+			all_match=false
+			break
+		fi
+	done
+
+	if $all_match && [ "$(echo "$cpu_governors" | wc -l)" -eq 1 ]; then
+		log_info "All CPU cores already set to desired governor: $desired_governor" "ensure_cpu_governor_active"
+		echo "CPU governor already set correctly: $desired_governor"
+		return 0
+	fi
+
+	# Set the governor on all CPU cores
+	log_info "Setting CPU governor to: $desired_governor" "ensure_cpu_governor_active"
+	echo "Setting CPU governor to: $desired_governor"
+
+	if echo "$desired_governor" | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null 2>&1; then
+		log_info "Successfully set CPU governor to $desired_governor on all cores" "ensure_cpu_governor_active"
+		echo "CPU governor set successfully: $desired_governor"
+		
+		# Verify the change
+		local new_governors
+		new_governors=$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null | sort -u)
+		log_info "Verified CPU governor(s) after change: $(echo "$new_governors" | tr '\n' ' ')" "ensure_cpu_governor_active"
+		return 0
+	else
+		log_error "Failed to set CPU governor to $desired_governor" "ensure_cpu_governor_active" "GOVERNOR_SET_FAILED"
+		echo "Failed to set CPU governor"
+		return 1
+	fi
+}
+
 symlink_extensions()
 {
 	log_info "Symlinking klippy extensions" "symlink_extensions"
@@ -344,6 +492,8 @@ main() {
 	ensure_sudo_command_whitelisting || exit_code=1
 	ensure_service_permission || exit_code=1
 	ensure_node_18 || exit_code=1
+	ensure_cpu_governor_default || exit_code=1
+	ensure_cpu_governor_active || exit_code=1
 	fix_klippy_env_ownership || exit_code=1
 	ensure_pip_requirements || exit_code=1
 	patch_klipperscreen_service_restarts || exit_code=1
