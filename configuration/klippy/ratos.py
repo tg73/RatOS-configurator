@@ -94,6 +94,22 @@ class RatOS:
 		# Register overrides.
 		self.register_command_overrides()
 
+	def _check_cpu_governors(self):
+		desired_governor = 'performance'
+		try:
+			governors = self.get_cpu_governors()
+		except Exception as e:
+			self.console_echo(
+				'CPU governor check', 'warning',
+				f'Failed to check current CPU governors. RatOS recommends setting all CPU governors to "{desired_governor}" for optimal printing performance._N_' +
+				'Reason: ' + str(e))
+			return
+		non_performance_governors = governors - {desired_governor}
+		if non_performance_governors:
+			self.console_echo(
+				'CPU governor check', 'warning',
+				f'RatOS recommends setting all CPU governors to "{desired_governor}" for optimal printing performance._N_' +
+				'Current CPU governor(s) detected: ' + ', '.join(governors))		
 	#####
 	# Settings
 	#####
@@ -196,6 +212,7 @@ class RatOS:
 		_info = '<div style="margin:0; padding:0; color: rgba(255, 255, 255, 0.7)">\nClick image to open documentation.</div>'
 		_img = '\n<a href="' + url + '" target="_blank" ><img style="margin-top:6px;" src="' + img + '" width="258px"></a>'
 		self.gcode.respond_raw('<div>' + _title + _sub_title + _img + _info + '</div>')
+		self._check_cpu_governors()
 
 	desc_CONSOLE_ECHO = "Multiline console output"
 	def cmd_CONSOLE_ECHO(self, gcmd):
@@ -1029,6 +1046,39 @@ class RatOS:
 				lines.append(extra_lines + "\n")
 		
 		return "".join(lines)
+	
+	def get_cpu_governors(self) -> set[str]:
+		"""Return the set of distinct current CPU governor names (lowercased).
+
+		Reads all `/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor` files and
+		returns a set containing the distinct governor names converted to lower
+		case. If CPU frequency scaling is unavailable or no readable values are
+		found, an empty set is returned. Multiple differing governors are accepted
+		and will be returned as multiple items in the set.
+		"""
+		cpu_glob = "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
+		files = glob.glob(cpu_glob)
+		if not files:
+			logging.warning(f"{self.name}: expected CPU governor device files not found: {cpu_glob}")
+			raise FileNotFoundError(f"expected CPU governor operating system device files not found")
+
+		governors = set()
+		for path in files:
+			try:
+				with open(path, 'r') as fh:
+					val = fh.read().strip().lower()
+					if val:
+						governors.add(val)
+			except Exception as e:
+				logging.warning(f"{self.name}: failed to read operating system device file at {path}: {e}")
+				raise IOError(f"failed to read operating system device file at {path}: {e}") from e
+
+		if not governors:
+			logging.error(f"{self.name}: Failed to read any CPU governor values")
+			raise ValueError("failed to read any CPU governor values")			
+
+		logging.info(f"{self.name}: Current CPU governor(s): {', '.join(sorted(governors))}")
+		return governors
 
 class BackgroundDisplayStatusProgressHandler:
 	def __init__(
