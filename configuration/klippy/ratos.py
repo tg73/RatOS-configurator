@@ -6,9 +6,10 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import os, logging, glob, traceback, inspect, re
+import os, logging, glob, traceback, inspect, re, time
 import json, subprocess, pathlib, random, math
 from collections import namedtuple
+import numpy as np
 
 BeaconProbingRegions = namedtuple('BeaconProbingRegions', 
 			['x_offset', 'y_offset', 'proximity_min', 'proximity_max', 'contact_min', 'contact_max'])
@@ -141,6 +142,7 @@ class RatOS:
 		self.gcode.register_command('RESET_DC_ENDSTOP_CONFIGURATION', self.cmd_RESET_DC_ENDSTOP_CONFIGURATION, desc=self.desc_RESET_DC_ENDSTOP_CONFIGURATION)
 		self.gcode.register_command('INCREASE_Y_MAX', self.cmd_INCREASE_Y_MAX, desc=self.desc_INCREASE_Y_MAX)
 		self.gcode.register_command('RESET_Y_MAX_ADJUSTMENT', self.cmd_RESET_Y_MAX_ADJUSTMENT, desc=self.desc_RESET_Y_MAX_ADJUSTMENT)
+		self.gcode.register_command('_BEACON_CHECK_DIRECTIONAL_REPEATABILITY', self.cmd_BEACON_CHECK_DIRECTIONAL_REPEATABILITY, desc=self.desc_BEACON_CHECK_DIRECTIONAL_REPEATABILITY)
 
 	def register_command_overrides(self):
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=self.desc_TEST_RESONANCES)
@@ -1079,6 +1081,201 @@ class RatOS:
 
 		logging.info(f"{self.name}: Current CPU governor(s): {', '.join(sorted(governors))}")
 		return governors
+	
+	desc_BEACON_CHECK_DIRECTIONAL_REPEATABILITY = "For diagnostics: perform a series of probe points to check the repeatability of the Beacon probe."
+	def cmd_BEACON_CHECK_DIRECTIONAL_REPEATABILITY(self, gcmd):
+		if self.beacon is None:
+			raise self.printer.command_error("Beacon probe not configured")
+		
+		proceed = gcmd.get('PROCEED', '').lower() in ('true', 'yes', '1')
+		if not proceed:
+			self.console_echo('BEACON_CHECK_DIRECTIONAL_REPEATABILITY', 'info', 
+				'_N_'.join([
+					'This command will perform a series of probe points to check the repeatability',
+					'of the Beacon probe. Before proceeding:',
+					'- Ensure that the printer is fully commissioned and mechanically sound.',
+					'- Ensure that the print sheet (eg, PEI spring steel sheet) is in place, and',
+					'  is clean and free of debris.',
+					'- Ensure the nozzle is clean and free of filament residue.',
+					'- Ensure the printer is in a stable thermal state so that test results are not',
+					'  affected by thermal or dimensional changes. Typically this means leaving the',
+					'  printer open and unheated at room temperature for at least 2 hours, unless you',
+					'  are specifically testing under heated conditions.',
+					'- Ensure there are no drafts or vibrations that could affect the probe readings,'
+					'  unless you are specifically testing under such conditions.',
+					'',
+					'Run the command again with PROCEED=YES to actually run the test.'
+				]))
+			return
+
+		accel = gcmd.get_float('ACCEL', 4000., minval=100.)
+		cycles = gcmd.get_int('CYCLES', 5, minval=1)
+		divisions = gcmd.get_int('DIVISIONS', 8, minval=4)
+		speed = gcmd.get_float('SPEED', 300., minval=10.)
+
+		self.console_echo('BEACON_CHECK_DIRECTIONAL_REPEATABILITY', 'info', 
+			'_N_'.join([
+				f'Running {cycles} cycles of {divisions} divisions at {speed} mm/s, {accel} mm/s² acceleration.',
+				'This may take several minutes, please wait...'
+			]))
+			
+		self.gcode.run_script_from_command("MAYBE_HOME ABL=1\nSAVE_GCODE_STATE NAME=_BEACON_CHECK_REPEATABILITY")
+		try:			
+			x, y = self.get_safe_home_position()
+			self._beacon_check_directional_repeatability(gcmd, x, y, cycle_count=cycles, divisions=divisions, accel=accel, speed_mms=speed)
+		finally:
+			self.gcode.run_script_from_command("RESTORE_GCODE_STATE NAME=_BEACON_CHECK_REPEATABILITY")
+
+	def _beacon_check_directional_repeatability(self, gcmd, x: float, y: float, *, cycle_count: int = 10, distance: float = 50., speed_mms: float = 300., accel: float = 4000., divisions: int = 8, timestamp = None):
+		# For each cycle:
+		#   For each division around a circle centered on (x, y):
+		#     Move out to the point at distance along that angle
+		#	  Move back to center and probe
+		#     Record the probe result
+		# After all cycles, compute statistics for each division
+		# and report results.
+		speed_f = speed_mms * 60
+		# Move to start position
+		self.gcode.run_script_from_command(f"_Z_HOP\nG0 X{x} Y{y} F{speed_f}")
+		self.gcode.run_script_from_command(f"SET_VELOCITY_LIMIT ACCEL={accel}")
+		results = []
+		for cycle in range(cycle_count):
+			for division in range(divisions):
+				angle_rad = math.pi/2 - (2.0 * math.pi / divisions) * division
+				target_x = x + distance * math.cos(angle_rad)
+				target_y = y + distance * math.sin(angle_rad)
+				# Move out to target
+				self.gcode.run_script_from_command(f"G0 X{target_x} Y{target_y} F{speed_f}")
+				# Move back to center
+				self.gcode.run_script_from_command(f"G0 X{x} Y{y} F{speed_f}")
+				# Probe
+				self.gcode.run_script_from_command("PROBE PROBE_METHOD=contact SAMPLES=1 SAMPLES_DROP=0")
+				# Get last probe result
+				last_z = self.beacon.last_z_result
+				results.append( (division, last_z) )
+				
+		stats_by_division = {}
+		
+		def get_stats_below_percentile(arr, p):
+			pc = np.percentile(arr, p)
+			pc_below = arr[arr <= pc]
+			if len(pc_below) == 0:
+				return {
+					'mean': None,
+					'stddev': None,
+					'min': None,
+					'max': None,
+					'range': None,
+					'count': 0
+				}
+			return {
+				'mean': round(float(np.mean(pc_below)), 4),
+				'stddev': round(float(np.std(pc_below)), 4),
+				'min': round(float(np.min(pc_below)), 4),
+				'max': round(float(np.max(pc_below)), 4),
+				'range': round(float(np.max(pc_below) - np.min(pc_below)), 4),
+				'count': len(pc_below)
+			}
+
+		for division in range(divisions):
+			division_results = [z for (div, z) in results if div == division]
+			arr = np.array(division_results)
+			stats_by_division[division] = {
+				# angle, where 0 is +Y axis and increases clockwise
+				'angle': (360.0 / divisions) * division,
+				'<=30pc': get_stats_below_percentile(arr, 30),
+				'<=50pc': get_stats_below_percentile(arr, 50),
+				'<=85pc': get_stats_below_percentile(arr, 85),
+				'all': get_stats_below_percentile(arr, 100),
+			}
+			self.reactor.pause(self.reactor.monotonic() + 0.1)
+		
+		def format_stats(stats):
+			mean = f"{stats['mean']*1000.:7.0f}"  if stats['mean']  is not None else f"{'-':>7}"
+			sd   = f"{stats['stddev']*1000.:7.1f}" if stats['stddev'] is not None else f"{'-':>7}"
+			mn   = f"{stats['min']*1000.:7.0f}"    if stats['min']    is not None else f"{'-':>7}"
+			mx   = f"{stats['max']*1000.:7.0f}"    if stats['max']    is not None else f"{'-':>7}"
+			rng  = f"{stats['range']*1000.:7.0f}"  if stats['range']  is not None else f"{'-':>7}"
+			return mean, sd, mn, mx, rng
+		
+		def format_angle(angle):
+			prefix = ''
+			if math.isclose(angle, 0):
+				prefix = '+Y'
+			elif math.isclose(angle, 90):
+				prefix = '+X'
+			elif math.isclose(angle, 180):
+				prefix = '-Y'
+			elif math.isclose(angle, 270):
+				prefix = '-X'
+			return f"{prefix}{angle:>8.0f}" if prefix else f"{angle:>10.0f}"			
+		
+		header = f"| {'Angle (°)':>10} {'Count':>6} {'Mean':>7} {'StdDev':>7} {'Min':>7} {'Max':>7} {'Range':>7} (µm)"
+		for pc_label, pc in (('<=30pc', 30), ('<=50pc', 50), ('<=85pc', 85), ('all', 100)):
+			table_lines = []
+			table_lines.append(header)
+			for division in range(divisions):
+				stats = stats_by_division[division][pc_label]
+				angle = stats_by_division[division]['angle']
+				count = stats['count']
+				mean, sd, mn, mx, rng = format_stats(stats)
+				line = f"| {format_angle(angle)} {count:>6d} {mean} {sd} {mn} {mx} {rng}"
+				table_lines.append(line)
+
+			# Add a final line showing the stats for all divisions combined
+			all_results = [z for (div, z) in results]
+			arr = np.array(all_results)
+			all_stats = get_stats_below_percentile(arr, pc)
+			mean, sd, mn, mx, rng = format_stats(all_stats)
+			count = all_stats['count']
+			line = f"| {'ALL':>10} {count:>6d} {mean} {sd} {mn} {mx} {rng}"
+			table_lines.append(line)
+			
+			table_str = "\n".join(table_lines)
+			
+			gcmd.respond_info(f'({x:.0f}, {y:.0f}) {cycle_count} x {distance} mm @ {speed_mms} mm/s @ {accel} mm/s² {pc_label}:\n\n{table_str}')
+		
+		self.reactor.pause(self.reactor.monotonic() + 0.1)
+		
+		json_output = {
+			'x_center': x,
+			'y_center': y,
+			'cycle_count': cycle_count,
+			'distance': distance,
+			'speed_mms': speed_mms,
+			'accel': accel,
+			'divisions': divisions,
+			'stats': stats_by_division,
+			'results': {
+				division: [z for (div, z) in results if div == division]
+				for division in range(divisions)
+			}
+		}
+
+		json_str = json.dumps(json_output, indent=4)
+		self.reactor.pause(self.reactor.monotonic() + 0.1)
+
+		timestamp_str = time.strftime("%Y%m%d_%H%M%S", timestamp or time.localtime())
+		config_file = self.printer.get_start_args()['config_file']
+		config_dir = os.path.dirname(config_file)
+		diag_dir = os.path.join(config_dir, 'diagnostics')
+		
+		if not os.path.exists(diag_dir):
+			try:
+				os.makedirs(diag_dir)
+			except Exception as e:
+				self.console_echo('BEACON_CHECK_DIRECTIONAL_REPEATABILITY', 'error', f'Failed to create diagnostics directory at {diag_dir}: {e}')
+				diag_dir = config_dir
+			self.reactor.pause(self.reactor.monotonic() + 0.1)
+
+		json_path = os.path.join(diag_dir, f'beacon_repeatability_{timestamp_str}_x{x:.0f}_y{y:.0f}.json')
+
+		try:
+			with open(json_path, 'w') as fh:
+				fh.write(json_str)
+			self.console_echo('BEACON_CHECK_DIRECTIONAL_REPEATABILITY', 'info', f'Results written to {json_path}')
+		except Exception as e:
+			self.console_echo('BEACON_CHECK_DIRECTIONAL_REPEATABILITY', 'error', f'Failed to write results to {json_path}: {e}')
 
 class BackgroundDisplayStatusProgressHandler:
 	def __init__(
