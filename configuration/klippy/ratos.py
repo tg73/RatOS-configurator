@@ -1101,10 +1101,20 @@ class RatOS:
 					'  affected by thermal or dimensional changes. Typically this means leaving the',
 					'  printer open and unheated at room temperature for at least 2 hours, unless you',
 					'  are specifically testing under heated conditions.',
-					'- Ensure there are no drafts or vibrations that could affect the probe readings,'
+					'- Ensure there are no drafts or vibrations that could affect the probe readings,',
 					'  unless you are specifically testing under such conditions.',
 					'',
-					'Run the command again with PROCEED=YES to actually run the test.'
+					'Run the command again with PROCEED=YES to actually run the test.',
+					'',
+					'Optional parameters:',
+					'- ACCEL: Acceleration in mm/s² for the moves (default: 4000, min: 100)',
+					'- CYCLES: Number of full cycles to perform (default: 5, min: 1)',
+					'- DIVISIONS: Number of divisions around the circle (default: 8, min: 4)',
+					'- SPEED: Speed in mm/s for the moves (default: 300, min: 10)',
+					'- DISTANCE: Distance in mm to move from center (default: 50, min: 5)',
+					'- X: X coordinate of center point (default: safe home X position)',
+					'- Y: Y coordinate of center point (default: safe home Y position)',
+
 				]))
 			return
 
@@ -1112,17 +1122,38 @@ class RatOS:
 		cycles = gcmd.get_int('CYCLES', 5, minval=1)
 		divisions = gcmd.get_int('DIVISIONS', 8, minval=4)
 		speed = gcmd.get_float('SPEED', 300., minval=10.)
+		distance = gcmd.get_float('DISTANCE', 50., minval=5.)
+		def_x, def_y = self.get_safe_home_position()
+		x = gcmd.get_float('X', def_x)
+		y = gcmd.get_float('Y', def_y)		
+		
+		bpr = self.get_beacon_probing_regions()
+		
+		if bpr is None:
+			raise gcmd.error("Unexpected error: beacon probing regions are not available")
+		
+		if x < bpr.contact_min[0] or x > bpr.contact_max[0] or y < bpr.contact_min[1] or y > bpr.contact_max[1]:
+			raise gcmd.error(f"X and Y must be within the beacon contact probing region: ({bpr.contact_min[0]}, {bpr.contact_min[1]}) - ({bpr.contact_max[0]}, {bpr.contact_max[1]})")
+
+		printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
+		printable_y_max = float(self.gm_ratos.variables['printable_y_max'])
+
+		# Ensure that the full movement circle is within the printable area
+		if (x - distance) < 0 or (x + distance) > printable_x_max or (y - distance) < 0 or (y + distance) > printable_y_max:
+			# Work out the nearest compatible coordiantes to what the user requested
+			nearest_x = max(distance, min(x, printable_x_max - distance))
+			nearest_y = max(distance, min(y, printable_y_max - distance))
+			raise gcmd.error(f"The full movement circle must be within the printable area (0,0) - ({printable_x_max}, {printable_y_max}). For distance {distance}, the nearest compatible position to ({x}, {y}) is ({nearest_x}, {nearest_y}). Please adjust X, Y, or DISTANCE accordingly.")
 
 		self.console_echo('BEACON_CHECK_DIRECTIONAL_REPEATABILITY', 'info', 
 			'_N_'.join([
-				f'Running {cycles} cycles of {divisions} divisions at {speed} mm/s, {accel} mm/s² acceleration.',
+				f'Running {cycles} cycles of {divisions} divisions at ({x:.0f}, {y:.0f}), moving {distance} mm at {speed} mm/s, {accel} mm/s² acceleration.',
 				'This may take several minutes, please wait...'
 			]))
 			
 		self.gcode.run_script_from_command("MAYBE_HOME ABL=1\nSAVE_GCODE_STATE NAME=_BEACON_CHECK_REPEATABILITY")
 		try:			
-			x, y = self.get_safe_home_position()
-			self._beacon_check_directional_repeatability(gcmd, x, y, cycle_count=cycles, divisions=divisions, accel=accel, speed_mms=speed)
+			self._beacon_check_directional_repeatability(gcmd, x, y, cycle_count=cycles, divisions=divisions, accel=accel, speed_mms=speed, distance=distance)
 		finally:
 			self.gcode.run_script_from_command("RESTORE_GCODE_STATE NAME=_BEACON_CHECK_REPEATABILITY")
 
@@ -1155,8 +1186,13 @@ class RatOS:
 				results.append( (division, last_z) )
 				
 		stats_by_division = {}
+		pc_groups = (('<=30pc', 30), ('<=85pc', 85), ('<=98pc', 98), ('all', 100))
 		
-		def get_stats_below_percentile(arr, p):
+		# used_values_mask is a numpy boolean array which the function updates to indicate which values were used
+		# in the calculation (ie, below the percentile cutoff). When computing per-division statistics
+		# pass the `indices` argument (list of indices into the global `results`) so the mask can be
+		# updated at the correct positions.
+		def get_stats_below_percentile(arr, p, used_values_mask = None, indices = None):
 			pc = np.percentile(arr, p)
 			pc_below = arr[arr <= pc]
 			if len(pc_below) == 0:
@@ -1166,28 +1202,50 @@ class RatOS:
 					'min': None,
 					'max': None,
 					'range': None,
+					'gradient': None,
 					'count': 0
 				}
+			
+			# Mark used values in the mask. If `indices` is provided, arr represents a slice of the
+			# global results and we must assign into the full-length mask at those indices.
+			if used_values_mask is not None:
+				if indices is None:
+					used_values_mask |= (arr <= pc)
+				else:
+					used_values_mask[np.array(indices, dtype=int)] |= (arr <= pc)
+
+			# Fit a 1-degree polynomial (line) to the data to get the gradient
+			# x values are the indices of the points
+			x_vals = np.arange(len(pc_below))
+			if len(pc_below) >= 2:
+				p_coeff = np.polyfit(x_vals, pc_below, 1)
+				gradient = p_coeff[0]
+			else:
+				gradient = 0.0
 			return {
 				'mean': round(float(np.mean(pc_below)), 4),
 				'stddev': round(float(np.std(pc_below)), 4),
 				'min': round(float(np.min(pc_below)), 4),
 				'max': round(float(np.max(pc_below)), 4),
 				'range': round(float(np.max(pc_below) - np.min(pc_below)), 4),
-				'count': len(pc_below)
+				'count': len(pc_below),
+				'gradient': round(float(gradient), 6)
 			}
 
+		used_values_masks_by_pc_label = { pc_label: np.zeros(len(results), dtype=bool) for (pc_label, pc) in pc_groups }
+
 		for division in range(divisions):
-			division_results = [z for (div, z) in results if div == division]
-			arr = np.array(division_results)
-			stats_by_division[division] = {
+			# Preserve the original indices into `results` so the global used_values_mask can be updated
+			division_results = [(idx, z) for idx, (div, z) in enumerate(results) if div == division]
+			indices = [idx for idx, _ in division_results]
+			arr = np.array([z for _, z in division_results])
+			stats = {
 				# angle, where 0 is +Y axis and increases clockwise
 				'angle': (360.0 / divisions) * division,
-				'<=30pc': get_stats_below_percentile(arr, 30),
-				'<=50pc': get_stats_below_percentile(arr, 50),
-				'<=85pc': get_stats_below_percentile(arr, 85),
-				'all': get_stats_below_percentile(arr, 100),
 			}
+			for pc_label, pc in pc_groups:
+				stats[pc_label] = get_stats_below_percentile(arr, pc, used_values_masks_by_pc_label[pc_label], indices=indices)
+			stats_by_division[division] = stats
 			self.reactor.pause(self.reactor.monotonic() + 0.1)
 		
 		def format_stats(stats):
@@ -1211,24 +1269,49 @@ class RatOS:
 			return f"{prefix}{angle:>8.0f}" if prefix else f"{angle:>10.0f}"			
 		
 		header = f"| {'Angle (°)':>10} {'Count':>6} {'Mean':>7} {'StdDev':>7} {'Min':>7} {'Max':>7} {'Range':>7} (µm)"
-		for pc_label, pc in (('<=30pc', 30), ('<=50pc', 50), ('<=85pc', 85), ('all', 100)):
+		def format_line(angle, count, mean, sd, mn, mx, rng, gradient):
+			note = ''
+			if count < 5:
+				note = ' ~ low count'
+			elif gradient > 0.0005:
+				note = f' ! trend gradient {gradient*1000.:.1f} µm/point, possible thermal drift'
+
+			return f"| {f'{angle:>10}' if isinstance(angle, str) else format_angle(angle)} {count:>6d} {mean} {sd} {mn} {mx} {rng}{note}"
+		
+		for pc_label, pc in pc_groups:
 			table_lines = []
 			table_lines.append(header)
 			for division in range(divisions):
 				stats = stats_by_division[division][pc_label]
 				angle = stats_by_division[division]['angle']
 				count = stats['count']
+				gradient = stats['gradient']
 				mean, sd, mn, mx, rng = format_stats(stats)
-				line = f"| {format_angle(angle)} {count:>6d} {mean} {sd} {mn} {mx} {rng}"
+				line = format_line(angle, count, mean, sd, mn, mx, rng, gradient)
 				table_lines.append(line)
 
-			# Add a final line showing the stats for all divisions combined
+			# Add a line showing the stats for values used in this percentile group accross divisions
+			# Here are rejecting values above the percentile cutoff for each division (considered *by division*)
+			# Note that the use of a mask allows the orginal order of samples to be considered, which is relevant
+			# for the gradient calculation.
+			used_values_mask = used_values_masks_by_pc_label[pc_label]
+			used_values = [z for i, (div, z) in enumerate(results) if used_values_mask[i]]
+			arr = np.array(used_values)
+			used_stats = get_stats_below_percentile(arr, 100)
+			mean, sd, mn, mx, rng = format_stats(used_stats)
+			count = used_stats['count']
+			gradient = used_stats['gradient']
+			line = format_line('USED ABOVE', count, mean, sd, mn, mx, rng, gradient)
+			table_lines.append(line)
+			# Add a final line showing the stats applying the percentile cutoff to all results together.
+			# Here the percentile cutoff is applied *globally* across all divisions.
 			all_results = [z for (div, z) in results]
 			arr = np.array(all_results)
 			all_stats = get_stats_below_percentile(arr, pc)
 			mean, sd, mn, mx, rng = format_stats(all_stats)
 			count = all_stats['count']
-			line = f"| {'ALL':>10} {count:>6d} {mean} {sd} {mn} {mx} {rng}"
+			gradient = all_stats['gradient']
+			line = format_line('ALL', count, mean, sd, mn, mx, rng, gradient)
 			table_lines.append(line)
 			
 			table_str = "\n".join(table_lines)
