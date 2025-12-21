@@ -69,9 +69,6 @@ class BeaconTrueZeroCorrection:
 												self._handle_connect)
 			self.printer.register_event_handler("homing:home_rails_end",
 												self._handle_homing_move_end)
-			self.printer.register_event_handler("stepper_enable:motor_off",
-												self._handle_motor_off)
-
 		else:
 			logging.info(f"{self.name}: beacon is not configured, beacon true zero correction disabled.")
 
@@ -102,11 +99,6 @@ class BeaconTrueZeroCorrection:
 		# Any existing true zero correction is invalidated when z is re-homed.
 		if 2 in homing_state.get_axes():
 			self.ratos_z_offset.set_offset('true_zero_correction', 0)
-
-	def _handle_motor_off(self, print_time):
-		# Clear the true zero correction offset if motors are disabled.
-		# Any existing true zero correction is invalidated when z is disabled.
-		self.ratos_z_offset.set_offset('true_zero_correction', 0)
 
 	######
 	# Commands
@@ -176,7 +168,7 @@ class BeaconTrueZeroCorrection:
 			timestamp = time.strftime("%Y%m%d_%H%M%S")
 			config_file = self.printer.get_start_args()['config_file']
 			config_dir = os.path.dirname(config_file)
-			filename = os.path.join(config_dir, f'mpp_capture_{timestamp}.csv')			
+			filename = os.path.join(config_dir, f'mpp_capture_{timestamp}.csv')
 
 			gcmd.respond_info(f"Capturing diagnostic data to {filename}...")
 
@@ -294,11 +286,11 @@ class BeaconTrueZeroCorrection:
 
 	def _validate_probing_region(self, range_x, range_y, span):
 		r = self.ratos.get_beacon_probing_regions()
-		
+
 		if r is None:
 			# This should not be possible, as this code should only be called when beacon and bed_mesh are present.
 			raise self.gcode.error('get_beacon_probing_regions() unexpectedly returned None, this should not be possible.')
-		
+
 		probable_x = (r.contact_min[0], r.contact_max[0])
 		probable_y = (r.contact_min[1], r.contact_max[1])
 
