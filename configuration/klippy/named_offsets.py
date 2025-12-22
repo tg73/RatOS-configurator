@@ -19,9 +19,13 @@
 
 from typing import Dict, Tuple, Final
 from math import isclose
+import logging
+
+# Shadow Mode, used only for testing while migrating from monolithic SET_GCODE_OFFSET usage.
+SM: Final = True
 
 COMBINED_OFFSET_KEY: Final = 'combined_offset'
-OFFSET_NAMES: Final = ('toolhead', 'true_zero_correction', 'hotend_thermal_expansion')
+OFFSET_NAMES: Final = ('toolhead', 'true_zero_correction', 'hotend_thermal_expansion', 'nosm_runtime_offset')
 MAX_OFFSET_NAME_LENGTH: Final = max(max(len(name) for name in OFFSET_NAMES), len(COMBINED_OFFSET_KEY))
 ZERO_OFFSET: Final = (0., 0., 0., 0.)
 XYZE: Final = 'XYZE'
@@ -37,6 +41,13 @@ class NamedOffsetManager:
 	# Items are name: (X,Y,Z,E)
 	offsets: Dict[str, Tuple[float, float, float, float]]
 	combined_offset: Tuple[float, float, float, float]
+
+	def _sm(self, msg: str, write_to_console: bool = True):
+		if SM:
+			msg = f"NOSM: {msg}"
+			logging.info(msg)
+			if write_to_console:
+				self.gcode.respond_raw(msg)
 
 	def __init__(self, config):
 		self.printer = config.get_printer()
@@ -62,7 +73,15 @@ class NamedOffsetManager:
 		self._original_get_position_cmd = None
 		self.saved_states = {}
 
+		if SM:
+			self.ratos = None
+
 		self.gcode = self.printer.lookup_object('gcode')
+		
+		# collections.namedtuple('Coord', ('x', 'y', 'z', 'e'))
+		# Use for macro-friendly status items that will behave the same as
+		# for example `printer.gcode_move.gcode_position.z`
+		self.Coord = self.gcode.Coord
 
 		self.gcode.register_command('GET_NAMED_OFFSETS', self.cmd_GET_NAMED_OFFSETS,
 							   desc=self.desc_GET_NAMED_OFFSETS)
@@ -72,11 +91,18 @@ class NamedOffsetManager:
 							   desc=self.desc_CLEAR_NAMED_OFFSET)
 
 	def _handle_connect(self):
+		self._sm("Running in Shadow Mode!")
+		
 		self._original_save_gcode_state_cmd = self._override_command('SAVE_GCODE_STATE', self.cmd_SAVE_GCODE_STATE)
 		self._original_restore_gcode_state_cmd = self._override_command('RESTORE_GCODE_STATE', self.cmd_RESTORE_GCODE_STATE)
 		self._original_get_position_cmd = self._override_command('GET_POSITION', self.cmd_GET_POSITION, when_not_ready=True)
 		self.gcode_move = self.printer.lookup_object('gcode_move')
-		self.next_transform = self.gcode_move.set_move_transform(self, force=True)
+
+		if SM:
+			self.ratos = self.printer.lookup_object('ratos')
+
+		if not SM:			
+			self.next_transform = self.gcode_move.set_move_transform(self, force=True)
 
 	def _handle_motor_off(self, print_time):
 		self._reset()
@@ -111,14 +137,20 @@ class NamedOffsetManager:
 			msg += f"\n{self.name}: {COMBINED_OFFSET_KEY}: {' '.join(f'{XYZE[i]}:{p:.6f}' for i, p in enumerate(self.combined_offset))}"
 		else:
 			msg = f"{self.name}: all named offsets are zero"
+		if SM:
+			msg += "\n!! SHADOW MODE ACTIVE !!"
 		gcmd.respond_info(msg)
 
 	def cmd_SAVE_GCODE_STATE(self, gcmd):
+		self._sm(gcmd.get_commandline())
+
 		self._original_save_gcode_state_cmd(gcmd)
 		state_name = gcmd.get('NAME', 'default')
 		self.saved_states[state_name] = dict(self.offsets)
 
 	def cmd_RESTORE_GCODE_STATE(self, gcmd):
+		self._sm(gcmd.get_commandline())
+
 		self._original_restore_gcode_state_cmd(gcmd)
 		state_name = gcmd.get('NAME', 'default')
 		saved_offsets = self.saved_states.get(state_name, None)
@@ -127,7 +159,7 @@ class NamedOffsetManager:
 		self.offsets = dict(saved_offsets)
 		move = gcmd.get_int('MOVE', 0) == 1
 		speed = gcmd.get_float('MOVE_SPEED', None, above=0.)
-		self._offset_changed(move, speed)
+		self._offset_changed(move, speed, gcmd=gcmd)
 
 	desc_GET_NAMED_OFFSETS = "Report information about named offsets"
 	def cmd_GET_NAMED_OFFSETS(self, gcmd):
@@ -137,10 +169,14 @@ class NamedOffsetManager:
 		names_and_offsets = ((name, self.offsets.get(name, ZERO_OFFSET)) for name in OFFSET_NAMES)
 		msg = "\n".join( f"{k:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))}" for k, v in names_and_offsets)
 		msg += f"\n{COMBINED_OFFSET_KEY:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(self.combined_offset))}"
+		if SM:
+			msg += "\n!! SHADOW MODE ACTIVE !!"
 		gcmd.respond_info(msg)
 
 	desc_SET_NAMED_OFFSET = "Set a named offset."
 	def cmd_SET_NAMED_OFFSET(self, gcmd):
+		self._sm(gcmd.get_commandline(), write_to_console=False)
+
 		name = gcmd.get('NAME').lower().strip()
 		if name not in OFFSET_NAMES:
 			raise self.gcode.error(f"Offset name '{name}' is not recognized.")
@@ -160,36 +196,40 @@ class NamedOffsetManager:
 			self.offsets[name] = offset
 		move = gcmd.get_int('MOVE', 0) == 1
 		speed = gcmd.get_float('MOVE_SPEED', None, above=0.)
-		self._offset_changed(move, speed)
+		self._offset_changed(move, speed, gcmd=gcmd)
 
 	desc_CLEAR_NAMED_OFFSET = "Clear a named offset. This is equivalent to setting all components of the offset to zero."
 	def cmd_CLEAR_NAMED_OFFSET(self, gcmd):
-		names = gcmd.get('NAME', '').strip().lower()
-		all = gcmd.get('ALL', '').strip().lower()
+		self._sm(gcmd.get_commandline(), write_to_console=False)
 
-		if not names and not all:
+		name = gcmd.get('NAME', '').strip().lower()
+		# Don't shadow python's 'all' keyword
+		all_param = gcmd.get('ALL', '').strip().lower()
+
+		if not name and not all_param:
 			raise gcmd.error("Either NAME or ALL parameter must be specified.")
 		
-		if all and names:
+		if all_param and name:
 			raise gcmd.error("Only one of NAME or ALL parameter may be specified.")
 
 		move = gcmd.get_int('MOVE', 0) == 1
 		speed = gcmd.get_float('MOVE_SPEED', None, above=0.)
 		
-		if all:
-			if all in ('1', 'true', 'yes'):
+		if all_param:
+			if all_param in ('1', 'true', 'yes'):
 				self.offsets = {}		
 		else:
-			names = [n.strip() for n in names.split(',')]
-			if any(n not in OFFSET_NAMES for n in names):
-				msg = f"One or more offset names are not recognized: {', '.join(n for n in names if n not in OFFSET_NAMES)}"
+			name = [n.strip() for n in name.split(',')]
+			if any(n not in OFFSET_NAMES for n in name):
+				msg = f"One or more offset names are not recognized: {', '.join(n for n in name if n not in OFFSET_NAMES)}"
 				raise gcmd.error(msg)
-			for n in names:
+			for n in name:
 				self.offsets.pop(n, None)
 
-		self._offset_changed(move, speed)
+		self._offset_changed(move, speed, gcmd=gcmd)
 
-	def _offset_changed(self, move=False, move_speed=None):
+	#def _offset_changed(self, move=False, move_speed=None):
+	def _offset_changed(self, move=False, move_speed=None, *, gcmd=None): # added gcmd only for SM
 		# MOVE and MOVE_SPEED behave like SET_GCODE_OFFSET
 
 		previous_offset = self.combined_offset
@@ -209,13 +249,36 @@ class NamedOffsetManager:
 
 		offset_delta = tuple(self.combined_offset[i] - previous_offset[i] for i in range(4))
 
+		if SM:
+			gc_base = self.gcode_move.base_position[:]
+			delta = [0.] * 4
+			# NOTE: We intentionally ignore E axis here for the purposes of the check.
+			for i in range(3):
+				delta[i] = self.combined_offset[i] - gc_base[i]
+			if self._offset_is_zero(delta):
+				msg = "CHECK_PASS:\n"
+				msg2 = "\n".join( f"  {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))} {k}" for k, v in self.offsets.items())
+				msg += msg2 if msg2 else "  (no named offsets defined)"
+				msg += f"\n       {gcmd.get_commandline() if gcmd else '(gcmd is None)'}"
+				self._sm(msg, write_to_console=False)
+			else:
+				msg = f"CHECK_FAIL:\n   NO: {' '.join(f'{XYZE[i]}:{self.combined_offset[i]:>9.6f}' for i in range(4))}\n   GC: {' '.join(f'{XYZE[i]}:{gc_base[i]:>9.6f}' for i in range(4))}\nNO-GC: {' '.join(f'{XYZE[i]}:{delta[i]:>9.6f}' for i in range(4))}\n"
+				msg2 = "\n".join( f"       {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))} {k}" for k, v in self.offsets.items())
+				msg += msg2 if msg2 else "       (no named offsets defined)"
+				msg += f"\n       {gcmd.get_commandline() if gcmd else '(gcmd is None)'}"
+				self._sm(msg, write_to_console=True)
+				self.ratos.cmd_DEBUG_ECHO_STACK_TRACE(None)
+			return
+		
+		# BELOW HERE SKIPPED IN SHADOW MODE!
+
 		# NB: we don't use a close check here otherwise we might suppress
 		# a sequence of tiny moves that add up to a significant change.
 		if offset_delta == ZERO_OFFSET:
 			# no change to any component of the combined offset, no need to update
 			# position or move.
 			return
-
+		
 		gcode_move = self.gcode_move
 		gcode_move.reset_last_position()
 
@@ -278,8 +341,9 @@ class NamedOffsetManager:
 	# status
 	######
 	def _update_status(self):
-		self.status = dict(self.offsets)
-		self.status[COMBINED_OFFSET_KEY] = self.combined_offset
+		status = {name: self.Coord(*self.offsets.get(name, ZERO_OFFSET)) for name in OFFSET_NAMES}
+		status[COMBINED_OFFSET_KEY] = self.Coord(*self.combined_offset)
+		self.status = status
 
 	def get_status(self, eventtime=None):
 		if self.status is None:
