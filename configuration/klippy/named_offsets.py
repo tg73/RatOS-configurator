@@ -25,7 +25,9 @@ import logging
 SM: Final = True
 
 COMBINED_OFFSET_KEY: Final = 'combined_offset'
-OFFSET_NAMES: Final = ('toolhead', 'true_zero_correction', 'hotend_thermal_expansion', 'nosm_runtime_offset')
+# toolhead: keeps nozzles aligned. Maybe rename to nozzle or toolhead_alignment?
+# idex_mode: for IDEX mode-specific offsets. X=-(pintable_x_max/2) in mirror and copy modes, X=0 in single mode.
+OFFSET_NAMES: Final = ('toolhead', 'idex_mode', 'true_zero_correction', 'hotend_thermal_expansion', 'nosm_runtime_offset')
 MAX_OFFSET_NAME_LENGTH: Final = max(max(len(name) for name in OFFSET_NAMES), len(COMBINED_OFFSET_KEY))
 ZERO_OFFSET: Final = (0., 0., 0., 0.)
 XYZE: Final = 'XYZE'
