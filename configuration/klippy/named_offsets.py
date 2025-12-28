@@ -11,8 +11,6 @@
 # SAVE_GCODE_STATE and RESTORE_GCODE_STATE are overridden to include the named offsets in
 # the saved/restored state.
 #
-# NOTE: At present, all offsets are zeroed when the stepper motors are turned off.
-#
 # Copyright (C) 2025 Tom Glastonbury <t@tg73.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
@@ -20,36 +18,49 @@
 from typing import Dict, Tuple, Final
 from math import isclose
 import logging
-
-# Shadow Mode, used only for testing while migrating from monolithic SET_GCODE_OFFSET usage.
-SM: Final = True
-
-COMBINED_OFFSET_KEY: Final = 'combined_offset'
-# toolhead: keeps nozzles aligned. Maybe rename to nozzle or toolhead_alignment?
-# idex_mode: for IDEX mode-specific offsets. X=-(pintable_x_max/2) in mirror and copy modes, X=0 in single mode.
-OFFSET_NAMES: Final = ('toolhead', 'idex_mode', 'true_zero_correction', 'hotend_thermal_expansion', 'nosm_runtime_offset')
-MAX_OFFSET_NAME_LENGTH: Final = max(max(len(name) for name in OFFSET_NAMES), len(COMBINED_OFFSET_KEY))
-ZERO_OFFSET: Final = (0., 0., 0., 0.)
-XYZE: Final = 'XYZE'
+from dataclasses import dataclass, field
 
 # TODO: consider:
 #   allow valid offset names to be specificed in config (we restrict to valid to avoid accidental typos in use)
 #     name_toolhead: "description of toolhead"
-#     toolhead_reset_on_motor_off: True
-#     toolhead_default_value: 0.0
+#     toolhead_reset_triggers: ['motor_off', 'some_other_event']
 #     toolhead_include_in_save_state: True
+
+# a dataclass encapsulating configuration for a named offset
+@dataclass
+class NamedOffsetConfig:
+	description: str
+	reset_triggers: Tuple[str, ...] = field(default_factory=lambda: ('motor_off'))
+
+OFFSETS: Final[Dict[str, NamedOffsetConfig]] = {
+	'toolhead': NamedOffsetConfig(
+		description='Keeps nozzles aligned in multi-toolhead setups',
+	),
+	'idex_mode': NamedOffsetConfig(
+		description='IDEX mode-specific offset',
+	),
+	'true_zero_correction': NamedOffsetConfig(
+		description='Correction for beacon true zero Z measurements (see the beacon_true_zero_correction module)',
+	),
+	'hotend_thermal_expansion': NamedOffsetConfig(
+		description='Compensates for Z changes due to hotend thermal expansion. Only applied when printing.',
+		reset_triggers=('motor_off', 'end_print'),
+	),
+	'user_probe_z_offset': NamedOffsetConfig(
+		description='The user-configured Z offset of the Z probe when not managed by the probe itself. Currently applies only when using beacon contact true zero.',
+		reset_triggers=(),
+	),
+}
+TRIGGERS: Final = { trigger for config in OFFSETS.values() for trigger in config.reset_triggers } |	{'motor_off', 'end_print'} 
+COMBINED_OFFSET_KEY: Final = 'combined_offset'
+MAX_OFFSET_NAME_LENGTH: Final = max(max(len(name) for name in OFFSETS.keys()), len(COMBINED_OFFSET_KEY))
+ZERO_OFFSET: Final = (0., 0., 0., 0.)
+XYZE: Final = 'XYZE'
 
 class NamedOffsetManager:
 	# Items are name: (X,Y,Z,E)
 	offsets: Dict[str, Tuple[float, float, float, float]]
 	combined_offset: Tuple[float, float, float, float]
-
-	def _sm(self, msg: str, write_to_console: bool = True):
-		if SM:
-			msg = f"NOSM: {msg}"
-			logging.info(msg)
-			if write_to_console:
-				self.gcode.respond_raw(msg)
 
 	def __init__(self, config):
 		self.printer = config.get_printer()
@@ -74,10 +85,6 @@ class NamedOffsetManager:
 		self._original_restore_gcode_state_cmd = None
 		self._original_get_position_cmd = None
 		self.saved_states = {}
-
-		if SM:
-			self.ratos = None
-
 		self.gcode = self.printer.lookup_object('gcode')
 		
 		# collections.namedtuple('Coord', ('x', 'y', 'z', 'e'))
@@ -93,26 +100,14 @@ class NamedOffsetManager:
 							   desc=self.desc_CLEAR_NAMED_OFFSET)
 
 	def _handle_connect(self):
-		self._sm("Running in Shadow Mode!")
-		
 		self._original_save_gcode_state_cmd = self._override_command('SAVE_GCODE_STATE', self.cmd_SAVE_GCODE_STATE)
 		self._original_restore_gcode_state_cmd = self._override_command('RESTORE_GCODE_STATE', self.cmd_RESTORE_GCODE_STATE)
 		self._original_get_position_cmd = self._override_command('GET_POSITION', self.cmd_GET_POSITION, when_not_ready=True)
 		self.gcode_move = self.printer.lookup_object('gcode_move')
-
-		if SM:
-			self.ratos = self.printer.lookup_object('ratos')
-
-		if not SM:			
-			self.next_transform = self.gcode_move.set_move_transform(self, force=True)
+		self.next_transform = self.gcode_move.set_move_transform(self, force=True)
 
 	def _handle_motor_off(self, print_time):
-		self._reset()
-
-	def _reset(self):
-		self.offsets = {}
-		self.combined_offset = ZERO_OFFSET
-		self._update_status()
+		self.reset_on_trigger('motor_off')
 
 	def _override_command(self, cmd_name, new_cmd, *, when_not_ready:bool=False):
 		help_text = self.gcode.get_command_help().get(cmd_name, None)
@@ -134,25 +129,19 @@ class NamedOffsetManager:
 	######
 	def cmd_GET_POSITION(self, gcmd):
 		self._original_get_position_cmd(gcmd)
-		msg = "\n".join( f"{self.name}: {k}: {' '.join(f'{XYZE[i]}:{p:.6f}' for i, p in enumerate(v))}" for k, v in self.offsets.items())
+		msg = "\n".join( f"{self.name}: {k}: {' '.join(f'{XYZE[i]}:{p:.6f}' for i, p in enumerate(v))}" for k, v in sorted(self.offsets.items()))
 		if msg:
 			msg += f"\n{self.name}: {COMBINED_OFFSET_KEY}: {' '.join(f'{XYZE[i]}:{p:.6f}' for i, p in enumerate(self.combined_offset))}"
 		else:
 			msg = f"{self.name}: all named offsets are zero"
-		if SM:
-			msg += "\n!! SHADOW MODE ACTIVE !!"
 		gcmd.respond_info(msg)
 
 	def cmd_SAVE_GCODE_STATE(self, gcmd):
-		self._sm(gcmd.get_commandline())
-
 		self._original_save_gcode_state_cmd(gcmd)
 		state_name = gcmd.get('NAME', 'default')
 		self.saved_states[state_name] = dict(self.offsets)
 
 	def cmd_RESTORE_GCODE_STATE(self, gcmd):
-		self._sm(gcmd.get_commandline())
-
 		self._original_restore_gcode_state_cmd(gcmd)
 		state_name = gcmd.get('NAME', 'default')
 		saved_offsets = self.saved_states.get(state_name, None)
@@ -168,19 +157,26 @@ class NamedOffsetManager:
 		# Note: while GET_POSITION follows the same terse format as the base command, and only lists
 		#   non-zero offsets, GET_NAMED_OFFSETS lists all named offsets for completeness.
 		#   In the future, GET_NAMED_OFFSETS could report additional metadata about each offset if desired.
-		names_and_offsets = ((name, self.offsets.get(name, ZERO_OFFSET)) for name in OFFSET_NAMES)
-		msg = "\n".join( f"{k:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))}" for k, v in names_and_offsets)
-		msg += f"\n{COMBINED_OFFSET_KEY:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(self.combined_offset))}"
-		if SM:
-			msg += "\n!! SHADOW MODE ACTIVE !!"
+		names_and_offsets = sorted(((name, self.offsets.get(name, ZERO_OFFSET)) for name in OFFSETS.keys()))
+		msg = "OFFSETS:\n  "
+		msg += "\n  ".join( f"{k:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))}" for k, v in names_and_offsets)
+		msg += f"\n  {COMBINED_OFFSET_KEY:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(self.combined_offset))}"
+		msg += "\nRESET TRIGGERS:"
+		if len(TRIGGERS) == 0:
+			msg += "\n  (none)"
+		else:
+			for trigger in sorted(TRIGGERS):
+				offsets_with_trigger = [name for name, config in OFFSETS.items() if trigger in config.reset_triggers]
+				if offsets_with_trigger:
+					msg += f"\n  {trigger}\n    ({'\n    '.join(sorted(offsets_with_trigger))})"
+				else:
+					msg += f"\n  {trigger}\n    (none)"
 		gcmd.respond_info(msg)
 
 	desc_SET_NAMED_OFFSET = "Set a named offset."
 	def cmd_SET_NAMED_OFFSET(self, gcmd):
-		self._sm(gcmd.get_commandline(), write_to_console=False)
-
 		name = gcmd.get('NAME').lower().strip()
-		if name not in OFFSET_NAMES:
+		if name not in OFFSETS:
 			raise self.gcode.error(f"Offset name '{name}' is not recognized.")
 		offset = list(self.offsets.get(name, ZERO_OFFSET))
 		for pos, axis in enumerate(XYZE):
@@ -200,38 +196,32 @@ class NamedOffsetManager:
 		speed = gcmd.get_float('MOVE_SPEED', None, above=0.)
 		self._offset_changed(move, speed, gcmd=gcmd)
 
-	desc_CLEAR_NAMED_OFFSET = "Clear a named offset. This is equivalent to setting all components of the offset to zero."
+	desc_CLEAR_NAMED_OFFSET = "Clear a named offset, or one or more offsets based on a trigger. This is equivalent to setting all components of the offset to zero."
 	def cmd_CLEAR_NAMED_OFFSET(self, gcmd):
-		self._sm(gcmd.get_commandline(), write_to_console=False)
-
 		name = gcmd.get('NAME', '').strip().lower()
-		# Don't shadow python's 'all' keyword
-		all_param = gcmd.get('ALL', '').strip().lower()
+		trigger = gcmd.get('TRIGGER', '').strip().lower()
 
-		if not name and not all_param:
-			raise gcmd.error("Either NAME or ALL parameter must be specified.")
+		if not (name or trigger):
+			raise gcmd.error("Either NAME or TRIGGER parameter must be specified.")
 		
-		if all_param and name:
-			raise gcmd.error("Only one of NAME or ALL parameter may be specified.")
+		if trigger and name:
+			raise gcmd.error("Only one of NAME or TRIGGER parameter may be specified.")
 
 		move = gcmd.get_int('MOVE', 0) == 1
 		speed = gcmd.get_float('MOVE_SPEED', None, above=0.)
-		
-		if all_param:
-			if all_param in ('1', 'true', 'yes'):
-				self.offsets = {}		
+
+		if trigger:
+			if trigger not in TRIGGERS:
+				raise gcmd.error(f"Trigger '{trigger}' is not recognized.")
+			self.reset_on_trigger(trigger, move, speed)
 		else:
-			name = [n.strip() for n in name.split(',')]
-			if any(n not in OFFSET_NAMES for n in name):
-				msg = f"One or more offset names are not recognized: {', '.join(n for n in name if n not in OFFSET_NAMES)}"
-				raise gcmd.error(msg)
-			for n in name:
-				self.offsets.pop(n, None)
+			if name not in OFFSETS:
+				raise gcmd.error(f"Offset name '{name}' is not recognized.")
+			self.reset(name, move, speed)
 
 		self._offset_changed(move, speed, gcmd=gcmd)
-
-	#def _offset_changed(self, move=False, move_speed=None):
-	def _offset_changed(self, move=False, move_speed=None, *, gcmd=None): # added gcmd only for SM
+	
+	def _offset_changed(self, move=False, move_speed=None,):
 		# MOVE and MOVE_SPEED behave like SET_GCODE_OFFSET
 
 		previous_offset = self.combined_offset
@@ -250,29 +240,6 @@ class NamedOffsetManager:
 		self._update_status()
 
 		offset_delta = tuple(self.combined_offset[i] - previous_offset[i] for i in range(4))
-
-		if SM:
-			gc_base = self.gcode_move.base_position[:]
-			delta = [0.] * 4
-			# NOTE: We intentionally ignore E axis here for the purposes of the check.
-			for i in range(3):
-				delta[i] = self.combined_offset[i] - gc_base[i]
-			if self._offset_is_zero(delta):
-				msg = "CHECK_PASS:\n"
-				msg2 = "\n".join( f"  {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))} {k}" for k, v in self.offsets.items())
-				msg += msg2 if msg2 else "  (no named offsets defined)"
-				msg += f"\n       {gcmd.get_commandline() if gcmd else '(gcmd is None)'}"
-				self._sm(msg, write_to_console=False)
-			else:
-				msg = f"CHECK_FAIL:\n   NO: {' '.join(f'{XYZE[i]}:{self.combined_offset[i]:>9.6f}' for i in range(4))}\n   GC: {' '.join(f'{XYZE[i]}:{gc_base[i]:>9.6f}' for i in range(4))}\nNO-GC: {' '.join(f'{XYZE[i]}:{delta[i]:>9.6f}' for i in range(4))}\n"
-				msg2 = "\n".join( f"       {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))} {k}" for k, v in self.offsets.items())
-				msg += msg2 if msg2 else "       (no named offsets defined)"
-				msg += f"\n       {gcmd.get_commandline() if gcmd else '(gcmd is None)'}"
-				self._sm(msg, write_to_console=True)
-				self.ratos.cmd_DEBUG_ECHO_STACK_TRACE(None)
-			return
-		
-		# BELOW HERE SKIPPED IN SHADOW MODE!
 
 		# NB: we don't use a close check here otherwise we might suppress
 		# a sequence of tiny moves that add up to a significant change.
@@ -300,7 +267,7 @@ class NamedOffsetManager:
 		if name:
 			name = name.strip().lower()
 
-		if name not in OFFSET_NAMES:
+		if name not in OFFSETS:
 			raise self.gcode.error(f"Offset name '{name}' is not recognized.")
 
 		offset = list(self.offsets.get(name, ZERO_OFFSET))
@@ -319,6 +286,27 @@ class NamedOffsetManager:
 			self.offsets[name] = offset
 
 		self._offset_changed(should_move, move_speed)
+
+	def reset(self, name:str, move=False, move_speed=None):
+		if name not in OFFSETS:
+			raise self.gcode.error(f"Offset name '{name}' is not recognized.")
+		
+		if name in self.offsets:
+			self.offsets.pop(name)
+			self._offset_changed(move, move_speed)
+		
+	def reset_on_trigger(self, trigger:str, move=False, move_speed=None):
+		if trigger not in TRIGGERS:
+			raise self.gcode.error(f"Trigger '{trigger}' is not recognized.")
+		
+		changed = False
+		for name, config in OFFSETS.items():
+			if trigger in config.reset_triggers:
+				if name in self.offsets:
+					self.offsets.pop(name)
+					changed = True
+		if changed:
+			self._offset_changed(move, move_speed)
 
 	######
 	# gcode_move transform compliance
@@ -343,7 +331,7 @@ class NamedOffsetManager:
 	# status
 	######
 	def _update_status(self):
-		status = {name: self.Coord(*self.offsets.get(name, ZERO_OFFSET)) for name in OFFSET_NAMES}
+		status = {name: self.Coord(*self.offsets.get(name, ZERO_OFFSET)) for name in OFFSETS.keys()}
 		status[COMBINED_OFFSET_KEY] = self.Coord(*self.combined_offset)
 		self.status = status
 
