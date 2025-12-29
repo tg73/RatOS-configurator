@@ -42,7 +42,7 @@ class BeaconUserZOffsetManager:
 			'Z_OFFSET_APPLY_PROBE',
 			self.cmd_Z_OFFSET_APPLY_PROBE
 		)
-		logging.info(f"{self.name}: beacon user z-offset management activated, applying configured z_offset of {self.configured_z_offset} mm to named offset '{OFFSET_NAME}'.")
+		logging.info(f"{self.name}: beacon_contact_start_print_true_zero is enabled, activating beacon user z-offset management. Applying configured z_offset of {self.configured_z_offset} mm to named offset '{OFFSET_NAME}'.")
 		self.named_offsets.set(OFFSET_NAME, z=self.configured_z_offset)
 
 	def _override_command(self, cmd_name, new_cmd, *, when_not_ready:bool=False):
@@ -67,14 +67,13 @@ class BeaconUserZOffsetManager:
 		if offset == 0:
 			gcmd.respond_info("Nothing to do: Z Offset is 0")
 			return
-		new_calibrate = self.configured_z_offset - offset
+		offset += self.configured_z_offset
 		gcmd.respond_info(
-			"%s: z_offset: %.3f\n"
+			f"Offset for beacon true zero has been adjusted, new value is {offset:.5f}\n"
 			"The SAVE_CONFIG command will update the printer config file\n"
-			"with the above and restart the printer."
-			% (self.name, new_calibrate))
+			"with the above and restart the printer.")
 		configfile = self.printer.lookup_object('configfile')
-		configfile.set(self.name, 'z_offset', "%.3f" % (new_calibrate,))
+		configfile.set(self.name, 'z_offset', "%.5f" % (offset,))
 		
 def load_config(config):
 	return BeaconUserZOffsetManager(config)
