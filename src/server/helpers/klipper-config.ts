@@ -364,11 +364,7 @@ export const constructKlipperConfigExtrasGenerator = (
 			const vars: string[] = [`[Variables]`];
 			// const isIdex = utils.getToolheads().some((th) => th.getMotionAxis() === PrinterAxis.dual_carriage);
 			vars.push(...getVaocControlPointVariables(config, options));
-			vars.push(
-				`nozzle_expansion_applied_offset = 0`,
-				`nozzle_expansion_coefficient_t0 = 0.06`,
-				`nozzle_expansion_coefficient_t1 = 0.06`,
-			);
+			vars.push(`nozzle_expansion_coefficient_t0 = 0.06`, `nozzle_expansion_coefficient_t1 = 0.06`);
 			return [
 				{
 					fileName: 'ratos-variables.cfg',

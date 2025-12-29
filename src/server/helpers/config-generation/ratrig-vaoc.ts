@@ -17,7 +17,6 @@ export function getDefaultVaocControlPoints(config: { size: { x: number } }): VA
 export function getVaocControlPointVariables(config: { size: { x: number } }, options?: VAOCControlPoints): string[] {
 	options ??= getDefaultVaocControlPoints(config);
 	return [
-		`idex_applied_offset = 1`,
 		`idex_xcontrolpoint = ${options.xcontrolpoint}`,
 		`idex_ycontrolpoint = ${options.ycontrolpoint}`,
 		`idex_zcontrolpoint = ${options.zcontrolpoint}`,
