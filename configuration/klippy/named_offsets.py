@@ -31,6 +31,7 @@ from typing import Dict, Tuple, Final
 from math import isclose
 import logging
 from dataclasses import dataclass, field
+import textwrap
 
 # TODO: consider:
 #   allow valid offset names to be specificed in config (we restrict to valid to avoid accidental typos in use)
@@ -45,16 +46,16 @@ class NamedOffsetConfig:
 
 OFFSETS: Final[Dict[str, NamedOffsetConfig]] = {
 	'toolhead_alignment': NamedOffsetConfig(
-		description='Keeps nozzles aligned in multi-toolhead setups',
+		description='The offset that keeps nozzles aligned in multi-toolhead setups. Typically T0 is the reference toolhead with zero offset, and other toolheads have offsets to align them to T0.',
 	),
 	'idex_mode': NamedOffsetConfig(
-		description='IDEX mode-specific offset',
+		description='The IDEX mode-specific offset. For example, in copy and mirror mode, this offset remaps the X midpoint from the middle of the physical bed to one quarter of the way into the bed.',
 	),
 	'true_zero_correction': NamedOffsetConfig(
-		description='Correction for beacon true zero Z measurements (see the beacon_true_zero_correction module)',
+		description='The correction applied to a beacon true zero Z measurement by the beacon_true_zero_correction module (aka, multi-point true zero probing).',
 	),
 	'hotend_thermal_expansion': NamedOffsetConfig(
-		description='Compensates for Z changes due to hotend thermal expansion. Only applied when printing.',
+		description='Keeps the nozzle tip at the same Z height despite changes due to hotend thermal expansion. Only set when printing.',
 		reset_events=('motor_off', 'end_print'),
 	),
 	'user_probe_z_offset': NamedOffsetConfig(
@@ -170,21 +171,30 @@ class NamedOffsetManager:
 		# Note: while GET_POSITION follows the same terse format as the base command, and only lists
 		#   non-zero offsets, GET_NAMED_OFFSETS lists all named offsets for completeness.
 		#   In the future, GET_NAMED_OFFSETS could report additional metadata about each offset if desired.
+		verbose = gcmd.get('VERBOSE', '').strip().lower() in ('1', 'true', 'yes')
 		names_and_offsets = sorted(((name, self.offsets.get(name, ZERO_OFFSET)) for name in OFFSETS.keys()))
-		msg = "OFFSETS:\n  "
-		msg += "\n  ".join( f"{k:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))}" for k, v in names_and_offsets)
-		msg += f"\n  {COMBINED_OFFSET_KEY:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(self.combined_offset))}"
-		msg += "\nRESET EVENTS:"
-		if len(RESET_EVENTS) == 0:
-			msg += "\n  (none)"
+		msg = "OFFSETS:\n| "
+		msg += "\n| ".join( f"{k:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(v))}" for k, v in names_and_offsets)
+		msg += f"\n| {COMBINED_OFFSET_KEY:<{MAX_OFFSET_NAME_LENGTH}} {' '.join(f'{XYZE[i]}:{p:>9.6f}' for i, p in enumerate(self.combined_offset))}"
+		if verbose:
+			msg += "\nDESCRIPTIONS:"
+			for name, config in sorted(OFFSETS.items()):
+				wrapped_desc = textwrap.fill(config.description, width=70, subsequent_indent='|   ')
+				msg += f"\n| {name}:\n|   {wrapped_desc}"
+			msg += f"\n| {COMBINED_OFFSET_KEY}:\n|   The combined offset of all named offsets."
+			msg += "\nRESET TRIGGERS:"
+			if len(RESET_EVENTS) == 0:
+				msg += "\n| (none)"
+			else:
+				for event in sorted(RESET_EVENTS):
+					offsets_with_events = [name for name, config in OFFSETS.items() if event in config.reset_events]
+					if offsets_with_events:
+						joined = "\n|   ".join(sorted(offsets_with_events))
+						msg += f"\n| {event}:\n|   {joined}"
+					else:
+						msg += f"\n| {event}:\n|   (none)"
 		else:
-			for event in sorted(RESET_EVENTS):
-				offsets_with_events = [name for name, config in OFFSETS.items() if event in config.reset_events]
-				if offsets_with_events:
-					joined = "\n    ".join(sorted(offsets_with_events))
-					msg += f"\n  {event}\n    {joined}"
-				else:
-					msg += f"\n  {event}\n    (none)"
+			msg += "\n(use GET_NAMED_OFFSETS VERBOSE=1 to see extended information)"
 		gcmd.respond_info(msg)
 
 	desc_SET_NAMED_OFFSET = "Set a named offset."
