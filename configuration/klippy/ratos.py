@@ -787,10 +787,12 @@ class RatOS:
 	# Helper
 	#####
 	def ratos_echo(self, prefix, msg):
-		self.gcode.run_script_from_command("RATOS_ECHO PREFIX='" + str(prefix) + "' MSG='" + str(msg).replace("'", "`").replace("\n", "_N_") + "'")
+		if self.gcode.is_printer_ready:
+			self.gcode.run_script_from_command("RATOS_ECHO PREFIX='" + str(prefix) + "' MSG='" + str(msg).replace("'", "`").replace("\n", "_N_") + "'")
 
 	def debug_echo(self, prefix, msg):
-		self.gcode.run_script_from_command("DEBUG_ECHO PREFIX='" + str(prefix) + "' MSG='" + str(msg).replace("'", "`").replace("\n", "_N_") + "'")
+		if self.gcode.is_printer_ready:
+			self.gcode.run_script_from_command("DEBUG_ECHO PREFIX='" + str(prefix) + "' MSG='" + str(msg).replace("'", "`").replace("\n", "_N_") + "'")
 	
 	def console_echo(self, title, type, msg=''):
 		color = "white"

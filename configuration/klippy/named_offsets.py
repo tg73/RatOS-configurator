@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 @dataclass
 class NamedOffsetConfig:
 	description: str
-	reset_events: Tuple[str, ...] = field(default_factory=lambda: ('motor_off'))
+	reset_events: Tuple[str, ...] = field(default_factory=lambda: ('motor_off',))
 
 OFFSETS: Final[Dict[str, NamedOffsetConfig]] = {
 	'toolhead_alignment': NamedOffsetConfig(
@@ -163,7 +163,7 @@ class NamedOffsetManager:
 		self.offsets = dict(saved_offsets)
 		move = gcmd.get_int('MOVE', 0) == 1
 		speed = gcmd.get_float('MOVE_SPEED', None, above=0.)
-		self._offset_changed(move, speed, gcmd=gcmd)
+		self._offset_changed(move, speed)
 
 	desc_GET_NAMED_OFFSETS = "Report information about named offsets"
 	def cmd_GET_NAMED_OFFSETS(self, gcmd):
@@ -181,7 +181,8 @@ class NamedOffsetManager:
 			for event in sorted(RESET_EVENTS):
 				offsets_with_events = [name for name, config in OFFSETS.items() if event in config.reset_events]
 				if offsets_with_events:
-					msg += f"\n  {event}\n    ({'\n    '.join(sorted(offsets_with_events))})"
+					joined = "\n    ".join(sorted(offsets_with_events))
+					msg += f"\n  {event}\n    {joined}"
 				else:
 					msg += f"\n  {event}\n    (none)"
 		gcmd.respond_info(msg)
@@ -209,7 +210,7 @@ class NamedOffsetManager:
 			self.offsets[name] = offset
 		move = gcmd.get_int('MOVE', 0) == 1
 		speed = gcmd.get_float('MOVE_SPEED', None, above=0.)
-		self._offset_changed(move, speed, gcmd=gcmd)
+		self._offset_changed(move, speed)
 
 	desc_RESET_NAMED_OFFSET = "Reset a named offset, or one or more offsets by signalling an event. This is equivalent to setting all components of the offset to zero."
 	def cmd_RESET_NAMED_OFFSET(self, gcmd):
