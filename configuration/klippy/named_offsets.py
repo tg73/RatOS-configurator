@@ -63,7 +63,9 @@ OFFSETS: Final[Dict[str, NamedOffsetConfig]] = {
 		reset_events=(),
 	),
 }
-RESET_EVENTS: Final = { event for config in OFFSETS.values() for event in config.reset_events } | {'motor_off', 'end_print'} 
+
+RESET_ALL_EVENT: Final = 'reset_all'
+RESET_EVENTS: Final = { event for config in OFFSETS.values() for event in config.reset_events } | {'motor_off', 'end_print', RESET_ALL_EVENT} 
 COMBINED_OFFSET_KEY: Final = 'combined_offset'
 MAX_OFFSET_NAME_LENGTH: Final = max(max(len(name) for name in OFFSETS.keys()), len(COMBINED_OFFSET_KEY))
 ZERO_OFFSET: Final = (0., 0., 0., 0.)
@@ -187,6 +189,9 @@ class NamedOffsetManager:
 				msg += "\n| (none)"
 			else:
 				for event in sorted(RESET_EVENTS):
+					if event == RESET_ALL_EVENT:
+						# Don't list RESET_ALL_EVENT here as it's a special purpose event
+						continue
 					offsets_with_events = [name for name, config in OFFSETS.items() if event in config.reset_events]
 					if offsets_with_events:
 						joined = "\n|   ".join(sorted(offsets_with_events))
@@ -328,7 +333,7 @@ class NamedOffsetManager:
 		
 		changed = False
 		for name, config in OFFSETS.items():
-			if event in config.reset_events:
+			if event == RESET_ALL_EVENT or event in config.reset_events:
 				if name in self.offsets:
 					self._debug_echo("reset_on_event", f"{event}: {name} -> zero")
 					self.offsets.pop(name)
