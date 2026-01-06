@@ -15,6 +15,7 @@ from . import probe
 
 BEACON_AUTO_CALIBRATE = 'BEACON_AUTO_CALIBRATE'
 RATOS_TITLE = 'BEACON_AUTO_CALIBRATE Multi-point Probing'
+OFFSET_NAME = 'true_zero_correction'
 
 class BeaconTrueZeroCorrection:
 	def __init__(self, config):
@@ -26,7 +27,7 @@ class BeaconTrueZeroCorrection:
 
 		self.status = None
 		self.ratos = None
-		self.ratos_z_offset = None
+		self.named_offsets = None
 		self.toolhead = None
 		self.dual_carriage = None
 		self.orig_cmd = None
@@ -74,7 +75,7 @@ class BeaconTrueZeroCorrection:
 
 	def _handle_connect(self):
 		self.ratos = self.printer.lookup_object('ratos')
-		self.ratos_z_offset = self.printer.lookup_object('ratos_z_offset')
+		self.named_offsets = self.printer.lookup_object('named_offsets')
 		self.toolhead = self.printer.lookup_object("toolhead")
 
 		if self.config.has_section("dual_carriage"):
@@ -98,7 +99,7 @@ class BeaconTrueZeroCorrection:
 		# Clear the true zero correction offset if the Z axis is homed.
 		# Any existing true zero correction is invalidated when z is re-homed.
 		if 2 in homing_state.get_axes():
-			self.ratos_z_offset.set_offset('true_zero_correction', 0)
+			self.named_offsets.reset(OFFSET_NAME)
 
 	######
 	# Commands
@@ -106,7 +107,7 @@ class BeaconTrueZeroCorrection:
 	desc_BEACON_AUTO_CALIBRATE = "Automatically calibrates the Beacon probe. Extended with RatOS multi-point probing for improved true zero consistency. Use SKIP_MULTIPOINT_PROBING=1 to bypass."
 	def cmd_BEACON_AUTO_CALIBRATE(self, gcmd):
 		# Clear existing offset
-		self.ratos_z_offset.set_offset('true_zero_correction', 0)
+		self.named_offsets.reset(OFFSET_NAME)
 
 		skip = gcmd.get('SKIP_MULTIPOINT_PROBING', '').lower() in ('1', 'true', 'yes')
 		if skip:
@@ -393,7 +394,7 @@ class ProbingSession:
 				raise self.gcmd.error('Measured correction is below safety limit')
 			logging.info(f'{self.tzc.name}: applying correction {self._finalize_result:.6f}')
 			self.gcmd.respond_info(f'Applying true zero correction of {self._finalize_result*1000.:.1f} µm')
-			self.tzc.ratos_z_offset.set_offset('true_zero_correction', self._finalize_result)
+			self.tzc.named_offsets.set(OFFSET_NAME, z=self._finalize_result)
 		else:
 			raise ValueError('Internal error: unexpected value for _finalize_result')
 
