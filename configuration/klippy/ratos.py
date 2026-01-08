@@ -8,8 +8,14 @@
 
 import os, logging, glob, traceback, inspect, re, time
 import json, subprocess, pathlib, random, math
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
 import numpy as np
+
+def _download_task(url, path):
+	urllib.request.urlretrieve(url, path)
+	return True
 
 BeaconProbingRegions = namedtuple('BeaconProbingRegions', 
 			['x_offset', 'y_offset', 'proximity_min', 'proximity_max', 'contact_min', 'contact_max'])
@@ -63,6 +69,7 @@ class RatOS:
 		self.last_check_bed_mesh_profile_exists_result = None
 		self.last_move_to_safe_z_home_position = None
 
+		self._last_camera_snapshot_index_by_subdir = {}
 		self.old_is_graph_files = []
 		self.load_settings()
 		self.register_commands()
@@ -143,6 +150,7 @@ class RatOS:
 		self.gcode.register_command('INCREASE_Y_MAX', self.cmd_INCREASE_Y_MAX, desc=self.desc_INCREASE_Y_MAX)
 		self.gcode.register_command('RESET_Y_MAX_ADJUSTMENT', self.cmd_RESET_Y_MAX_ADJUSTMENT, desc=self.desc_RESET_Y_MAX_ADJUSTMENT)
 		self.gcode.register_command('_BEACON_CHECK_DIRECTIONAL_REPEATABILITY', self.cmd_BEACON_CHECK_DIRECTIONAL_REPEATABILITY, desc=self.desc_BEACON_CHECK_DIRECTIONAL_REPEATABILITY)
+		self.gcode.register_command('_CAMERA_SNAPSHOT', self.cmd_CAMERA_SNAPSHOT, desc=self.desc_CAMERA_SNAPSHOT)
 
 	def register_command_overrides(self):
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=self.desc_TEST_RESONANCES)
@@ -1362,6 +1370,59 @@ class RatOS:
 		except Exception as e:
 			self.console_echo('BEACON_CHECK_DIRECTIONAL_REPEATABILITY', 'error', f'Failed to write results to {json_path}: {e}')
 
+	desc_CAMERA_SNAPSHOT = "For development use only. Take a snapshot from crowsnest snapshot URL and save it to the snapshots subdirectory of the Klipper config directory. Optionally specify SUBDIR to save in a subdirectory of snapshots. Optionally specify URL (default is 'localhost:8080/snapshot')."
+	def cmd_CAMERA_SNAPSHOT(self, gcmd):
+		subdir = gcmd.get('SUBDIR', '').strip()
+		url = gcmd.get('URL', 'http://localhost:8080/snapshot')
+
+		main_config_path = self.printer.get_start_args()['config_file']
+		if not main_config_path:
+			raise self.printer.command_error("Could not determine the klipper config path!")
+		config_dir = os.path.dirname(main_config_path)
+		snapshots_dir = os.path.join(config_dir, 'snapshots')		
+		if subdir:
+			snapshots_dir = os.path.join(snapshots_dir, subdir)
+
+		if not os.path.exists(snapshots_dir):
+			try:
+				os.makedirs(snapshots_dir)
+			except Exception as e:
+				return (True, f"Failed to create output directory at {snapshots_dir}: {e}")
+			index = 0
+		else:
+			# find the next available filename
+			def index_exists(idx):
+				image_path = os.path.join(snapshots_dir, f"image_{idx:04d}.jpg")
+				return os.path.exists(image_path)
+
+			# Use self._last_camera_snapshot_index_by_subdir as a simple hint to avoid scanning the directory every time
+			last_index = self._last_camera_snapshot_index_by_subdir.get(subdir, 0)
+			if index_exists(last_index) and not index_exists(last_index + 1):
+				index = last_index + 1
+			else:
+				index = 0
+				while True:
+					if not index_exists(index):
+						break
+					index += 1
+
+		self._last_camera_snapshot_index_by_subdir[subdir] = index
+		image_path = os.path.join(snapshots_dir, f"image_{index:04d}.jpg")		
+		executor = ThreadPoolExecutor(max_workers=1)
+		future = executor.submit(_download_task, url, image_path)
+		
+		while not future.done():
+			self.reactor.pause(self.reactor.monotonic() + 0.1)
+		
+		executor.shutdown(wait=False)
+		
+		e = future.exception()
+		if e is not None:
+			raise gcmd.error(f"Failed to retrieve snapshot from {url}: {e!r}") from e
+		
+		gcmd.respond_info(f"Snapshot saved to {image_path}")
+
+	
 class BackgroundDisplayStatusProgressHandler:
 	def __init__(
 			self, 
