@@ -1,4 +1,4 @@
-# Beacaon contact compensation mesh
+# Beacon contact compensation mesh
 #
 # Copyright (C) 2024 Helge Keck <HelgeKeck@hotmail.com>
 # Copyright (C) 2024-2025 Mikkel Schmidt <mikkel.schmidt@gmail.com>
@@ -484,12 +484,12 @@ class BeaconMesh:
 
 		logging.info(f"{self.name}: keep_temp_meshes: {keep_temp_meshes}")
 
-		beacon_contact_calibrate_model_on_print = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_print']).lower() == 'true'
+		beacon_contact_calibrate_model_on_true_zero = str(self.gm_ratos.variables['beacon_contact_calibrate_model_on_true_zero']).lower() == 'true'
 
 		# Go to safe home
 		self.gcode.run_script_from_command("_MOVE_TO_SAFE_Z_HOME Z_HOP=True")
 
-		if beacon_contact_calibrate_model_on_print:
+		if beacon_contact_calibrate_model_on_true_zero:
 			# Calibrate a fresh model
 			self.gcode.run_script_from_command("BEACON_AUTO_CALIBRATE SKIP_MULTIPOINT_PROBING=1")
 		else:
@@ -645,7 +645,6 @@ class BeaconMesh:
 
 			measured_mesh_params = measured_zmesh.get_mesh_params()
 			measured_mesh_name = measured_zmesh.get_profile_name()
-			measured_mesh_bed_temp = measured_mesh_params[RATOS_MESH_BED_TEMP_PARAMETER]
 
 			if not self._validate_extended_parameters(
 				measured_mesh_params,
@@ -654,6 +653,8 @@ class BeaconMesh:
 				allowed_kinds=(RATOS_MESH_KIND_MEASURED,),
 				allowed_probe_methods=(RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY, RATOS_MESH_BEACON_PROBE_METHOD_PROXIMITY_AUTOMATIC)):
 				return False
+
+			measured_mesh_bed_temp = measured_mesh_params[RATOS_MESH_BED_TEMP_PARAMETER]
 
 			if comp_mesh_profile_name.lower() == RATOS_COMPENSATION_MESH_NAME_AUTO:
 				comp_mesh_profile_name = self.auto_select_compensation_mesh(measured_mesh_bed_temp)
@@ -1297,7 +1298,7 @@ class BeaconMesh:
 		try:
 			self.bed_mesh.bmc.update_config(bed_mesh_calibrate_like_command)
 		except BedMesh.BedMeshError as e:
-			raise RatOSBeaconMeshError(f"Error updating bed mesh config: {str(e)}")
+			raise RatOSBeaconMeshError(f"Error updating bed mesh config: {str(e)}") from e
 
 		params = dict(self.bed_mesh.bmc.mesh_config)
 		params.update(extra_params)
@@ -1311,7 +1312,7 @@ class BeaconMesh:
 		try:
 			z_mesh.build_mesh(probed_points)
 		except BedMesh.BedMeshError as e:
-			raise RatOSBeaconMeshError(str(e))
+			raise RatOSBeaconMeshError(str(e)) from e
 
 		self.bed_mesh.set_mesh(z_mesh)
 		self.bed_mesh.save_profile(profile_name)

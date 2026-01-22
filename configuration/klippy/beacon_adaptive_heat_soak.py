@@ -276,7 +276,7 @@ class BeaconAdaptiveHeatSoak:
 
 		# The default maximum first layer duration in seconds, which is used in conjunction with layer_quality to determine
 		# the z rate threshold for thermal stability.
-		self.def_maxiumm_first_layer_duration = config.getint('default_maximum_first_layer_duration', 1800, minval=60, maxval=7200)
+		self.def_maximum_first_layer_duration = config.getint('default_maximum_first_layer_duration', 1800, minval=60, maxval=7200)
 
 		# The default maximum wait time in seconds for the printer to reach thermal stability.
 		self.def_maximum_wait = config.getint('default_maximum_wait', 5400, minval=0)
@@ -287,7 +287,6 @@ class BeaconAdaptiveHeatSoak:
 		# TODO: Make trend checks configurable.
 
 		# Setup
-		self.reactor = None
 		self.beacon = None
 
 		# Register commands
@@ -315,8 +314,6 @@ class BeaconAdaptiveHeatSoak:
 											self._handle_connect)
 
 	def _handle_connect(self):
-		self.reactor = self.printer.get_reactor()
-
 		if self.config.has_section("beacon"):
 			self.beacon = self.printer.lookup_object('beacon')
 
@@ -430,7 +427,7 @@ class BeaconAdaptiveHeatSoak:
 		minimum_wait = gcmd.get_int('MINIMUM_WAIT', self.def_minimum_wait, minval=0)
 		maximum_wait = gcmd.get_int('MAXIMUM_WAIT', self.def_maximum_wait, minval=0)
 		layer_quality = gcmd.get_int('LAYER_QUALITY', self.def_layer_quality, minval=1, maxval=5)
-		maximum_first_layer_duration = gcmd.get_int('MAXIMUM_FIRST_LAYER_DURATION', self.def_maxiumm_first_layer_duration, minval=60, maxval=7200)
+		maximum_first_layer_duration = max(60, min(7200, gcmd.get_int('MAXIMUM_FIRST_LAYER_DURATION', self.def_maximum_first_layer_duration, minval=0)))
 
 		params_msg = ''
 		threshold_origin = "forced" if threshold is not None else "predicted"
@@ -616,7 +613,7 @@ class BeaconAdaptiveHeatSoak:
 										trend_check[0], trend_check[1], threshold
 									) for trend_check in level_2_moving_average_trend_checks)
 
-						if moving_average_trend_checks_passed == True or level_2_moving_average_trend_checks_passed == True:
+						if moving_average_trend_checks_passed is True or level_2_moving_average_trend_checks_passed is True:
 							if elapsed < minimum_wait:
 								min_wait_satisfied = False
 							else:
@@ -628,7 +625,7 @@ class BeaconAdaptiveHeatSoak:
 							logging.info(
 								f"{self.name}: elapsed={elapsed:.1f} s, progress={progress_handler.progress * 100.0:.2f}%, "
 								f"ma={moving_average:.2f} nm/s, ma_hold_count={moving_average_hold_count}/{moving_average_target_hold_count}, ma_trend_checks_passed={moving_average_trend_checks_passed}, "
-								f"ma2={float('inf') if level_2_moving_average is None else level_2_moving_average:.2f} nm/s, ma2_hold_count={level_2_moving_average_hold_count}/{level_2_moving_average_target_hold_count}, ma2_trend_checks_passed={level_2_moving_average_trend_checks}, "
+								f"ma2={float('inf') if level_2_moving_average is None else level_2_moving_average:.2f} nm/s, ma2_hold_count={level_2_moving_average_hold_count}/{level_2_moving_average_target_hold_count}, ma2_trend_checks_passed={level_2_moving_average_trend_checks_passed}, "
 								f"min_wait_satisfied={min_wait_satisfied}, threshold={threshold:.2f} nm/s")
 					elif should_log:
 						logging.info(f"{self.name}: elapsed={elapsed:.1f} s, waiting for first moving average to be available...")

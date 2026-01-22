@@ -4,6 +4,10 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /d
 # shellcheck source=./configuration/scripts/environment.sh
 source "$SCRIPT_DIR"/environment.sh
 
+# System package requirements for RatOS (read by Moonraker and scripts)
+# shellcheck disable=SC2034
+PKGLIST="python3-numpy python3-matplotlib curl git libopenblas-base"
+
 report_status()
 {
     echo -e "\n\n###### $1"
@@ -191,10 +195,11 @@ verify_registered_extensions()
         ["resonance_generator_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/resonance_generator.py")
         ["ratos_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos.py")
         ["beacon_mesh_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_mesh.py")
-		["ratos_z_offset_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_z_offset.py")
 		["beacon_true_zero_correction_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_true_zero_correction.py")
 		["beacon_adaptive_heatsoak_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_adaptive_heat_soak.py")
 		["fastconfig"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/fastconfig.py")
+		["named_offsets"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/named_offsets.py")
+		["beacon_user_z_offset"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_user_z_offset.py")
     )
 
 	declare -A kinematics_extensions=(

@@ -154,7 +154,7 @@ function generateSummary(entries: LogEntry[]): LogSummary {
 	return summary;
 }
 
-// Filter entries by severity level
+// Filter entries by severity level (inclusive - shows entries at minLevel and above)
 function filterBySeverity(entries: LogEntry[], minLevel: number): LogEntry[] {
 	return entries.filter((entry) => entry.level >= minLevel);
 }
@@ -314,7 +314,15 @@ export const updateLogs = (parentCommand: Command) => {
 					fatal: 60,
 				};
 
-				const minLevel = levelMap[options.level.toLowerCase()] || 30;
+				const requestedLevel = options.level.toLowerCase();
+				if (!(requestedLevel in levelMap)) {
+					return renderError(
+						`Invalid log level '${options.level}'. Valid levels: trace, debug, info, warn, error, fatal`,
+						{ exitCode: 1 },
+					);
+				}
+
+				const minLevel = levelMap[requestedLevel];
 				entries = filterBySeverity(entries, minLevel);
 
 				if (options.context) {
@@ -323,8 +331,13 @@ export const updateLogs = (parentCommand: Command) => {
 
 				// Limit number of entries
 				const maxLines = parseInt(options.lines, 10);
-				if (isNaN(maxLines) || maxLines <= 0) {
-					return renderError('Invalid number of lines specified', { exitCode: 1 });
+				if (isNaN(maxLines)) {
+					return renderError(`Invalid number of lines '${options.lines}'. Must be a positive integer.`, {
+						exitCode: 1,
+					});
+				}
+				if (maxLines <= 0) {
+					return renderError(`Invalid number of lines '${maxLines}'. Must be greater than 0.`, { exitCode: 1 });
 				}
 
 				if (entries.length > maxLines) {

@@ -104,6 +104,11 @@
 						"type": "number",
 						"maximum": 1,
 						"minimum": 0
+					},
+					"shutdownValue": {
+						"type": "number",
+						"maximum": 1,
+						"minimum": 0
 					}
 				}
 			}
@@ -119,6 +124,10 @@
 						"name": {
 							"description": "The name of the custom section",
 							"type": "string"
+						},
+						"isPerToolhead": {
+							"description": "Whether custom section is per toolhead. Default is true. If true, `name` must be specified. If there is more than one toolhead, the toolhead index will be appended to the name in the generated config like `name_t0`, `name_t1`, etc. Note that there is currently no way for a per-toolhead custom section to have different parameters per toolhead, including referencing another per-toolhead section. Pin references will be automatically adjusted per-toolhead index. If `isPerToolhead` is false, the custom section is global, and must not contain pin references.",
+							"type": "boolean"
 						},
 						"parameters": {
 							"description": "The parameters for this custom section",
@@ -248,6 +257,87 @@
 				}
 			}
 		},
+		"hotendHeater": {
+			"description": "Board-specific settings to use for the hotend heater",
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"maxPower": {
+					"description": "The maximum power for the hotend heater",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"value": { "description": "Max power (0.0-1.0)", "type": "number" },
+						"comment": { "description": "Optional comment to include in generated config", "type": "string" }
+					},
+					"required": ["value"]
+				},
+				"pwmCycleTime": {
+					"description": "The PWM cycle time for the hotend heater",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"value": { "description": "The PWM cycle time (seconds)", "type": "number" },
+						"comment": { "description": "Optional comment to include in generated config", "type": "string" }
+					},
+					"required": ["value"]
+				}
+			}
+		},
+		"partCoolingFan": {
+			"description": "Board-specific settings to use for part cooling fan control",
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"maxPower": {
+					"description": "The maximum power for the part cooling fan",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"value": { "description": "Max power (0.0-1.0)", "type": "number" },
+						"comment": { "description": "Optional comment to include in generated config", "type": "string" }
+					},
+					"required": ["value"]
+				},
+				"inputVoltagePwmCycleTime": {
+					"description": "The PWM cycle time for part cooling fan control when using input voltage control (e.g. 2-pin and 3-pin fans).",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"value": { "description": "The cycle time value (seconds)", "type": "number" },
+						"comment": { "description": "Optional comment to include in generated config", "type": "string" }
+					},
+					"required": ["value"]
+				}
+			}
+		},
+		"toolheadCoolingFan": {
+			"description": "Board-specific settings to use for toolhead cooling fan control",
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"maxPower": {
+					"description": "The maximum power for the toolhead cooling fan",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"value": { "description": "Max power (0.0-1.0)", "type": "number" },
+						"comment": { "description": "Optional comment to include in generated config", "type": "string" }
+					},
+					"required": ["value"]
+				},
+				"inputVoltagePwmCycleTime": {
+					"description": "The PWM cycle time for toolhead cooling fan control when using input voltage control (e.g. 2-pin and 3-pin fans)",
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"value": { "description": "The cycle time value (seconds)", "type": "number" },
+						"comment": { "description": "Optional comment to include in generated config", "type": "string" }
+					},
+					"required": ["value"]
+				}
+			}
+		},
 		"ADXL345SPI": {
 			"description": "Which settings to use for the ADXL345 accelerometer",
 			"type": "object",
@@ -286,6 +376,10 @@
 				},
 				"cs_pin": {
 					"description": "The chip select pin",
+					"type": "string"
+				},
+				"axesMap": {
+					"description": "Optional axes mapping for the accelerometer. Default is 'x, z, y'",
 					"type": "string"
 				}
 			}
@@ -328,6 +422,10 @@
 				},
 				"cs_pin": {
 					"description": "The chip select pin",
+					"type": "string"
+				},
+				"axesMap": {
+					"description": "Optional axes mapping for the accelerometer. Default is 'x, z, y'",
 					"type": "string"
 				}
 			}
