@@ -292,8 +292,8 @@ class BeaconTrueZeroCorrection:
 			# This should not be possible, as this code should only be called when beacon and bed_mesh are present.
 			raise self.gcode.error('get_beacon_probing_regions() unexpectedly returned None, this should not be possible.')
 
-		probable_x = (r.contact_min[0], r.contact_max[0])
-		probable_y = (r.contact_min[1], r.contact_max[1])
+		probable_x = (r.mesh_contact_min[0], r.mesh_contact_max[0])
+		probable_y = (r.mesh_contact_min[1], r.mesh_contact_max[1])
 
 		def in_range(r, value):
 			return r[0] <= value <= r[1]

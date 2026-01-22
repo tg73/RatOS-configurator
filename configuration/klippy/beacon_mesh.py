@@ -801,12 +801,12 @@ class BeaconMesh:
 	def create_compensation_mesh(self, gcmd, profile, desired_spacing, minimum_spacing, chamber_temp, keep_temp_meshes):
 		try:
 			bpr: BeaconProbingRegions = self.ratos.get_beacon_probing_regions()
-			safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
-			safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
-			safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
-			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
+			safe_min_x = max(bpr.mesh_proximity_min_coil_pos[0], bpr.mesh_contact_min[0])
+			safe_max_x = min(bpr.mesh_proximity_max_coil_pos[0], bpr.mesh_contact_max[0])
+			safe_min_y = max(bpr.mesh_proximity_min_coil_pos[1], bpr.mesh_contact_min[1])
+			safe_max_y = min(bpr.mesh_proximity_max_coil_pos[1], bpr.mesh_contact_max[1])
 
-			if (bpr.contact_min != bpr.proximity_min or bpr.contact_max != bpr.proximity_max):
+			if (bpr.mesh_contact_min != bpr.mesh_proximity_min_coil_pos or bpr.mesh_contact_max != bpr.mesh_proximity_max_coil_pos):
 				logging.info(f'{self.name}: beacon probing regions contact and proximity bounds do not match, the compensation mesh bounds will be reduced to the intersecting region.')
 
 			if self._cotemporal_probing_helper.faulty_regions:

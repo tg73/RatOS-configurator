@@ -36,13 +36,13 @@ declare namespace __next_route_internal_types__ {
     | `/api/update-logs/download`
     | `/api/update-logs/generate-test-data`
     | `/`
-    | `/motion`
-    | `/update-logs`
     | `/calibration`
-    | `/wizard`
+    | `/motion`
     | `/toolhead`
-    | `/analysis/macros`
+    | `/update-logs`
+    | `/wizard`
     | `/analysis/macros/new`
+    | `/analysis/macros`
     | `/analysis`
   type DynamicRoutes<T extends string = string> = 
     | `/api/trpc/${SafeSlug<T>}`
