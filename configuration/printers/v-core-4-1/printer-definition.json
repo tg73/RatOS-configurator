@@ -9,7 +9,7 @@
 	"template": "v-core-4-1.ts",
 	"driverCountRequired": 6,
 	"bedMargin": {
-		"x": [59.8, 59.8],
+		"x": [60.6, 59.55],
 		"y": [14.35, 30]
 	},
 	"sizes": {

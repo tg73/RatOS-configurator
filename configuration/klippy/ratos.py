@@ -18,15 +18,74 @@ def _download_task(url, path):
 	return True
 
 BeaconProbingRegions = namedtuple('BeaconProbingRegions', 
-			['x_offset', 'y_offset', 'proximity_min', 'proximity_max', 'contact_min', 'contact_max'])
+	[
+		'x_offset',
+		'y_offset',
+		'printable_x_max',
+		'printable_y_max',
+		'mesh_proximity_min_coil_pos',
+		'mesh_proximity_max_coil_pos',
+		'mesh_proximity_min_toolhead_pos',
+		'mesh_proximity_max_toolhead_pos',
+		'mesh_contact_min',
+		'mesh_contact_max',
+		'logical_proximity_min_coil_pos',
+		'logical_proximity_max_coil_pos',
+		'logical_proximity_min_toolhead_pos',
+		'logical_proximity_max_toolhead_pos',
+		'logical_contact_min',
+		'logical_contact_max'
+		])
 """
  A named tuple containing:
 	- x_offset: X offset of the Beacon probe
 	- y_offset: Y offset of the Beacon probe
-	- proximity_min: Tuple of (min_x, min_y) for proximity probing
-	- proximity_max: Tuple of (max_x, max_y) for proximity probing
-	- contact_min: Tuple of (min_x, min_y) for contact probing
-	- contact_max: Tuple of (max_x, max_y) for contact probing
+	- printable_x_max: Maximum printable X dimension (from gcode_macro RatOS variable_printable_x_max)
+	- printable_y_max: Maximum printable Y dimension (from gcode_macro RatOS variable_printable_y_max)
+	- mesh_proximity_min_coil_pos: Tuple of (min_x, min_y) for proximity probing for meshing (coil position)
+	- mesh_proximity_max_coil_pos: Tuple of (max_x, max_y) for proximity probing for meshing (coil position)
+	- mesh_proximity_min_toolhead_pos: Tuple of (min_x, min_y) for proximity probing for meshing (toolhead position)
+	- mesh_proximity_max_toolhead_pos: Tuple of (max_x, max_y) for proximity probing for meshing (toolhead position)
+	- mesh_contact_min: Tuple of (min_x, min_y) for contact probing for meshing (toolhead position)
+	- mesh_contact_max: Tuple of (max_x, max_y) for contact probing for meshing (toolhead position)
+	- logical_proximity_min_coil_pos: Tuple of (min_x, min_y) for proximity probing calculated from the printable area and beacon offsets (coil position)
+	- logical_proximity_max_coil_pos: Tuple of (max_x, max_y) for proximity probing calculated from the printable area and beacon offsets (coil position)
+	- logical_proximity_min_toolhead_pos: Tuple of (min_x, min_y) for proximity probing calculated from the printable area and beacon offsets (toolhead position)
+	- logical_proximity_max_toolhead_pos: Tuple of (max_x, max_y) for proximity probing calculated from the printable area and beacon offsets (toolhead position)
+	- logical_contact_min: Tuple of (min_x, min_y) for contact probing calculated from the printable area and beacon offsets (toolhead position)
+	- logical_contact_max: Tuple of (max_x, max_y) for contact probing calculated from the printable area and beacon offsets (toolhead position)
+  Notes:
+    - COIL POSITION VS TOOLHEAD POSITION FOR PROXIMITY VALUES
+	  
+	  - The values suffixed "_coil_pos" represent the position of the beacon coil itself.
+
+	  - The values suffixes "_toolhead_pos" represent the position of the toolhead (aka, nozzle), taking account of
+	    the beacon offsets. This is where the toolhead must be positioned to ensure that the beacon coil is over the
+		corresponding "_coil_pos" position.
+
+	- TOOLHEAD POSITION FOR CONTACT VALUES
+
+	  All contact values represent the toolhead (aka, nozzle) position.
+
+	- LOGICAL VALUES
+	  
+	  The "logical" values assume that a 40mm circle of printable area under the beacon coil is required for proximity
+	  probing to be reliable, and that a 20mm circle of printable area under the beacon coil is required for contact
+	  probing to be reliable. 
+	  
+	  The configured mesh bounds may sometimes exceed the logical area, because the configured mesh bounds can take account
+	  of the extent of the underlying bed plate and other metal constructions which may extend beyond the printable area.
+	  On the other hand, mesh bounds may have a restricted extent that may be exceeded by the logical bounds on some sides.
+
+	  The logical bounds may include toolhead coordinates that are outside the printable area but which are still valid* for probing
+	  because the beacon probe offset ensures that the beacon coil is still over the printable area when the toolhead is at those
+	  coordinates. Such coordinates might be outside the hard movement limits of the printer - this is considered to be a 
+	  separate concern.
+	  
+	  *IMPORTANT: it is the responsibility of the consumer to ensure that contact probing is only attempted at coordinates
+	  where the nozzle is expected to be over the build sheet: for example, contact probing at negative y positions should
+	  only be performed if there is confidence that the build sheet will be positioned reliably and extends forward beyond
+	  the nominal printable area.
 """
 
 #####
@@ -69,13 +128,16 @@ class RatOS:
 		self.last_check_bed_mesh_profile_exists_result = None
 		self.last_move_to_safe_z_home_position = None
 
+		# Other fields
 		self._last_camera_snapshot_index_by_subdir = {}
 		self.old_is_graph_files = []
+		self.post_process_success = False
+		self._beacon_probing_regions: BeaconProbingRegions = None
+
 		self.load_settings()
 		self.register_commands()
 		self.register_handler()
 		self.load_settings()
-		self.post_process_success = False
 
 	#####
 	# Handler
@@ -151,6 +213,7 @@ class RatOS:
 		self.gcode.register_command('RESET_Y_MAX_ADJUSTMENT', self.cmd_RESET_Y_MAX_ADJUSTMENT, desc=self.desc_RESET_Y_MAX_ADJUSTMENT)
 		self.gcode.register_command('_BEACON_CHECK_DIRECTIONAL_REPEATABILITY', self.cmd_BEACON_CHECK_DIRECTIONAL_REPEATABILITY, desc=self.desc_BEACON_CHECK_DIRECTIONAL_REPEATABILITY)
 		self.gcode.register_command('_CAMERA_SNAPSHOT', self.cmd_CAMERA_SNAPSHOT, desc=self.desc_CAMERA_SNAPSHOT)
+		self.gcode.register_command('BEACON_PROBE_CLEAN', self.cmd_BEACON_PROBE_CLEAN, desc=self.desc_BEACON_PROBE_CLEAN)
 
 	def register_command_overrides(self):
 		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=self.desc_TEST_RESONANCES)
@@ -869,22 +932,59 @@ class RatOS:
 			BeaconProbingRegions or None: A named tuple containing:
 				- x_offset: X offset of the Beacon probe
 				- y_offset: Y offset of the Beacon probe
-				- proximity_min: Tuple of (min_x, min_y) for proximity probing
-				- proximity_max: Tuple of (max_x, max_y) for proximity probing
-				- contact_min: Tuple of (min_x, min_y) for contact probing
-				- contact_max: Tuple of (max_x, max_y) for contact probing
+				- printable_x_max: Maximum printable X dimension (from gcode_macro RatOS variable_printable_x_max)
+				- printable_y_max: Maximum printable Y dimension (from gcode_macro RatOS variable_printable_y_max)
+				- mesh_proximity_min_coil_pos: Tuple of (min_x, min_y) for proximity probing for meshing (coil position)
+				- mesh_proximity_max_coil_pos: Tuple of (max_x, max_y) for proximity probing for meshing (coil position)
+				- mesh_proximity_min_toolhead_pos: Tuple of (min_x, min_y) for proximity probing for meshing (toolhead position)
+				- mesh_proximity_max_toolhead_pos: Tuple of (max_x, max_y) for proximity probing for meshing (toolhead position)
+				- mesh_contact_min: Tuple of (min_x, min_y) for contact probing for meshing (toolhead position)
+				- mesh_contact_max: Tuple of (max_x, max_y) for contact probing for meshing (toolhead position)
+				- logical_proximity_min_coil_pos: Tuple of (min_x, min_y) for proximity probing calculated from the printable area and beacon offsets (coil position)
+				- logical_proximity_max_coil_pos: Tuple of (max_x, max_y) for proximity probing calculated from the printable area and beacon offsets (coil position)
+				- logical_proximity_min_toolhead_pos: Tuple of (min_x, min_y) for proximity probing calculated from the printable area and beacon offsets (toolhead position)
+				- logical_proximity_max_toolhead_pos: Tuple of (max_x, max_y) for proximity probing calculated from the printable area and beacon offsets (toolhead position)
+				- logical_contact_min: Tuple of (min_x, min_y) for contact probing calculated from the printable area and beacon offsets (toolhead position)
+				- logical_contact_max: Tuple of (max_x, max_y) for contact probing calculated from the printable area and beacon offsets (toolhead position)
 			Returns None if bed_mesh or beacon configuration is not available.
 		"""
 		if self.beacon is None:
 			return None
-		
-		return BeaconProbingRegions(
+
+		# printable_x_max and printable_y_max are calculated by delayed a gcode macro, so might possibly change during runtime.
+		# We only need to update the cached probing regions if these values change.		
+		printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
+		printable_y_max = float(self.gm_ratos.variables['printable_y_max'])
+
+		if self._beacon_probing_regions is not None:
+			if self._beacon_probing_regions.printable_x_max == printable_x_max and self._beacon_probing_regions.printable_y_max == printable_y_max:
+				return self._beacon_probing_regions
+
+		prox_pr = 20.0 # the radius of the circle of printable area under the beacon coil for reliable proximity probing
+		contact_pr = 10.0 # the radius of the circle of printable area under the beacon coil for reliable contact probing
+
+		bpr = BeaconProbingRegions(
 			x_offset=self.beacon.x_offset,
 			y_offset=self.beacon.y_offset,
-			proximity_min=(self.beacon.mesh_helper.def_min_x, self.beacon.mesh_helper.def_min_y),
-			proximity_max=(self.beacon.mesh_helper.def_max_x, self.beacon.mesh_helper.def_max_y),
-			contact_min=tuple(self.beacon.mesh_helper.def_contact_min),
-			contact_max=tuple(self.beacon.mesh_helper.def_contact_max))
+			printable_x_max=printable_x_max,
+			printable_y_max=printable_y_max,
+			mesh_proximity_min_coil_pos=(self.beacon.mesh_helper.def_min_x, self.beacon.mesh_helper.def_min_y),
+			mesh_proximity_max_coil_pos=(self.beacon.mesh_helper.def_max_x, self.beacon.mesh_helper.def_max_y),
+			mesh_proximity_min_toolhead_pos=(self.beacon.mesh_helper.def_min_x - self.beacon.x_offset, self.beacon.mesh_helper.def_min_y - self.beacon.y_offset),
+			mesh_proximity_max_toolhead_pos=(self.beacon.mesh_helper.def_max_x - self.beacon.x_offset, self.beacon.mesh_helper.def_max_y - self.beacon.y_offset),
+			mesh_contact_min=tuple(self.beacon.mesh_helper.def_contact_min),
+			mesh_contact_max=tuple(self.beacon.mesh_helper.def_contact_max),
+			logical_proximity_min_coil_pos=(prox_pr, prox_pr),
+			logical_proximity_max_coil_pos=(printable_x_max - prox_pr, printable_y_max - prox_pr),
+			logical_proximity_min_toolhead_pos=(prox_pr - self.beacon.x_offset, prox_pr - self.beacon.y_offset),
+			logical_proximity_max_toolhead_pos=(printable_x_max - prox_pr - self.beacon.x_offset, printable_y_max - prox_pr - self.beacon.y_offset),
+			logical_contact_min=(contact_pr - self.beacon.x_offset, contact_pr - self.beacon.y_offset),
+			logical_contact_max=(printable_x_max - contact_pr - self.beacon.x_offset, printable_y_max - contact_pr - self.beacon.y_offset))
+		
+		logging.info(f"{self.name}: beacon probing regions updated: {bpr}")
+		
+		self._beacon_probing_regions = bpr
+		return bpr
 
 	def get_safe_home_position(self):
 		printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
@@ -896,10 +996,10 @@ class RatOS:
 		
 		bpr = self.get_beacon_probing_regions()
 		if bpr is not None:
-			safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
-			safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
-			safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
-			safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
+			safe_min_x = max(bpr.mesh_proximity_min_coil_pos[0], bpr.mesh_contact_min[0])
+			safe_max_x = min(bpr.mesh_proximity_max_coil_pos[0], bpr.mesh_contact_max[0])
+			safe_min_y = max(bpr.mesh_proximity_min_coil_pos[1], bpr.mesh_contact_min[1])
+			safe_max_y = min(bpr.mesh_proximity_max_coil_pos[1], bpr.mesh_contact_max[1])
 			if safe_home_x < safe_min_x or safe_home_x > safe_max_x or safe_home_y < safe_min_y or safe_home_y > safe_max_y:
 				if not self.printer.is_shutdown():
 					logging.info(f"{self.name}: (safe_home_x, safe_home_y) is not within beacon-probable region: printable_x_max={printable_x_max}, printable_y_max={printable_y_max}, safe_home_x={safe_home_x}, safe_home_y={safe_home_y}, raw_safe_home_x={raw_safe_home_x}, raw_safe_home_y={raw_safe_home_y}, beacon probing region: ({safe_min_x}, {safe_min_y}) - ({safe_max_x}, {safe_max_y})")
@@ -927,10 +1027,10 @@ class RatOS:
 			# Limit to the beacon probing region if defined
 			bpr = self.get_beacon_probing_regions()
 			if bpr is not None:
-				safe_min_x = max(bpr.proximity_min[0], bpr.contact_min[0])
-				safe_max_x = min(bpr.proximity_max[0], bpr.contact_max[0])
-				safe_min_y = max(bpr.proximity_min[1], bpr.contact_min[1])
-				safe_max_y = min(bpr.proximity_max[1], bpr.contact_max[1])
+				safe_min_x = max(bpr.mesh_proximity_min_coil_pos[0], bpr.mesh_contact_min[0])
+				safe_max_x = min(bpr.mesh_proximity_max_coil_pos[0], bpr.mesh_contact_max[0])
+				safe_min_y = max(bpr.mesh_proximity_min_coil_pos[1], bpr.mesh_contact_min[1])
+				safe_max_y = min(bpr.mesh_proximity_max_coil_pos[1], bpr.mesh_contact_max[1])
 				constrained_x = max(safe_min_x, min(x, safe_max_x))
 				constrained_y = max(safe_min_y, min(y, safe_max_y))
 			else:
@@ -1092,6 +1192,64 @@ class RatOS:
 		logging.info(f"{self.name}: Current CPU governor(s): {', '.join(sorted(governors))}")
 		return governors
 	
+	def _get_nozzle_diameter(self):
+		extruder_name = 'extruder'
+
+		if self.dual_carriage and self.dual_carriage.dc[1].mode.lower() == 'primary':
+			extruder_name = 'extruder1'
+
+		extruder = self.printer.lookup_object(extruder_name)
+		nozzle_diameter = extruder.nozzle_diameter
+		return nozzle_diameter
+
+	def _get_nozzle_tip_diameter(self, nozzle_diameter=None):
+		if nozzle_diameter is None:
+			nozzle_diameter = self._get_nozzle_diameter()
+
+		# Based on V6 standard, total nozzle tip diameter is typically 2.5 times hole diameter (spec'd up to 0.8mm),
+		# except below 0.25mm where it's 1.5 times hole diameter. FIN specifies 2.0 times hole diameter.
+		# Slice GammaMaster 2.4mm nozzle has ~3.75mm tip (from their published STEP model), a multiplier
+		# of 1.56, or an increase of 1.35. Here we make some effort at a reasonable approximation.
+		if nozzle_diameter < 0.25:
+			nozzle_tip_dia = 1.5 * nozzle_diameter
+		elif nozzle_diameter <= 0.8:
+			nozzle_tip_dia = 2.5 * nozzle_diameter
+		else:
+			nozzle_tip_dia = nozzle_diameter + 1.35
+
+		return nozzle_tip_dia
+
+	desc_BEACON_PROBE_CLEAN = "Perform a series of beacon contact probes to displace filament from the nozzle tip."
+	def cmd_BEACON_PROBE_CLEAN(self, gcmd):
+		if self.beacon is None:
+			raise self.printer.command_error("beacon is not configured, cannot run BEACON_PROBE_CLEAN")
+		
+		x = gcmd.get_float('X')
+		y = gcmd.get_float('Y')		
+		
+		count = gcmd.get_int('COUNT', 6, minval=1)
+		spacing = gcmd.get_float('SPACING', self._get_nozzle_tip_diameter(), minval=0.0)
+		stamp_skip = gcmd.get_int('STAMP_SKIP', 0, minval=0)
+		stamp_depth = gcmd.get_float('STAMP_DEPTH', 0.1, minval=0.0, maxval=0.2)
+		stamp_wait = gcmd.get_int('STAMP_WAIT', 200, minval=0)
+		stamp = gcmd.get('STAMP', '1').lower() in ('1', 'true', 'yes')
+		
+		speed = float(self.gm_ratos.variables.get('macro_travel_speed')) * 60.
+		z_speed = float(self.gm_ratos.variables.get('macro_z_speed')) * 60.
+
+		# Move to start position, perform initial probe which will be discarded beacuse first probe values can be unreliable
+		self.gcode.run_script_from_command(
+			f"G0 Z5 F{z_speed}\n"
+			f"G0 X{x} Y{y} F{speed}\n"
+			f"PROBE PROBE_METHOD=contact SAMPLES=1")
+
+		# Perform the series of probes
+		for i in range(count):
+			self.gcode.run_script_from_command(f"G0 X{x + i * spacing} F{speed}\nPROBE PROBE_METHOD=contact SAMPLES=1")
+			last_z_result = self.beacon.last_z_result
+			if stamp and i >= stamp_skip:
+				self.gcode.run_script_from_command(f"G0 Z{last_z_result - stamp_depth} F{z_speed}\nG4 P{stamp_wait}\nG0 Z2 F{z_speed}")
+
 	desc_BEACON_CHECK_DIRECTIONAL_REPEATABILITY = "For diagnostics: perform a series of probe points to check the repeatability of the Beacon probe."
 	def cmd_BEACON_CHECK_DIRECTIONAL_REPEATABILITY(self, gcmd):
 		if self.beacon is None:
@@ -1142,8 +1300,8 @@ class RatOS:
 		if bpr is None:
 			raise gcmd.error("Unexpected error: beacon probing regions are not available")
 		
-		if x < bpr.contact_min[0] or x > bpr.contact_max[0] or y < bpr.contact_min[1] or y > bpr.contact_max[1]:
-			raise gcmd.error(f"X and Y must be within the beacon contact probing region: ({bpr.contact_min[0]}, {bpr.contact_min[1]}) - ({bpr.contact_max[0]}, {bpr.contact_max[1]})")
+		if x < bpr.mesh_contact_min[0] or x > bpr.mesh_contact_max[0] or y < bpr.mesh_contact_min[1] or y > bpr.mesh_contact_max[1]:
+			raise gcmd.error(f"X and Y must be within the beacon contact probing region: ({bpr.mesh_contact_min[0]}, {bpr.mesh_contact_min[1]}) - ({bpr.mesh_contact_max[0]}, {bpr.mesh_contact_max[1]})")
 
 		printable_x_max = float(self.gm_ratos.variables['printable_x_max'])
 		printable_y_max = float(self.gm_ratos.variables['printable_y_max'])
