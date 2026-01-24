@@ -99,6 +99,42 @@ in `RatOS-dev/RatOS-configurator/src` you can run
 * `pnpm run typecheck` to run typechecking
 * `pnpm run lint` to run linting
 
+### Testing Deployments with Deployment Branches
+
+RatOS-Configurator currently uses deployment branches to release and publish
+the compiled RatOS-configurator app. There is a utility script
+at `./scripts/create-local-deployment.sh` that will automatically
+create a local deployment branch derived from you current working branch
+and directory.
+
+The script can be run from any directory in the RatOS-configurator repo, and **it will create a new directory
+in the RatOS-Configurator's parent directory**
+
+*Note: This script is for development purposes only, and may not
+produce the same final output in your deployment branch that would
+be created in the official release/publish workflow*.
+
+```console
+cd /path/to/RatOS-configurator
+./scripts/create-local-deployment.sh
+```
+
+This will:
+
+- create a new worktree with a folder named `configurator-deployment-worktrees/<current-branch>-deployment`. The `configurator-deployment-worktrees` will be in the same parent directory as your `RatOS-configurator` repo.
+- run install and build commands on the worktree
+- remove uneeded files in the deployment branch
+- rename folders to match deployment usage on ratos
+
+#### Publishing the test Deployment branch
+
+The `create-local-deployment` uses [`git worktree`](https://git-scm.com/docs/git-worktree) to create your
+deployment branch in a separate working directory. This allows you
+to keep both your current branch, and the deployment branch
+checked out simultaneously.
+
+To commit, cd into the worktree, and use `git push -u <remote> <branch>`.
+
 ## Help and support
 
 Please use the unofficial Rat Rig discord for help and support. Only create an issue if you have found a bug and can describe how to reproduce it, feature requests and discussions should happen in the #ratos-development channel on discord.
