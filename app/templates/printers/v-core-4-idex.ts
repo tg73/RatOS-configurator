@@ -120,8 +120,8 @@ variable_relative_extrusion: True
 variable_preheat_extruder: True
 variable_calibrate_bed_mesh: True
 variable_nozzle_priming: "primeblob"
-variable_start_print_park_in: "back"
-variable_start_print_park_z_height: 50
+variable_start_print_park_in: "center"
+variable_start_print_park_z_height: 3
 variable_end_print_park_in: "back"
 variable_pause_print_park_in: "back"
 

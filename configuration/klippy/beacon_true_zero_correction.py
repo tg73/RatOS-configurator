@@ -36,13 +36,20 @@ class BeaconTrueZeroCorrection:
 		# Config
 		#######
 
-		# Allow the true zero correction to be disabled. This is useful for testing and debugging, and as an esacpe hatch.
+		# Allow the true zero correction to be disabled. This is useful for testing and debugging, and as an escape hatch.
 		self.disabled = config.getboolean('disabled', False)
 
 		# z values greater than z_rejection_threshold are rejected. These typically correspond to early triggering
 		# of beacon contact before the nozzle has touched the bed. From test data, these are rare. Only 0.028% of samples
 		# exceeded 75um (from over 32,000 samples across multiple machines and print surfaces).
 		self.z_rejection_threshold = config.getfloat('z_rejection_threshold', 0.075, minval=0.03)
+
+		# z values lower than low_z_rejection_threshold are rejected. These have never been observed in testing, but this
+		# parameter provides a safety net against unexpected behaviour. The default is -0.15mm, which would in theory
+		# still leave a 50um margin against bed damage in the case of a 200um first layer height. One possible scenario
+		# is where true zero occurs on intact PEI coating, but is then followed by probing on a damaged area with no
+		# PEI coating, causing a significantly lower z value.
+		self.low_z_rejection_threshold = config.getfloat('low_z_rejection_threshold', -0.15, maxval=0.0)
 
 		# The number of times to probe an additional point if any z values are rejected.
 		self.max_retries = config.getint('max_retries', 10, minval=0, maxval=15)
@@ -401,7 +408,7 @@ class ProbingSession:
 	def _probe_finalize(self, _, positions):
 		zvals = [p[2] for p in positions]
 		logging.info(f'{self.tzc.name}: probed z-values: {", ".join(f"{z:.6f}" for z in zvals)}')
-		good = [z for z in zvals if z < self.tzc.z_rejection_threshold]
+		good = [z for z in zvals if z < self.tzc.z_rejection_threshold and z > self.tzc.low_z_rejection_threshold]
 		self._samples.extend(good)
 		if len(self._samples) == self._take:
 			# Gathered enough good samples
@@ -411,7 +418,7 @@ class ProbingSession:
 			self._finalize_result = float(np.mean(use_samples))
 			return 'done'
 
-		rejects = [z for z in zvals if z >= self.tzc.z_rejection_threshold]
+		rejects = [z for z in zvals if z >= self.tzc.z_rejection_threshold or z <= self.tzc.low_z_rejection_threshold]
 		logging.info(f'{self.tzc.name}: rejected z-values: {", ".join(f"{z:.6f}" for z in rejects)}')
 
 		if self._next_points_index + len(rejects) <= len(self._points):
