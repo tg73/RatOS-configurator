@@ -17,6 +17,20 @@ import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
 import { postprocessor } from '@/cli/commands/postprocessor';
+import { OptimizerConstructors } from '@tensorflow/tfjs-core';
+
+type InstallProgressUIProps = React.ComponentProps<typeof InstallProgressUI>;
+
+/**
+ * Helper function to create a rerender function for InstallProgressUI
+ * Allows updating props without rewriting the JSX component
+ */
+const createInstallProgressRerender = (initialProps: InstallProgressUIProps) => {
+	const { rerender } = render(<InstallProgressUI {...initialProps} />);
+	return (props: Partial<InstallProgressUIProps>) => {
+		rerender(<InstallProgressUI {...initialProps} {...props} />);
+	};
+};
 
 export const program = new commander.Command()
 	.name('ratos')
@@ -569,4 +583,80 @@ const doctor = program
 				steps={steps}
 			/>,
 		);
+	});
+
+const upgrade = program
+	.command('upgrade')
+	.description('Upgrade the RatOS Configurator to specified version, defaults to latest if not specified')
+	.option('-f, --fork <fork>', 'Specify a fork to upgrade from to', 'origin')
+	.action(async ({fork}) => {
+		console.log('Starting upgrade process...', {fork});
+		const isOrigin = fork === 'origin';
+		const branch = isOrigin ? `v2.1.x-deployment-2` : `${fork}/v2.1.x-deployment-2`;
+		try {
+			await ensureSudo();
+			const cmdSignal = createSignal<string | null>();
+			const { RATOS_CONFIGURATION_PATH } = loadEnvironment();
+			const configuratorPath = path.dirname(RATOS_CONFIGURATION_PATH);
+			if( !existsSync(configuratorPath)) {
+				if(!existsSync(path.join(configuratorPath, '.git'))) {
+					return renderError(`Unable to upgrade: RatOS Configurator git repository not found at ${configuratorPath}`, { exitCode: 2 });
+				} else {
+					return renderError(`Unable to upgrade: RatOS Configurator path ${configuratorPath} is not a git repository`, { exitCode: 2 });
+				}
+
+			}
+			const status = "Upgrading RatOS Configurator...";
+			const upgradeSteps: { [key: string]: InstallStep } = {
+				backup: { name: 'Backing up current configurator...', status: 'running' },
+				updateBranch: { name: `Updating ratos branch to ${branch}`, status: 'running' },
+				postMerge: { name: `Running ${RATOS_CONFIGURATION_PATH}/post-merge.sh`, status: 'running' 	},
+			}
+
+			const $$ = $({
+				verbose: true,
+				log(entry) {
+					if (entry.kind === 'cmd') {
+						cmdSignal(entry.cmd);
+						getLogger().info('Running command: ' + entry.cmd);
+					}
+				},
+			});
+			let steps: InstallStep[] = [];
+
+			const rerender = createInstallProgressRerender({
+				status,
+				stepText: upgradeSteps.backup.name,
+				isLoading: true,
+				cmdSignal,
+				steps,
+			});
+			
+			//validate git repo
+			if (!isOrigin) {
+			  // check if remote exists
+				try {
+					await $$`git -C ${configuratorPath} remote | awk '{printf "%s ", $0}'`
+					steps.push({name: "Validated git repository", status: 'success'});	
+					rerender({
+						isLoading: false,
+						steps
+					});
+				} catch (error) {
+					return renderError(error instanceof Error ? error.message : String(error), { exitCode: 2 });
+				}
+				// if using a fork, add it as a remote if it doesn't exist
+				//await $$`cd ${configuratorPath} && git remote get-url ${remote} || git remote add ${remote}`
+			}
+			
+			steps.push({name: "Backed up current configurator", status: 'success'});
+			rerender({
+				isLoading: false,
+				steps
+
+			});
+			// Update ratos-configurator git repo
+		} catch (error) {
+			return renderError(error instanceof Error ? error.message : String(error), { exitCode: 2 });
+		}
 	});
