@@ -61,7 +61,17 @@ class BeaconUserZOffsetManager:
 		return original_cmd
 	
 	def cmd_Z_OFFSET_APPLY_PROBE(self, gcmd):
-		# Based on klipper's probe.py, Copyright (C) 2017-2024 Kevin O'Connor, GPLv3
+		configfile = self.printer.lookup_object('configfile')
+
+		if gcmd.get('CLEAR', '0').lower() in ('1', 'true', 'yes'):
+			configfile.set(self.name, 'z_offset', "0.0")
+			gcmd.respond_info(
+				"The offset for beacon true zero has been cleared.\n"
+				"To apply the change, you must use the SAVE_CONFIG command to\n"
+				"update the printer config file and restart the printer.")
+			return
+			
+		# Based on klipper's probe.py, Copyright (C) 2017-2024 Kevin O'Connor, GPLv3		
 		gcode_move = self.printer.lookup_object("gcode_move")
 		offset = gcode_move.get_status()['homing_origin'].z
 		if offset == 0:
@@ -69,10 +79,9 @@ class BeaconUserZOffsetManager:
 			return
 		offset += self.configured_z_offset
 		gcmd.respond_info(
-			f"Offset for beacon true zero has been adjusted, new value is {offset:.5f}\n"
-			"The SAVE_CONFIG command will update the printer config file\n"
-			"with the above and restart the printer.")
-		configfile = self.printer.lookup_object('configfile')
+			f"The offset for beacon true zero has been adjusted, new value is {offset:.5f}\n"
+			"To apply the change, you must use the SAVE_CONFIG command to\n"
+			 "update the printer config file and restart the printer.")
 		configfile.set(self.name, 'z_offset', "%.5f" % (offset,))
 		
 def load_config(config):
