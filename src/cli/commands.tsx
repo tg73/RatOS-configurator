@@ -607,11 +607,6 @@ const upgrade = program
 
 			}
 			const status = "Upgrading RatOS Configurator...";
-			const upgradeSteps: { [key: string]: InstallStep } = {
-				backup: { name: 'Backing up current configurator...', status: 'running' },
-				updateBranch: { name: `Updating ratos branch to ${branch}`, status: 'running' },
-				postMerge: { name: `Running ${RATOS_CONFIGURATION_PATH}/post-merge.sh`, status: 'running' 	},
-			}
 
 			const $$ = $({
 				verbose: true,
@@ -622,16 +617,69 @@ const upgrade = program
 					}
 				},
 			});
-			let steps: InstallStep[] = [];
 
+			let steps: InstallStep[] = [];
 			const rerender = createInstallProgressRerender({
 				status,
-				stepText: upgradeSteps.backup.name,
+				stepText: "Backing up current configurator...",
 				isLoading: true,
 				cmdSignal,
 				steps,
 			});
 			
+			// TODO: Backup current configurator files
+			await $$`echo "todo: backup upgradeBackupFiles" && sleep 3`;
+			steps.push({name: "Backed up files", status: 'success'});
+			rerender({
+				isLoading: false,
+				stepText: "Backed up files",
+			});
+			steps.push({name: "Stopped moonraker", status: 'success'})
+			if(process.env.NODE_ENV !== 'development') {
+				await $$`sudo systemctl stop moonaker`;
+			} else {
+				getLogger().info('Skipping moonraker stop in development mode');
+			}
+			rerender({
+				stepText: steps[steps.length - 1].name,
+				steps
+			});
+			steps.push({name: "Resetting core files for fresh upgrade...", status: 'running'});
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps
+			});
+
+			await $$`echo "todo: reset upgradeResetFiles" && sleep 3`;
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				isLoading: false,
+				steps
+			})
+
+			steps.push({name: "Backed up current configurator", status: 'success'});
+			rerender({
+				isLoading: false,
+				stepText: "Done!",
+				statusColor: "greenBright",
+				steps
+
+			});
+
+			steps.push({name: "Switching to branch " + branch, status: 'running'});
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps
+			});
+			await $$`echo "todo: git fetch && git checkout ${branch}" && sleep 3`;
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				isLoading: false,
+				stepText: steps[steps.length - 1].name,
+				steps
+			})
 			//validate git repo
 			if (!isOrigin) {
 			  // check if remote exists
@@ -649,12 +697,6 @@ const upgrade = program
 				//await $$`cd ${configuratorPath} && git remote get-url ${remote} || git remote add ${remote}`
 			}
 			
-			steps.push({name: "Backed up current configurator", status: 'success'});
-			rerender({
-				isLoading: false,
-				steps
-
-			});
 			// Update ratos-configurator git repo
 		} catch (error) {
 			return renderError(error instanceof Error ? error.message : String(error), { exitCode: 2 });
