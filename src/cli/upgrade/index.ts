@@ -2,6 +2,7 @@ import { Signal } from '@/app/_helpers/signal';
 import exp from 'constants';
 import { BellRingIcon } from 'lucide-react';
 import { identity } from 'rxjs';
+import { runAfterFramePaint } from 'scichart';
 import { ProcessOutput, Shell } from 'zx';
 
 export interface UpgradeProcedureOptions {
@@ -12,67 +13,23 @@ export interface UpgradeProcedureOptions {
 }
 
 export interface UpgradeInfo {
-    steps: UpgradeStep[];
+    status: 'running' | 'success' | 'error';
     begin: () => Promise<void>;
 }
 
-export type ProcedureStatus = 'pending' | 'running' | 'success' | 'error';
 
-export interface UpgradeStep {
-    id: string;
-    name: string;
-    description: string;
-    status: ProcedureStatus;
-    procedure: () => Promise<ProcessOutput>;
-}
-
-export interface StepProcedureOptions {
-    id: string;
-    name: string;
-    description: string;
-    procedure: () => Promise<ProcessOutput>;
-}
 
 export const UpgradeProcedure =  (options: UpgradeProcedureOptions): UpgradeInfo => {
+    const status = 'running'
     const { shell: $$, cmdSignal, branch, fork } = options;
-    const steps: UpgradeStep[] = [];
+    const steps = [];
 
-    const backupFiles = upgradeProcedureStep(options,{
-        id: 'backup-files',
-        name: 'Backing up files',
-        description: 'Creating a backup of your important RatOS files', 
-        procedure: async () => {
-            return await $$`echo ${'Backing up files'}`;
-        }
-    });
     const begin = async () => {
-        for (const step of steps) {
-            step.status = 'running';
-            cmdSignal.set(`Starting: ${step.name}`);
-            try {
-                await step.procedure();
-                step.status = 'success';
-                cmdSignal.set(`Completed: ${step.name}`);
-            } catch (error) {
-                step.status = 'error';
-                cmdSignal.set(`Error during: ${step.name}`);
-                break;
-            }
-        }
+        // backup existing installation
+        // stop services
+        // reset files
+        // switch branch
+        // restart services
     }
-    return { steps, begin }
+    return { status, begin }
 };
-
-function upgradeProcedureStep( procedureOptions: UpgradeProcedureOptions, stepProcedureOptions: StepProcedureOptions ) {
-    let $$ = procedureOptions.shell;
-    let status: ProcedureStatus = 'pending';
-    return {
-        id: 'upgrade-process',
-        name: 'Upgrading RatOS',
-        description: 'Downloading and installing the latest RatOS version',
-        status,
-        procedure: async () => {
-            return await $$`echo ${'Upgrading RatOS'}`;
-        },
-    }
-}
