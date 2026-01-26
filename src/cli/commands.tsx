@@ -17,20 +17,7 @@ import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
 import { postprocessor } from '@/cli/commands/postprocessor';
-import { OptimizerConstructors } from '@tensorflow/tfjs-core';
-
-type InstallProgressUIProps = React.ComponentProps<typeof InstallProgressUI>;
-
-/**
- * Helper function to create a rerender function for InstallProgressUI
- * Allows updating props without rewriting the JSX component
- */
-const createInstallProgressRerender = (initialProps: InstallProgressUIProps) => {
-	const { rerender } = render(<InstallProgressUI {...initialProps} />);
-	return (props: Partial<InstallProgressUIProps>) => {
-		rerender(<InstallProgressUI {...initialProps} {...props} />);
-	};
-};
+import { UpgradeProcedure } from '@/cli/upgrade/index';
 
 export const program = new commander.Command()
 	.name('ratos')
@@ -588,117 +575,24 @@ const doctor = program
 const upgrade = program
 	.command('upgrade')
 	.description('Upgrade the RatOS Configurator to specified version, defaults to latest if not specified')
-	.option('-f, --fork <fork>', 'Specify a fork to upgrade from to', 'origin')
 	.action(async ({fork}) => {
-		console.log('Starting upgrade process...', {fork});
-		const isOrigin = fork === 'origin';
-		const branch = isOrigin ? `v2.1.x-deployment-2` : `${fork}/v2.1.x-deployment-2`;
-		try {
-			await ensureSudo();
-			const cmdSignal = createSignal<string | null>();
-			const { RATOS_CONFIGURATION_PATH } = loadEnvironment();
-			const configuratorPath = path.dirname(RATOS_CONFIGURATION_PATH);
-			if( !existsSync(configuratorPath)) {
-				if(!existsSync(path.join(configuratorPath, '.git'))) {
-					return renderError(`Unable to upgrade: RatOS Configurator git repository not found at ${configuratorPath}`, { exitCode: 2 });
-				} else {
-					return renderError(`Unable to upgrade: RatOS Configurator path ${configuratorPath} is not a git repository`, { exitCode: 2 });
+		await ensureSudo();
+		
+		const cmdSignal = createSignal<string | null>();
+		const $$ = $({
+			quiet: true,
+			log(entry) {
+				if (entry.kind === 'cmd') {
+					cmdSignal(entry.cmd);
+					getLogger().info('Running command: ' + entry.cmd);
 				}
+			},
+		});
 
-			}
-			const status = "Upgrading RatOS Configurator...";
-
-			const $$ = $({
-				verbose: true,
-				log(entry) {
-					if (entry.kind === 'cmd') {
-						cmdSignal(entry.cmd);
-						getLogger().info('Running command: ' + entry.cmd);
-					}
-				},
-			});
-
-			let steps: InstallStep[] = [];
-			const rerender = createInstallProgressRerender({
-				status,
-				stepText: "Backing up current configurator...",
-				isLoading: true,
-				cmdSignal,
-				steps,
-			});
-			
-			// TODO: Backup current configurator files
-			await $$`echo "todo: backup upgradeBackupFiles" && sleep 3`;
-			steps.push({name: "Backed up files", status: 'success'});
-			rerender({
-				isLoading: false,
-				stepText: "Backed up files",
-			});
-			steps.push({name: "Stopped moonraker", status: 'success'})
-			if(process.env.NODE_ENV !== 'development') {
-				await $$`sudo systemctl stop moonaker`;
-			} else {
-				getLogger().info('Skipping moonraker stop in development mode');
-			}
-			rerender({
-				stepText: steps[steps.length - 1].name,
-				steps
-			});
-			steps.push({name: "Resetting core files for fresh upgrade...", status: 'running'});
-			rerender({
-				isLoading: true,
-				stepText: steps[steps.length - 1].name,
-				steps
-			});
-
-			await $$`echo "todo: reset upgradeResetFiles" && sleep 3`;
-			steps[steps.length - 1].status = 'success';
-			rerender({
-				isLoading: false,
-				steps
-			})
-
-			steps.push({name: "Backed up current configurator", status: 'success'});
-			rerender({
-				isLoading: false,
-				stepText: "Done!",
-				statusColor: "greenBright",
-				steps
-
-			});
-
-			steps.push({name: "Switching to branch " + branch, status: 'running'});
-			rerender({
-				isLoading: true,
-				stepText: steps[steps.length - 1].name,
-				steps
-			});
-			await $$`echo "todo: git fetch && git checkout ${branch}" && sleep 3`;
-			steps[steps.length - 1].status = 'success';
-			rerender({
-				isLoading: false,
-				stepText: steps[steps.length - 1].name,
-				steps
-			})
-			//validate git repo
-			if (!isOrigin) {
-			  // check if remote exists
-				try {
-					await $$`git -C ${configuratorPath} remote | awk '{printf "%s ", $0}'`
-					steps.push({name: "Validated git repository", status: 'success'});	
-					rerender({
-						isLoading: false,
-						steps
-					});
-				} catch (error) {
-					return renderError(error instanceof Error ? error.message : String(error), { exitCode: 2 });
-				}
-				// if using a fork, add it as a remote if it doesn't exist
-				//await $$`cd ${configuratorPath} && git remote get-url ${remote} || git remote add ${remote}`
-			}
-			
-			// Update ratos-configurator git repo
-		} catch (error) {
-			return renderError(error instanceof Error ? error.message : String(error), { exitCode: 2 });
-		}
+		await UpgradeProcedure({
+			cmdSignal,
+			shell: $$,
+			branch: 'v2.1.x-deployment-2',
+			fork,
+		}).begin();
 	});
