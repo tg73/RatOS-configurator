@@ -1,12 +1,12 @@
-import { Shell } from 'zx';
+import { echo, Shell } from 'zx';
+import path from 'path';
 
 
 /**
  * 
  * @returns list of relative file paths from printer_data directory
  */
-export const upgradeBackupPaths = () => {
-    return [
+export const upgradeBackupPaths = [
         'database',
         'data',
         'logs',
@@ -15,38 +15,53 @@ export const upgradeBackupPaths = () => {
         'gcodes',
         'systemd',
     ];
-}
 
 /**
  * 
  * @returns list of relative file paths from printer_data directory
  */
-export const upgradeResetPaths = () => {
-    return [
-        'database',
-        'config/printer.cfg',
-        'config/RatOS.cfg',
-        'config/ratos-variables.cfg',
+export const upgradeResetPaths = [
+    'database',
+    'config/printer.cfg',
+    'config/RatOS.cfg',
+    'config/ratos-variables.cfg',
         'ratos',
     ];
-}
 
 /**
  * @returns list of relative paths from printer_data that should be deleted during upgrade
  */
-export const upgradeDeletePaths = () => {
-    return [
-        'config/klippy_old.cfg',
+export const upgradeDeletePaths = [
+    'config/klippy_old.cfg',
         'config/mainsail_old.cfg',
     ]
-};
 
-export const createBackup = async (files: string[], outputFilePath: string, shell: Shell) => {
+export async function createBackup (contextPath:string, files: string[], outputDir: string, shell: Shell, dryRun = false) {
+    const $$ = shell
+    await $$`mkdir -p ${outputDir}`;
+    const filesToProcess: string[] = [];
+    for(const file of files){
+        const fullPath = `${contextPath}/${file}`;
+        // Check if file or directory exists
+        const pathExists = await $$`[ -e ${fullPath} ] && echo "true" || echo "false"`;
+        if (pathExists.stdout.trim() === "true") {
+            filesToProcess.push(file);
+        }
+    }
+    
+    if (filesToProcess.length === 0) {
+        throw new Error('No files found to backup');
+    }
+    
+    // Use -C to change to contextPath and use relative paths to avoid absolute path warnings
+    return await $$`tar -czfh ${outputDir}/backup.tar.gz -C ${contextPath} ${filesToProcess}`; 
+}
+
+export const createUpgradeSnippetFiles = async (contextPath:string, files: string[], outputFilePath: string, shell: Shell) => {
     const $$ = shell
     return async () => {
         for(const file of files){
-            await $$`cp -r ${outputFilePath}/${file} ${outputFilePath}-backup/${file}`;
+            await $$`cp -r ${contextPath}/${file} ${outputFilePath}/${file}`;
         }
-        $$`tar -czf ${path}-backup.tar.gz -C ${path}-backup .`;
     }
 }
