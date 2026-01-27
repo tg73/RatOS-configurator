@@ -575,7 +575,9 @@ const doctor = program
 const upgrade = program
 	.command('upgrade')
 	.description('Upgrade the RatOS Configurator to specified version, defaults to latest if not specified')
-	.action(async ({fork}) => {
+	.option('-f, --fork <fork>', 'GitHub fork to use for the upgrade', 'origin')
+	.option('-d, --dry-run', 'Perform a dry run of the upgrade procedure without making any changes')
+	.action(async ({fork, dryRun}) => {
 		await ensureSudo();
 		
 		const cmdSignal = createSignal<string | null>();

@@ -1,3 +1,4 @@
+import { Shell } from 'zx';
 
 
 /**
@@ -40,3 +41,12 @@ export const upgradeDeletePaths = () => {
     ]
 };
 
+export const createBackup = async (files: string[], outputFilePath: string, shell: Shell) => {
+    const $$ = shell
+    return async () => {
+        for(const file of files){
+            await $$`cp -r ${outputFilePath}/${file} ${outputFilePath}-backup/${file}`;
+        }
+        $$`tar -czf ${path}-backup.tar.gz -C ${path}-backup .`;
+    }
+}
