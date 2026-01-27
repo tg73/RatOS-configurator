@@ -25,6 +25,9 @@ export const upgradeDeletePaths = [
     'config/RatOS.cfg',
     'config/printer-*.cfg',
     'config/RatOS-*.cfg',
+    'database/*',
+    'ratos',
+    'systemd/*'
 ]
 
 export async function createBackup (contextPath:string, files: string[], outputDir: string, shell: Shell, dryRun = false) {
