@@ -32,9 +32,12 @@ export const upgradeResetPaths = [
  * @returns list of relative paths from printer_data that should be deleted during upgrade
  */
 export const upgradeDeletePaths = [
-    'config/klippy_old.cfg',
-        'config/mainsail_old.cfg',
-    ]
+    'config/ratos_generated',
+    'config/ratos-variables.cfg',
+    'config/RatOS.cfg',
+    'config/printer-*.cfg',
+    'config/RatOS-*.cfg',
+]
 
 export async function createBackup (contextPath:string, files: string[], outputDir: string, shell: Shell, dryRun = false) {
     const $$ = shell
@@ -55,6 +58,15 @@ export async function createBackup (contextPath:string, files: string[], outputD
     
     // Use -C to change to contextPath and use relative paths to avoid absolute path warnings
     return await $$`tar -czfh ${outputDir}/backup.tar.gz -C ${contextPath} ${filesToProcess}`; 
+}
+
+export async function deleteUpgradeDeletePaths(contextPath:string, files: string[], shell: Shell, dryRun = false) {
+    const $$ = shell
+    if (dryRun){
+        return await $$`echo "Dry run enabled, skipping deletion of files" && sleep 2`;
+    } else {
+        return await $$`rm -rf ${files.map(file => `${contextPath}/${file}`)}`;
+    }
 }
 
 export const createUpgradeSnippetFiles = async (contextPath:string, files: string[], outputFilePath: string, shell: Shell) => {

@@ -17,7 +17,8 @@ import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
 import { postprocessor } from '@/cli/commands/postprocessor';
-import { upgradeBackupPaths, createBackup } from '@/cli/utils/files';
+import { upgradeBackupPaths, createBackup, upgradeDeletePaths, deleteUpgradeDeletePaths } from '@/cli/utils/files';
+import { a } from 'vitest/dist/suite-IbNSsUWN';
 
 type InstallProgressUIProps = React.ComponentProps<typeof InstallProgressUI>;
 
@@ -681,6 +682,20 @@ const upgrade = program
 				stepText: steps[steps.length - 1].name,
 				steps
 			});
+			steps.push({name: "Removing files marked for deletion during upgrade", status: 'running'});
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps
+			});
+			await deleteUpgradeDeletePaths(backupContextPath, upgradeDeletePaths, $$, dryRun);
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				isLoading: false,
+				stepText: steps[steps.length - 1].name,
+				steps
+			});
+
 			steps.push({name: "Resetting core files for fresh upgrade...", status: 'running'});
 			rerender({
 				isLoading: true,
