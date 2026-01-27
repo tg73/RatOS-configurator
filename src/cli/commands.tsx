@@ -17,9 +17,8 @@ import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
 import { postprocessor } from '@/cli/commands/postprocessor';
-import { upgradeBackupPaths, createBackup, upgradeDeletePaths, deleteUpgradeDeletePaths } from '@/cli/utils/files';
-import { a } from 'vitest/dist/suite-IbNSsUWN';
-
+import { upgradeBackupPaths, createBackup, upgradeDeletePaths, deleteUpgradeDeletePaths, createUpgradeSnippetFiles } from '@/cli/utils/files';
+import { switchBranchFromRemote } from '@/cli/upgrade/switchBranchFromRemote';
 type InstallProgressUIProps = React.ComponentProps<typeof InstallProgressUI>;
 
 /**
@@ -600,11 +599,10 @@ const doctor = program
 const upgrade = program
 	.command('upgrade')
 	.description('Upgrade the RatOS Configurator to specified version, defaults to latest if not specified')
-	.option('-f, --fork <fork>', 'GitHub fork to use for the upgrade', 'origin')
+	.option('-r, --remote <remote>', 'GitHub remote to use for the upgrade', 'origin')
 	.option('-d, --dry-run', 'Perform a dry run of the upgrade procedure without making any changes')
-	.action(async ({fork, dryRun}) => {
-		const isOrigin = fork === 'origin';
-		const branch = isOrigin ? `v2.1.x-deployment-2` : `${fork}/v2.1.x-deployment-2`;
+	.option('-b, --branch <branch>', 'Git branch to use for the upgrade', 'v2.1.x-deployment-2')
+	.action(async ({remote, dryRun, branch}) => {
 		try {
 			await ensureSudo();
 
@@ -702,8 +700,7 @@ const upgrade = program
 				stepText: steps[steps.length - 1].name,
 				steps
 			});
-
-			await $$`echo "todo: reset upgradeResetFiles" && sleep 3`;
+			await createUpgradeSnippetFiles(`${configuratorPath}/app/cli/templates`, backupContextPath, $$, dryRun);
 			steps[steps.length - 1].status = 'success';
 			rerender({
 				isLoading: false,
@@ -711,27 +708,44 @@ const upgrade = program
 				steps
 			})
 
-			steps.push({name: "Backed up current configurator", status: 'success'});
-			rerender({
-				isLoading: false,
-				stepText: steps[steps.length - 1].name,
-				steps
-
-			});
-
-			steps.push({name: "Switching to branch " + branch, status: 'running'});
+			const isOrigin = remote === 'origin';
+			const branchName = isOrigin ? branch : `${remote}/${branch}`;
+			steps.push({name: `Switching to branch ${branchName}`, status: 'running'});
 			rerender({
 				isLoading: true,
 				stepText: steps[steps.length - 1].name,
 				steps
 			});
-			await $$`echo "todo: git fetch && git checkout ${branch}" && sleep 3`;
+			await switchBranchFromRemote(configuratorPath, branch, remote, $$, dryRun);
 			steps[steps.length - 1].status = 'success';
 			rerender({
 				isLoading: false,
 				stepText: steps[steps.length - 1].name,
 				steps
 			})	
+			steps.push({name: "Running upgrade script...", status: 'running'});
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps
+			});
+			if(!dryRun) {
+				await $$`${RATOS_SCRIPT_DIR}/ratos-update.sh`;
+			} else {
+				getLogger().info('Skipping upgrade script due to --dry-run mode');
+			}
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				stepText: steps[steps.length - 1].name,
+				isLoading: false,
+				steps
+			})
+			rerender({
+				stepText: "Done!",
+				isLoading: false,
+				stepTextColor: 'greenBright',
+				steps
+			})
 		} catch (e) {
 			if (e instanceof Error) {
 				return renderError(e.message, { exitCode: 2 });

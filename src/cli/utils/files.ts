@@ -17,18 +17,6 @@ export const upgradeBackupPaths = [
     ];
 
 /**
- * 
- * @returns list of relative file paths from printer_data directory
- */
-export const upgradeResetPaths = [
-    'database',
-    'config/printer.cfg',
-    'config/RatOS.cfg',
-    'config/ratos-variables.cfg',
-        'ratos',
-    ];
-
-/**
  * @returns list of relative paths from printer_data that should be deleted during upgrade
  */
 export const upgradeDeletePaths = [
@@ -69,11 +57,14 @@ export async function deleteUpgradeDeletePaths(contextPath:string, files: string
     }
 }
 
-export const createUpgradeSnippetFiles = async (contextPath:string, files: string[], outputFilePath: string, shell: Shell) => {
+export const createUpgradeSnippetFiles = async (templateDir:string, outputDir:string,shell: Shell, dryRun = false) => {
     const $$ = shell
-    return async () => {
-        for(const file of files){
-            await $$`cp -r ${contextPath}/${file} ${outputFilePath}/${file}`;
-        }
+    if (process.env.NODE_ENV != 'development') {
+        await $$`[[ -d ${templateDir} ]] || echo "Template directory ${templateDir} does not exist"`;
+    }
+    if (dryRun){
+        return await $$`echo "Dry run enabled, skipping creation of upgrade snippet files" && sleep 2`;
+    } else {
+        return await $$`cp -r ${templateDir}/* ${outputDir}/`;
     }
 }
