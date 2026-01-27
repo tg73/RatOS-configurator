@@ -18,8 +18,8 @@ import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
 import { postprocessor } from '@/cli/commands/postprocessor';
-import { upgradeBackupPaths, createBackup, upgradeDeletePaths, deleteUpgradeDeletePaths, createUpgradeSnippetFiles } from '@/cli/utils/files';
-import { switchBranchFromRemote } from '@/cli/upgrade/switchBranchFromRemote';
+import { upgradeBackupPaths, createBackup, upgradeDeletePaths, deleteUpgradeDeletePaths, createUpgradeSnippetFiles } from '@/cli/utils/filesystem';
+import { switchBranchFromRemote } from '@/cli/utils/git';
 type InstallProgressUIProps = React.ComponentProps<typeof InstallProgressUI>;
 
 /**
