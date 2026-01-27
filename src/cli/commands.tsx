@@ -5,7 +5,7 @@ import { getBaseUrl } from '@/utils/trpc.js';
 import { stat, readFile } from 'node:fs/promises';
 import path from 'path';
 import React from 'react';
-import { Box, Text, render } from 'ink';
+import { Box, Text, Newline, render } from 'ink';
 import { Container } from '@/cli/components/container.jsx';
 import { Status } from '@/cli/components/status.jsx';
 import { readPackageUp } from 'read-package-up';
@@ -13,6 +13,7 @@ import { $, echo, which } from 'zx';
 import { existsSync } from 'node:fs';
 import { ensureSudo, getRealPath, renderApiResults, renderError, errorColor, loadEnvironment } from '@/cli/util';
 import { InstallProgressUI, InstallStep } from '@/cli/components/install-progress';
+import { promptContinue } from '@/cli/components/continue';
 import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
@@ -602,9 +603,26 @@ const upgrade = program
 	.option('-r, --remote <remote>', 'GitHub remote to use for the upgrade', 'origin')
 	.option('-d, --dry-run', 'Perform a dry run of the upgrade procedure without making any changes')
 	.option('-b, --branch <branch>', 'Git branch to use for the upgrade', 'v2.1.x-deployment-2')
-	.action(async ({remote, dryRun, branch}) => {
+	.option('-y, --yes', 'Automatically confirm the upgrade without prompting')
+	.action(async ({remote, dryRun, branch, yes}) => {
 		try {
 			await ensureSudo();
+
+			// Prompt user for confirmation before proceeding	
+			if(!yes || dryRun) {
+				const shouldContinue = await promptContinue(
+					 <>
+						<Text>This operation is not reversible.</Text>
+						<Newline />
+						<Text>A backup will be completed during the upgrade.</Text>
+						<Newline />
+						<Text>Do you wish to continue?</Text>
+					</>
+				);
+				if (!shouldContinue) {
+					return renderError('Upgrade aborted by user', { exitCode: 3 });
+				}
+			}
 
 			const { 
 				RATOS_CONFIGURATION_PATH, 
@@ -730,7 +748,7 @@ const upgrade = program
 				steps
 			});
 			if(!dryRun) {
-				await $$`${RATOS_SCRIPT_DIR}/ratos-update.sh`;
+				await $$`${RATOS_SCRIPT_DIR}/post-merge.sh`;
 			} else {
 				getLogger().info('Skipping upgrade script due to --dry-run mode');
 			}
