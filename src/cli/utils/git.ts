@@ -32,9 +32,11 @@ export async function switchBranchFromRemote(
 		return await $$`echo "Dry run enabled - skipping git switch to ${branch} in ${repoDir}" && sleep 2`;
 	} else {
 		if (!isOrigin) {
-			// create and switch to the branch from the remote
-			return await $$`git -C ${repoDir} switch -c ${branch} --track ${remote}/${branch}`;
-		}
+            const localBranch = (await $$`git -C ${repoDir} branch --list ${branch}`).stdout.trim();
+            if (localBranch === '') {
+                return await $$`git -C ${repoDir} switch -c ${branch} --track ${remote}/${branch}`;
+            }
+        }
 		return await $$`git -C ${repoDir} switch ${branch}`;
 	}
 }
