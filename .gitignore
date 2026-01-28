@@ -20,8 +20,6 @@
 # SciChart data
 src/public/scichart*
 src/public/tfjs*
-<<<<<<< HEAD
-=======
 
 # Default printer config directory for development
 devbox.d/printer-config/
@@ -29,4 +27,3 @@ devbox.d/klipper/
 
 # artifacts for local deployment tests
 /artifacts
->>>>>>> e3d7ad5b8 (Merge pull request #5 from LongLiveCHIEF/local-deploy-branch-automation)
