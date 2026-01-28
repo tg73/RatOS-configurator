@@ -5,7 +5,7 @@ import { getBaseUrl } from '@/utils/trpc.js';
 import { stat, readFile } from 'node:fs/promises';
 import path from 'path';
 import React from 'react';
-import { Box, Text, render } from 'ink';
+import { Box, Text, Newline, render } from 'ink';
 import { Container } from '@/cli/components/container.jsx';
 import { Status } from '@/cli/components/status.jsx';
 import { readPackageUp } from 'read-package-up';
@@ -13,10 +13,31 @@ import { $, echo, which } from 'zx';
 import { existsSync } from 'node:fs';
 import { ensureSudo, getRealPath, renderApiResults, renderError, errorColor, loadEnvironment } from '@/cli/util';
 import { InstallProgressUI, InstallStep } from '@/cli/components/install-progress';
+import { promptContinue } from '@/cli/components/continue';
 import { createSignal } from '@/app/_helpers/signal';
 import { getLogger } from '@/cli/logger';
 import { frontend } from '@/cli/commands/frontend';
 import { postprocessor } from '@/cli/commands/postprocessor';
+import {
+	upgradeBackupPaths,
+	createBackup,
+	upgradeDeletePaths,
+	deleteUpgradeDeletePaths,
+	createUpgradeSnippetFiles,
+} from '@/cli/utils/filesystem';
+import { switchBranchFromRemote } from '@/cli/utils/git';
+type InstallProgressUIProps = React.ComponentProps<typeof InstallProgressUI>;
+
+/**
+ * Helper function to create a rerender function for InstallProgressUI
+ * Allows updating props without rewriting the JSX component
+ */
+const createInstallProgressRerender = (initialProps: InstallProgressUIProps) => {
+	const { rerender } = render(<InstallProgressUI {...initialProps} />);
+	return (props: Partial<InstallProgressUIProps>) => {
+		rerender(<InstallProgressUI {...initialProps} {...props} />);
+	};
+};
 
 export const program = new commander.Command()
 	.name('ratos')
@@ -569,4 +590,189 @@ const doctor = program
 				steps={steps}
 			/>,
 		);
+	});
+
+/**
+ * Upgrade the RatOS Configurator to a specified version or the latest version
+ * steps:
+ * - Backup current configurator files
+ * - Stop moonraker service
+ * - Reset core files for fresh upgrade
+ * - Switch to specified branch
+ * - restore snippet files
+ * - ensure update ran
+ * - Restart services
+ */
+const upgrade = program
+	.command('upgrade')
+	.description('Upgrade the RatOS Configurator to specified version, defaults to latest if not specified')
+	.option('-r, --remote <remote>', 'GitHub remote to use for the upgrade', 'origin')
+	.option('-d, --dry-run', 'Perform a dry run of the upgrade procedure without making any changes')
+	.option('-b, --branch <branch>', 'Git branch to use for the upgrade', 'v2.1.x-deployment-2')
+	.option('-y, --yes', 'Automatically confirm the upgrade without prompting')
+	.action(async ({ remote, dryRun, branch, yes }) => {
+		try {
+			await ensureSudo();
+
+			const { RATOS_CONFIGURATION_PATH, NODE_ENV, RATOS_SCRIPT_DIR, RATOS_DATA_DIR } = loadEnvironment();
+
+			// Prompt user for confirmation before proceeding
+			if (!yes || NODE_ENV === 'development') {
+				const shouldContinue = await promptContinue(
+					<>
+						<Text>This operation is not reversible.</Text>
+						<Newline />
+						<Text>A backup will be completed during the upgrade.</Text>
+						<Newline />
+						<Text>Do you wish to continue?</Text>
+					</>,
+				);
+				if (!shouldContinue) {
+					return renderError('Upgrade aborted by user', { exitCode: 3 });
+				}
+			}
+
+			const configuratorPath = path.dirname(RATOS_CONFIGURATION_PATH);
+			// validate that configuratorPath exists and is a git repository
+			if (!existsSync(configuratorPath)) {
+				if (!existsSync(path.join(configuratorPath, '.git'))) {
+					return renderError(`Unable to upgrade: RatOS Configurator git repository not found at ${configuratorPath}`, {
+						exitCode: 2,
+					});
+				} else {
+					return renderError(`Unable to upgrade: RatOS Configurator path ${configuratorPath} is not a git repository`, {
+						exitCode: 2,
+					});
+				}
+			}
+
+			const cmdSignal = createSignal<string | null>();
+			const $$ = $({
+				verbose: true,
+				log(entry) {
+					if (entry.kind === 'cmd') {
+						cmdSignal(entry.cmd);
+						getLogger().info('Running command: ' + entry.cmd);
+					}
+				},
+			});
+
+			const status = 'Upgrading RatOS Configurator...';
+			let steps: InstallStep[] = [];
+			const rerender = createInstallProgressRerender({
+				status,
+				stepText: 'Backing up current configurator...',
+				isLoading: true,
+				cmdSignal,
+				steps,
+			});
+			steps.push({ name: 'Stopped moonraker', status: 'success' });
+			if (NODE_ENV !== 'development' && !dryRun) {
+				await $$`sudo systemctl stop moonraker`;
+			} else {
+				getLogger().info('Skipping moonraker stop in --dry-run mode');
+			}
+			rerender({
+				stepText: steps[steps.length - 1].name,
+				isLoading: false,
+				steps,
+			});
+			steps.push({ name: 'Stopped ratos-configurator', status: 'success' });
+			if (NODE_ENV !== 'development' && !dryRun) {
+				await $$`sudo systemctl stop ratos-configurator`;
+			} else {
+				getLogger().info('Skipping ratos-configurator shutdown due to --dry-run mode');
+			}
+			rerender({
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+
+			// Backup current configurator files
+			const backupContextPath = path.dirname(RATOS_DATA_DIR);
+			steps.push({ name: `Backing up ratos files found in ${backupContextPath}`, status: 'running' });
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+			await createBackup(backupContextPath, upgradeBackupPaths, `${backupContextPath}/backups`, $$, dryRun);
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				isLoading: false,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+			steps.push({ name: 'Removing files marked for deletion during upgrade', status: 'running' });
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+			await deleteUpgradeDeletePaths(backupContextPath, upgradeDeletePaths, $$, dryRun);
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				isLoading: false,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+
+			steps.push({ name: 'Resetting core files for fresh upgrade...', status: 'running' });
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+			await createUpgradeSnippetFiles(`${configuratorPath}/app/cli/templates`, backupContextPath, $$, dryRun);
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				isLoading: false,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+
+			const isOrigin = remote === 'origin';
+			const branchName = isOrigin ? branch : `${remote}/${branch}`;
+			steps.push({ name: `Switching to branch ${branchName}`, status: 'running' });
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+			await switchBranchFromRemote(configuratorPath, branch, remote, $$, dryRun);
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				isLoading: false,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+			steps.push({ name: 'Running upgrade script...', status: 'running' });
+			rerender({
+				isLoading: true,
+				stepText: steps[steps.length - 1].name,
+				steps,
+			});
+			if (!dryRun) {
+				await $$`${RATOS_SCRIPT_DIR}/post-merge.sh`;
+			} else {
+				getLogger().info('Skipping upgrade script due to --dry-run mode');
+			}
+			steps[steps.length - 1].status = 'success';
+			rerender({
+				stepText: steps[steps.length - 1].name,
+				isLoading: false,
+				steps,
+			});
+			rerender({
+				stepText: 'Done!',
+				isLoading: false,
+				stepTextColor: 'greenBright',
+				steps,
+			});
+		} catch (e) {
+			if (e instanceof Error) {
+				return renderError(e.message, { exitCode: 2 });
+			}
+			return renderError('Failed to upgrade RatOS Configurator', { exitCode: 2 });
+		}
 	});

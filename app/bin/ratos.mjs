@@ -4192,7 +4192,7 @@ var require_react_development = __commonJS({
           }
           return dispatcher.useContext(Context);
         }
-        function useState14(initialState) {
+        function useState16(initialState) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useState(initialState);
         }
@@ -4204,7 +4204,7 @@ var require_react_development = __commonJS({
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
-        function useEffect17(create2, deps) {
+        function useEffect18(create2, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useEffect(create2, deps);
         }
@@ -4986,7 +4986,7 @@ var require_react_development = __commonJS({
         exports.useContext = useContext15;
         exports.useDebugValue = useDebugValue;
         exports.useDeferredValue = useDeferredValue;
-        exports.useEffect = useEffect17;
+        exports.useEffect = useEffect18;
         exports.useId = useId;
         exports.useImperativeHandle = useImperativeHandle;
         exports.useInsertionEffect = useInsertionEffect;
@@ -4994,7 +4994,7 @@ var require_react_development = __commonJS({
         exports.useMemo = useMemo16;
         exports.useReducer = useReducer6;
         exports.useRef = useRef4;
-        exports.useState = useState14;
+        exports.useState = useState16;
         exports.useSyncExternalStore = useSyncExternalStore2;
         exports.useTransition = useTransition;
         exports.version = ReactVersion;
@@ -5078,8 +5078,8 @@ var require_use_sync_external_store_shim_development = __commonJS({
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
         }
-        var React46 = require_react();
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var React48 = require_react();
+        var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function error(format) {
           {
             {
@@ -5109,13 +5109,13 @@ var require_use_sync_external_store_shim_development = __commonJS({
           return x === y && (x !== 0 || 1 / x === 1 / y) || x !== x && y !== y;
         }
         var objectIs = typeof Object.is === "function" ? Object.is : is;
-        var useState14 = React46.useState, useEffect17 = React46.useEffect, useLayoutEffect2 = React46.useLayoutEffect, useDebugValue = React46.useDebugValue;
+        var useState16 = React48.useState, useEffect18 = React48.useEffect, useLayoutEffect2 = React48.useLayoutEffect, useDebugValue = React48.useDebugValue;
         var didWarnOld18Alpha = false;
         var didWarnUncachedGetSnapshot = false;
         function useSyncExternalStore2(subscribe, getSnapshot, getServerSnapshot) {
           {
             if (!didWarnOld18Alpha) {
-              if (React46.startTransition !== void 0) {
+              if (React48.startTransition !== void 0) {
                 didWarnOld18Alpha = true;
                 error("You are using an outdated, pre-release alpha of React 18 that does not support useSyncExternalStore. The use-sync-external-store shim will not work correctly. Upgrade to a newer pre-release.");
               }
@@ -5131,7 +5131,7 @@ var require_use_sync_external_store_shim_development = __commonJS({
               }
             }
           }
-          var _useState = useState14({
+          var _useState = useState16({
             inst: {
               value,
               getSnapshot
@@ -5146,7 +5146,7 @@ var require_use_sync_external_store_shim_development = __commonJS({
               });
             }
           }, [subscribe, value, getSnapshot]);
-          useEffect17(function() {
+          useEffect18(function() {
             if (checkIfSnapshotChanged(inst)) {
               forceUpdate({
                 inst
@@ -5180,7 +5180,7 @@ var require_use_sync_external_store_shim_development = __commonJS({
         var canUseDOM = !!(typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined");
         var isServerEnvironment = !canUseDOM;
         var shim = isServerEnvironment ? useSyncExternalStore$12 : useSyncExternalStore2;
-        var useSyncExternalStore$2 = React46.useSyncExternalStore !== void 0 ? React46.useSyncExternalStore : shim;
+        var useSyncExternalStore$2 = React48.useSyncExternalStore !== void 0 ? React48.useSyncExternalStore : shim;
         exports.useSyncExternalStore = useSyncExternalStore$2;
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop === "function") {
           __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(new Error());
@@ -8665,10 +8665,10 @@ var require_react_dom_server_legacy_node_development = __commonJS({
     if (process.env.NODE_ENV !== "production") {
       (function() {
         "use strict";
-        var React46 = require_react();
+        var React48 = require_react();
         var stream = __require("stream");
         var ReactVersion = "18.2.0";
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             {
@@ -10564,7 +10564,7 @@ var require_react_dom_server_legacy_node_development = __commonJS({
         }
         function flattenOptionChildren(children) {
           var content = "";
-          React46.Children.forEach(children, function(child) {
+          React48.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -12558,7 +12558,7 @@ var require_react_dom_server_legacy_node_development = __commonJS({
         function basicStateReducer(state, action) {
           return typeof action === "function" ? action(state) : action;
         }
-        function useState14(initialState) {
+        function useState16(initialState) {
           {
             currentHookNameInDev = "useState";
           }
@@ -12740,7 +12740,7 @@ var require_react_dom_server_legacy_node_development = __commonJS({
           useMemo: useMemo16,
           useReducer: useReducer6,
           useRef: useRef4,
-          useState: useState14,
+          useState: useState16,
           useInsertionEffect: noop5,
           useLayoutEffect: useLayoutEffect2,
           useCallback: useCallback12,
@@ -14063,10 +14063,10 @@ var require_react_dom_server_node_development = __commonJS({
     if (process.env.NODE_ENV !== "production") {
       (function() {
         "use strict";
-        var React46 = require_react();
+        var React48 = require_react();
         var util4 = __require("util");
         var ReactVersion = "18.2.0";
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             {
@@ -16059,7 +16059,7 @@ var require_react_dom_server_node_development = __commonJS({
         }
         function flattenOptionChildren(children) {
           var content = "";
-          React46.Children.forEach(children, function(child) {
+          React48.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -17989,7 +17989,7 @@ var require_react_dom_server_node_development = __commonJS({
         function basicStateReducer(state, action) {
           return typeof action === "function" ? action(state) : action;
         }
-        function useState14(initialState) {
+        function useState16(initialState) {
           {
             currentHookNameInDev = "useState";
           }
@@ -18171,7 +18171,7 @@ var require_react_dom_server_node_development = __commonJS({
           useMemo: useMemo16,
           useReducer: useReducer6,
           useRef: useRef4,
-          useState: useState14,
+          useState: useState16,
           useInsertionEffect: noop5,
           useLayoutEffect: useLayoutEffect2,
           useCallback: useCallback12,
@@ -25885,9 +25885,9 @@ var require_react_reconciler_development = __commonJS({
       module.exports = function $$$reconciler($$$hostConfig) {
         var exports2 = {};
         "use strict";
-        var React46 = require_react();
+        var React48 = require_react();
         var Scheduler = require_scheduler();
-        var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         var suppressWarning = false;
         function setSuppressWarning(newSuppressWarning) {
           {
@@ -29685,7 +29685,7 @@ var require_react_reconciler_development = __commonJS({
           }
         }
         var fakeInternalInstance = {};
-        var emptyRefsObject = new React46.Component().refs;
+        var emptyRefsObject = new React48.Component().refs;
         var didWarnAboutStateAssignmentForComponent;
         var didWarnAboutUninitializedState;
         var didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate;
@@ -54037,7 +54037,7 @@ var require_backend = __commonJS({
                 });
                 return a._currentValue;
               },
-              useEffect: function useEffect17(a) {
+              useEffect: function useEffect18(a) {
                 F();
                 z2.push({
                   primitive: "Effect",
@@ -54111,7 +54111,7 @@ var require_backend = __commonJS({
                 });
                 return a;
               },
-              useState: function useState14(a) {
+              useState: function useState16(a) {
                 var b = F();
                 a = null !== b ? b.memoizedState : "function" === typeof a ? a() : a;
                 z2.push({
@@ -62917,9 +62917,9 @@ var require_spdx_correct = __commonJS({
     };
     module.exports = function(identifier, options) {
       options = options || {};
-      var upgrade = options.upgrade === void 0 ? true : !!options.upgrade;
+      var upgrade2 = options.upgrade === void 0 ? true : !!options.upgrade;
       function postprocess(value) {
-        return upgrade ? upgradeGPLs(value) : value;
+        return upgrade2 ? upgradeGPLs(value) : value;
       }
       var validArugment = typeof identifier === "string" && identifier.trim().length !== 0;
       if (!validArugment) {
@@ -74941,7 +74941,7 @@ var require_buffer_list = __commonJS({
     "use strict";
     init_cjs_shim();
     var { StringPrototypeSlice, SymbolIterator, TypedArrayPrototypeSet, Uint8Array: Uint8Array2 } = require_primordials();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { inspect } = require_util();
     module.exports = class BufferList {
       constructor() {
@@ -74997,8 +74997,8 @@ var require_buffer_list = __commonJS({
       }
       concat(n2) {
         if (this.length === 0)
-          return Buffer2.alloc(0);
-        const ret = Buffer2.allocUnsafe(n2 >>> 0);
+          return Buffer3.alloc(0);
+        const ret = Buffer3.allocUnsafe(n2 >>> 0);
         let p = this.head;
         let i = 0;
         while (p) {
@@ -75061,7 +75061,7 @@ var require_buffer_list = __commonJS({
       }
       // Consumes a specified amount of bytes from the buffered data.
       _getBuffer(n2) {
-        const ret = Buffer2.allocUnsafe(n2);
+        const ret = Buffer3.allocUnsafe(n2);
         const retLen = n2;
         let p = this.head;
         let c = 0;
@@ -75142,11 +75142,11 @@ var require_from = __commonJS({
     init_cjs_shim();
     var process15 = require_process();
     var { PromisePrototypeThen, SymbolAsyncIterator, SymbolIterator } = require_primordials();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { ERR_INVALID_ARG_TYPE, ERR_STREAM_NULL_VALUES } = require_errors().codes;
     function from(Readable, iterable, opts) {
       let iterator;
-      if (typeof iterable === "string" || iterable instanceof Buffer2) {
+      if (typeof iterable === "string" || iterable instanceof Buffer3) {
         return new Readable({
           objectMode: true,
           ...opts,
@@ -75253,7 +75253,7 @@ var require_readable = __commonJS({
     Readable.ReadableState = ReadableState;
     var { EventEmitter: EE } = __require("events");
     var { Stream: Stream2, prependListener } = require_legacy();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { addAbortSignal } = require_add_abort_signal();
     var eos = require_end_of_stream2();
     var debug = require_util().debuglog("stream", (fn) => {
@@ -75366,13 +75366,13 @@ var require_readable = __commonJS({
           encoding = encoding || state.defaultEncoding;
           if (state.encoding !== encoding) {
             if (addToFront && state.encoding) {
-              chunk = Buffer2.from(chunk, encoding).toString(state.encoding);
+              chunk = Buffer3.from(chunk, encoding).toString(state.encoding);
             } else {
-              chunk = Buffer2.from(chunk, encoding);
+              chunk = Buffer3.from(chunk, encoding);
               encoding = "";
             }
           }
-        } else if (chunk instanceof Buffer2) {
+        } else if (chunk instanceof Buffer3) {
           encoding = "";
         } else if (Stream2._isUint8Array(chunk)) {
           chunk = Stream2._uint8ArrayToBuffer(chunk);
@@ -76204,7 +76204,7 @@ var require_writable = __commonJS({
     Writable2.WritableState = WritableState;
     var { EventEmitter: EE } = __require("events");
     var Stream2 = require_legacy().Stream;
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var destroyImpl = require_destroy();
     var { addAbortSignal } = require_add_abort_signal();
     var { getHighWaterMark, getDefaultHighWaterMark } = require_state2();
@@ -76326,7 +76326,7 @@ var require_writable = __commonJS({
       } else {
         if (!encoding)
           encoding = state.defaultEncoding;
-        else if (encoding !== "buffer" && !Buffer2.isEncoding(encoding))
+        else if (encoding !== "buffer" && !Buffer3.isEncoding(encoding))
           throw new ERR_UNKNOWN_ENCODING(encoding);
         if (typeof cb !== "function")
           cb = nop;
@@ -76336,10 +76336,10 @@ var require_writable = __commonJS({
       } else if (!state.objectMode) {
         if (typeof chunk === "string") {
           if (state.decodeStrings !== false) {
-            chunk = Buffer2.from(chunk, encoding);
+            chunk = Buffer3.from(chunk, encoding);
             encoding = "buffer";
           }
-        } else if (chunk instanceof Buffer2) {
+        } else if (chunk instanceof Buffer3) {
           encoding = "buffer";
         } else if (Stream2._isUint8Array(chunk)) {
           chunk = Stream2._uint8ArrayToBuffer(chunk);
@@ -76379,7 +76379,7 @@ var require_writable = __commonJS({
     Writable2.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
       if (typeof encoding === "string")
         encoding = StringPrototypeToLowerCase(encoding);
-      if (!Buffer2.isEncoding(encoding))
+      if (!Buffer3.isEncoding(encoding))
         throw new ERR_UNKNOWN_ENCODING(encoding);
       this._writableState.defaultEncoding = encoding;
       return this;
@@ -77931,7 +77931,7 @@ var require_promises = __commonJS({
 var require_stream2 = __commonJS({
   "../node_modules/.pnpm/readable-stream@4.3.0/node_modules/readable-stream/lib/stream.js"(exports, module) {
     init_cjs_shim();
-    var { Buffer: Buffer2 } = __require("buffer");
+    var { Buffer: Buffer3 } = __require("buffer");
     var { ObjectDefineProperty, ObjectKeys, ReflectApply } = require_primordials();
     var {
       promisify: { custom: customPromisify }
@@ -78040,7 +78040,7 @@ var require_stream2 = __commonJS({
       return value instanceof Uint8Array;
     };
     Stream2._uint8ArrayToBuffer = function _uint8ArrayToBuffer(chunk) {
-      return Buffer2.from(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+      return Buffer3.from(chunk.buffer, chunk.byteOffset, chunk.byteLength);
     };
   }
 });
@@ -80697,33 +80697,33 @@ var require_safe_buffer = __commonJS({
   "../node_modules/.pnpm/safe-buffer@5.1.2/node_modules/safe-buffer/index.js"(exports, module) {
     init_cjs_shim();
     var buffer = __require("buffer");
-    var Buffer2 = buffer.Buffer;
+    var Buffer3 = buffer.Buffer;
     function copyProps(src, dst) {
       for (var key in src) {
         dst[key] = src[key];
       }
     }
-    if (Buffer2.from && Buffer2.alloc && Buffer2.allocUnsafe && Buffer2.allocUnsafeSlow) {
+    if (Buffer3.from && Buffer3.alloc && Buffer3.allocUnsafe && Buffer3.allocUnsafeSlow) {
       module.exports = buffer;
     } else {
       copyProps(buffer, exports);
       exports.Buffer = SafeBuffer;
     }
     function SafeBuffer(arg, encodingOrOffset, length) {
-      return Buffer2(arg, encodingOrOffset, length);
+      return Buffer3(arg, encodingOrOffset, length);
     }
-    copyProps(Buffer2, SafeBuffer);
+    copyProps(Buffer3, SafeBuffer);
     SafeBuffer.from = function(arg, encodingOrOffset, length) {
       if (typeof arg === "number") {
         throw new TypeError("Argument must not be a number");
       }
-      return Buffer2(arg, encodingOrOffset, length);
+      return Buffer3(arg, encodingOrOffset, length);
     };
     SafeBuffer.alloc = function(size, fill, encoding) {
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      var buf = Buffer2(size);
+      var buf = Buffer3(size);
       if (fill !== void 0) {
         if (typeof encoding === "string") {
           buf.fill(fill, encoding);
@@ -80739,7 +80739,7 @@ var require_safe_buffer = __commonJS({
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      return Buffer2(size);
+      return Buffer3(size);
     };
     SafeBuffer.allocUnsafeSlow = function(size) {
       if (typeof size !== "number") {
@@ -80880,7 +80880,7 @@ var require_BufferList = __commonJS({
         throw new TypeError("Cannot call a class as a function");
       }
     }
-    var Buffer2 = require_safe_buffer().Buffer;
+    var Buffer3 = require_safe_buffer().Buffer;
     var util4 = __require("util");
     function copyBuffer(src, target, offset2) {
       src.copy(target, offset2);
@@ -80935,8 +80935,8 @@ var require_BufferList = __commonJS({
       };
       BufferList.prototype.concat = function concat(n2) {
         if (this.length === 0)
-          return Buffer2.alloc(0);
-        var ret = Buffer2.allocUnsafe(n2 >>> 0);
+          return Buffer3.alloc(0);
+        var ret = Buffer3.allocUnsafe(n2 >>> 0);
         var p = this.head;
         var i = 0;
         while (p) {
@@ -81059,14 +81059,14 @@ var require_stream_writable = __commonJS({
       deprecate: require_node()
     };
     var Stream2 = require_stream3();
-    var Buffer2 = require_safe_buffer().Buffer;
+    var Buffer3 = require_safe_buffer().Buffer;
     var OurUint8Array = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
     };
     function _uint8ArrayToBuffer(chunk) {
-      return Buffer2.from(chunk);
+      return Buffer3.from(chunk);
     }
     function _isUint8Array(obj) {
-      return Buffer2.isBuffer(obj) || obj instanceof OurUint8Array;
+      return Buffer3.isBuffer(obj) || obj instanceof OurUint8Array;
     }
     var destroyImpl = require_destroy2();
     util4.inherits(Writable2, Stream2);
@@ -81198,7 +81198,7 @@ var require_stream_writable = __commonJS({
       var state = this._writableState;
       var ret = false;
       var isBuf = !state.objectMode && _isUint8Array(chunk);
-      if (isBuf && !Buffer2.isBuffer(chunk)) {
+      if (isBuf && !Buffer3.isBuffer(chunk)) {
         chunk = _uint8ArrayToBuffer(chunk);
       }
       if (typeof encoding === "function") {
@@ -81241,7 +81241,7 @@ var require_stream_writable = __commonJS({
     };
     function decodeChunk(state, chunk, encoding) {
       if (!state.objectMode && state.decodeStrings !== false && typeof chunk === "string") {
-        chunk = Buffer2.from(chunk, encoding);
+        chunk = Buffer3.from(chunk, encoding);
       }
       return chunk;
     }
@@ -81593,8 +81593,8 @@ var require_string_decoder = __commonJS({
   "../node_modules/.pnpm/string_decoder@1.1.1/node_modules/string_decoder/lib/string_decoder.js"(exports) {
     "use strict";
     init_cjs_shim();
-    var Buffer2 = require_safe_buffer().Buffer;
-    var isEncoding = Buffer2.isEncoding || function(encoding) {
+    var Buffer3 = require_safe_buffer().Buffer;
+    var isEncoding = Buffer3.isEncoding || function(encoding) {
       encoding = "" + encoding;
       switch (encoding && encoding.toLowerCase()) {
         case "hex":
@@ -81644,7 +81644,7 @@ var require_string_decoder = __commonJS({
     }
     function normalizeEncoding(enc) {
       var nenc = _normalizeEncoding(enc);
-      if (typeof nenc !== "string" && (Buffer2.isEncoding === isEncoding || !isEncoding(enc)))
+      if (typeof nenc !== "string" && (Buffer3.isEncoding === isEncoding || !isEncoding(enc)))
         throw new Error("Unknown encoding: " + enc);
       return nenc || enc;
     }
@@ -81674,7 +81674,7 @@ var require_string_decoder = __commonJS({
       }
       this.lastNeed = 0;
       this.lastTotal = 0;
-      this.lastChar = Buffer2.allocUnsafe(nb);
+      this.lastChar = Buffer3.allocUnsafe(nb);
     }
     StringDecoder.prototype.write = function(buf) {
       if (buf.length === 0)
@@ -81864,14 +81864,14 @@ var require_stream_readable = __commonJS({
       return emitter.listeners(type).length;
     };
     var Stream2 = require_stream3();
-    var Buffer2 = require_safe_buffer().Buffer;
+    var Buffer3 = require_safe_buffer().Buffer;
     var OurUint8Array = (typeof global !== "undefined" ? global : typeof window !== "undefined" ? window : typeof self !== "undefined" ? self : {}).Uint8Array || function() {
     };
     function _uint8ArrayToBuffer(chunk) {
-      return Buffer2.from(chunk);
+      return Buffer3.from(chunk);
     }
     function _isUint8Array(obj) {
-      return Buffer2.isBuffer(obj) || obj instanceof OurUint8Array;
+      return Buffer3.isBuffer(obj) || obj instanceof OurUint8Array;
     }
     var util4 = Object.create(require_util2());
     util4.inherits = require_inherits();
@@ -81982,7 +81982,7 @@ var require_stream_readable = __commonJS({
         if (typeof chunk === "string") {
           encoding = encoding || state.defaultEncoding;
           if (encoding !== state.encoding) {
-            chunk = Buffer2.from(chunk, encoding);
+            chunk = Buffer3.from(chunk, encoding);
             encoding = "";
           }
           skipChunkCheck = true;
@@ -82007,7 +82007,7 @@ var require_stream_readable = __commonJS({
         if (er) {
           stream.emit("error", er);
         } else if (state.objectMode || chunk && chunk.length > 0) {
-          if (typeof chunk !== "string" && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer2.prototype) {
+          if (typeof chunk !== "string" && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer3.prototype) {
             chunk = _uint8ArrayToBuffer(chunk);
           }
           if (addToFront) {
@@ -82554,7 +82554,7 @@ var require_stream_readable = __commonJS({
       return ret;
     }
     function copyFromBuffer(n2, list) {
-      var ret = Buffer2.allocUnsafe(n2);
+      var ret = Buffer3.allocUnsafe(n2);
       var p = list.head;
       var c = 1;
       p.data.copy(ret);
@@ -89995,7 +89995,7 @@ var proxyClient = createTRPCProxyClient({
 });
 
 // commands.tsx
-var import_react65 = __toESM(require_react(), 1);
+var import_react67 = __toESM(require_react(), 1);
 import { stat as stat3 } from "node:fs/promises";
 import path9 from "path";
 
@@ -94667,6 +94667,9 @@ function Transform({ children, transform }) {
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/components/Newline.js
 init_cjs_shim();
 var import_react17 = __toESM(require_react(), 1);
+function Newline({ count = 1 }) {
+  return import_react17.default.createElement("ink-text", null, "\n".repeat(count));
+}
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/components/Spacer.js
 init_cjs_shim();
@@ -94678,6 +94681,9 @@ var import_react20 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/parse-keypress.js
 init_cjs_shim();
+import { Buffer as Buffer2 } from "node:buffer";
+var metaKeyCodeRe = /^(?:\x1b)([a-zA-Z0-9])$/;
+var fnKeyRe = /^(?:\x1b+)(O|N|\[|\[\[)(?:(\d+)(?:;(\d+))?([~^$])|(?:1;)?(\d+)?([a-zA-Z]))/;
 var keyName = {
   /* xterm/gnome ESC O letter */
   OP: "f1",
@@ -94760,10 +94766,179 @@ var keyName = {
   "[Z": "tab"
 };
 var nonAlphanumericKeys = [...Object.values(keyName), "backspace"];
+var isShiftKey = (code) => {
+  return [
+    "[a",
+    "[b",
+    "[c",
+    "[d",
+    "[e",
+    "[2$",
+    "[3$",
+    "[5$",
+    "[6$",
+    "[7$",
+    "[8$",
+    "[Z"
+  ].includes(code);
+};
+var isCtrlKey = (code) => {
+  return [
+    "Oa",
+    "Ob",
+    "Oc",
+    "Od",
+    "Oe",
+    "[2^",
+    "[3^",
+    "[5^",
+    "[6^",
+    "[7^",
+    "[8^"
+  ].includes(code);
+};
+var parseKeypress = (s2 = "") => {
+  let parts;
+  if (Buffer2.isBuffer(s2)) {
+    if (s2[0] > 127 && s2[1] === void 0) {
+      s2[0] -= 128;
+      s2 = "\x1B" + String(s2);
+    } else {
+      s2 = String(s2);
+    }
+  } else if (s2 !== void 0 && typeof s2 !== "string") {
+    s2 = String(s2);
+  } else if (!s2) {
+    s2 = "";
+  }
+  const key = {
+    name: "",
+    ctrl: false,
+    meta: false,
+    shift: false,
+    option: false,
+    sequence: s2,
+    raw: s2
+  };
+  key.sequence = key.sequence || s2 || key.name;
+  if (s2 === "\r") {
+    key.raw = void 0;
+    key.name = "return";
+  } else if (s2 === "\n") {
+    key.name = "enter";
+  } else if (s2 === "	") {
+    key.name = "tab";
+  } else if (s2 === "\b" || s2 === "\x1B\b") {
+    key.name = "backspace";
+    key.meta = s2.charAt(0) === "\x1B";
+  } else if (s2 === "\x7F" || s2 === "\x1B\x7F") {
+    key.name = "delete";
+    key.meta = s2.charAt(0) === "\x1B";
+  } else if (s2 === "\x1B" || s2 === "\x1B\x1B") {
+    key.name = "escape";
+    key.meta = s2.length === 2;
+  } else if (s2 === " " || s2 === "\x1B ") {
+    key.name = "space";
+    key.meta = s2.length === 2;
+  } else if (s2 <= "") {
+    key.name = String.fromCharCode(s2.charCodeAt(0) + "a".charCodeAt(0) - 1);
+    key.ctrl = true;
+  } else if (s2.length === 1 && s2 >= "0" && s2 <= "9") {
+    key.name = "number";
+  } else if (s2.length === 1 && s2 >= "a" && s2 <= "z") {
+    key.name = s2;
+  } else if (s2.length === 1 && s2 >= "A" && s2 <= "Z") {
+    key.name = s2.toLowerCase();
+    key.shift = true;
+  } else if (parts = metaKeyCodeRe.exec(s2)) {
+    key.meta = true;
+    key.shift = /^[A-Z]$/.test(parts[1]);
+  } else if (parts = fnKeyRe.exec(s2)) {
+    const segs = [...s2];
+    if (segs[0] === "\x1B" && segs[1] === "\x1B") {
+      key.option = true;
+    }
+    const code = [parts[1], parts[2], parts[4], parts[6]].filter(Boolean).join("");
+    const modifier = (parts[3] || parts[5] || 1) - 1;
+    key.ctrl = !!(modifier & 4);
+    key.meta = !!(modifier & 10);
+    key.shift = !!(modifier & 1);
+    key.code = code;
+    key.name = keyName[code];
+    key.shift = isShiftKey(code) || key.shift;
+    key.ctrl = isCtrlKey(code) || key.ctrl;
+  }
+  return key;
+};
+var parse_keypress_default = parseKeypress;
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/hooks/use-stdin.js
 init_cjs_shim();
 var import_react19 = __toESM(require_react(), 1);
+var useStdin = () => (0, import_react19.useContext)(StdinContext_default);
+var use_stdin_default = useStdin;
+
+// ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/hooks/use-input.js
+var useInput = (inputHandler, options = {}) => {
+  const { stdin, setRawMode, internal_exitOnCtrlC, internal_eventEmitter } = use_stdin_default();
+  (0, import_react20.useEffect)(() => {
+    if (options.isActive === false) {
+      return;
+    }
+    setRawMode(true);
+    return () => {
+      setRawMode(false);
+    };
+  }, [options.isActive, setRawMode]);
+  (0, import_react20.useEffect)(() => {
+    if (options.isActive === false) {
+      return;
+    }
+    const handleData = (data) => {
+      const keypress = parse_keypress_default(data);
+      const key = {
+        upArrow: keypress.name === "up",
+        downArrow: keypress.name === "down",
+        leftArrow: keypress.name === "left",
+        rightArrow: keypress.name === "right",
+        pageDown: keypress.name === "pagedown",
+        pageUp: keypress.name === "pageup",
+        return: keypress.name === "return",
+        escape: keypress.name === "escape",
+        ctrl: keypress.ctrl,
+        shift: keypress.shift,
+        tab: keypress.name === "tab",
+        backspace: keypress.name === "backspace",
+        delete: keypress.name === "delete",
+        // `parseKeypress` parses \u001B\u001B[A (meta + up arrow) as meta = false
+        // but with option = true, so we need to take this into account here
+        // to avoid breaking changes in Ink.
+        // TODO(vadimdemedes): consider removing this in the next major version.
+        meta: keypress.meta || keypress.name === "escape" || keypress.option
+      };
+      let input = keypress.ctrl ? keypress.name : keypress.sequence;
+      if (nonAlphanumericKeys.includes(keypress.name)) {
+        input = "";
+      }
+      if (input.startsWith("\x1B")) {
+        input = input.slice(1);
+      }
+      if (input.length === 1 && typeof input[0] === "string" && input[0].toUpperCase() === input[0]) {
+        key.shift = true;
+      }
+      if (!(input === "c" && key.ctrl) || !internal_exitOnCtrlC) {
+        reconciler_default.batchedUpdates(() => {
+          inputHandler(input, key);
+        });
+      }
+    };
+    internal_eventEmitter?.on("input", handleData);
+    return () => {
+      internal_eventEmitter?.removeListener("input", handleData);
+    };
+  }, [options.isActive, stdin, internal_exitOnCtrlC, inputHandler]);
+};
+var use_input_default = useInput;
 
 // ../node_modules/.pnpm/ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0/node_modules/ink/build/hooks/use-app.js
 init_cjs_shim();
@@ -98993,6 +99168,76 @@ var InstallProgressUI = (props) => {
   return /* @__PURE__ */ import_react31.default.createElement(Container, null, /* @__PURE__ */ import_react31.default.createElement(Box_default, { flexDirection: "column", rowGap: 0 }, /* @__PURE__ */ import_react31.default.createElement(Box_default, { marginBottom: 1, flexDirection: "column" }, /* @__PURE__ */ import_react31.default.createElement(Text, { color: props.statusColor ?? "white", dimColor: false, bold: true }, ["red", "redBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true }, "\u2718", "  ") : ["green", "greenBright"].includes(props.statusColor ?? "white") ? /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true }, "\u2713", "  ") : "   ", props.status), props.stepText && props.stepTextBeforeSteps && /* @__PURE__ */ import_react31.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react31.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react31.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react31.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), /* @__PURE__ */ import_react31.default.createElement(Static, { items: props.warnings ?? [] }, (warning) => /* @__PURE__ */ import_react31.default.createElement(Text, { color: "yellow", dimColor: true, key: warning, bold: false }, "   ", warning)), /* @__PURE__ */ import_react31.default.createElement(Static, { items: props.errors ?? [] }, (error) => /* @__PURE__ */ import_react31.default.createElement(Text, { color: "red", dimColor: true, key: error, bold: false }, "   ", error)), props.steps && props.steps.map((step) => /* @__PURE__ */ import_react31.default.createElement(Text, { key: step.name }, step.status === "running" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true }, /* @__PURE__ */ import_react31.default.createElement(build_default, { type: "dots" }), "  "), step.status === "success" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "green" }, "\u2713", "  "), step.status === "error" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "red" }, "\u2718", "  "), step.status === "warning" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "yellow" }, "\u26A0", "  "), step.status === "pending" && /* @__PURE__ */ import_react31.default.createElement(Text, { bold: true, color: "gray" }, "\u2022", "  "), /* @__PURE__ */ import_react31.default.createElement(Text, { color: "gray", bold: false }, step.name))), props.stepText && !props.stepTextBeforeSteps && /* @__PURE__ */ import_react31.default.createElement(Text, null, props.isLoading ? /* @__PURE__ */ import_react31.default.createElement(Text, { color: "green", dimColor: false }, /* @__PURE__ */ import_react31.default.createElement(build_default, { type: "dots" }), "  ") : "   ", /* @__PURE__ */ import_react31.default.createElement(Text, { color: props.stepTextColor ?? "gray", dimColor: false, bold: false }, props.stepText))), currentCmd && /* @__PURE__ */ import_react31.default.createElement(Box_default, { marginTop: 1, flexDirection: "column" }, /* @__PURE__ */ import_react31.default.createElement(Text, { color: "white" }, "Running: ", /* @__PURE__ */ import_react31.default.createElement(Transform, { transform: formatCmd }, currentCmd))));
 };
 
+// components/continue.tsx
+init_cjs_shim();
+var import_react33 = __toESM(require_react(), 1);
+
+// components/input-placeholder.tsx
+init_cjs_shim();
+var import_react32 = __toESM(require_react(), 1);
+var InputPlaceholder = ({ show }) => {
+  const [visible, setVisible] = (0, import_react32.useState)(true);
+  (0, import_react32.useEffect)(() => {
+    if (!show)
+      return;
+    const interval = setInterval(() => {
+      setVisible((v) => !v);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [show]);
+  if (!show)
+    return null;
+  return /* @__PURE__ */ import_react32.default.createElement(Text, { color: "gray" }, visible ? "\u2588" : " ");
+};
+
+// components/continue.tsx
+var ContinuePrompt = ({ message, onResponse }) => {
+  const [responded, setResponded] = (0, import_react33.useState)(false);
+  const [inputValue, setInputValue] = (0, import_react33.useState)("");
+  use_input_default((input, key) => {
+    if (responded)
+      return;
+    if (key.escape) {
+      setResponded(true);
+      onResponse(false);
+      return;
+    }
+    if (key.return) {
+      const trimmedInput = inputValue.toLowerCase().trim();
+      if (trimmedInput === "yes") {
+        setResponded(true);
+        onResponse(true);
+      } else {
+        setResponded(true);
+        onResponse(false);
+      }
+      return;
+    }
+    if (key.backspace || key.delete) {
+      setInputValue((prev) => prev.slice(0, -1));
+    } else if (input && !key.ctrl && !key.meta) {
+      setInputValue((prev) => prev + input);
+    }
+  });
+  return /* @__PURE__ */ import_react33.default.createElement(Box_default, { flexDirection: "column", marginLeft: 2, paddingTop: 1, width: 60 }, /* @__PURE__ */ import_react33.default.createElement(Text, { color: "yellow", bold: true }, "\u26A0 Warning"), /* @__PURE__ */ import_react33.default.createElement(Newline, null), /* @__PURE__ */ import_react33.default.createElement(Text, null, message, " ", /* @__PURE__ */ import_react33.default.createElement(Text, { color: "cyan" }, "(yes/NO)")), /* @__PURE__ */ import_react33.default.createElement(Box_default, null, /* @__PURE__ */ import_react33.default.createElement(Text, null, "Type", " ", /* @__PURE__ */ import_react33.default.createElement(Text, { color: "cyan", bold: true }, "yes"), " ", "to continue", /* @__PURE__ */ import_react33.default.createElement(Text, { color: "cyan", bold: true }, " ", ">", " ")), /* @__PURE__ */ import_react33.default.createElement(Text, null, inputValue), /* @__PURE__ */ import_react33.default.createElement(InputPlaceholder, { show: inputValue.length === 0 })), responded && /* @__PURE__ */ import_react33.default.createElement(Text, { dimColor: true }, "Processing..."));
+};
+var promptContinue = async (message) => {
+  return new Promise((resolve) => {
+    const { unmount } = render_default(
+      /* @__PURE__ */ import_react33.default.createElement(
+        ContinuePrompt,
+        {
+          message,
+          onResponse: (shouldContinue) => {
+            unmount();
+            resolve(shouldContinue);
+          }
+        }
+      )
+    );
+  });
+};
+
 // logger.ts
 init_cjs_shim();
 var import_pino = __toESM(require_pino(), 1);
@@ -99073,7 +99318,7 @@ import { readFile as readFile2, writeFile } from "node:fs/promises";
 import { existsSync as existsSync4 } from "node:fs";
 import { $ as $2 } from "zx";
 var import_dotenv3 = __toESM(require_main(), 1);
-var import_react32 = __toESM(require_react(), 1);
+var import_react34 = __toESM(require_react(), 1);
 var frontend = (program3) => {
   const frontend2 = program3.command("frontend").description("Switch between klipper frontend UIs");
   const fluidConfigFile = `/etc/nginx/sites-available/fluidd`;
@@ -99100,10 +99345,10 @@ var frontend = (program3) => {
     const steps = [];
     const moonrakerConfig = environment.KLIPPER_CONFIG_PATH + "/moonraker.conf";
     let moonrakerConfigContents = await readFile2(moonrakerConfig, "utf-8");
-    let { rerender } = render_default(/* @__PURE__ */ import_react32.default.createElement(InstallProgressUI, { status: "Installing fluidd..", cmdSignal, steps }));
+    let { rerender } = render_default(/* @__PURE__ */ import_react34.default.createElement(InstallProgressUI, { status: "Installing fluidd..", cmdSignal, steps }));
     if (!existsSync4(mainsailConfigFile)) {
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99119,7 +99364,7 @@ var frontend = (program3) => {
     } else {
       if (!existsSync4(`/home/${environment.USER}/fluidd`)) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99135,7 +99380,7 @@ var frontend = (program3) => {
         await $$`wget https://github.com/Rat-OS/fluidd/releases/latest/download/fluidd.zip -O /tmp/fluidd.zip`;
         steps.push({ name: "Download RatOS Fluidd", status: "success" });
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99159,7 +99404,7 @@ var frontend = (program3) => {
       }
       if (!existsSync4(`/home/${environment.USER}/printer_data/config/.fluidd-theme`)) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99183,7 +99428,7 @@ var frontend = (program3) => {
       const fluiddSection = findSection("update_manager Fluidd", moonrakerConfigContents);
       if (fluiddSection != null) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99202,7 +99447,7 @@ var frontend = (program3) => {
         steps.push({ name: "Existing Fluidd update manager entries removed", status: "warning" });
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99227,7 +99472,7 @@ ${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}info_tags:
       const fluiddThemeSection = findSection("update_manager FluiddTheme", moonrakerConfigContents);
       if (fluiddThemeSection != null) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99246,7 +99491,7 @@ ${channel === "beta" ? "channel: beta\n" : "channel: stable\n"}info_tags:
         steps.push({ name: "Existing Fluidd Theme update manager entries removed", status: "warning" });
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99272,7 +99517,7 @@ info_tags:
       steps.push({ name: "New Fluidd Theme update manager entry added", status: "success" });
       if (!existsSync4("/etc/nginx/sites-available/fluidd")) {
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99294,7 +99539,7 @@ info_tags:
         steps.push({ name: "Nginx fluidd configuration created", status: "success" });
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99313,7 +99558,7 @@ info_tags:
       }
       steps.push({ name: "Nginx configuration updated", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99340,7 +99585,7 @@ info_tags:
           warnings.push(nginxValidation.stdout);
         }
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99359,7 +99604,7 @@ info_tags:
         steps.push({ name: "Restored previous mainsail configuration", status: "success" });
         cmdSignal(null);
         rerender(
-          /* @__PURE__ */ import_react32.default.createElement(
+          /* @__PURE__ */ import_react34.default.createElement(
             InstallProgressUI,
             {
               cmdSignal,
@@ -99377,7 +99622,7 @@ info_tags:
         return;
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99394,7 +99639,7 @@ info_tags:
       steps.push({ name: "Nginx reloaded", status: "success" });
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99410,7 +99655,7 @@ info_tags:
       await writeFile(moonrakerConfig, moonrakerConfigContents);
       steps.push({ name: "Moonraker configuration written to disk", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99427,7 +99672,7 @@ info_tags:
       cmdSignal(null);
       steps.push({ name: "Moonraker restarted", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99468,7 +99713,7 @@ info_tags:
       return renderError("Mainsail configuration file not found", { exitCode: 2 });
     }
     const { rerender } = render_default(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react34.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -99481,7 +99726,7 @@ info_tags:
     );
     if (mainsailOverrideSection != null && mainsailOverrideSection[0].properties.channel !== channel) {
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99500,7 +99745,7 @@ info_tags:
       steps.push({ name: `Switched mainsail update manager to use ${channel} releases`, status: "warning" });
     } else if (mainsailOverrideSection == null && channel !== "stable") {
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99520,7 +99765,7 @@ channel: ${channel}`;
       steps.push({ name: `Mainsail update manager override added (channel: ${channel})`, status: "success" });
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99537,7 +99782,7 @@ channel: ${channel}`;
       cmdSignal(null);
       steps.push({ name: "Moonraker configuration written to disk", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99557,7 +99802,7 @@ channel: ${channel}`;
     if (existsSync4("/etc/nginx/sites-enabled/mainsail")) {
       cmdSignal(null);
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99574,7 +99819,7 @@ channel: ${channel}`;
       return;
     }
     rerender(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react34.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -99610,7 +99855,7 @@ channel: ${channel}`;
         warnings.push(nginxValidation.stdout);
       }
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99629,7 +99874,7 @@ channel: ${channel}`;
       cmdSignal(null);
       steps.push({ name: "Restored previous fluidd configuration", status: "success" });
       rerender(
-        /* @__PURE__ */ import_react32.default.createElement(
+        /* @__PURE__ */ import_react34.default.createElement(
           InstallProgressUI,
           {
             cmdSignal,
@@ -99647,7 +99892,7 @@ channel: ${channel}`;
       return;
     }
     rerender(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react34.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -99664,7 +99909,7 @@ channel: ${channel}`;
     steps.push({ name: "Nginx reloaded", status: "success" });
     cmdSignal(null);
     rerender(
-      /* @__PURE__ */ import_react32.default.createElement(
+      /* @__PURE__ */ import_react34.default.createElement(
         InstallProgressUI,
         {
           cmdSignal,
@@ -101740,11 +101985,11 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/badge/badge.js
 init_cjs_shim();
-var import_react34 = __toESM(require_react(), 1);
+var import_react36 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/theme.js
 init_cjs_shim();
-var import_react33 = __toESM(require_react(), 1);
+var import_react35 = __toESM(require_react(), 1);
 var import_deepmerge = __toESM(require_cjs3(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/theme.js
@@ -102347,9 +102592,9 @@ var defaultTheme = {
     PasswordInput: theme_default13
   }
 };
-var ThemeContext = (0, import_react33.createContext)(defaultTheme);
+var ThemeContext = (0, import_react35.createContext)(defaultTheme);
 var useComponentTheme = (component) => {
-  const theme14 = (0, import_react33.useContext)(ThemeContext);
+  const theme14 = (0, import_react35.useContext)(ThemeContext);
   return theme14.components[component];
 };
 
@@ -102358,59 +102603,59 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/confirm-input/confirm-input.js
 init_cjs_shim();
-var import_react35 = __toESM(require_react(), 1);
+var import_react37 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/index.js
 init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
 init_cjs_shim();
-var import_react39 = __toESM(require_react(), 1);
+var import_react41 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
 init_cjs_shim();
-var import_react37 = __toESM(require_react(), 1);
+var import_react39 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
 init_cjs_shim();
-var import_react36 = __toESM(require_react(), 1);
+var import_react38 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/constants.js
 init_cjs_shim();
 var defaultMarker = figures_default.line;
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item-context.js
-var UnorderedListItemContext = (0, import_react36.createContext)({
+var UnorderedListItemContext = (0, import_react38.createContext)({
   marker: defaultMarker
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-item.js
 function UnorderedListItem({ children }) {
-  const { marker } = (0, import_react37.useContext)(UnorderedListItemContext);
+  const { marker } = (0, import_react39.useContext)(UnorderedListItemContext);
   const { styles: styles5 } = useComponentTheme("UnorderedList");
-  return import_react37.default.createElement(
+  return import_react39.default.createElement(
     Box_default,
     { ...styles5.listItem() },
-    import_react37.default.createElement(Text, { ...styles5.marker() }, marker),
-    import_react37.default.createElement(Box_default, { ...styles5.content() }, children)
+    import_react39.default.createElement(Text, { ...styles5.marker() }, marker),
+    import_react39.default.createElement(Box_default, { ...styles5.content() }, children)
   );
 }
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list-context.js
 init_cjs_shim();
-var import_react38 = __toESM(require_react(), 1);
-var UnorderedListContext = (0, import_react38.createContext)({
+var import_react40 = __toESM(require_react(), 1);
+var UnorderedListContext = (0, import_react40.createContext)({
   depth: 0
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/unordered-list/unordered-list.js
 function UnorderedList({ children }) {
-  const { depth } = (0, import_react39.useContext)(UnorderedListContext);
+  const { depth } = (0, import_react41.useContext)(UnorderedListContext);
   const { styles: styles5, config } = useComponentTheme("UnorderedList");
-  const listContext = (0, import_react39.useMemo)(() => ({
+  const listContext = (0, import_react41.useMemo)(() => ({
     depth: depth + 1
   }), [depth]);
-  const listItemContext = (0, import_react39.useMemo)(() => {
+  const listItemContext = (0, import_react41.useMemo)(() => {
     const { marker } = config();
     if (typeof marker === "string") {
       return { marker };
@@ -102424,13 +102669,13 @@ function UnorderedList({ children }) {
       marker: defaultMarker
     };
   }, [config, depth]);
-  return import_react39.default.createElement(
+  return import_react41.default.createElement(
     UnorderedListContext.Provider,
     { value: listContext },
-    import_react39.default.createElement(
+    import_react41.default.createElement(
       UnorderedListItemContext.Provider,
       { value: listItemContext },
-      import_react39.default.createElement(Box_default, { ...styles5.list() }, children)
+      import_react41.default.createElement(Box_default, { ...styles5.list() }, children)
     )
   );
 }
@@ -102441,15 +102686,15 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select.js
 init_cjs_shim();
-var import_react42 = __toESM(require_react(), 1);
+var import_react44 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/multi-select-option.js
 init_cjs_shim();
-var import_react40 = __toESM(require_react(), 1);
+var import_react42 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/multi-select/use-multi-select-state.js
 init_cjs_shim();
-var import_react41 = __toESM(require_react(), 1);
+var import_react43 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/lib/option-map.js
 init_cjs_shim();
@@ -102462,10 +102707,10 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/progress-bar/progress-bar.js
 init_cjs_shim();
-var import_react43 = __toESM(require_react(), 1);
+var import_react45 = __toESM(require_react(), 1);
 function ProgressBar({ value }) {
-  const [width, setWidth] = (0, import_react43.useState)(0);
-  const [ref, setRef] = (0, import_react43.useState)(null);
+  const [width, setWidth] = (0, import_react45.useState)(0);
+  const [ref, setRef] = (0, import_react45.useState)(null);
   if (ref) {
     const dimensions = measure_element_default(ref);
     if (dimensions.width !== width) {
@@ -102476,25 +102721,25 @@ function ProgressBar({ value }) {
   const complete = Math.round(progress2 / 100 * width);
   const remaining = width - complete;
   const { styles: styles5, config } = useComponentTheme("ProgressBar");
-  return import_react43.default.createElement(
+  return import_react45.default.createElement(
     Box_default,
     { ref: setRef, ...styles5.container() },
-    complete > 0 && import_react43.default.createElement(Text, { ...styles5.completed() }, config().completedCharacter.repeat(complete)),
-    remaining > 0 && import_react43.default.createElement(Text, { ...styles5.remaining() }, config().remainingCharacter.repeat(remaining))
+    complete > 0 && import_react45.default.createElement(Text, { ...styles5.completed() }, config().completedCharacter.repeat(complete)),
+    remaining > 0 && import_react45.default.createElement(Text, { ...styles5.remaining() }, config().remainingCharacter.repeat(remaining))
   );
 }
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select.js
 init_cjs_shim();
-var import_react46 = __toESM(require_react(), 1);
+var import_react48 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/select-option.js
 init_cjs_shim();
-var import_react44 = __toESM(require_react(), 1);
+var import_react46 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select-state.js
 init_cjs_shim();
-var import_react45 = __toESM(require_react(), 1);
+var import_react47 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/select/use-select.js
 init_cjs_shim();
@@ -102504,26 +102749,26 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/spinner.js
 init_cjs_shim();
-var import_react48 = __toESM(require_react(), 1);
+var import_react50 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/spinner/use-spinner.js
 init_cjs_shim();
-var import_react47 = __toESM(require_react(), 1);
+var import_react49 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/index.js
 init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/text-input.js
 init_cjs_shim();
-var import_react51 = __toESM(require_react(), 1);
+var import_react53 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input-state.js
 init_cjs_shim();
-var import_react49 = __toESM(require_react(), 1);
+var import_react51 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/text-input/use-text-input.js
 init_cjs_shim();
-var import_react50 = __toESM(require_react(), 1);
+var import_react52 = __toESM(require_react(), 1);
 var cursor = source_default.inverse(" ");
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/index.js
@@ -102531,62 +102776,62 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
 init_cjs_shim();
-var import_react55 = __toESM(require_react(), 1);
+var import_react57 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
 init_cjs_shim();
-var import_react53 = __toESM(require_react(), 1);
+var import_react55 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item-context.js
 init_cjs_shim();
-var import_react52 = __toESM(require_react(), 1);
-var OrderedListItemContext = (0, import_react52.createContext)({
+var import_react54 = __toESM(require_react(), 1);
+var OrderedListItemContext = (0, import_react54.createContext)({
   marker: figures_default.line
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-item.js
 function OrderedListItem({ children }) {
-  const { marker } = (0, import_react53.useContext)(OrderedListItemContext);
+  const { marker } = (0, import_react55.useContext)(OrderedListItemContext);
   const { styles: styles5 } = useComponentTheme("OrderedList");
-  return import_react53.default.createElement(
+  return import_react55.default.createElement(
     Box_default,
     { ...styles5.listItem() },
-    import_react53.default.createElement(Text, { ...styles5.marker() }, marker),
-    import_react53.default.createElement(Box_default, { ...styles5.content() }, children)
+    import_react55.default.createElement(Text, { ...styles5.marker() }, marker),
+    import_react55.default.createElement(Box_default, { ...styles5.content() }, children)
   );
 }
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list-context.js
 init_cjs_shim();
-var import_react54 = __toESM(require_react(), 1);
-var OrderedListContext = (0, import_react54.createContext)({
+var import_react56 = __toESM(require_react(), 1);
+var OrderedListContext = (0, import_react56.createContext)({
   marker: ""
 });
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/ordered-list/ordered-list.js
 function OrderedList({ children }) {
-  const { marker: parentMarker } = (0, import_react55.useContext)(OrderedListContext);
+  const { marker: parentMarker } = (0, import_react57.useContext)(OrderedListContext);
   const { styles: styles5 } = useComponentTheme("OrderedList");
   let numberOfItems = 0;
-  for (const child of import_react55.default.Children.toArray(children)) {
-    if (!(0, import_react55.isValidElement)(child) || child.type !== OrderedListItem) {
+  for (const child of import_react57.default.Children.toArray(children)) {
+    if (!(0, import_react57.isValidElement)(child) || child.type !== OrderedListItem) {
       continue;
     }
     numberOfItems++;
   }
   const maxMarkerWidth = String(numberOfItems).length;
-  return import_react55.default.createElement(Box_default, { ...styles5.list() }, import_react55.default.Children.map(children, (child, index) => {
-    if (!(0, import_react55.isValidElement)(child) || child.type !== OrderedListItem) {
+  return import_react57.default.createElement(Box_default, { ...styles5.list() }, import_react57.default.Children.map(children, (child, index) => {
+    if (!(0, import_react57.isValidElement)(child) || child.type !== OrderedListItem) {
       return child;
     }
     const paddedMarker = `${String(index + 1).padStart(maxMarkerWidth)}.`;
     const marker = `${parentMarker}${paddedMarker}`;
     return (
       // eslint-disable-next-line react/jsx-no-constructed-context-values
-      import_react55.default.createElement(
+      import_react57.default.createElement(
         OrderedListContext.Provider,
         { value: { marker } },
-        import_react55.default.createElement(OrderedListItemContext.Provider, { value: { marker } }, child)
+        import_react57.default.createElement(OrderedListItemContext.Provider, { value: { marker } }, child)
       )
     );
   }));
@@ -102598,15 +102843,15 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/password-input.js
 init_cjs_shim();
-var import_react58 = __toESM(require_react(), 1);
+var import_react60 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input-state.js
 init_cjs_shim();
-var import_react56 = __toESM(require_react(), 1);
+var import_react58 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/password-input/use-password-input.js
 init_cjs_shim();
-var import_react57 = __toESM(require_react(), 1);
+var import_react59 = __toESM(require_react(), 1);
 var cursor2 = source_default.inverse(" ");
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/index.js
@@ -102614,18 +102859,18 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/status-message/status-message.js
 init_cjs_shim();
-var import_react59 = __toESM(require_react(), 1);
+var import_react61 = __toESM(require_react(), 1);
 function StatusMessage({ children, variant }) {
   const { styles: styles5, config } = useComponentTheme("StatusMessage");
-  return import_react59.default.createElement(
+  return import_react61.default.createElement(
     Box_default,
     { ...styles5.container() },
-    import_react59.default.createElement(
+    import_react61.default.createElement(
       Box_default,
       { ...styles5.iconContainer() },
-      import_react59.default.createElement(Text, { ...styles5.icon({ variant }) }, config({ variant }).icon)
+      import_react61.default.createElement(Text, { ...styles5.icon({ variant }) }, config({ variant }).icon)
     ),
-    import_react59.default.createElement(Text, { ...styles5.message() }, children)
+    import_react61.default.createElement(Text, { ...styles5.message() }, children)
   );
 }
 
@@ -102634,29 +102879,29 @@ init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/alert/alert.js
 init_cjs_shim();
-var import_react60 = __toESM(require_react(), 1);
+var import_react62 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/index.js
 init_cjs_shim();
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/email-input.js
 init_cjs_shim();
-var import_react63 = __toESM(require_react(), 1);
+var import_react65 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input-state.js
 init_cjs_shim();
-var import_react61 = __toESM(require_react(), 1);
+var import_react63 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/components/email-input/use-email-input.js
 init_cjs_shim();
-var import_react62 = __toESM(require_react(), 1);
+var import_react64 = __toESM(require_react(), 1);
 var cursor3 = source_default.inverse(" ");
 
 // ../node_modules/.pnpm/@inkjs+ui@2.0.0_ink@5.0.0_@types+react@18.2.21_react-devtools-core@4.19.1_react@18.2.0_/node_modules/@inkjs/ui/build/types.js
 init_cjs_shim();
 
 // commands/postprocessor.tsx
-var import_react64 = __toESM(require_react(), 1);
+var import_react66 = __toESM(require_react(), 1);
 
 // ../node_modules/.pnpm/luxon@3.4.4/node_modules/luxon/src/luxon.js
 init_cjs_shim();
@@ -109386,7 +109631,7 @@ var ProgressReportUI = ({ report, fileName, done, error }) => {
   const duration = Duration.fromObject({ minutes: report ? report.eta / 60 / 60 : 0 }, { locale: "en-GB" }).normalize().shiftTo(
     ...[eta < 1 ? "seconds" : "minutes", eta > 60 ? "hours" : null].filter(Boolean)
   ).toHuman({ unitDisplay: "short", listStyle: "narrow", maximumFractionDigits: 0 });
-  return /* @__PURE__ */ import_react64.default.createElement(Container, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, "Processing ", fileName, "..."), /* @__PURE__ */ import_react64.default.createElement(Box_default, { flexDirection: "row", columnGap: 1 }, report ? /* @__PURE__ */ import_react64.default.createElement(import_react64.default.Fragment, null, /* @__PURE__ */ import_react64.default.createElement(Text, null, percentage.toFixed(2).padStart(6, " "), "%"), /* @__PURE__ */ import_react64.default.createElement(Box_default, { width: 30 }, /* @__PURE__ */ import_react64.default.createElement(ProgressBar, { value: report?.percentage ?? 0 })), /* @__PURE__ */ import_react64.default.createElement(Text, null, duration, " remaining")) : done ? /* @__PURE__ */ import_react64.default.createElement(StatusMessage, { variant: "success" }, "Done") : error ? /* @__PURE__ */ import_react64.default.createElement(StatusMessage, { variant: "error" }, error) : /* @__PURE__ */ import_react64.default.createElement(Text, { color: "gray" }, "Initializing post processor...")));
+  return /* @__PURE__ */ import_react66.default.createElement(Container, null, /* @__PURE__ */ import_react66.default.createElement(Text, null, "Processing ", fileName, "..."), /* @__PURE__ */ import_react66.default.createElement(Box_default, { flexDirection: "row", columnGap: 1 }, report ? /* @__PURE__ */ import_react66.default.createElement(import_react66.default.Fragment, null, /* @__PURE__ */ import_react66.default.createElement(Text, null, percentage.toFixed(2).padStart(6, " "), "%"), /* @__PURE__ */ import_react66.default.createElement(Box_default, { width: 30 }, /* @__PURE__ */ import_react66.default.createElement(ProgressBar, { value: report?.percentage ?? 0 })), /* @__PURE__ */ import_react66.default.createElement(Text, null, duration, " remaining")) : done ? /* @__PURE__ */ import_react66.default.createElement(StatusMessage, { variant: "success" }, "Done") : error ? /* @__PURE__ */ import_react66.default.createElement(StatusMessage, { variant: "error" }, error) : /* @__PURE__ */ import_react66.default.createElement(Text, { color: "gray" }, "Initializing post processor...")));
 };
 var GcodeInfoZod = z.object({
   generator: z.string(),
@@ -109551,10 +109796,10 @@ var postprocessor = (program3) => {
     let lastProgressPercentage = -1;
     const isInteractive = process.stdout.isTTY && !args.nonInteractive;
     if (isInteractive) {
-      const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile) }));
+      const { rerender: _rerender } = render_default(/* @__PURE__ */ import_react66.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile) }));
       rerender = _rerender;
       onProgress = (report) => {
-        _rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), report }));
+        _rerender(/* @__PURE__ */ import_react66.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), report }));
       };
     } else {
       onProgress = (report) => {
@@ -109631,7 +109876,7 @@ var postprocessor = (program3) => {
         fs2.copyFileSync(inputFile, outputFile);
       }
       if (rerender && isInteractive) {
-        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), done: true }));
+        rerender(/* @__PURE__ */ import_react66.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), done: true }));
       } else {
         toPostProcessorCLIOutput({
           result: "success",
@@ -109671,7 +109916,7 @@ Line ${e.lineNumber}: ${e.line}`;
         getLogger().error(e, "Unexpected error while processing gcode file");
       }
       if (rerender && isInteractive) {
-        rerender(/* @__PURE__ */ import_react64.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), error: errorMessage }));
+        rerender(/* @__PURE__ */ import_react66.default.createElement(ProgressReportUI, { fileName: path8.basename(inputFile), error: errorMessage }));
       } else {
         toPostProcessorCLIOutput({
           result: "error",
@@ -109685,7 +109930,89 @@ Line ${e.lineNumber}: ${e.line}`;
   });
 };
 
+// utils/filesystem.ts
+init_cjs_shim();
+import { glob } from "zx";
+var upgradeBackupPaths = ["database", "data", "logs", "ratos", "config", "gcodes", "systemd"];
+var upgradeDeletePaths = [
+  "config/ratos_generated",
+  "config/ratos-variables.cfg",
+  "config/RatOS.cfg",
+  "config/printer-*.cfg",
+  "config/RatOS-*.cfg",
+  "database/*",
+  "ratos",
+  "systemd/*"
+];
+async function createBackup(contextPath, files, outputDir, shell, dryRun = false) {
+  const $$ = shell;
+  await $$`mkdir -p ${outputDir}`;
+  const filesToProcess = [];
+  for (const file of files) {
+    const fullPath = `${contextPath}/${file}`;
+    const pathExists = await $$`[ -e ${fullPath} ] && echo "true" || echo "false"`;
+    if (pathExists.stdout.trim() === "true") {
+      filesToProcess.push(file);
+    }
+  }
+  if (filesToProcess.length === 0) {
+    throw new Error("No files found to backup");
+  }
+  return await $$`tar -czhf ${outputDir}/backup.tar.gz -C ${contextPath} ${filesToProcess}`;
+}
+async function deleteUpgradeDeletePaths(contextPath, files, shell, dryRun = false) {
+  const $$ = shell;
+  if (dryRun) {
+    return await $$`echo "Dry run enabled, skipping deletion of files" && sleep 2`;
+  } else {
+    const expandedPaths = Promise.all(files.map((file) => glob(`${contextPath}/${file}`))).then(
+      (results) => results.flat()
+    );
+    return await $$`rm -rf ${expandedPaths}`;
+  }
+}
+var createUpgradeSnippetFiles = async (templateDir, outputDir, shell, dryRun = false) => {
+  const $$ = shell;
+  if (process.env.NODE_ENV != "development") {
+    await $$`[[ -d ${templateDir} ]] || echo "Template directory ${templateDir} does not exist"`;
+  }
+  if (dryRun) {
+    return await $$`echo "Dry run enabled, skipping creation of upgrade snippet files" && sleep 2`;
+  } else {
+    return await $$`cp -r ${templateDir}/* ${outputDir}/`;
+  }
+};
+
+// utils/git.ts
+init_cjs_shim();
+async function switchBranchFromRemote(repoDir, branch, remote, shell, dryRun = false) {
+  const $$ = shell;
+  const isOrigin = remote === "origin";
+  if (!isOrigin) {
+    const remotesResult = await $$`git -C ${repoDir} remote`;
+    const remotes = remotesResult.stdout.split("\n").map((r) => r.trim()).filter((r) => r.length > 0);
+    if (!remotes.includes(remote)) {
+      await $$`git -C ${repoDir} remote add ${remote} https://github.com/${remote}/RatOS-configurator.git`;
+    }
+  }
+  await $$`git -C ${repoDir} fetch ${remote} ${branch}`;
+  if (dryRun) {
+    return await $$`echo "Dry run enabled - skipping git switch to ${branch} in ${repoDir}" && sleep 2`;
+  } else {
+    if (!isOrigin) {
+      return await $$`git -C ${repoDir} switch -c ${branch} --track ${remote}/${branch}`;
+    }
+    return await $$`git -C ${repoDir} switch ${branch}`;
+  }
+}
+
 // commands.tsx
+var createInstallProgressRerender = (initialProps) => {
+  const { rerender } = render_default(/* @__PURE__ */ import_react67.default.createElement(InstallProgressUI, { ...initialProps }));
+  return (props) => {
+    rerender(/* @__PURE__ */ import_react67.default.createElement(InstallProgressUI, { ...initialProps, ...props }));
+  };
+};
 var program2 = new Command().name("ratos").version((await readPackageUp())?.packageJson.version ?? "unknown").description("RatOS CLI for interacting with the RatOS Configurator").option("-cwd, --cwd <path>", "Set the current working directory").configureOutput({
   outputError: (str, write) => {
     getLogger().error(str);
@@ -109707,7 +110034,7 @@ program2.command("info").description("Print info about this RatOS installation")
     ip: await client.ipAddress.query()
   };
   render_default(
-    /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "row", columnGap: 5, padding: 2, paddingTop: 1 }, /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "Machine IP"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "RatOS Version"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "Configurator Version"), /* @__PURE__ */ import_react65.default.createElement(Text, { color: "white", dimColor: true }, "Klipper Version")), /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react65.default.createElement(Text, null, info.ip), /* @__PURE__ */ import_react65.default.createElement(Text, null, info.osVersion), /* @__PURE__ */ import_react65.default.createElement(Text, null, info.version), /* @__PURE__ */ import_react65.default.createElement(Text, null, info.klipperVersion)))
+    /* @__PURE__ */ import_react67.default.createElement(Box_default, { flexDirection: "row", columnGap: 5, padding: 2, paddingTop: 1 }, /* @__PURE__ */ import_react67.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react67.default.createElement(Text, { color: "white", dimColor: true }, "Machine IP"), /* @__PURE__ */ import_react67.default.createElement(Text, { color: "white", dimColor: true }, "RatOS Version"), /* @__PURE__ */ import_react67.default.createElement(Text, { color: "white", dimColor: true }, "Configurator Version"), /* @__PURE__ */ import_react67.default.createElement(Text, { color: "white", dimColor: true }, "Klipper Version")), /* @__PURE__ */ import_react67.default.createElement(Box_default, { flexDirection: "column", rowGap: 1 }, /* @__PURE__ */ import_react67.default.createElement(Text, null, info.ip), /* @__PURE__ */ import_react67.default.createElement(Text, null, info.osVersion), /* @__PURE__ */ import_react67.default.createElement(Text, null, info.version), /* @__PURE__ */ import_react67.default.createElement(Text, null, info.klipperVersion)))
   );
 });
 var extensions = program2.command("extensions").description("Register, unregister or symlink extensions managed by the RatOS Configurator");
@@ -109746,7 +110073,7 @@ extensions.command("list").option("-k, --klipper", "Only show Klipper extensions
     return;
   }
   render_default(
-    /* @__PURE__ */ import_react65.default.createElement(Container, null, klippyExtensions.length > 0 && !options.moonraker && /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ import_react65.default.createElement(Text, null, klippyExtensions.length, " Registered Klipper ", klippyExtensions.length === 1 ? "Extension" : "Extensions", klippyExtensions.length ? ":" : ""), klippyExtensions.map((ext) => /* @__PURE__ */ import_react65.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))), moonrakerExtensions.length > 0 && !options.klipper && /* @__PURE__ */ import_react65.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react65.default.createElement(Text, null, moonrakerExtensions.length, " Registered Moonraker", " ", moonrakerExtensions.length === 1 ? "Extension" : "Extensions", moonrakerExtensions.length ? ":" : ""), moonrakerExtensions.map((ext) => /* @__PURE__ */ import_react65.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react65.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))))
+    /* @__PURE__ */ import_react67.default.createElement(Container, null, klippyExtensions.length > 0 && !options.moonraker && /* @__PURE__ */ import_react67.default.createElement(Box_default, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ import_react67.default.createElement(Text, null, klippyExtensions.length, " Registered Klipper ", klippyExtensions.length === 1 ? "Extension" : "Extensions", klippyExtensions.length ? ":" : ""), klippyExtensions.map((ext) => /* @__PURE__ */ import_react67.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react67.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))), moonrakerExtensions.length > 0 && !options.klipper && /* @__PURE__ */ import_react67.default.createElement(Box_default, { flexDirection: "column" }, /* @__PURE__ */ import_react67.default.createElement(Text, null, moonrakerExtensions.length, " Registered Moonraker", " ", moonrakerExtensions.length === 1 ? "Extension" : "Extensions", moonrakerExtensions.length ? ":" : ""), moonrakerExtensions.map((ext) => /* @__PURE__ */ import_react67.default.createElement(Box_default, { key: ext.extensionName, flexDirection: "row", columnGap: 2 }, /* @__PURE__ */ import_react67.default.createElement(Text, { color: existsSync6(ext.path + ext.fileName) ? "green" : "red" }, ext.extensionName, " ", "->", " ", ext.path + ext.fileName, " ")))))
   );
 });
 registerExtensions.command("klipper").description("Register a Klipper extension to be managed by the RatOS Configurator").option("-k, --kinematics", "Register as a kinematics extension").option("-e, --error-if-exists", "Throw error if the extension already exists").argument("<name>", "Name of the extension").argument("<file>", "The path to the extension itself").showHelpAfterError().action(async (extName, extFile, options) => {
@@ -109787,7 +110114,7 @@ registerExtensions.command("klipper").description("Register a Klipper extension 
     return renderError("Failed to register extension", { exitCode: 2 });
   }
   render_default(
-    /* @__PURE__ */ import_react65.default.createElement(Container, null, /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react67.default.createElement(Container, null, /* @__PURE__ */ import_react67.default.createElement(
       Status,
       {
         results: {
@@ -109829,7 +110156,7 @@ registerExtensions.command("moonraker").description("Register a Moonraker extens
       }
     });
     render_default(
-      /* @__PURE__ */ import_react65.default.createElement(Container, null, /* @__PURE__ */ import_react65.default.createElement(
+      /* @__PURE__ */ import_react67.default.createElement(Container, null, /* @__PURE__ */ import_react67.default.createElement(
         Status,
         {
           results: {
@@ -110009,7 +110336,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   });
   const steps = [];
   let { rerender } = render_default(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react67.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110023,7 +110350,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo ${loadEnvironment().RATOS_SCRIPT_DIR}/update.sh`;
   steps.push({ name: "Repaired RatOS configurator", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react67.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110038,7 +110365,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sleep 1 && curl -s -o /dev/null --retry 20 --retry-all-errors --retry-delay 1 --retry-max-time 60 "http://localhost:3000/configure" &> /dev/null`;
   steps.push({ name: "Restarted RatOS configurator", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react67.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110052,7 +110379,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo ${loadEnvironment().RATOS_CONFIGURATION_PATH}/scripts/ratos-update.sh`;
   steps.push({ name: "Repaired RatOS configuration", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react67.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110066,7 +110393,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo systemctl restart klipper`;
   steps.push({ name: "Restarted Klipper", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react67.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110080,7 +110407,7 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
   await $$`sudo systemctl restart moonraker`;
   steps.push({ name: "Restarted Moonraker", status: "success" });
   rerender(
-    /* @__PURE__ */ import_react65.default.createElement(
+    /* @__PURE__ */ import_react67.default.createElement(
       InstallProgressUI,
       {
         status: "Fixing potential RatOS issues...",
@@ -110091,6 +110418,155 @@ var doctor = program2.command("doctor").description("Diagnose and fix common iss
       }
     )
   );
+});
+var upgrade = program2.command("upgrade").description("Upgrade the RatOS Configurator to specified version, defaults to latest if not specified").option("-r, --remote <remote>", "GitHub remote to use for the upgrade", "origin").option("-d, --dry-run", "Perform a dry run of the upgrade procedure without making any changes").option("-b, --branch <branch>", "Git branch to use for the upgrade", "v2.1.x-deployment-2").option("-y, --yes", "Automatically confirm the upgrade without prompting").action(async ({ remote, dryRun, branch, yes }) => {
+  try {
+    await ensureSudo();
+    const { RATOS_CONFIGURATION_PATH, NODE_ENV, RATOS_SCRIPT_DIR, RATOS_DATA_DIR } = loadEnvironment();
+    if (!yes || NODE_ENV === "development") {
+      const shouldContinue = await promptContinue(
+        /* @__PURE__ */ import_react67.default.createElement(import_react67.default.Fragment, null, /* @__PURE__ */ import_react67.default.createElement(Text, null, "This operation is not reversible."), /* @__PURE__ */ import_react67.default.createElement(Newline, null), /* @__PURE__ */ import_react67.default.createElement(Text, null, "A backup will be completed during the upgrade."), /* @__PURE__ */ import_react67.default.createElement(Newline, null), /* @__PURE__ */ import_react67.default.createElement(Text, null, "Do you wish to continue?"))
+      );
+      if (!shouldContinue) {
+        return renderError("Upgrade aborted by user", { exitCode: 3 });
+      }
+    }
+    const configuratorPath = path9.dirname(RATOS_CONFIGURATION_PATH);
+    if (!existsSync6(configuratorPath)) {
+      if (!existsSync6(path9.join(configuratorPath, ".git"))) {
+        return renderError(`Unable to upgrade: RatOS Configurator git repository not found at ${configuratorPath}`, {
+          exitCode: 2
+        });
+      } else {
+        return renderError(`Unable to upgrade: RatOS Configurator path ${configuratorPath} is not a git repository`, {
+          exitCode: 2
+        });
+      }
+    }
+    const cmdSignal = createSignal();
+    const $$ = $3({
+      verbose: true,
+      log(entry) {
+        if (entry.kind === "cmd") {
+          cmdSignal(entry.cmd);
+          getLogger().info("Running command: " + entry.cmd);
+        }
+      }
+    });
+    const status = "Upgrading RatOS Configurator...";
+    let steps = [];
+    const rerender = createInstallProgressRerender({
+      status,
+      stepText: "Backing up current configurator...",
+      isLoading: true,
+      cmdSignal,
+      steps
+    });
+    steps.push({ name: "Stopped moonraker", status: "success" });
+    if (NODE_ENV !== "development" && !dryRun) {
+      await $$`sudo systemctl stop moonraker`;
+    } else {
+      getLogger().info("Skipping moonraker stop in --dry-run mode");
+    }
+    rerender({
+      stepText: steps[steps.length - 1].name,
+      isLoading: false,
+      steps
+    });
+    steps.push({ name: "Stopped ratos-configurator", status: "success" });
+    if (NODE_ENV !== "development" && !dryRun) {
+      await $$`sudo systemctl stop ratos-configurator`;
+    } else {
+      getLogger().info("Skipping ratos-configurator shutdown due to --dry-run mode");
+    }
+    rerender({
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    const backupContextPath = path9.dirname(RATOS_DATA_DIR);
+    steps.push({ name: `Backing up ratos files found in ${backupContextPath}`, status: "running" });
+    rerender({
+      isLoading: true,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    await createBackup(backupContextPath, upgradeBackupPaths, `${backupContextPath}/backups`, $$, dryRun);
+    steps[steps.length - 1].status = "success";
+    rerender({
+      isLoading: false,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    steps.push({ name: "Removing files marked for deletion during upgrade", status: "running" });
+    rerender({
+      isLoading: true,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    await deleteUpgradeDeletePaths(backupContextPath, upgradeDeletePaths, $$, dryRun);
+    steps[steps.length - 1].status = "success";
+    rerender({
+      isLoading: false,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    steps.push({ name: "Resetting core files for fresh upgrade...", status: "running" });
+    rerender({
+      isLoading: true,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    await createUpgradeSnippetFiles(`${configuratorPath}/app/cli/templates`, backupContextPath, $$, dryRun);
+    steps[steps.length - 1].status = "success";
+    rerender({
+      isLoading: false,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    const isOrigin = remote === "origin";
+    const branchName = isOrigin ? branch : `${remote}/${branch}`;
+    steps.push({ name: `Switching to branch ${branchName}`, status: "running" });
+    rerender({
+      isLoading: true,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    await switchBranchFromRemote(configuratorPath, branch, remote, $$, dryRun);
+    steps[steps.length - 1].status = "success";
+    rerender({
+      isLoading: false,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    steps.push({ name: "Running upgrade script...", status: "running" });
+    rerender({
+      isLoading: true,
+      stepText: steps[steps.length - 1].name,
+      steps
+    });
+    if (!dryRun) {
+      await $$`${RATOS_SCRIPT_DIR}/post-merge.sh`;
+    } else {
+      getLogger().info("Skipping upgrade script due to --dry-run mode");
+    }
+    steps[steps.length - 1].status = "success";
+    rerender({
+      stepText: steps[steps.length - 1].name,
+      isLoading: false,
+      steps
+    });
+    rerender({
+      stepText: "Done!",
+      isLoading: false,
+      stepTextColor: "greenBright",
+      steps
+    });
+  } catch (e) {
+    if (e instanceof Error) {
+      return renderError(e.message, { exitCode: 2 });
+    }
+    return renderError("Failed to upgrade RatOS Configurator", { exitCode: 2 });
+  }
 });
 
 // ratos.tsx
