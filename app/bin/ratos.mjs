@@ -99026,14 +99026,12 @@ var getLogger = () => {
   if (!logDirExists) {
     console.warn("cli logger logFile directory does not exist, using default", logFile);
   }
-  const transportOption = process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" ? void 0 : {
-    target: "pino/file",
-    options: { destination: environment.LOG_FILE, append: true }
-  };
-  if (transportOption == null) {
+  if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
     logger = (0, import_pino.pino)({ ...globalPinoOpts }, prettyStream).child({ source: "cli" });
   } else {
-    logger = (0, import_pino.pino)({ ...globalPinoOpts, transport: transportOption }).child({ source: "cli" });
+    logger = (0, import_pino.pino)({ ...globalPinoOpts }, import_pino.pino.destination({ dest: logFile, sync: true })).child({
+      source: "cli"
+    });
   }
   return logger;
 };
