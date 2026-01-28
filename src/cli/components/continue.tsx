@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Text, useInput, Newline, render } from 'ink';
-import { InputPlaceholder } from './input-placeholder';
+import { InputPlaceholder } from '@/cli/components/input-placeholder';
 
 interface ContinuePromptProps {
 	message: React.ReactNode;
@@ -34,21 +34,33 @@ export const ContinuePrompt: React.FC<ContinuePromptProps> = ({ message, onRespo
 		}
 
 		if (key.backspace || key.delete) {
-			setInputValue(prev => prev.slice(0, -1));
+			setInputValue((prev) => prev.slice(0, -1));
 		} else if (input && !key.ctrl && !key.meta) {
-			setInputValue(prev => prev + input);
+			setInputValue((prev) => prev + input);
 		}
 	});
 
 	return (
 		<Box flexDirection="column" marginLeft={2} paddingTop={1} width={60}>
-            <Text color="yellow" bold>⚠ Warning</Text>
-            <Newline />
-			<Text>{message} <Text color="cyan">(yes/NO)</Text></Text>
+			<Text color="yellow" bold>
+				⚠ Warning
+			</Text>
+			<Newline />
+			<Text>
+				{message} <Text color="cyan">(yes/NO)</Text>
+			</Text>
 			<Box>
-                <Text>Type <Text color="cyan" bold>yes</Text> to continue
-				<Text color="cyan" bold> &gt; </Text>
-                </Text>
+				<Text>
+					Type{' '}
+					<Text color="cyan" bold>
+						yes
+					</Text>{' '}
+					to continue
+					<Text color="cyan" bold>
+						{' '}
+						&gt;{' '}
+					</Text>
+				</Text>
 				<Text>{inputValue}</Text>
 				<InputPlaceholder show={inputValue.length === 0} />
 			</Box>
@@ -61,11 +73,11 @@ export const ContinuePrompt: React.FC<ContinuePromptProps> = ({ message, onRespo
  * Prompts the user to continue with a yes/no question
  * @param message The message to display to the user (can be a string or React component)
  * @returns Promise that resolves to true if user confirms, false otherwise
- * 
+ *
  * @example
  * // Simple string
  * await promptContinue('Do you want to continue?');
- * 
+ *
  * @example
  * // Multi-line string
  * await promptContinue(
@@ -73,7 +85,7 @@ export const ContinuePrompt: React.FC<ContinuePromptProps> = ({ message, onRespo
  *   A backup will be completed during the upgrade.
  *   Do you wish to continue?`
  * );
- * 
+ *
  * @example
  * // JSX component for complex formatting
  * await promptContinue(
@@ -93,7 +105,7 @@ export const promptContinue = async (message: React.ReactNode): Promise<boolean>
 					unmount();
 					resolve(shouldContinue);
 				}}
-			/>
+			/>,
 		);
 	});
 };
