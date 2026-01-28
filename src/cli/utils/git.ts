@@ -5,7 +5,6 @@ export async function switchBranchFromRemote(repoDir: string, branch: string, re
     const $$ = shell
 
     const isOrigin = remote === 'origin';
-    const branchName = isOrigin ? branch : `${remote}/${branch}`;
     // if remote is not origin, and is not already added, add it
     if (!isOrigin) {
         const remotesResult = await $$`git -C ${repoDir} remote`;
@@ -21,9 +20,13 @@ export async function switchBranchFromRemote(repoDir: string, branch: string, re
 
     // checkout the branch
     if (dryRun){
-        return await $$`echo "Dry run enabled - skipping git switch to ${branchName} in ${repoDir}" && sleep 2`;
+        return await $$`echo "Dry run enabled - skipping git switch to ${branch} in ${repoDir}" && sleep 2`;
     } else {
-        return await $$`git switch -C ${repoDir} ${branch} ${branchName}`;
+        if(!isOrigin) {
+            // create and switch to the branch from the remote
+            return await $$`git -C ${repoDir} switch -c ${branch} --track ${remote}/${branch}`;
+        }
+        return await $$`git -C ${repoDir} switch ${branch}`;
     }
 
 }
