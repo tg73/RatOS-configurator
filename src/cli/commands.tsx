@@ -668,7 +668,7 @@ const upgrade = program
 			});
 			steps.push({ name: 'Stopped moonraker', status: 'success' });
 			if (NODE_ENV !== 'development' && !dryRun) {
-				await $$`sudo systemctl stop moonaker`;
+				await $$`sudo systemctl stop moonraker`;
 			} else {
 				getLogger().info('Skipping moonraker stop in --dry-run mode');
 			}
