@@ -84,8 +84,10 @@ _use_src_or_app_dir() {
 }
 
 _pnpm_install() {
-    echo -e "${BLUE}Running pnpm install from ${BUILD_DIR}/$(_use_src_or_app_dir)${NC}"
-    pnpm --dir "${BUILD_DIR}/$(_use_src_or_app_dir)" install --frozen-lockfile
+	local src_dir
+	src_dir="$(_use_src_or_app_dir)" || exit 1
+	echo -e "${BLUE}Running pnpm install from ${BUILD_DIR}/${src_dir}${NC}"
+	pnpm --dir "${BUILD_DIR}/${src_dir}" install --frozen-lockfile
 }
 
 _pnpm_build_app() {
