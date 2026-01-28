@@ -41,7 +41,7 @@ export const ContinuePrompt: React.FC<ContinuePromptProps> = ({ message, onRespo
 	});
 
 	return (
-		<Box flexDirection="column" rowGap={1} marginLeft={2} marginTop={1}width={60}>
+		<Box flexDirection="column" rowGap={1} marginLeft={2} marginTop={1} width={60}>
             <Text color="yellow" bold>⚠ Warning</Text>
             <Newline />
 			<Text>{message} <Text color="cyan">(yes/NO)</Text></Text>
