@@ -47,7 +47,7 @@ export async function createBackup (contextPath:string, files: string[], outputD
     }
     
     // Use -C to change to contextPath and use relative paths to avoid absolute path warnings
-    return await $$`tar -czfh ${outputDir}/backup.tar.gz -C ${contextPath} ${filesToProcess}`; 
+    return await $$`tar -czhf ${outputDir}/backup.tar.gz -C ${contextPath} ${filesToProcess}`; 
 }
 
 export async function deleteUpgradeDeletePaths(contextPath:string, files: string[], shell: Shell, dryRun = false) {
