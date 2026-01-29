@@ -159,23 +159,57 @@ install_hooks()
 
 ensure_service_permission()
 {
-	if [ ! -e "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" ]; then
-		report_status "Fixing moonraker service permissions..."
-		cat << EOF > "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
-klipper_mcu
-webcamd
-MoonCord
-KlipperScreen
-moonraker-telegram-bot
-moonraker-obico
-sonar
-crowsnest
-octoeverywhere
-ratos-configurator
-EOF
-
-		echo "Moonraker service permissions restored!"
-	fi
+    report_status "Ensuring moonraker service permissions..."
+    
+    local asvc_file="${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
+    
+    # Define required service entries
+    local required_services=(
+        "klipper_mcu"
+        "webcamd"
+        "MoonCord"
+        "KlipperScreen"
+        "moonraker-telegram-bot"
+        "moonraker-obico"
+        "sonar"
+        "crowsnest"
+        "octoeverywhere"
+        "ratos-configurator"
+    )
+    
+    # Create file if it doesn't exist
+    if [ ! -e "$asvc_file" ]; then
+        touch "$asvc_file"
+        echo "Created moonraker service permissions file"
+    fi
+    
+    # Ensure file ends with newline if it has content
+    if [ -s "$asvc_file" ] && [ "$(tail -c 1 "$asvc_file" 2>/dev/null | wc -l)" -eq 0 ]; then
+        echo "" >> "$asvc_file"
+    fi
+    
+    # Check for missing entries and add them
+    local added_count=0
+    for service in "${required_services[@]}"; do
+        # Check if service exists in file (ignoring leading/trailing whitespace)
+        # Use awk to trim whitespace from each line and compare
+        if ! awk -v service="$service" 'BEGIN {found=0} {gsub(/^[[:space:]]+|[[:space:]]+$/, ""); if ($0 == service) found=1} END {exit !found}' "$asvc_file" 2>/dev/null; then
+            echo "$service" >> "$asvc_file"
+            echo "Added service permission: $service"
+            ((added_count++))
+        fi
+    done
+    
+    # Ensure correct ownership if running as root
+    if [ "$EUID" -eq 0 ]; then
+        chown "${RATOS_USERNAME}:${RATOS_USERGROUP}" "$asvc_file"
+    fi
+    
+    if [ $added_count -gt 0 ]; then
+        echo "Added $added_count service permission(s) to moonraker.asvc"
+    else
+        echo "All required service permissions already present"
+    fi
 }
 
 patch_klipperscreen_service_restarts()

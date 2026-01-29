@@ -31,25 +31,25 @@ declare namespace __next_route_internal_types__ {
   type StaticRoutes = 
     | `/api/dfu-image`
     | `/api/download-firmware`
+    | `/api/printer-image`
     | `/api/mcu-image`
     | `/api/update-logs/download`
     | `/api/update-logs/generate-test-data`
-    | `/api/printer-image`
     | `/`
     | `/calibration`
     | `/motion`
+    | `/toolhead`
     | `/update-logs`
     | `/wizard`
-    | `/toolhead`
     | `/analysis/macros/new`
-    | `/analysis`
     | `/analysis/macros`
+    | `/analysis`
   type DynamicRoutes<T extends string = string> = 
     | `/api/trpc/${SafeSlug<T>}`
     | `/analysis/macros/${SafeSlug<T>}/edit`
+    | `/analysis/macros/${SafeSlug<T>}/recordings/${SafeSlug<T>}`
     | `/analysis/macros/${SafeSlug<T>}`
     | `/analysis/macros/${SafeSlug<T>}/recordings`
-    | `/analysis/macros/${SafeSlug<T>}/recordings/${SafeSlug<T>}`
 
   type RouteImpl<T> = 
     | StaticRoutes
