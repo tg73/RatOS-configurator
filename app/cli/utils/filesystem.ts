@@ -4,7 +4,7 @@ import { glob, Shell } from 'zx';
  *
  * @returns list of relative file paths from printer_data directory
  */
-export const upgradeBackupPaths = ['database', 'data', 'logs', 'ratos', 'config', 'gcodes', 'systemd'];
+export const upgradeBackupPaths = ['database', 'data', 'logs', 'config', 'gcodes', 'systemd'];
 
 /**
  * @returns list of relative paths from printer_data that should be deleted during upgrade
@@ -52,9 +52,7 @@ export async function deleteUpgradeDeletePaths(contextPath: string, files: strin
 	if (dryRun) {
 		return await $$`echo "Dry run enabled, skipping deletion of files" && sleep 2`;
 	} else {
-		const expandedPaths = Promise.all(files.map((file) => glob(`${contextPath}/${file}`))).then((results) =>
-			results.flat(),
-		);
+		const expandedPaths = (await Promise.all(files.map((file) => glob(`${contextPath}/${file}`)))).flat();
 		return await $$`rm -rf ${expandedPaths}`;
 	}
 }

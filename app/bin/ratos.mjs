@@ -109933,7 +109933,7 @@ Line ${e.lineNumber}: ${e.line}`;
 // utils/filesystem.ts
 init_cjs_shim();
 import { glob } from "zx";
-var upgradeBackupPaths = ["database", "data", "logs", "ratos", "config", "gcodes", "systemd"];
+var upgradeBackupPaths = ["database", "data", "logs", "config", "gcodes", "systemd"];
 var upgradeDeletePaths = [
   "config/ratos_generated",
   "config/ratos-variables.cfg",
@@ -109965,9 +109965,7 @@ async function deleteUpgradeDeletePaths(contextPath, files, shell, dryRun = fals
   if (dryRun) {
     return await $$`echo "Dry run enabled, skipping deletion of files" && sleep 2`;
   } else {
-    const expandedPaths = Promise.all(files.map((file) => glob(`${contextPath}/${file}`))).then(
-      (results) => results.flat()
-    );
+    const expandedPaths = (await Promise.all(files.map((file) => glob(`${contextPath}/${file}`)))).flat();
     return await $$`rm -rf ${expandedPaths}`;
   }
 }
