@@ -763,6 +763,16 @@ const upgrade = program
 				isLoading: false,
 				steps,
 			});
+			if (!dryRun) {
+				await $$`sudo systemctl start moonraker`;
+				await $$`sudo systemctl start ratos-configurator`;
+				steps.push({ name: 'Restarted services', status: 'success' });
+				rerender({
+					stepText: steps[steps.length - 1].name,
+					isLoading: false,
+					steps,
+				});
+			}
 			rerender({
 				stepText: 'Done!',
 				isLoading: false,
