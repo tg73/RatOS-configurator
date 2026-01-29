@@ -205,7 +205,7 @@ ensure_service_permission()
         chown "${RATOS_USERNAME}:${RATOS_USERGROUP}" "$asvc_file"
     fi
     
-    if [ $added_count -gt 0 ]; then
+    if [ "$added_count" -gt 0 ]; then
         echo "Added $added_count service permission(s) to moonraker.asvc"
     else
         echo "All required service permissions already present"
