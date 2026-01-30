@@ -163,9 +163,12 @@ run_git() {
 
 # Migration constants (readonly to prevent accidental modification)
 readonly OFFICIAL_KLIPPER_URL="https://github.com/Klipper3d/klipper.git"
-readonly RATOS_FORK_URL="https://github.com/tg73/klipper.git"
+readonly RATOS_FORK_URL="https://github.com/Rat-OS/klipper.git"
+readonly DEPRECATED_FORK_URLS=(
+	"https://github.com/tg73/klipper.git" # tg73 fork sometimes used during development
+)
 readonly RATOS_FORK_REMOTE="ratos-fork"
-readonly TARGET_BRANCH="ratos-development"
+readonly TARGET_BRANCH="ratos/v2.1.x"
 readonly MOONRAKER_CONF_PATH="$SCRIPT_DIR/../moonraker.conf"
 
 # extract_target_commit_from_moonraker() - Dynamically extracts klipper pinned_commit from moonraker.conf
@@ -278,8 +281,8 @@ readonly TARGET_COMMIT
 # Only supported repository configurations are allowed to proceed with migration.
 #
 # REPOSITORY STATE LOGIC:
-#   1. Official Klipper Source → Proceed with Migration
-#      - Repository origin points to any official Klipper URL format
+#   1. Official Klipper Source or Deprecated RatOS Fork Source → Proceed with Migration
+#      - Repository origin points to any official Klipper URL format OR deprecated RatOS fork URL format
 #      - Return 0 to indicate migration is needed
 #   2. RatOS Fork at Correct Commit → Skip Migration Gracefully
 #      - Repository origin points to RatOS fork URL
@@ -346,6 +349,21 @@ check_klipper_repository()
         log_info "Repository is using official Klipper source, migration needed." "check_repository"
         return 0
     fi
+
+	# Check if current origin is a deprecated RatOS fork URL
+	local is_deprecated_fork=false
+	for deprecated_url in "${DEPRECATED_FORK_URLS[@]}"; do
+		if [[ "$current_origin" == "$deprecated_url" ]]; then
+			is_deprecated_fork=true
+			break
+		fi
+	done
+
+	if [[ "$is_deprecated_fork" == true ]]; then
+		# Case 1: Deprecated RatOS Fork Source → Proceed with Migration
+		log_info "Repository is using deprecated RatOS fork source, migration needed." "check_repository"
+		return 0
+	fi
 
     # Check if current origin is RatOS fork
     if [[ "$current_origin" == "$RATOS_FORK_URL" ]]; then
