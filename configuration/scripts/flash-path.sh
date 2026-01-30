@@ -18,7 +18,7 @@ service klipper stop
 dfuDevicesPreFlash=$(lsusb | grep -c "0483:df11")
 if [ -h "$MCU" ]; then
     echo "Flashing $MCU"
-    sudo make flash FLASH_DEVICE="$MCU"
+    $SUDO make flash FLASH_DEVICE="$MCU"
 fi
 sleep 5
 retVal=1

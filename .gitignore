@@ -14,10 +14,8 @@
 .DS_Store
 *:Zone.Identifier
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# logs
+*.log
 
 # SciChart data
 src/public/scichart*
@@ -26,3 +24,6 @@ src/public/tfjs*
 # Default printer config directory for development
 devbox.d/printer-config/
 devbox.d/klipper/
+
+# artifacts for local deployment tests
+/artifacts

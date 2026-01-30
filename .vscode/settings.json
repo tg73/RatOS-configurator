@@ -46,5 +46,8 @@
 	"augment.completions.enableQuickSuggestions": false,
 	"augment.enableEmptyFileHint": false,
 	"augment.nextEdit.enableAutoApply": false,
-	"terminal.integrated.cwd": "src"
+	"terminal.integrated.cwd": "src",
+	"[json]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	}
 }

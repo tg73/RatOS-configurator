@@ -232,6 +232,22 @@
 							"toolboard": {
 								"description": "Default board for this toolhead. Should be the name of the board directory.",
 								"type": "string"
+							},
+							"filamentSensor": {
+								"description": "Default filament sensor for this toolhead. Should be the name of the /configuration/filament-sensors/* subdir.",
+								"type": "object",
+								"properties": {
+									"id": {
+										"description": "ID of the filament sensor hardware",
+										"type": "string"
+									},
+									"connectedTo": {
+										"description": "Where the filament sensor is connected to",
+										"type": "string",
+										"enum": ["toolboard", "controlboard"]
+									}
+								},
+								"required": ["id", "connectedTo"]
 							}
 						},
 						"required": ["extruder", "hotend", "xEndstop", "yEndstop", "axis", "partFan", "hotendFan"]
@@ -241,6 +257,54 @@
 				"board": {
 					"description": "Default board for this printer. Should be the name of the board directory.",
 					"type": "string"
+				},
+				"chamberLighting": {
+					"description": "Default chamber lighting option for this printer.",
+					"type": "object",
+					"properties": {
+						"id": {
+							"description": "ID of the chamber lighting hardware",
+							"type": "string"
+						},
+						"connectedTo": {
+							"description": "Where the chamber lighting is connected to",
+							"type": "string",
+							"enum": ["toolboard", "controlboard"]
+						}
+					},
+					"required": ["id", "connectedTo"]
+				},
+				"toolheadAlignmentSystem": {
+					"description": "Default toolhead alignment system for this printer.",
+					"type": "object",
+					"properties": {
+						"id": {
+							"description": "ID of the toolhead alignment system hardware",
+							"type": "string"
+						},
+						"connectedTo": {
+							"description": "Where the toolhead alignment system is connected to",
+							"type": "string",
+							"enum": ["toolboard", "controlboard"]
+						}
+					},
+					"required": ["id", "connectedTo"]
+				},
+				"chamberAirFilter": {
+					"description": "Default chamber air filter for this printer.",
+					"type": "object",
+					"properties": {
+						"id": {
+							"description": "ID of the chamber air filter hardware",
+							"type": "string"
+						},
+						"connectedTo": {
+							"description": "Where the chamber air filter is connected to",
+							"type": "string",
+							"enum": ["toolboard", "controlboard"]
+						}
+					},
+					"required": ["id", "connectedTo"]
 				},
 				"controllerFan": {
 					"description": "Default controller fan for this printer.",

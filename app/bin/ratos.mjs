@@ -101949,9 +101949,9 @@ function validateGenerator(gcodeInfo, allowUnsupportedSlicerVersions, onWarning)
           { cause: gcodeInfo }
         );
       case 1 /* PrusaSlicer */:
-        if (!import_semver2.default.satisfies(gcodeInfo.generatorVersion, "2.8.0 || 2.8.1 || 2.9.0")) {
+        if (!import_semver2.default.satisfies(gcodeInfo.generatorVersion, "2.8.0 || 2.8.1 || 2.9.0 || 2.9.1 || 2.9.2")) {
           throw new SlicerNotSupported(
-            `Only versions 2.8.0, 2.8.1 and 2.9.0 of PrusaSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
+            `Only release versions 2.8.0, 2.8.1 and 2.9.0 - 2.9.2 of PrusaSlicer are supported. Version ${gcodeInfo.generatorVersion} is not supported.`,
             { cause: gcodeInfo }
           );
         }
@@ -110286,14 +110286,26 @@ var updateLogs = (parentCommand) => {
         error: 50,
         fatal: 60
       };
-      const minLevel = levelMap[options.level.toLowerCase()] || 30;
+      const requestedLevel = options.level.toLowerCase();
+      if (!(requestedLevel in levelMap)) {
+        return renderError(
+          `Invalid log level '${options.level}'. Valid levels: trace, debug, info, warn, error, fatal`,
+          { exitCode: 1 }
+        );
+      }
+      const minLevel = levelMap[requestedLevel];
       entries = filterBySeverity(entries, minLevel);
       if (options.context) {
         entries = filterByContext(entries, options.context);
       }
       const maxLines = parseInt(options.lines, 10);
-      if (isNaN(maxLines) || maxLines <= 0) {
-        return renderError("Invalid number of lines specified", { exitCode: 1 });
+      if (isNaN(maxLines)) {
+        return renderError(`Invalid number of lines '${options.lines}'. Must be a positive integer.`, {
+          exitCode: 1
+        });
+      }
+      if (maxLines <= 0) {
+        return renderError(`Invalid number of lines '${maxLines}'. Must be greater than 0.`, { exitCode: 1 });
       }
       if (entries.length > maxLines) {
         entries = entries.slice(-maxLines);
@@ -110339,12 +110351,12 @@ var updateLogs = (parentCommand) => {
 init_cjs_shim();
 import { cd, path as path11, syncProcessCwd } from "zx";
 import { existsSync as existsSync9 } from "node:fs";
-import { readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
+import { readFile as readFile4, writeFile as writeFile2 } from "node:fs/promises";
 
 // ../server/helpers/file-operations.ts
 init_cjs_shim();
-import { existsSync as existsSync8, createReadStream as createReadStream2, createWriteStream as createWriteStream2 } from "fs";
-import { copyFile, unlink } from "fs/promises";
+import { existsSync as existsSync8, createReadStream as createReadStream2, createWriteStream as createWriteStream2, readFileSync as readFileSync3 } from "fs";
+import { copyFile, readFile as readFile3, unlink } from "fs/promises";
 import { EOL } from "os";
 import { createInterface } from "readline";
 var replaceInFileByLine = async (filePath, searchOrReplacer, replace) => {
@@ -110462,7 +110474,7 @@ var import_react67 = __toESM(require_react(), 1);
 var ensureLocalEnvFile = async () => {
   if (!existsSync9("./.env.local")) {
     getLogger2().info("Creating .env.local file");
-    await writeFile2("./.env.local", await readFile3(".env"));
+    await writeFile2("./.env.local", await readFile4(".env"));
   }
 };
 var tempEnvFile = "/tmp/configurator.env.local";

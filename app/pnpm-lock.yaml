@@ -330,17 +330,20 @@ importers:
         specifier: ^7.8.1
         version: 7.8.1
       scichart:
-        specifier: '=3.5.762'
-        version: 3.5.762
+        specifier: ~4.0.933
+        version: 4.0.933
       scichart-react:
-        specifier: '=0.1.13'
-        version: 0.1.13(react@18.2.0)(scichart@3.5.762)
+        specifier: ~1.0.0
+        version: 1.0.0(react@18.2.0)(scichart@4.0.933)
       screenfull:
         specifier: ^6.0.2
         version: 6.0.2
       semver:
         specifier: ^7.6.3
         version: 7.6.3
+      server-only:
+        specifier: ^0.0.1
+        version: 0.0.1
       sonner:
         specifier: ^1.4.41
         version: 1.4.41(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -4731,14 +4734,14 @@ packages:
   scheduler@0.23.0:
     resolution: {integrity: sha512-CtuThmgHNg7zIZWAXi3AsyIzA3n4xx7aNyjwC2VJldO2LMVDhFK+63xGqq6CsJH4rTAt6/M+N4GhZiDYPx9eUw==}
 
-  scichart-react@0.1.13:
-    resolution: {integrity: sha512-J7gc9I8W1v+iMyXPrDfFr8msHTftNCvdP26IBlGfzjyNZvThn+EpWCm/KZJzLJXNbjamg3kLyZjiz+o1MIU+Mw==}
+  scichart-react@1.0.0:
+    resolution: {integrity: sha512-fadf70hDbK1W9lSgNV28ovc+3W75MBOwshZ2+Wdr0oTtpGnzIkEDfVCkutaHa4UylzzpcB2jrYeyawKk3iqq7w==}
     peerDependencies:
       react: '>=16.8.0'
-      scichart: '>=3.2.516-0'
+      scichart: '>=4.0.828'
 
-  scichart@3.5.762:
-    resolution: {integrity: sha512-nvoURjQETdpKHWSVzNlaq9DPSdhqw5nDMpJouxR8QTkivRKvc6q6z2Gsfze59gFlTjUIV5I79B5iy+riyrL86w==}
+  scichart@4.0.933:
+    resolution: {integrity: sha512-GrJjOMUtiJNjbF0BIloVOIOi8Y3h7uAoSeIJ9HmQnicFhlzH7QzD+EkDv5XXFgSMAbxtIQQqpw3r4Dxoo0uLsg==}
 
   screenfull@6.0.2:
     resolution: {integrity: sha512-AQdy8s4WhNvUZ6P8F6PB21tSPIYKniic+Ogx0AacBMjKP1GUHN2E9URxQHtCusiwxudnCKkdy4GrHXPPJSkCCw==}
@@ -4758,6 +4761,9 @@ packages:
     resolution: {integrity: sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==}
     engines: {node: '>=10'}
     hasBin: true
+
+  server-only@0.0.1:
+    resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
 
   set-function-length@1.1.1:
     resolution: {integrity: sha512-VoaqjbBJKiWtg4yRcKBQ7g7wnGnLV3M8oLvVWwOk2PdYY6PEFegR1vezXR0tw6fZGF9csVakIRjrJiy2veSBFQ==}
@@ -10008,12 +10014,12 @@ snapshots:
     dependencies:
       loose-envify: 1.4.0
 
-  scichart-react@0.1.13(react@18.2.0)(scichart@3.5.762):
+  scichart-react@1.0.0(react@18.2.0)(scichart@4.0.933):
     dependencies:
       react: 18.2.0
-      scichart: 3.5.762
+      scichart: 4.0.933
 
-  scichart@3.5.762: {}
+  scichart@4.0.933: {}
 
   screenfull@6.0.2: {}
 
@@ -10024,6 +10030,8 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.6.3: {}
+
+  server-only@0.0.1: {}
 
   set-function-length@1.1.1:
     dependencies:

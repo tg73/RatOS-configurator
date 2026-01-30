@@ -4,6 +4,34 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "$(realpath -- "${BASH_SOURCE[0]}")" )" &> /d
 # shellcheck source=./configuration/scripts/environment.sh
 source "$SCRIPT_DIR"/environment.sh
 
+# Helper to conditionally use sudo (for compatibility with systemd-nspawn/containers)
+# When running as root (EUID=0), commands are executed directly
+# When not root, sudo is used for privilege escalation
+if [ "$EUID" -eq 0 ]; then
+    SUDO=""
+else
+    SUDO="sudo"
+fi
+
+# Helper to run commands as a specific user
+# Only uses sudo -u if we're not already running as the target user
+run_as_user() {
+    local username="$1"
+    shift
+	# If running as root or as a different user, use sudo -u
+	if [ "$EUID" -eq 0 ] || [ "$(whoami)" != "$username" ]; then
+        # Need to switch users, use sudo -u
+        sudo -u "$username" "$@"
+    else
+        # Already the target user, run directly
+        "$@"
+    fi
+}
+
+# System package requirements for RatOS (read by Moonraker and scripts)
+# shellcheck disable=SC2034
+PKGLIST="python3-numpy python3-matplotlib curl git libopenblas-base"
+
 report_status()
 {
     echo -e "\n\n###### $1"
@@ -13,14 +41,14 @@ disable_modem_manager()
 {
 	report_status "Checking if ModemManager is enabled..."
 	
-	if ! sudo systemctl is-enabled ModemManager.service &> /dev/null; then
+	if ! $SUDO systemctl is-enabled ModemManager.service &> /dev/null; then
 		report_status "Disabling ModemManager..."
-		sudo systemctl disable ModemManager.service
+		$SUDO systemctl disable ModemManager.service
 	else
 		report_status "ModemManager is already disabled.."
 	fi
 	report_status "Masking ModemManager to ensure it won't start in the future..."
-	sudo systemctl mask ModemManager.service
+	$SUDO systemctl mask ModemManager.service
 }
 
 update_beacon_fw()
@@ -40,6 +68,12 @@ update_beacon_fw()
 		echo "beacon: beacon firmware updater script doesn't exist, skipping..."
 		return
 	fi
+
+	if [ ! -d /sys/bus/usb/devices ]; then
+		echo "beacon: no usb devices present, skipping firmware update..."
+		return
+	fi
+
 	"$KLIPPER_ENV"/bin/python "$BEACON_DIR"/update_firmware.py update all --no-sudo
 }
 
@@ -62,7 +96,13 @@ install_beacon()
 
 	# install beacon requirements to env
 	echo "beacon: installing python requirements to env."
-	"${KLIPPER_ENV}"/bin/pip install -r "${BEACON_DIR}"/requirements.txt
+	if [ "$EUID" -eq 0 ]; then
+		# Running as root, use su to run pip as the correct user
+		su - "${RATOS_USERNAME}" -c "\"${KLIPPER_ENV}\"/bin/pip install -r \"${BEACON_DIR}\"/requirements.txt"
+	else
+		# Running as user, can run pip directly
+		"${KLIPPER_ENV}"/bin/pip install -r "${BEACON_DIR}"/requirements.txt
+	fi
 
 	# Beacon extension will be registered in verify_registered_extensions
 }
@@ -119,23 +159,57 @@ install_hooks()
 
 ensure_service_permission()
 {
-	if [ ! -e "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc" ]; then
-		report_status "Fixing moonraker service permissions..."
-		cat << EOF > "${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
-klipper_mcu
-webcamd
-MoonCord
-KlipperScreen
-moonraker-telegram-bot
-moonraker-obico
-sonar
-crowsnest
-octoeverywhere
-ratos-configurator
-EOF
-
-		echo "Moonraker service permissions restored!"
-	fi
+    report_status "Ensuring moonraker service permissions..."
+    
+    local asvc_file="${RATOS_PRINTER_DATA_DIR}/moonraker.asvc"
+    
+    # Define required service entries
+    local required_services=(
+        "klipper_mcu"
+        "webcamd"
+        "MoonCord"
+        "KlipperScreen"
+        "moonraker-telegram-bot"
+        "moonraker-obico"
+        "sonar"
+        "crowsnest"
+        "octoeverywhere"
+        "ratos-configurator"
+    )
+    
+    # Create file if it doesn't exist
+    if [ ! -e "$asvc_file" ]; then
+        touch "$asvc_file"
+        echo "Created moonraker service permissions file"
+    fi
+    
+    # Ensure file ends with newline if it has content
+    if [ -s "$asvc_file" ] && [ "$(tail -c 1 "$asvc_file" 2>/dev/null | wc -l)" -eq 0 ]; then
+        echo "" >> "$asvc_file"
+    fi
+    
+    # Check for missing entries and add them
+    local added_count=0
+    for service in "${required_services[@]}"; do
+        # Check if service exists in file (ignoring leading/trailing whitespace)
+        # Use awk to trim whitespace from each line and compare
+        if ! awk -v service="$service" 'BEGIN {found=0} {gsub(/^[[:space:]]+|[[:space:]]+$/, ""); if ($0 == service) found=1} END {exit !found}' "$asvc_file" 2>/dev/null; then
+            echo "$service" >> "$asvc_file"
+            echo "Added service permission: $service"
+            ((added_count++))
+        fi
+    done
+    
+    # Ensure correct ownership if running as root
+    if [ "$EUID" -eq 0 ]; then
+        chown "${RATOS_USERNAME}:${RATOS_USERGROUP}" "$asvc_file"
+    fi
+    
+    if [ "$added_count" -gt 0 ]; then
+        echo "Added $added_count service permission(s) to moonraker.asvc"
+    else
+        echo "All required service permissions already present"
+    fi
 }
 
 patch_klipperscreen_service_restarts()
@@ -143,22 +217,20 @@ patch_klipperscreen_service_restarts()
 	if grep "StartLimitIntervalSec=0" /etc/systemd/system/klipperscreen.service &>/dev/null; then
 		report_status "Patching KlipperScreen service restarts..."
 		# Fix restarts
-		sudo sed -i 's/\RestartSec=1/\RestartSec=5/g' /etc/systemd/system/KlipperScreen.service
-		sudo sed -i 's/\StartLimitIntervalSec=0/\StartLimitIntervalSec=100\nStartLimitBurst=4/g' /etc/systemd/system/KlipperScreen.service
-		sudo systemctl daemon-reload
+		$SUDO sed -i 's/\RestartSec=1/\RestartSec=5/g' /etc/systemd/system/KlipperScreen.service
+		$SUDO sed -i 's/\StartLimitIntervalSec=0/\StartLimitIntervalSec=100\nStartLimitBurst=4/g' /etc/systemd/system/KlipperScreen.service
+		$SUDO systemctl daemon-reload
 		echo "KlipperScreen service patched!"
 	fi
 }
 
 ensure_sudo_command_whitelisting()
 {
-	sudo=""
-	[ "$EUID" -ne 0 ] && sudo="sudo"
     report_status "Updating whitelisted commands"
 	# Whitelist RatOS git hook scripts
 	if [[ -e /etc/sudoers.d/030-ratos-githooks ]]
 	then
-		$sudo rm /etc/sudoers.d/030-ratos-githooks
+		$SUDO rm /etc/sudoers.d/030-ratos-githooks
 	fi
 	touch /tmp/030-ratos-githooks
 	cat <<EOF > /tmp/030-ratos-githooks
@@ -168,9 +240,9 @@ ${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: ${RATOS_PRINTER_DATA_DIR}/config/RatOS/sc
 ${RATOS_USERNAME}  ALL=(ALL) NOPASSWD: ${RATOS_PRINTER_DATA_DIR}/config/RatOS/scripts/moonraker-update.sh
 EOF
 
-	$sudo chown root:root /tmp/030-ratos-githooks
-	$sudo chmod 440 /tmp/030-ratos-githooks
-	$sudo cp --preserve=mode /tmp/030-ratos-githooks /etc/sudoers.d/030-ratos-githooks
+	$SUDO chown root:root /tmp/030-ratos-githooks
+	$SUDO chmod 440 /tmp/030-ratos-githooks
+	$SUDO cp --preserve=mode /tmp/030-ratos-githooks /etc/sudoers.d/030-ratos-githooks
 
 	echo "RatOS git hooks has successfully been whitelisted!"
 }
@@ -191,6 +263,11 @@ verify_registered_extensions()
         ["resonance_generator_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/resonance_generator.py")
         ["ratos_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos.py")
         ["beacon_mesh_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_mesh.py")
+		["beacon_true_zero_correction_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_true_zero_correction.py")
+		["beacon_adaptive_heatsoak_extension"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_adaptive_heat_soak.py")
+		["fastconfig"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/fastconfig.py")
+		["named_offsets"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/named_offsets.py")
+		["beacon_user_z_offset"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_user_z_offset.py")
     )
 
 	declare -A kinematics_extensions=(
