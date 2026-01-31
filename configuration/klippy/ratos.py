@@ -310,11 +310,10 @@ class RatOS:
 		ratos_distro = self.get_ratos_distro()
 		logging.info(f"HELLO_RATOS: version: {'-'.join(ratos_version)}, distro: {ratos_distro}")
 		_title = '<p style="font-weight: bold; margin:0; color:white">Welcome to RatOS ' +  ratos_version[0] + '</p>'
-		_sub_title1 = '<div style="margin:0; padding:0; color: rgba(255, 255, 255, 0.7)">' + '-'.join(ratos_version) + '</div>'
-		_sub_title2 = '<div style="margin:0; padding:0; color: rgba(255, 255, 255, 0.7)">' + ratos_distro + '</div>'
+		_sub_title = '<div style="margin:0; padding:0; color: rgba(255, 255, 255, 0.7)">Base image: ' + ratos_distro + '\nUpdated to: ' + '-'.join(ratos_version) + '</div>'
 		_info = '<div style="margin:0; padding:0; color: rgba(255, 255, 255, 0.7)">\nClick image to open documentation.</div>'
 		_img = '\n<a href="' + url + '" target="_blank" ><img style="margin-top:6px;" src="' + img + '" width="258px"></a>'
-		self.gcode.respond_raw('<div>' + _title + _sub_title1 + _sub_title2 + _img + _info + '</div>')
+		self.gcode.respond_raw('<div>' + _title + _sub_title + _img + _info +'</div>')
 		self._write_deferred_init_messages()
 		self._check_cpu_governors()
 
