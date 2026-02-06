@@ -127,13 +127,8 @@ jobs:
       - name: Set Git Config for Deployment
         id: git-config-for-deployment
         run: |
-          if [[ "${{ github.repository_owner }}" == "Rat-OS" ]]; then
-            echo "git-config-name=Mikkel Schmidt" >> $GITHUB_OUTPUT
-            echo "git-config-email=mikkel.schmidt@gmail.com" >> $GITHUB_OUTPUT
-          else
-            echo "git-config-name=${{ github.actor }}" >> $GITHUB_OUTPUT
-            echo "git-config-email=${{ github.actor }}@users.noreply.github.com" >> $GITHUB_OUTPUT
-          fi
+          echo "git-config-name=github-actions[bot]" >> $GITHUB_OUTPUT
+          echo "git-config-email=41898282+github-actions[bot]@users.noreply.github.com" >> $GITHUB_OUTPUT
 
       - name: Generate Commit Message
         id: generate-commit-message
