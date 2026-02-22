@@ -1772,7 +1772,10 @@ class RatOS:
 		is_sensible = delta <= max_no_stepper_move_distance
 
 		if not is_sensible:
-			logging.error(f"{self.name}: _align_to_kinematic_position: divergence between toolhead position and kinematic {axis_name_upper} position exceeds safe threshold of {max_no_stepper_move_distance:.6f}: alignment skipped to avoid unexpected physical move")
+			logging.error(
+				f"{self.name}: _align_to_kinematic_position: divergence between toolhead position and kinematic {axis_name_upper} position exceeds safe threshold of {max_no_stepper_move_distance:.9f}:\n"
+				f"kinematic: {kin_ap:.6f}, toolhead: {toolhead_ap:.6f}, delta: {delta:.9f}\n"
+				"Alignment skipped to avoid unexpected physical move.")
 		elif not is_homed:
 			logging.debug(f"{self.name}: _align_to_kinematic_position: {axis_name_upper} axis is not homed; skipping alignment")
 		else:
