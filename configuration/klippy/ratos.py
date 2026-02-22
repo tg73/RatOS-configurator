@@ -1748,15 +1748,15 @@ class RatOS:
 			kin_backward = kin.calc_position(steppers_backward)
 			one_step_shift_backward = abs(kin_backward[axis_index] - kin_pos[axis_index])
 			
-			min_half_step_shift = min(one_step_shift_forward, one_step_shift_backward) / 2.0
+			min_step_shift = min(one_step_shift_forward, one_step_shift_backward)
 
-			# min_half_step_shift will be zero for inactive steppers (eg, the inactive carriage in dual carriage),
+			# min_step_shift will be zero for inactive steppers (eg, the inactive carriage in dual carriage),
 			# ignore those as they do not affect the position on this axis.
-			if min_half_step_shift < 1e-9:
+			if min_step_shift < 1e-9:
 				continue
 
-			if max_no_stepper_move_distance is None or min_half_step_shift < max_no_stepper_move_distance:
-				max_no_stepper_move_distance = min_half_step_shift
+			if max_no_stepper_move_distance is None or min_step_shift < max_no_stepper_move_distance:
+				max_no_stepper_move_distance = min_step_shift
 
 		if max_no_stepper_move_distance is None:
 			# This should not happen, as there should be at least one stepper affecting each axis, but we check just in case.
