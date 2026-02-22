@@ -57,12 +57,12 @@ BeaconProbingRegions = namedtuple('BeaconProbingRegions',
 	- logical_contact_min: Tuple of (min_x, min_y) for contact probing calculated from the printable area and beacon offsets (toolhead position)
 	- logical_contact_max: Tuple of (max_x, max_y) for contact probing calculated from the printable area and beacon offsets (toolhead position)
   Notes:
-    - COIL POSITION VS TOOLHEAD POSITION FOR PROXIMITY VALUES
+	- COIL POSITION VS TOOLHEAD POSITION FOR PROXIMITY VALUES
 	  
 	  - The values suffixed "_coil_pos" represent the position of the beacon coil itself.
 
 	  - The values suffixes "_toolhead_pos" represent the position of the toolhead (aka, nozzle), taking account of
-	    the beacon offsets. This is where the toolhead must be positioned to ensure that the beacon coil is over the
+		the beacon offsets. This is where the toolhead must be positioned to ensure that the beacon coil is over the
 		corresponding "_coil_pos" position.
 
 	- TOOLHEAD POSITION FOR CONTACT VALUES
@@ -112,12 +112,14 @@ class RatOS:
 		self.overridden_commands = {
 			'TEST_RESONANCES': None,
 			'SHAPER_CALIBRATE': None,
+			'SET_DUAL_CARRIAGE': None,
 		}
 
 		# Fields initialized in _connect
 		self.v_sd = None
 		self.sdcard_dirname = None
 		self.dual_carriage = None
+		self.dc_axis = None
 		self.rmmu_hub = None
 		self.bed_mesh = None
 		self.gm_ratos = None
@@ -167,6 +169,8 @@ class RatOS:
 
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
+			dc_config = self.config.getsection("dual_carriage")
+			self.dc_axis = dc_config.getchoice('axis', ['x', 'y'])
 		if self.config.has_section("rmmu_hub"):
 			self.rmmu_hub = self.printer.lookup_object("rmmu_hub", None)
 		if self.config.has_section("bed_mesh"):
@@ -246,34 +250,51 @@ class RatOS:
 		self.gcode.register_command('_CAMERA_SNAPSHOT', self.cmd_CAMERA_SNAPSHOT, desc=self.desc_CAMERA_SNAPSHOT)
 		self.gcode.register_command('BEACON_PROBE_CLEAN', self.cmd_BEACON_PROBE_CLEAN, desc=self.desc_BEACON_PROBE_CLEAN)
 		self.gcode.register_command('SET_ZERO_REFERENCE_POSITION', self.cmd_SET_ZERO_REFERENCE_POSITION, desc=self.desc_SET_ZERO_REFERENCE_POSITION)
+		self.gcode.register_command('_ALIGN_TO_KINEMATIC_POSITION', self.cmd_ALIGN_TO_KINEMATIC_POSITION)
 
 	def register_command_overrides(self):
-		self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=self.desc_TEST_RESONANCES)
-		self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=self.desc_SHAPER_CALIBRATE)
+		if self.config.has_section('resonance_tester'):
+			self.register_override('TEST_RESONANCES', self.override_TEST_RESONANCES, desc=self.desc_TEST_RESONANCES)
+			self.register_override('SHAPER_CALIBRATE', self.override_SHAPER_CALIBRATE, desc=self.desc_SHAPER_CALIBRATE)
+		if self.dual_carriage is not None:
+			self.register_override('SET_DUAL_CARRIAGE', self.override_SET_DUAL_CARRIAGE, desc_suffix=self.desc_suffix_SET_DUAL_CARRIAGE)
 
-	def register_override(self, command, func, desc):
+	def register_override(self, command, func, desc=None, desc_suffix=None, skip_if_not_registered=False):
 		if self.overridden_commands[command] is not None:
 			if self.overridden_commands[command] != func:
 				raise self.printer.config_error("Command '%s' is already overridden with a different function" % (command,))
 			return
+		
+		if desc is None:
+			desc = self.gcode.get_command_help().get(command, None)
 
+		if desc_suffix is not None:
+			if desc is None:
+				desc = desc_suffix
+			else:
+				if not desc.endswith('.'):
+					desc = desc + '.'
+				desc = desc + ' ' + desc_suffix
+		
 		prev_cmd = self.gcode.register_command(command, None)
+		
 		if prev_cmd is None:
-			if (command == 'TEST_RESONANCES' or command == 'SHAPER_CALIBRATE') and not self.config.has_section('resonance_tester'):
-				# No [resonance_tester] section found, don't throw an error, skip overriding.
-				logging.info("No [resonance_tester] section found, skipping override of command '%s'" % (command,))
+			if skip_if_not_registered:
+				logging.info(f"{self.name}: existing command '{command}' not found, skipping override registration")
 				return
 			else:
-				raise self.printer.config_error("Existing command '%s' not found in RatOS override" % (command,))
+				raise self.printer.config_error(f"{self.name}: expected existing command '{command}' not found, cannot register override")
+		
 		if command not in self.overridden_commands:
-			raise self.printer.config_error("Command '%s' not found in RatOS override list" % (command,))
+			raise self.printer.config_error(f"{self.name}: command '{command}' not found in override list")
 
-		self.overridden_commands[command] = prev_cmd;
-		self.gcode.register_command(command, func, desc=(desc))
+		self.overridden_commands[command] = prev_cmd
+		self.gcode.register_command(command, func, desc=desc)
 
 	def get_prev_cmd(self, command):
 		if command not in self.overridden_commands or self.overridden_commands[command] is None:
-			raise self.printer.config_error("Previous function for command '%s' not found in RatOS override list" % (command,))
+			raise self.printer.config_error(f"{self.name}: previous function for command '{command}' not found in RatOS override list")
+		
 		return self.overridden_commands[command]
 
 	desc_TEST_RESONANCES = ("Runs the resonance test for a specifed axis, positioning errors caused by sweeping are corrected by a RatOS override of this command.")
@@ -1672,6 +1693,124 @@ class RatOS:
 			raise gcmd.error(f"Failed to retrieve snapshot from {url}: {e!r}") from e
 		
 		gcmd.respond_info(f"Snapshot saved to {image_path}")
+	
+	desc_suffix_SET_DUAL_CARRIAGE = "Enhanced by RatOS to first align toolhead to kinematic position, to prevent potential positional drift due to sub-microstep rounding behaviours. Use SKIP_ALIGN=1 to skip the alignment if desired."
+	def override_SET_DUAL_CARRIAGE(self, gcmd):
+		prev = self.get_prev_cmd('SET_DUAL_CARRIAGE')
+		skip_align = gcmd.get('SKIP_ALIGN', '').lower() in ('true', 'yes', '1')
+		if not skip_align:
+			self._align_to_kinematic_position(self.dc_axis)
+		prev(gcmd)
+
+	def cmd_ALIGN_TO_KINEMATIC_POSITION(self, gcmd):
+		axis_name = gcmd.get('AXIS').lower()
+		self._align_to_kinematic_position(axis_name)
+
+	def _align_to_kinematic_position(self, axis_name):
+		"""
+		Align toolhead to kinematic position on the specified axis, if the discrepancy is within a reasonable threshold.
+		
+		Parameters:
+			axis_name (str): The axis to align, one of 'x', 'y', or 'z' (case-insensitive).		
+		"""
+		# This is intended to correct sub-microstep offsets that can arise between the toolhead position
+		# and the kinematic position. Such offsets can result in positional drift when changing dual carriage modes,
+		# typically of one microstep distance per cycle of mode changes (eg, T0->T1->T0) - the MCU step count
+		# drifts while the calculated kinematic position does not. This drift does not always happen: it
+		# appears to depend on some discrepancy in rounding at different layers of the motion system that is not
+		# fully round-tripable.
+		#
+		# The simple safety rule is: don't change dual carriage mode when the toolhead position is not at a
+		# microstep boundary on the dual carriage axis (typically the X axis).
+		axis_name_upper = axis_name.upper()
+		if len(axis_name) != 1 or axis_name not in 'xyz':
+			raise self.gcode.error(f"Invalid axis_name: '{axis_name}'. Must be one of x, y, or z.")
+		axis_index = 'xyz'.index(axis_name)
+
+		toolhead = self.printer.lookup_object('toolhead')
+		toolhead.flush_step_generation()
+		kin = toolhead.get_kinematics()
+		steppers = kin.get_steppers()
+
+		stepper_positions_list = [(s.get_name(), s.get_commanded_position()) for s in steppers]
+		stepper_positions = dict(stepper_positions_list)
+		kin_pos = kin.calc_position(stepper_positions)
+
+		toolhead_pos = toolhead.get_position()
+		
+		kin_ap = kin_pos[axis_index]
+		toolhead_ap = toolhead_pos[axis_index]
+		delta = abs(kin_ap - toolhead_ap)
+		
+		if delta < 1e-9:
+			logging.debug(f"{self.name}: _align_to_kinematic_position: toolhead is already aligned to kinematic position on axis {axis_name_upper} (delta {delta:.6f}), no action needed.")
+			return
+
+		# Note that *by definition*, after flush_step_generation(), the kinematic and toolhead positions
+		# should not differ by more than half a microstep. We perform a belt and braces sanity check out of
+		# an abundance of caution, and to provide a more informative message if the positions appear
+		# significantly misaligned.
+		#
+		# Determine the minimum change in kinematic position on the specified axis that could result
+		# in a change in commanded stepper position any of the steppers that affect this axis. We will
+		# not perform a move if the discrepancy is larger than this, as a) it would cause an actual
+		# physical move; and b) this is not an expected scenario and indicates a misunderstanding or
+		# fault state that should be investigated rather than automatically corrected.
+		#
+		# We simulate moves in both directions for each stepper, as the cartesian result may differ
+		# for non-linear kinematics.
+		max_no_stepper_move_distance = None
+		for stepper in steppers:
+			name = stepper.get_name()
+			step_dist = stepper.get_step_dist()
+			
+			# Check the forward step (+1)
+			steppers_forward = dict(stepper_positions)
+			steppers_forward[name] += step_dist
+			kin_forward = kin.calc_position(steppers_forward)
+			one_step_shift_forward = abs(kin_forward[axis_index] - kin_pos[axis_index])
+			
+			# Check the backward step (-1)
+			steppers_backward = dict(stepper_positions)
+			steppers_backward[name] -= step_dist
+			kin_backward = kin.calc_position(steppers_backward)
+			one_step_shift_backward = abs(kin_backward[axis_index] - kin_pos[axis_index])
+			
+			min_step_shift = min(one_step_shift_forward, one_step_shift_backward)
+
+			# min_step_shift will be zero for inactive steppers (eg, the inactive carriage in dual carriage),
+			# ignore those as they do not affect the position on this axis.
+			if min_step_shift < 1e-9:
+				continue
+
+			if max_no_stepper_move_distance is None or min_step_shift < max_no_stepper_move_distance:
+				max_no_stepper_move_distance = min_step_shift
+
+		if max_no_stepper_move_distance is None:
+			# This should not happen, as there should be at least one stepper affecting each axis, but we check just in case.
+			# Note: we don't raise an error here because we don't want to cause a failure in this command if the kinematics are in some unexpected state; we just won't perform the alignment.
+			logging.error(f"{self.name}: _align_to_kinematic_position: could not determine the minimum stepper move distance for {axis_name_upper} axis: no steppers found affecting this axis.")
+			return
+		
+		# floating point boundary allowance
+		max_no_stepper_move_distance += 1e-7
+		
+		curtime = self.printer.get_reactor().monotonic()
+		is_homed = axis_name in kin.get_status(curtime)['homed_axes']
+		is_sensible = delta <= max_no_stepper_move_distance
+
+		if not is_sensible:
+			logging.error(
+				f"{self.name}: _align_to_kinematic_position: divergence between toolhead position and kinematic {axis_name_upper} position exceeds safe threshold of {max_no_stepper_move_distance:.9f}:\n"
+				f"kinematic: {kin_ap:.6f}, toolhead: {toolhead_ap:.6f}, delta: {delta:.9f}\n"
+				"Alignment skipped to avoid unexpected physical move.")
+		elif not is_homed:
+			logging.debug(f"{self.name}: _align_to_kinematic_position: {axis_name_upper} axis is not homed; skipping alignment")
+		else:
+			logging.info(f"{self.name}: _align_to_kinematic_position: aligning toolhead to kinematic position for {axis_name_upper} axis: {toolhead_ap:.6f} -> {kin_ap:.6f} (delta {delta:.6f}, safe threshold {max_no_stepper_move_distance:.6f})")
+			pos = [None] * 4
+			pos[axis_index] = kin_pos[axis_index]
+			toolhead.manual_move(pos, 100.)
 	
 class BackgroundDisplayStatusProgressHandler:
 	def __init__(
