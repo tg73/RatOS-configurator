@@ -12,6 +12,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
 import numpy as np
+from .homing import HomingMove
 
 from . import bed_mesh as BedMesh
 
@@ -119,7 +120,8 @@ class RatOS:
 		self.v_sd = None
 		self.sdcard_dirname = None
 		self.dual_carriage = None
-		self.dc_axis = None
+		self.dc_axis_index = None
+		self.dc_axis_name = None
 		self.rmmu_hub = None
 		self.bed_mesh = None
 		self.gm_ratos = None
@@ -169,8 +171,8 @@ class RatOS:
 
 		if self.config.has_section("dual_carriage"):
 			self.dual_carriage = self.printer.lookup_object("dual_carriage", None)
-			dc_config = self.config.getsection("dual_carriage")
-			self.dc_axis = dc_config.getchoice('axis', ['x', 'y'])
+			self.dc_axis_index = self.dual_carriage.axis
+			self.dc_axis_name = {0: 'x', 1: 'y'}[self.dual_carriage.axis]
 		if self.config.has_section("rmmu_hub"):
 			self.rmmu_hub = self.printer.lookup_object("rmmu_hub", None)
 		if self.config.has_section("bed_mesh"):
@@ -251,6 +253,7 @@ class RatOS:
 		self.gcode.register_command('BEACON_PROBE_CLEAN', self.cmd_BEACON_PROBE_CLEAN, desc=self.desc_BEACON_PROBE_CLEAN)
 		self.gcode.register_command('SET_ZERO_REFERENCE_POSITION', self.cmd_SET_ZERO_REFERENCE_POSITION, desc=self.desc_SET_ZERO_REFERENCE_POSITION)
 		self.gcode.register_command('_ALIGN_TO_KINEMATIC_POSITION', self.cmd_ALIGN_TO_KINEMATIC_POSITION)
+		self.gcode.register_command('MEASURE_DC_ENDSTOP_POSITIONS', self.cmd_MEASURE_DC_ENDSTOP_POSITIONS)
 
 	def register_command_overrides(self):
 		if self.config.has_section('resonance_tester'):
@@ -1699,7 +1702,7 @@ class RatOS:
 		prev = self.get_prev_cmd('SET_DUAL_CARRIAGE')
 		skip_align = gcmd.get('SKIP_ALIGN', '').lower() in ('true', 'yes', '1')
 		if not skip_align:
-			self._align_to_kinematic_position(self.dc_axis)
+			self._align_to_kinematic_position(self.dc_axis_name)
 		prev(gcmd)
 
 	def cmd_ALIGN_TO_KINEMATIC_POSITION(self, gcmd):
@@ -1811,6 +1814,209 @@ class RatOS:
 			pos = [None] * 4
 			pos[axis_index] = kin_pos[axis_index]
 			toolhead.manual_move(pos, 100.)
+
+	def cmd_MEASURE_DC_ENDSTOP_POSITIONS(self, gcmd):
+		runs = gcmd.get_int('RUNS', 3, minval=1)
+		printable_x_max, printable_y_max = self.get_printable_max_dimensions()
+		travel_speed = float(self.gm_ratos.variables['macro_travel_speed'])
+		toolhead = self.printer.lookup_object('toolhead')
+		
+		self.gcode.run_script_from_command(f"MAYBE_HOME\n_Z_HOP")
+		
+		# oa means other_axis
+		oa_index = 1 if self.dc_axis_index == 0 else 0
+		oa_printable_max = printable_y_max if oa_index == 1 else printable_x_max
+		oa_positions = (0., round(oa_printable_max / 2., 1), oa_printable_max)
+
+		raw_data = []
+
+		for _ in range(runs):
+			for oa_pos in oa_positions:
+				pos = [None] * 4
+				pos[oa_index] = oa_pos
+				toolhead.manual_move(pos, travel_speed)
+				raw_data.append(self._measure_dc_endstop_positions())
+
+		# 1. Convert to NumPy array
+		# 2. Reshape to (runs, num_positions, 2_endstops)
+		data = np.array(raw_data).reshape(runs, len(oa_positions), 2)		
+		
+		# Calculate stats across axis 0 (the 'runs' dimension)
+		means = np.mean(data, axis=0)
+		stds = np.std(data, axis=0)
+
+		distances = means[:, 1] - means[:, 0]
+
+		lines = []
+
+		# Define column headers
+		col_oa = 'XY'[oa_index]
+		col_m0 = 'front' if self.dc_axis_index != 0 else 'left'
+		col_m1 = 'back' if self.dc_axis_index != 0 else 'right'
+
+		# Header logic: Position | Mean 0 | Distance | Mean 1 | SD 0 | SD 1
+		header = (
+			f"| {col_oa:>3} | {col_m0:^9} | {'dist':^9} | {col_m1:^9} | {(col_m0+' sd'):^8} | {(col_m1+' sd'):^8} |"
+		)
+		lines.append(header)
+		lines.append("-" * len(header))
+
+		for i, oa_pos in reversed(list(enumerate(oa_positions))):
+			# Data Columns:
+			# 0: oa_pos (3.0f)
+			# 1: Mean 0 (8.2f)
+			# 2: Distance (8.2f)
+			# 3: Mean 1 (8.2f)
+			# 4: SD 0 (8.3f)
+			# 5: SD 1 (8.3f)
+			line = (
+				f"| {oa_pos:>3.0f} | "
+				f"{means[i, 0]:>9.2f} | "
+				f"{distances[i]:>9.2f} | "
+				f"{means[i, 1]:>9.2f} | "
+				f"{stds[i, 0]:>8.3f} | "
+				f"{stds[i, 1]:>8.3f} |"
+			)
+			lines.append(line)
+
+		table = "\n".join(lines)
+		shape = self._generate_dc_endstops_ascii_shape(means, oa_positions)
+		gcmd.respond_info(f"Dual carriage endstop positions (in mm) across {runs} runs:\n\n{table}\n\n{shape}")
+
+	def _generate_dc_endstops_ascii_shape(self, means, oa_positions, num_lines=11, plot_width=40):
+		# Calculate physical values
+		widths = means[:, 1] - means[:, 0]
+		offsets = means[:, 0] - means[0, 0]
+		
+		# Quantitative deltas
+		taper_val = widths[2] - widths[0]
+		skew_val = offsets[2] - offsets[0]
+		mid_bow = (widths[1] - (widths[0] + widths[2]) / 2.0)
+
+		def get_desc(val):
+			abs_val = abs(val)
+			if abs_val <= 0.02: return "None"
+			if abs_val <= 0.05: return "Low"
+			if abs_val <= 0.1:  return "Med"
+			if abs_val <= 0.2:  return "High"
+			return "Severe"
+
+		# --- Scaling Logic ---
+		# We want 0.2mm (severe) to result in a visual shift of ~5 characters
+		# to make the error obvious without breaking the screen.
+		visual_scale = 25
+		base_padding = 15
+		poly_base_width = plot_width // 2 # The "square" part of the box
+
+		def get_char(start, end):
+			diff = end - start
+			if abs(diff) < 0.01: return "|"
+			return "/" if diff > 0 else "\\"
+
+		lines = []
+		lines.append("")
+		lines.append(f"Taper: {get_desc(taper_val)} ({taper_val:.2f}) | Skew: {get_desc(skew_val)} ({skew_val:.2f}) | Mid Bow: {get_desc(mid_bow)} ({mid_bow:.2f})")
+		lines.append("")
+
+		for i in range(num_lines):
+			t = (num_lines - 1 - i) / (num_lines - 1)
+			
+			if t <= 0.5:
+				idx_low, idx_high = 0, 1
+				seg_t = t * 2.0
+			else:
+				idx_low, idx_high = 1, 2
+				seg_t = (t - 0.5) * 2.0
+			
+			# Interpolate deltas
+			curr_off_mm = offsets[idx_low] + (offsets[idx_high] - offsets[idx_low]) * seg_t
+			curr_wid_delta_mm = (widths[idx_low] - widths[0]) + ((widths[idx_high] - widths[idx_low]) * seg_t)
+			
+			# Use round() instead of int() to prevent "jitter"
+			l_pos = int(round(base_padding + (curr_off_mm * visual_scale)))
+			w_pos = int(round(poly_base_width + (curr_wid_delta_mm * visual_scale)))
+			w_pos = max(5, min(w_pos, plot_width))
+
+			char_l = get_char(offsets[idx_low], offsets[idx_high])
+			char_r = get_char(offsets[idx_low] + widths[idx_low], offsets[idx_high] + widths[idx_high])
+			
+			fill_char = " "
+			if i == 0 or i == (num_lines // 2) or i == (num_lines - 1):
+				char_l = char_r = "H"
+				fill_char = "="
+
+			# Construct line with the console-safe prefix
+			line_content = " " * l_pos + char_l + fill_char * w_pos + char_r
+			
+			# Labels
+			if i == 0:               line_content += f"  {oa_positions[2]:.0f} w={widths[2]:.3f}"
+			if i == (num_lines // 2): line_content += f"  {oa_positions[1]:.0f} w={widths[1]:.3f}"
+			if i == (num_lines - 1):  line_content += f"  {oa_positions[0]:.0f} w={widths[0]:.3f}"
+			
+			lines.append("| " + line_content)
+
+		return "\n".join(lines)
+	
+	def _measure_dc_endstop_positions(self):
+		if self.dual_carriage is None:
+			raise self.printer.command_error("This command is only supported on IDEX printers")
+		
+		travel_speed = float(self.gm_ratos.variables['macro_travel_speed'])
+
+		toolhead = self.printer.lookup_object('toolhead')
+		toolhead.flush_step_generation()
+		kin = toolhead.get_kinematics()
+		curtime = self.printer.get_reactor().monotonic()
+
+		if self.dc_axis_name not in kin.get_status(curtime)['homed_axes']:
+			raise self.printer.command_error(f"Must home dual carriage axis ({self.dc_axis_name.upper()}) before measuring endstop positions")
+		
+		if self.dual_carriage.get_rails()[1].mode in ('COPY', 'MIRROR'):
+			raise self.printer.command_error(f"Must be in IDEX_SINGLE mode to measure endstop positions, {self.dual_carriage.get_rails()[1].mode} mode is not allowed")
+
+		results = []
+
+		min_retract_distance = 3.0
+		allow_overshoot = 1.0
+
+		for tool in (0, 1):
+			self.gcode.run_script_from_command(f"T{tool} S=0")
+			toolhead.flush_step_generation()
+			rail = self.dual_carriage.get_primary_rail().get_rail()
+			hi = rail.get_homing_info()
+			retract_distance = max(min_retract_distance, hi.retract_dist)
+			# Rapidly move to close to the endstop
+			pos = [None] * 4
+			pos[self.dc_axis_index] = hi.position_endstop + (-retract_distance if hi.positive_dir else +retract_distance)
+			toolhead.manual_move(pos, travel_speed)
+			toolhead.flush_step_generation()
+			# Force-set the toolhead position to allow the homing move to physically go beyond
+			# the declared endstop position
+			start_pos = toolhead.get_position()
+			force_pos = start_pos[:]
+			force_pos[self.dc_axis_index] += -allow_overshoot if hi.positive_dir else +allow_overshoot
+			toolhead.set_position(force_pos)
+			try:
+				move_end_pos = start_pos[:]
+				move_end_pos[self.dc_axis_index] = hi.position_endstop
+				hmove = HomingMove(self.printer, rail.get_endstops())
+				try:
+					epos = hmove.homing_move(move_end_pos, hi.second_homing_speed, probe_pos=True)
+				except self.printer.command_error:
+					if self.printer.is_shutdown():
+						raise self.printer.command_error(
+							"Measurement failed due to printer shutdown")
+					raise
+				results.append(epos[self.dc_axis_index] + (+allow_overshoot if hi.positive_dir else -allow_overshoot))
+			finally:
+				# Restore the toolhead position after the homing move, and leave it at the retract position
+				toolhead.manual_move(force_pos, travel_speed)
+				toolhead.set_position(start_pos)
+
+		# Return to T0 after measurement
+		self.gcode.run_script_from_command(f"T0 S=0")
+
+		return results
 	
 class BackgroundDisplayStatusProgressHandler:
 	def __init__(
