@@ -152,11 +152,23 @@ validate_required_env_var "KLIPPER_DIR" "directory"
 validate_required_env_var "RATOS_USERNAME" "user"
 validate_required_env_var "RATOS_USERGROUP" "group"
 
+# Helper function to run git commands as the correct user
+run_git() {
+    if [ "$EUID" -eq 0 ]; then
+        (cd "$KLIPPER_DIR" && run_as_user "${RATOS_USERNAME}" git "$@")
+    else
+        (cd "$KLIPPER_DIR" && git "$@")
+    fi
+}
+
 # Migration constants (readonly to prevent accidental modification)
 readonly OFFICIAL_KLIPPER_URL="https://github.com/Klipper3d/klipper.git"
-readonly RATOS_FORK_URL="https://github.com/tg73/klipper.git"
+readonly RATOS_FORK_URL="https://github.com/Rat-OS/klipper.git"
+readonly DEPRECATED_FORK_URLS=(
+	"https://github.com/tg73/klipper.git" # tg73 fork sometimes used during development
+)
 readonly RATOS_FORK_REMOTE="ratos-fork"
-readonly TARGET_BRANCH="ratos-development"
+readonly TARGET_BRANCH="ratos/v2.1.x"
 readonly MOONRAKER_CONF_PATH="$SCRIPT_DIR/../moonraker.conf"
 
 # extract_target_commit_from_moonraker() - Dynamically extracts klipper pinned_commit from moonraker.conf
@@ -269,8 +281,8 @@ readonly TARGET_COMMIT
 # Only supported repository configurations are allowed to proceed with migration.
 #
 # REPOSITORY STATE LOGIC:
-#   1. Official Klipper Source → Proceed with Migration
-#      - Repository origin points to any official Klipper URL format
+#   1. Official Klipper Source or Deprecated RatOS Fork Source → Proceed with Migration
+#      - Repository origin points to any official Klipper URL format OR deprecated RatOS fork URL format
 #      - Return 0 to indicate migration is needed
 #   2. RatOS Fork at Correct Commit → Skip Migration Gracefully
 #      - Repository origin points to RatOS fork URL
@@ -305,10 +317,13 @@ check_klipper_repository()
 
     # Get current origin URL
     local current_origin
-    if ! current_origin=$(git -C "$KLIPPER_DIR" remote get-url origin 2>/dev/null); then
+    local git_error
+    if ! git_error=$(run_git -C "$KLIPPER_DIR" remote get-url origin 2>&1); then
         log_error "Cannot get origin URL from Klipper repository" "check_repository" "GIT_REMOTE_URL_FAILED"
+        log_error "Git error: $git_error" "check_repository" "GIT_REMOTE_URL_FAILED"
         return 2  # Fatal error
     fi
+    current_origin="$git_error"
 
     log_info "Repository origin URL: $current_origin" "check_repository"
 
@@ -335,20 +350,38 @@ check_klipper_repository()
         return 0
     fi
 
+	# Check if current origin is a deprecated RatOS fork URL
+	local is_deprecated_fork=false
+	for deprecated_url in "${DEPRECATED_FORK_URLS[@]}"; do
+		if [[ "$current_origin" == "$deprecated_url" ]]; then
+			is_deprecated_fork=true
+			break
+		fi
+	done
+
+	if [[ "$is_deprecated_fork" == true ]]; then
+		# Case 1: Deprecated RatOS Fork Source → Proceed with Migration
+		log_info "Repository is using deprecated RatOS fork source, migration needed." "check_repository"
+		return 0
+	fi
+
     # Check if current origin is RatOS fork
     if [[ "$current_origin" == "$RATOS_FORK_URL" ]]; then
         log_info "Repository is using RatOS fork, checking current state..." "check_repository"
 
         # Get current HEAD commit
         local current_commit
-        if ! current_commit=$(git -C "$KLIPPER_DIR" rev-parse HEAD 2>/dev/null); then
+        local git_error
+        if ! git_error=$(run_git -C "$KLIPPER_DIR" rev-parse HEAD 2>&1); then
             log_error "Cannot get current HEAD commit from repository" "check_repository" "GIT_HEAD_FAILED"
+            log_error "Git error: $git_error" "check_repository" "GIT_HEAD_FAILED"
             return 2  # Fatal error
         fi
+        current_commit="$git_error"
 
         # Get current branch (handle detached HEAD state)
         local current_branch
-        current_branch=$(git -C "$KLIPPER_DIR" branch --show-current 2>/dev/null || echo "")
+        current_branch=$(run_git -C "$KLIPPER_DIR" branch --show-current 2>/dev/null || echo "")
 
         log_info "Current commit: $current_commit" "check_repository"
         log_info "Current branch: ${current_branch:-"(detached HEAD)"}" "check_repository"
@@ -404,25 +437,25 @@ check_uncommitted_changes()
     }
 
     # Check for staged changes (index vs HEAD) using Git plumbing commands
-    if ! git diff-index --cached --quiet HEAD --; then
+    if ! run_git diff-index --cached --quiet HEAD --; then
         log_error "There are staged changes in the Klipper repository." "check_changes" "KLIPPER_STAGED_CHANGES"
         log_error "Please commit or stash these changes before running migration." "check_changes" "KLIPPER_STAGED_CHANGES"
 
         # Get list of staged files for error reporting
         local staged_files
-        staged_files=$(git diff-index --cached --name-only HEAD -- | tr '\n' ' ')
+        staged_files=$(run_git diff-index --cached --name-only HEAD -- | tr '\n' ' ')
         log_error "Staged files: $staged_files" "check_changes" "KLIPPER_STAGED_CHANGES"
         return 3  # Uncommitted changes error
     fi
 
     # Check for unstaged changes (working directory vs index) using Git plumbing commands
-    if ! git diff-index --quiet HEAD --; then
+    if ! run_git diff-index --quiet HEAD --; then
         log_error "There are uncommitted changes in the Klipper repository." "check_changes" "KLIPPER_UNCOMMITTED_CHANGES"
         log_error "Please commit or stash these changes before running migration." "check_changes" "KLIPPER_UNCOMMITTED_CHANGES"
 
         # Get list of modified files for error reporting
         local modified_files
-        modified_files=$(git diff-index --name-only HEAD -- | tr '\n' ' ')
+        modified_files=$(run_git diff-index --name-only HEAD -- | tr '\n' ' ')
         log_error "Modified files: $modified_files" "check_changes" "KLIPPER_UNCOMMITTED_CHANGES"
         return 3  # Uncommitted changes error
     fi
@@ -442,7 +475,7 @@ handle_existing_remote()
 
     # Cache the remote URL to avoid multiple git subprocess calls
     local existing_url
-    existing_url=$(git remote get-url "$RATOS_FORK_REMOTE" 2>/dev/null || true)
+    existing_url=$(run_git remote get-url "$RATOS_FORK_REMOTE" 2>/dev/null || true)
 
     # Check if ratos-fork remote already exists
     if [ -n "$existing_url" ]; then
@@ -452,7 +485,7 @@ handle_existing_remote()
             log_warn "  Expected: $RATOS_FORK_URL" "handle_remote" "REMOTE_URL_MISMATCH"
             log_info "Updating remote URL..." "handle_remote"
 
-            if ! execute_with_logging "handle_remote" "GIT_REMOTE_UPDATE_FAILED" git remote set-url "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL"; then
+            if ! execute_with_logging "handle_remote" "GIT_REMOTE_UPDATE_FAILED" run_git remote set-url "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL"; then
                 log_error "Failed to update remote URL" "handle_remote" "GIT_REMOTE_UPDATE_FAILED"
                 return 1
             fi
@@ -462,7 +495,7 @@ handle_existing_remote()
         fi
     else
         log_info "Adding RatOS fork remote..." "handle_remote"
-        if ! execute_with_logging "handle_remote" "GIT_REMOTE_ADD_FAILED" git remote add "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL"; then
+        if ! execute_with_logging "handle_remote" "GIT_REMOTE_ADD_FAILED" run_git remote add "$RATOS_FORK_REMOTE" "$RATOS_FORK_URL"; then
             log_error "Failed to add RatOS fork remote" "handle_remote" "GIT_REMOTE_ADD_FAILED"
             return 1
         fi
@@ -486,7 +519,7 @@ fetch_ratos_fork()
     local retry_count=0
 
     while [ $retry_count -lt $max_retries ]; do
-        if execute_with_logging "fetch_fork" "GIT_FETCH_FAILED" git fetch "$RATOS_FORK_REMOTE"; then
+        if execute_with_logging "fetch_fork" "GIT_FETCH_FAILED" run_git fetch "$RATOS_FORK_REMOTE"; then
             log_info "Successfully fetched from RatOS fork." "fetch_fork"
             return 0
         else
@@ -516,7 +549,7 @@ checkout_target_branch()
     cleanup_temp_branch_on_error() {
         if [ "$created_temp_branch" = true ] && [ -n "$temp_branch" ]; then
             log_info "Cleaning up temporary migration branch due to error: $temp_branch" "checkout_branch"
-            if git -C "$KLIPPER_DIR" branch -D "$temp_branch" >/dev/null 2>&1; then
+            if run_git -C "$KLIPPER_DIR" branch -D "$temp_branch" >/dev/null 2>&1; then
                 log_info "Successfully cleaned up temporary branch: $temp_branch" "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP"
             else
                 log_warn "Failed to clean up temporary branch: $temp_branch (this is not critical)" "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP_FAILED"
@@ -529,11 +562,11 @@ checkout_target_branch()
     trap 'cleanup_temp_branch_on_error' ERR
 
     # Check if we're in detached HEAD state
-    if ! git -C "$KLIPPER_DIR" symbolic-ref HEAD >/dev/null 2>&1; then
+    if ! run_git -C "$KLIPPER_DIR" symbolic-ref HEAD >/dev/null 2>&1; then
         log_info "Repository is in detached HEAD state." "checkout_branch"
         log_info "Creating and checking out a temporary branch..." "checkout_branch"
         temp_branch="temp-migration-$(date +%s)-$$"
-        if ! execute_with_logging "checkout_branch" "GIT_TEMP_BRANCH_FAILED" git -C "$KLIPPER_DIR" checkout -b "$temp_branch"; then
+        if ! execute_with_logging "checkout_branch" "GIT_TEMP_BRANCH_FAILED" run_git -C "$KLIPPER_DIR" checkout -b "$temp_branch"; then
             log_error "Failed to create temporary branch" "checkout_branch" "GIT_TEMP_BRANCH_FAILED"
             cleanup_temp_branch_on_error
             return 1
@@ -542,16 +575,16 @@ checkout_target_branch()
     fi
 
     # Check if target branch already exists locally
-    if git -C "$KLIPPER_DIR" show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
+    if run_git -C "$KLIPPER_DIR" show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
         log_info "Local branch '$TARGET_BRANCH' already exists, switching to it..." "checkout_branch"
-        if ! execute_with_logging "checkout_branch" "GIT_CHECKOUT_FAILED" git -C "$KLIPPER_DIR" checkout "$TARGET_BRANCH"; then
+        if ! execute_with_logging "checkout_branch" "GIT_CHECKOUT_FAILED" run_git -C "$KLIPPER_DIR" checkout "$TARGET_BRANCH"; then
             log_error "Failed to checkout existing branch '$TARGET_BRANCH'" "checkout_branch" "GIT_CHECKOUT_FAILED"
             cleanup_temp_branch_on_error
             return 1
         fi
     else
         log_info "Creating and checking out branch '$TARGET_BRANCH' from RatOS fork..." "checkout_branch"
-        if ! execute_with_logging "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED" git -C "$KLIPPER_DIR" checkout -b "$TARGET_BRANCH" "$RATOS_FORK_REMOTE/$TARGET_BRANCH"; then
+        if ! execute_with_logging "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED" run_git -C "$KLIPPER_DIR" checkout -b "$TARGET_BRANCH" "$RATOS_FORK_REMOTE/$TARGET_BRANCH"; then
             log_error "Failed to checkout branch '$TARGET_BRANCH' from RatOS fork" "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED"
             log_error "Please ensure the branch exists on the remote repository." "checkout_branch" "GIT_CHECKOUT_REMOTE_FAILED"
             cleanup_temp_branch_on_error
@@ -562,7 +595,7 @@ checkout_target_branch()
     # Clean up temporary branch if we created one (successful completion)
     if [ "$created_temp_branch" = true ] && [ -n "$temp_branch" ]; then
         log_info "Cleaning up temporary migration branch: $temp_branch" "checkout_branch"
-        if execute_with_logging "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP" git -C "$KLIPPER_DIR" branch -D "$temp_branch"; then
+        if execute_with_logging "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP" run_git -C "$KLIPPER_DIR" branch -D "$temp_branch"; then
             log_info "Successfully cleaned up temporary branch: $temp_branch" "checkout_branch"
         else
             log_warn "Failed to clean up temporary branch: $temp_branch (this is not critical)" "checkout_branch" "GIT_TEMP_BRANCH_CLEANUP_FAILED"
@@ -586,14 +619,14 @@ reset_to_target_commit()
     }
 
     # Verify the target commit exists
-    if ! git cat-file -e "$TARGET_COMMIT" 2>/dev/null; then
+    if ! run_git cat-file -e "$TARGET_COMMIT" 2>/dev/null; then
         log_error "Target commit '$TARGET_COMMIT' not found in repository" "reset_commit" "GIT_COMMIT_NOT_FOUND"
         log_error "Please ensure the commit exists and try again." "reset_commit" "GIT_COMMIT_NOT_FOUND"
         return 1
     fi
 
     # Reset to target commit
-    if ! execute_with_logging "reset_commit" "GIT_RESET_FAILED" git reset --hard "$TARGET_COMMIT"; then
+    if ! execute_with_logging "reset_commit" "GIT_RESET_FAILED" run_git reset --hard "$TARGET_COMMIT"; then
         log_error "Failed to reset to target commit '$TARGET_COMMIT'" "reset_commit" "GIT_RESET_FAILED"
         return 1
     fi
@@ -601,7 +634,7 @@ reset_to_target_commit()
     log_info "Successfully reset to commit '$TARGET_COMMIT'." "reset_commit"
 
     # Set upstream tracking
-    if ! execute_with_logging "reset_commit" "GIT_UPSTREAM_SET_FAILED" git branch --set-upstream-to="$RATOS_FORK_REMOTE/$TARGET_BRANCH" "$TARGET_BRANCH"; then
+    if ! execute_with_logging "reset_commit" "GIT_UPSTREAM_SET_FAILED" run_git branch --set-upstream-to="$RATOS_FORK_REMOTE/$TARGET_BRANCH" "$TARGET_BRANCH"; then
         log_warn "Failed to set upstream tracking, but migration completed successfully." "reset_commit" "GIT_UPSTREAM_SET_FAILED"
     else
         log_info "Upstream tracking set to '$RATOS_FORK_REMOTE/$TARGET_BRANCH'." "reset_commit"
