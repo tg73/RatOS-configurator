@@ -14,6 +14,8 @@ from collections import namedtuple
 import numpy as np
 from .homing import HomingMove
 
+from . import bed_mesh as BedMesh
+
 def _download_task(url, path):
 	urllib.request.urlretrieve(url, path)
 	return True
@@ -249,6 +251,7 @@ class RatOS:
 		self.gcode.register_command('_BEACON_CHECK_DIRECTIONAL_REPEATABILITY', self.cmd_BEACON_CHECK_DIRECTIONAL_REPEATABILITY, desc=self.desc_BEACON_CHECK_DIRECTIONAL_REPEATABILITY)
 		self.gcode.register_command('_CAMERA_SNAPSHOT', self.cmd_CAMERA_SNAPSHOT, desc=self.desc_CAMERA_SNAPSHOT)
 		self.gcode.register_command('BEACON_PROBE_CLEAN', self.cmd_BEACON_PROBE_CLEAN, desc=self.desc_BEACON_PROBE_CLEAN)
+		self.gcode.register_command('SET_ZERO_REFERENCE_POSITION', self.cmd_SET_ZERO_REFERENCE_POSITION, desc=self.desc_SET_ZERO_REFERENCE_POSITION)
 		self.gcode.register_command('_ALIGN_TO_KINEMATIC_POSITION', self.cmd_ALIGN_TO_KINEMATIC_POSITION)
 		self.gcode.register_command('MEASURE_DC_ENDSTOP_POSITIONS', self.cmd_MEASURE_DC_ENDSTOP_POSITIONS)
 
@@ -436,6 +439,31 @@ class RatOS:
 			profiles = self.bed_mesh.pmgr.get_profiles()
 			if profile in profiles:
 				self.last_check_bed_mesh_profile_exists_result = True
+
+	desc_SET_ZERO_REFERENCE_POSITION = "Sets the zero reference position for the currently loaded bed mesh."
+	def cmd_SET_ZERO_REFERENCE_POSITION(self, gcmd):
+		if not self.bed_mesh:
+			raise gcmd.error("The bed_mesh module is not configured. This command requires a [bed_mesh] section in the printer configuration.")
+		
+		if (self.bed_mesh.z_mesh is None):
+			self.console_echo("Set zero reference position error", "error",
+				"No bed mesh loaded._N_Either generate a new bed mesh or load it via BED_MESH_PROFILE LOAD=\"[profile_name]\"")
+			return
+
+		x_pos = gcmd.get_float('X')
+		y_pos = gcmd.get_float('Y')
+
+		self.debug_echo("SET_ZERO_REFERENCE_POSITION", f"X:{x_pos:.2f} Y:{y_pos:.2f}")
+
+		org_mesh = self.bed_mesh.get_mesh()
+		new_mesh = BedMesh.ZMesh(org_mesh.get_mesh_params(), org_mesh.get_profile_name(), self.reactor)
+		new_mesh.build_mesh(org_mesh.get_probed_matrix())
+		new_mesh.set_zero_reference(x_pos, y_pos)
+		self.bed_mesh.set_mesh(new_mesh)
+
+		self.bed_mesh.pmgr.save_profile(new_mesh.get_profile_name())
+		self.console_echo("Set zero reference position", "info",
+			f"Zero reference position saved for profile '{new_mesh.get_profile_name()}'")
 
 	desc_PROCESS_GCODE_FILE = "G-code post-processor for IDEX and RMMU"
 	def cmd_PROCESS_GCODE_FILE(self, gcmd):
