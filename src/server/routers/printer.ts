@@ -655,9 +655,18 @@ const generateKlipperConfiguration = async <T extends boolean>(
 };
 
 export const compareSettings = async (newSettings: SerializedPrinterConfiguration): Promise<FilesToWriteWithState> => {
-	const environment = serverSchema.parse(process.env);
 	const oldFiles = hasLastPrinterSettings() ? await getFilesToWrite(await getLastPrinterSettings()) : [];
 	const newFiles = await getFilesToWrite(await deserializePrinterConfiguration(newSettings));
+	const environment = serverSchema.parse(process.env);
+	return compareSettingsCore(oldFiles, newFiles, environment.KLIPPER_CONFIG_PATH);
+};
+
+export const compareSettingsCore = async (
+	oldFiles: FilesToWrite,
+	newFiles: FilesToWrite,
+	basePath: string,
+): Promise<FilesToWriteWithState> => {
+	// basePath is typically KLIPPER_CONFIG_PATH from the process environment
 	const addedFiles = await Promise.all(
 		newFiles
 			.filter((f) => !f.exists || !oldFiles.some((of) => of.fileName === f.fileName))
@@ -747,7 +756,7 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 					throw new Error('This should never happen.');
 				}
 				const timehash = new Date().getTime() + objectHash(f);
-				let oldPath = path.resolve(path.join(environment.KLIPPER_CONFIG_PATH, oldFile.fileName));
+				let oldPath = path.resolve(path.join(basePath, oldFile.fileName));
 				let skipDiff = false;
 				if (!oldFile.exists) {
 					oldPath = `/tmp/ratos-changed-old-${timehash}.cfg`;
@@ -813,7 +822,7 @@ export const compareSettings = async (newSettings: SerializedPrinterConfiguratio
 				let diff = null;
 				if (oldFile.diskContent !== oldFile.content) {
 					const timehash = new Date().getTime() + objectHash(f);
-					let oldPath = path.resolve(path.join(environment.KLIPPER_CONFIG_PATH, oldFile.fileName));
+					let oldPath = path.resolve(path.join(basePath, oldFile.fileName));
 					if (!oldFile.exists) {
 						oldPath = `/tmp/ratos-changed-old-${timehash}.cfg`;
 						await writeFile(oldPath, oldFile.content);
