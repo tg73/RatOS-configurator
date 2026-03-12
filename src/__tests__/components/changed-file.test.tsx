@@ -505,19 +505,9 @@ describe('ChangedFile', () => {
 			expect(matches.length).toBeGreaterThanOrEqual(1);
 		});
 
-		/**
-		 * BUG: because changedFromConfig=false yields primary badge text "Changed on disk"
-		 * AND changedOnDisk=true also triggers the secondary badge "Changed on disk",
-		 * there are TWO identical "Changed on disk" badges rendered.
-		 *
-		 * Sensible behavior: only ONE "Changed on disk" label should appear –
-		 * the secondary badge should be suppressed when the primary badge already
-		 * conveys that information.
-		 */
 		it('should show only ONE "Changed on disk" label (not two)', () => {
 			renderChangedFile(defaultProps(file));
 			const matches = screen.getAllByText('Changed on disk');
-			// BUG: currently fails – two badges are rendered
 			expect(matches).toHaveLength(1);
 		});
 

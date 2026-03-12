@@ -237,7 +237,7 @@ export const ChangedFile: React.FC<ChangedFileProps> = (props) => {
 									? 'Deleted'
 									: 'No updates'}
 					</Badge>
-					{file.changedOnDisk && (
+					{file.changedOnDisk && (file.state !== 'changed' || file.changedFromConfig) && (
 						<Badge size="sm" color="sky">
 							Changed on disk
 						</Badge>
