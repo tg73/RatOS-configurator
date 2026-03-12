@@ -424,19 +424,8 @@ describe('ChangedFile', () => {
 			expect(screen.getByText('Changed on disk')).toBeTruthy();
 		});
 
-		/**
-		 * BUG: the current implementation shows "Review changes" even when diff=null.
-		 * Clicking it sets isDiffModalOpen=true but the DiffModal is never mounted
-		 * (it is conditional on file.diff != null), so the button does nothing.
-		 *
-		 * Sensible behavior: "Review changes" must NOT be shown when diff=null,
-		 * because there is nothing to review – the on-disk file already matches the
-		 * newly generated content.  A checkmark (or informational note) should appear
-		 * instead.
-		 */
 		it('should NOT show "Review changes" button when diff=null (no content to diff)', () => {
 			renderChangedFile(defaultProps(file));
-			// BUG: currently fails – "Review changes" IS shown despite diff=null
 			expect(screen.queryByText('Review changes')).toBeNull();
 		});
 
@@ -485,13 +474,8 @@ describe('ChangedFile', () => {
 			expect(screen.queryByText('Changed on disk')).toBeNull();
 		});
 
-		/**
-		 * BUG: same root bug as scenario C – "Review changes" is shown when diff=null.
-		 * Sensible behavior: no "Review changes" when there is nothing to diff.
-		 */
 		it('should NOT show "Review changes" button when diff=null', () => {
 			renderChangedFile(defaultProps(file));
-			// BUG: currently fails
 			expect(screen.queryByText('Review changes')).toBeNull();
 		});
 

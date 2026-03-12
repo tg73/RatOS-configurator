@@ -261,7 +261,7 @@ export const ChangedFile: React.FC<ChangedFileProps> = (props) => {
 			</div>
 			<div className="flex flex-none items-center gap-x-4">
 				<div className="flex flex-none items-center">
-					{needsExplicitAction ? (
+					{needsExplicitAction && file.diff != null ? (
 						<Button variant="info" onClick={() => showDiffModal(file)}>
 							Review changes
 						</Button>
