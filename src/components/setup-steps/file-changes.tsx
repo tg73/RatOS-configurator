@@ -51,7 +51,7 @@ type Action = {
 	icon: LucideIcon;
 };
 
-const ChangedFile: React.FC<ChangedFileProps> = (props) => {
+export const ChangedFile: React.FC<ChangedFileProps> = (props) => {
 	const {
 		addFileToIgnore,
 		addFileToOverwrite,
