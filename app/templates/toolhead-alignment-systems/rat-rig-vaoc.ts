@@ -100,21 +100,13 @@ export function getUpdatedCrowsnestConfigurationForVaoc() {
 	const crowsnestPath = path.join(environment.KLIPPER_CONFIG_PATH, 'crowsnest.conf');
 	return replaceOrAddIniSectionsFromFileSync(crowsnestPath, [
 		{
-			section: 'crowsnest',
-			body: `log_path: /home/pi/printer_data/logs/crowsnest.log
-log_level: verbose
-delete_log: false
-no_proxy: false
-`.trim(),
-		},
-		{
 			section: 'cam 1',
 			body: `# Required for Rat Rig VAOC camera integration, DO NOT MODIFY THIS SECTION.
 mode: camera-streamer
 enable_rtsp: false
 rtsp_port: 8554
 port: 8080
-device: /dev/video0
+device: /dev/RatOS/rr-vaoc-camera
 resolution: 1920x1080
 max_fps: 30
 `.trim(),
