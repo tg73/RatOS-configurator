@@ -268,7 +268,7 @@ verify_registered_extensions()
 		["fastconfig"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/fastconfig.py")
 		["named_offsets"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/named_offsets.py")
 		["beacon_user_z_offset"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/beacon_user_z_offset.py")
-		["dual_carriage_toolbox"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/dual_carriage_toolbox.py")
+		["ratos_dual_carriage_extras"]=$(realpath "${RATOS_PRINTER_DATA_DIR}/config/RatOS/klippy/ratos_dual_carriage_extras.py")
     )
 
 	declare -A kinematics_extensions=(
