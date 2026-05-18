@@ -32,8 +32,6 @@ class RatOSDualCarriageExtras:
 		self.dc_axis_name = None
 		self._original_set_dual_carriage_cmd = None
 
-		self._gather_config_for_dc_commands()
-
 		self.printer.register_event_handler("klippy:connect", self._connect)
 
 	def _connect(self):
