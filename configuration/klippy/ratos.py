@@ -853,7 +853,7 @@ class RatOS:
 		# a critical RatOS initialization order failure. We cannot continue safely.
 		# We don't just call CALCULATE_PRINTABLE_AREA here as this should never
 		# happen during normal operation, and the cause should be investigated.
-		cpa_done = bool(self.gm_calculate_printable_area.variables['calculated'])
+		cpa_done = self.gm_calculate_printable_area and bool(self.gm_calculate_printable_area.variables['calculated'])
 		if not cpa_done:
 			if none_if_not_valid:
 				return (None, None)
