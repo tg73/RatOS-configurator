@@ -676,7 +676,7 @@ export class ToolheadGenerator<IsToolboard extends boolean> extends ToolheadHelp
 			`variable_toolhead_sensor_button_only_when_sensor_enabled: False              # if True, the toolhead sensor action button is only enabled when the sensor is enabled`,
 			`variable_toolhead_detect_clog_only_when_sensor_enabled: True                 # if True, toolhead sensor clog detection is only enabled when the sensor is enabled`,
 		];
-		if (this.printer.kinematics == 'hybrid-corexy-idex') {
+		if (this.printer.kinematics === 'hybrid-corexy-idex' || this.printer.kinematics === 'cartesian-idex') {
 			result.push(
 				`variable_loading_position: ${this.getTool() === 0 ? parkX + 25 : parkX - 25} # filament load x position`,
 				`variable_parking_position: ${parkX} # parking x position`,

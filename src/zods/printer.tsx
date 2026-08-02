@@ -62,7 +62,13 @@ export const PrinterDefinition = z
 		path: z.string().startsWith(startsWithServerValidation),
 		driverCountRequired: z.number().describe('Number of drivers required for this printer'),
 		kinematics: z
-			.union([z.literal('cartesian'), z.literal('corexy'), z.literal('hybrid-corexy'), z.literal('hybrid-corexy-idex')])
+			.union([
+				z.literal('cartesian'),
+				z.literal('corexy'),
+				z.literal('hybrid-corexy'),
+				z.literal('hybrid-corexy-idex'),
+				z.literal('cartesian-idex'),
+			])
 			.optional(),
 		bedMargin: z
 			.object({
