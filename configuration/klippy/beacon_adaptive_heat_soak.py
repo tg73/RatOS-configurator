@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
-import time, logging, os, multiprocessing, traceback, pygam
+import time, logging, os, multiprocessing, traceback, importlib
 import numpy as np
 from .ratos import BackgroundDisplayStatusProgressHandler
 
@@ -12,6 +12,7 @@ class ThresholdPredictor:
 	def __init__(self, printer):
 		self.printer = printer
 		self.reactor = printer.get_reactor()
+		self.pygam = None
 
 	def predict_threshold(self, maximum_z_change_microns, period_seconds):
 		'''
@@ -115,6 +116,8 @@ class ThresholdPredictor:
 			1.0 / Xp,  # inverse period
 		])
 
+		pygam = self._get_pygam()
+
 		gam = pygam.LinearGAM(
 			pygam.s(0, n_splines=20)
 			+ pygam.s(1, n_splines=20)
@@ -128,6 +131,11 @@ class ThresholdPredictor:
 
 		gam.fit(X, y)
 		return gam
+
+	def _get_pygam(self):
+		if not self.pygam:
+			self.pygam = importlib.import_module('pygam')
+		return self.pygam
 
 class BeaconZRateSession:
 	def __init__(self, config, beacon, samples_per_mean=1000, window_size=30, window_step=1):
