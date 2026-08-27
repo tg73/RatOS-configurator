@@ -168,7 +168,7 @@ ${helper.renderUserStepperSections({
 			max: config.size.x + margin.max,
 			endstop: config.size.x + margin.max,
 		}),
-		safeDistance: 55,
+		safeDistance: 58.85, // includes 2mm safety margin. Keep in sync with the value in v-core-4-1-idex-cartesian.cfg
 		additionalLines: ['homing_retract_dist: 10.0', 'second_homing_speed: 10.0'],
 	},
 	y: {
