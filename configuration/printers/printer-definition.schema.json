@@ -42,7 +42,7 @@
 		"kinematics": {
 			"description": "Kinematics for this printer",
 			"type": "string",
-			"enum": ["hybrid-corexy", "hybrid-corexy-idex", "corexy", "cartesian"]
+			"enum": ["hybrid-corexy", "hybrid-corexy-idex", "corexy", "cartesian", "cartesian-idex"]
 		},
 		"bedMargin": {
 			"description": "Margin around the bed in mm that is reachable by the toolhead, but not printable",
