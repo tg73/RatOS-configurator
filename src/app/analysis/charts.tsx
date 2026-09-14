@@ -97,7 +97,8 @@ export const useADXLSignalChart = (axis: ADXLAxes) => {
 				// Category axis as the actual time doesn't matter (samples are evenly spaced).
 				const xAxis = new NumericAxis(surface.webAssemblyContext2D, {
 					id: SIGNAL_CHART_AXIS_SIGNAL_ID + axis,
-					autoRange: EAutoRange.Always,
+					autoRange: EAutoRange.Never,
+					visibleRange: new NumberRange(0, ADXL_STREAM_BUFFER_SIZE - 1),
 					allowFastMath: true,
 					drawLabels: false,
 					drawMinorTickLines: false,
